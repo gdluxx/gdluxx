@@ -68,6 +68,13 @@ gdluxx is nothing more than a browser based gui for _gallery-dl_
    ```
 6. Open your browser to `http://localhost:5173`
 
+## Building for Production
+
+```bash
+pnpm build
+pnpm preview
+```
+
 ## Configuration
 
 gdluxx will create a `data/` directory to store:
@@ -90,11 +97,4 @@ extension, create an API key in the settings, then send POST requests to
   "urlToProcess": "https://example.com/image-gallery",
   "apiKey": "your-api-key-here"
 }
-```
-
-## Building for Production
-
-```bash
-pnpm build
-pnpm preview
 ```
