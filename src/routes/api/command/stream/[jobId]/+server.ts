@@ -29,12 +29,6 @@ export const GET: RequestHandler = async ({ params, request }: RequestEvent): Pr
         }
       });
     },
-    cancel() {
-      // TODO: Do we still need this since jobs run regardless
-      // If the stream is cancelled by the client
-      // (e.g. request.signal.abort() or if the browser navigates away)
-      logger.info(`Stream for job ${jobId} cancelled by client.`);
-    },
   });
 
   return new Response(stream, {
