@@ -1,0 +1,497 @@
+{
+  "general": {
+    "title": "General Options",
+    "options": [
+      {
+        "id": "help",
+        "command": "--help",
+        "description": "Print this help message and exit"
+      },
+      {
+        "id": "version",
+        "command": "--version",
+        "description": "Print program version and exit"
+      },
+      {
+        "id": "filename",
+        "command": "--filename",
+        "description": "Filename format string for downloaded files ('/O' for 'original')"
+      },
+      {
+        "id": "destination",
+        "command": "--destination",
+        "description": "Target location for file downloads"
+      },
+      {
+        "id": "directory",
+        "command": "--directory",
+        "description": "Exact location for file downloads"
+      },
+      {
+        "id": "extractors",
+        "command": "--extractors",
+        "description": "Load external extractors from PATH"
+      },
+      {
+        "id": "user-agent",
+        "command": "--user-agent",
+        "description": "User-Agent request header"
+      },
+      {
+        "id": "clear-cache",
+        "command": "--clear-cache",
+        "description": "Delete cached login sessions, cookies, etc. for MODULE (ALL to delete everything)"
+      }
+    ]
+  },
+  "update": {
+    "title": "Update Options",
+    "options": [
+      {
+        "id": "update",
+        "command": "--update",
+        "description": "Update to the latest version"
+      },
+      {
+        "id": "update-to",
+        "command": "--update-to",
+        "description": "Switch to a different release channel (stable or dev) or upgrade/downgrade to a specific version"
+      },
+      {
+        "id": "update-check",
+        "command": "--update-check",
+        "description": "Check if a newer version is available"
+      }
+    ]
+  },
+  "input": {
+    "title": "Input Options",
+    "options": [
+      {
+        "id": "input-file",
+        "command": "--input-file",
+        "description": "Download URLs found in FILE ('-' for stdin). More than one --input-file can be specified"
+      },
+      {
+        "id": "input-file-comment",
+        "command": "--input-file-comment",
+        "description": "Download URLs found in FILE. Comment them out after they were downloaded successfully."
+      },
+      {
+        "id": "input-file-delete",
+        "command": "--input-file-delete",
+        "description": "Download URLs found in FILE. Delete them after they were downloaded successfully."
+      },
+      {
+        "id": "no-input",
+        "command": "--no-input",
+        "description": "Do not prompt for passwords/tokens"
+      }
+    ]
+  },
+  "output": {
+    "title": "Output Options",
+    "options": [
+      {
+        "id": "quiet",
+        "command": "--quiet",
+        "description": "Activate quiet mode"
+      },
+      {
+        "id": "warning",
+        "command": "--warning",
+        "description": "Print only warnings and errors"
+      },
+      {
+        "id": "verbose",
+        "command": "--verbose",
+        "description": "Print various debugging information"
+      },
+      {
+        "id": "get-urls",
+        "command": "--get-urls",
+        "description": "Print URLs instead of downloading"
+      },
+      {
+        "id": "resolve-urls",
+        "command": "--resolve-urls",
+        "description": "Print URLs instead of downloading; resolve intermediary URLs"
+      },
+      {
+        "id": "dump-json",
+        "command": "--dump-json",
+        "description": "Print JSON information"
+      },
+      {
+        "id": "resolve-json",
+        "command": "--resolve-json",
+        "description": "Print JSON information; resolve intermediary URLs"
+      },
+      {
+        "id": "simulate",
+        "command": "--simulate",
+        "description": "Simulate data extraction; do not download anything"
+      },
+      {
+        "id": "extractor-info",
+        "command": "--extractor-info",
+        "description": "Print extractor defaults and settings"
+      },
+      {
+        "id": "list-keywords",
+        "command": "--list-keywords",
+        "description": "Print a list of available keywords and example values for the given URLs"
+      },
+      {
+        "id": "error-file",
+        "command": "--error-file",
+        "description": "Add input URLs which returned an error to FILE"
+      },
+      {
+        "id": "print",
+        "command": "--print",
+        "description": "Write FORMAT during EVENT (default 'prepare') to standard output. Examples: 'id' or 'post:{md5[:8]}'"
+      },
+      {
+        "id": "print-to",
+        "command": "--print-to-file",
+        "description": "Append FORMAT during EVENT to FILE"
+      },
+      {
+        "id": "list-modules",
+        "command": "--list-modules",
+        "description": "Print a list of available extractor modules"
+      },
+      {
+        "id": "list-extractors",
+        "command": "--list-extractors",
+        "description": "Print a list of extractor classes with description, (sub)category and example URL"
+      },
+      {
+        "id": "write-log",
+        "command": "--write-log",
+        "description": "Write logging output to FILE"
+      },
+      {
+        "id": "write-unsupported",
+        "command": "--write-unsupported",
+        "description": "Write URLs, which get emitted by other extractors but cannot be handled, to FILE"
+      },
+      {
+        "id": "write-pages",
+        "command": "--write-pages",
+        "description": "Write downloaded intermediary pages to files in the current directory to debug problems"
+      },
+      {
+        "id": "print-traffic",
+        "command": "--print-traffic",
+        "description": "Display sent and read HTTP traffic"
+      },
+      {
+        "id": "no-colors",
+        "command": "--no-colors",
+        "description": "Do not emit ANSI color codes in output"
+      }
+    ]
+  },
+  "networking": {
+    "title": "Networking Options",
+    "options": [
+      {
+        "id": "retries",
+        "command": "--retries",
+        "description": "Maximum number of retries for failed HTTP requests or -1 for infinite retries (default: 4)"
+      },
+      {
+        "id": "http-timeout",
+        "command": "--http-timeout",
+        "description": "Timeout for HTTP connections (default: 30.0)"
+      },
+      {
+        "id": "proxy",
+        "command": "--proxy",
+        "description": "Use the specified proxy"
+      },
+      {
+        "id": "source-address",
+        "command": "--source-address",
+        "description": "Client-side IP address to bind to"
+      },
+      {
+        "id": "force-ipv4",
+        "command": "--force-ipv4",
+        "description": "Make all connections via IPv4"
+      },
+      {
+        "id": "force-ipv6",
+        "command": "--force-ipv6",
+        "description": "Make all connections via IPv6"
+      },
+      {
+        "id": "no-check",
+        "command": "--no-check-certificate",
+        "description": "Disable HTTPS certificate validation"
+      }
+    ]
+  },
+  "downloader": {
+    "title": "Downloader Options",
+    "options": [
+      {
+        "id": "limit-rate",
+        "command": "--limit-rate",
+        "description": "Maximum download rate (e.g. 500k or 2.5M)"
+      },
+      {
+        "id": "chunk-size",
+        "command": "--chunk-size",
+        "description": "Size of in-memory data chunks (default: 32k)"
+      },
+      {
+        "id": "sleep",
+        "command": "--sleep",
+        "description": "Number of seconds to wait before each download. This can be either a constant value or a range (e.g. 2.7 or 2.0-3.5)"
+      },
+      {
+        "id": "sleep-request",
+        "command": "--sleep-request",
+        "description": "Number of seconds to wait between HTTP requests during data extraction"
+      },
+      {
+        "id": "sleep-extractor",
+        "command": "--sleep-extractor",
+        "description": "Number of seconds to wait before starting data extraction for an input URL"
+      },
+      {
+        "id": "no-part",
+        "command": "--no-part",
+        "description": "Do not use .part files"
+      },
+      {
+        "id": "no-skip",
+        "command": "--no-skip",
+        "description": "Do not skip downloads; overwrite existing files"
+      },
+      {
+        "id": "no-mtime",
+        "command": "--no-mtime",
+        "description": "Do not set file modification times according to Last-Modified HTTP response headers"
+      },
+      {
+        "id": "no-download",
+        "command": "--no-download",
+        "description": "Do not download any files"
+      }
+    ]
+  },
+  "configuration": {
+    "title": "Configuration Options",
+    "options": [
+      {
+        "id": "option",
+        "command": "--option",
+        "description": "     Additional options. Example: -o browser=firefox"
+      },
+      {
+        "id": "config",
+        "command": "--config",
+        "description": "Additional configuration files"
+      },
+      {
+        "id": "config-yaml",
+        "command": "--config-yaml",
+        "description": "Additional configuration files in YAML format"
+      },
+      {
+        "id": "config-toml",
+        "command": "--config-toml",
+        "description": "Additional configuration files in TOML format"
+      },
+      {
+        "id": "config-create",
+        "command": "--config-create",
+        "description": "Create a basic configuration file"
+      },
+      {
+        "id": "config-status",
+        "command": "--config-status",
+        "description": "Show configuration file status"
+      },
+      {
+        "id": "config-open",
+        "command": "--config-open",
+        "description": "Open configuration file in external application"
+      },
+      {
+        "id": "config-ignore",
+        "command": "--config-ignore",
+        "description": "Do not read default configuration files"
+      }
+    ]
+  },
+  "authentication": {
+    "title": "Authentication Options",
+    "options": [
+      {
+        "id": "username",
+        "command": "--username",
+        "description": "Username to login with"
+      },
+      {
+        "id": "password",
+        "command": "--password",
+        "description": "Password belonging to the given username"
+      },
+      {
+        "id": "netrc",
+        "command": "--netrc",
+        "description": "Enable .netrc authentication data"
+      }
+    ]
+  },
+  "cookie": {
+    "title": "Cookie Options",
+    "options": [
+      {
+        "id": "cookies",
+        "command": "--cookies",
+        "description": "File to load additional cookies from"
+      },
+      {
+        "id": "cookies-export",
+        "command": "--cookies-export",
+        "description": "Export session cookies to FILE"
+      },
+      {
+        "id": "cookies-from",
+        "command": "--cookies-from-browser",
+        "description": "Name of the browser to load cookies from, with optional domain prefixed with '/', keyring name prefixed with '+', profile prefixed with ':', and container prefixed with '::' ('none' for no container (default), 'all' for all containers)"
+      }
+    ]
+  },
+  "selection": {
+    "title": "Selection Options",
+    "options": [
+      {
+        "id": "abort",
+        "command": "--abort",
+        "description": "Stop current extractor run after N consecutive file downloads were skipped"
+      },
+      {
+        "id": "terminate",
+        "command": "--terminate",
+        "description": "Stop current and parent extractor runs after N consecutive file downloads were skipped"
+      },
+      {
+        "id": "filesize-min",
+        "command": "--filesize-min",
+        "description": "Do not download files smaller than SIZE (e.g. 500k or 2.5M)"
+      },
+      {
+        "id": "filesize-max",
+        "command": "--filesize-max",
+        "description": "Do not download files larger than SIZE (e.g. 500k or 2.5M) and skip downloading any file already in it"
+      },
+      {
+        "id": "range",
+        "command": "--range",
+        "description": "Index range(s) specifying which files to,"
+      },
+      {
+        "id": "download-archive",
+        "command": "--download-archive",
+        "description": "Record all downloaded or skipped files in FILE download. These can be either a constant value, range, or slice (e.g. '5', '8-20', or '1:24:3')"
+      },
+      {
+        "id": "chapter-range",
+        "command": "--chapter-range",
+        "description": "Like '--range', but applies to manga chapters and other delegated URLs"
+      },
+      {
+        "id": "filter",
+        "command": "--filter",
+        "description": "Python expression controlling which files to download. Files for which the expression evaluates to False are ignored. Available keys are the filename-specific ones listed by '-K'. Example: --filter 'image_width >= 1000 and rating in ('s', 'q')'"
+      },
+      {
+        "id": "chapter-filter",
+        "command": "--chapter-filter",
+        "description": "Like '--filter', but applies to manga chapters and other delegated URLs"
+      }
+    ]
+  },
+  "post-processing": {
+    "title": "Post-processing Options",
+    "options": [
+      {
+        "id": "postprocessor",
+        "command": "--postprocessor",
+        "description": "Activate the specified post processor"
+      },
+      {
+        "id": "no-postprocessors",
+        "command": "--no-postprocessors",
+        "description": "Do not run any post processors"
+      },
+      {
+        "id": "postprocessor-option",
+        "command": "--postprocessor-option",
+        "description": "Additional post processor options"
+      },
+      {
+        "id": "write-metadata",
+        "command": "--write-metadata",
+        "description": "Write metadata to separate JSON files"
+      },
+      {
+        "id": "write-info",
+        "command": "--write-info-json",
+        "description": "Write gallery metadata to a info.json file"
+      },
+      {
+        "id": "write-tags",
+        "command": "--write-tags",
+        "description": "Write image tags to separate text files"
+      },
+      {
+        "id": "zip",
+        "command": "--zip",
+        "description": "Store downloaded files in a ZIP archive"
+      },
+      {
+        "id": "cbz",
+        "command": "--cbz",
+        "description": "Store downloaded files in a CBZ archive"
+      },
+      {
+        "id": "mtime",
+        "command": "--mtime",
+        "description": "Set file modification times according to metadata selected by NAME. Examples: 'date' or 'status[date]'"
+      },
+      {
+        "id": "rename",
+        "command": "--rename",
+        "description": "Rename previously downloaded files from FORMAT to the current filename format"
+      },
+      {
+        "id": "rename-to",
+        "command": "--rename-to",
+        "description": "Rename previously downloaded files from the current filename format to FORMAT"
+      },
+      {
+        "id": "ugoira",
+        "command": "--ugoira",
+        "description": "Convert Pixiv Ugoira to FMT using FFmpeg. Supported formats are 'webm', 'mp4', 'gif', 'vp8', 'vp9', 'vp9-lossless', 'copy', 'zip'."
+      },
+      {
+        "id": "exec",
+        "command": "--exec",
+        "description": "Execute CMD for each downloaded file. Supported replacement fields are {} or {_path}, {_directory}, {_filename}. Example: --exec 'convert {} {}.png && rm {}'"
+      },
+      {
+        "id": "exec-after",
+        "command": "--exec-after",
+        "description": "Execute CMD after all files were downloaded. Example: --exec-after 'cd {_directory} && convert * ../doc.pdf'"
+      }
+    ]
+  }
+}

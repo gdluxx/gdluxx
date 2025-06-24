@@ -1,0 +1,19 @@
+# Package Managers
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+bun.lock
+bun.lockb
+
+dist/
+build/
+.svelte-kit/
+
+node_modules/
+
+*.log
+.env
+.env.*
+
+.DS_Store
+Thumbs.db

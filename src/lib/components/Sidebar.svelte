@@ -1,0 +1,307 @@
+<script lang="ts">
+  import { Icon } from '$lib/components';
+  import { signOut } from '$lib/auth-client';
+  import { toastStore } from '$lib/stores/toast';
+
+  interface NavItem {
+    id: string;
+    label: string;
+    icon: string;
+    href?: string;
+    children?: NavItem[];
+  }
+
+  interface Props {
+    items?: NavItem[];
+    defaultCollapsed?: boolean;
+    onNavigate?: (item: NavItem) => void;
+    isMobile?: boolean;
+    user?;
+  }
+
+  const {
+    items = [],
+    defaultCollapsed = false,
+    onNavigate = () => {
+      // Intentionally empty, default no-op function
+    },
+    isMobile = false,
+    user,
+  }: Props = $props();
+
+  let collapsed = $state(defaultCollapsed);
+  let expandedItems = $state<Set<string>>(new Set());
+  let activeItemId = $state<string>('');
+
+  // Don't allow collapse on mobile - mobile is handled by layout
+  $effect(() => {
+    if (isMobile) {
+      collapsed = false;
+    }
+  });
+
+  function toggleSidebar() {
+    if (!isMobile) {
+      collapsed = !collapsed;
+    }
+  }
+
+  function toggleItem(itemId: string) {
+    if (expandedItems.has(itemId)) {
+      expandedItems.delete(itemId);
+    } else {
+      expandedItems.add(itemId);
+    }
+    expandedItems = new Set(expandedItems);
+  }
+
+  // Remove focus ring when user collapses/expands sidebar
+  // But keep it for keyboard navigation for accessibility
+  function handleSidebarClick(event: MouseEvent) {
+    toggleSidebar();
+
+    if (event.detail > 0 && event.currentTarget) {
+      const target = event.currentTarget as HTMLButtonElement | null;
+      target?.blur();
+    }
+  }
+
+  function handleItemClick(item: NavItem) {
+    activeItemId = item.id;
+    if (collapsed) {
+      onNavigate(item);
+    } else {
+      if (item.children) {
+        toggleItem(item.id);
+      } else {
+        onNavigate(item);
+      }
+    }
+  }
+
+  function isItemExpanded(itemId: string): boolean {
+    return expandedItems.has(itemId);
+  }
+
+  function handleKeydown(event: KeyboardEvent, item: NavItem) {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      handleItemClick(item);
+    }
+  }
+
+  function handleSidebarKeydown(event: KeyboardEvent) {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      toggleSidebar();
+    }
+  }
+
+  async function handleLogout() {
+    try {
+      await signOut();
+      toastStore.success('Logged out successfully');
+      window.location.href = '/auth/login';
+    } catch (error) {
+      toastStore.error('Logout failed', 'An error occurred while logging out');
+      console.error('Logout error:', error);
+    }
+  }
+</script>
+
+<nav
+  class="flex h-full flex-col bg-secondary-100 dark:bg-secondary-900 border-r border-secondary-300 dark:border-secondary-700 transition-all duration-300 overflow-x-hidden {collapsed &&
+  !isMobile
+    ? 'w-16'
+    : 'w-54'}"
+  aria-label="Main navigation"
+>
+  <!-- Desktop header only -->
+  {#if !isMobile}
+    <div class="p-2 border-b border-secondary-200 dark:border-secondary-800">
+      <button
+        onclick={handleSidebarClick}
+        onkeydown={handleSidebarKeydown}
+        class="cursor-pointer w-full flex items-center gap-3 pl-3 py-2 rounded-sm text-secondary-800 dark:text-secondary-200 hover:bg-secondary-200 dark:hover:bg-accent-800 focus:bg-secondary-200 dark:focus:bg-accent-800 focus:outline-hidden focus:ring-2 focus:ring-primary-500 transition-colors"
+        aria-label={collapsed ? 'Expand sidebar navigation' : 'Collapse sidebar navigation'}
+        aria-expanded={!collapsed}
+        aria-controls="nav-items-list"
+        tabindex="0"
+      >
+        <span class="flex-shrink-0 size-5" aria-hidden="true">
+          <svg
+            class="transition-transform"
+            class:rotate-180={collapsed}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M11 19l-7-7 7-7m8 14l-7-7 7-7"
+            />
+          </svg>
+        </span>
+      </button>
+
+      <!-- Tooltip for desktop collapsed state -->
+      {#if collapsed}
+        <div id="navigation-tooltip" class="sr-only" role="tooltip">Navigation</div>
+      {/if}
+    </div>
+  {/if}
+
+  <!-- Nav items -->
+  <div
+    class="flex-1 overflow-y-auto overflow-x-hidden p-2"
+    id="nav-items-container"
+    aria-labelledby={collapsed && !isMobile ? undefined : 'nav-heading'}
+  >
+    <ul id="nav-items-list" role="list" class="space-y-1">
+      {#each items as item (item.id)}
+        <li>
+          <button
+            onclick={() => handleItemClick(item)}
+            onkeydown={e => handleKeydown(e, item)}
+            class="cursor-pointer w-full flex items-center gap-3 px-3 py-2 rounded-sm text-secondary-800 dark:text-secondary-200 hover:bg-secondary-200 dark:hover:bg-primary-800 focus:bg-secondary-200 dark:focus:bg-primary-800 focus:outline-hidden focus:ring-2 focus:ring-primary-500 transition-colors {activeItemId ===
+            item.id
+              ? 'bg-secondary-200 dark:bg-primary-900 text-secondary-800 dark:text-secondary-200'
+              : ''}"
+            aria-expanded={item.children ? isItemExpanded(item.id) : undefined}
+            aria-current={activeItemId === item.id ? 'page' : undefined}
+            aria-describedby={collapsed && !isMobile ? `${item.id}-tooltip` : undefined}
+            tabindex="0"
+          >
+            <span class="flex-shrink-0 size-5" aria-hidden="true">
+              <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+              {@html item.icon}
+            </span>
+            {#if !collapsed || isMobile}
+              <span class="flex-1 text-left text-sm font-medium">
+                {item.label}
+              </span>
+
+              <!-- Children items -->
+              {#if item.children}
+                <Icon
+                  iconName="chevron-right"
+                  size={16}
+                  class="transition-all duration-200 {isItemExpanded(item.id) ? 'rotate-90' : ''}"
+                  ariaLabel="Expand/Collapse"
+                />
+              {/if}
+            {/if}
+          </button>
+
+          <!-- Tooltip for collapsed state desktop only) -->
+          {#if collapsed && !isMobile}
+            <div id="{item.id}-tooltip" class="sr-only" role="tooltip">
+              {item.label}
+            </div>
+          {/if}
+
+          <!-- Child items -->
+          {#if item.children && isItemExpanded(item.id) && (!collapsed || isMobile)}
+            <ul class="mt-1 ml-2 space-y-1" role="group" aria-label="{item.label} submenu">
+              {#each item.children as child (child.id)}
+                <li>
+                  <button
+                    onclick={() => handleItemClick(child)}
+                    onkeydown={e => handleKeydown(e, child)}
+                    class="cursor-pointer w-full flex items-center gap-3 px-3 py-2 rounded-sm text-sm text-secondary-800 dark:text-secondary-200 hover:bg-secondary-200 dark:hover:bg-primary-800 focus:bg-secondary-200 dark:focus:bg-primary-800 focus:outline-hidden focus:ring-2 focus:ring-secondary-500 transition-colors {activeItemId ===
+                    child.id
+                      ? 'bg-secondary-200 dark:bg-secondary-900 text-secondary-800 dark:text-secondary-200'
+                      : ''}"
+                    aria-current={activeItemId === child.id ? 'page' : undefined}
+                    tabindex="0"
+                  >
+                    <span class="size-4" aria-hidden="true">
+                      <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+                      {@html child.icon}
+                    </span>
+                    <span class="flex-1 text-left">
+                      {child.label}
+                    </span>
+                  </button>
+                </li>
+              {/each}
+            </ul>
+          {/if}
+        </li>
+      {/each}
+    </ul>
+  </div>
+
+  {#if user}
+    <div class="border-t border-secondary-200 dark:border-secondary-800 p-4">
+      {#if !collapsed || isMobile}
+        <div class="flex flex-row items-center">
+          <div
+            class="cursor-default w-full flex items-center gap-3 px-3 py-2 rounded-lg text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-800 transition-colors"
+          >
+            <!-- Avatar -->
+            <div
+              class="size-8 rounded-full bg-primary-200 dark:bg-primary-800 flex items-center justify-center text-primary-700 dark:text-primary-300 font-semibold text-sm"
+            >
+              {user.name[0].toUpperCase()}
+            </div>
+
+            {#if !collapsed}
+              <div class="flex-1 text-left">
+                <div class="text-sm font-medium">{user.name}</div>
+              </div>
+            {/if}
+          </div>
+
+          <div>
+            <button
+              onclick={() => {
+                handleLogout();
+              }}
+              class="cursor-pointer ml-2 p-1.5 rounded-sm text-secondary-600 dark:text-secondary-400 hover:bg-secondary-200 dark:hover:bg-secondary-800 focus:outline-hidden focus:ring-2 focus:ring-primary-500"
+              title="Sign out"
+              aria-label="Sign out"
+            >
+              <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+      {:else}
+        <div class="flex justify-center py-4 flex-col items-center gap-2">
+          <div
+            class="size-8 rounded-full bg-primary-200 dark:bg-primary-800 flex items-center justify-center text-primary-700 dark:text-primary-300 font-semibold text-sm"
+          >
+            {user.name[0].toUpperCase()}
+          </div>
+          <button
+            onclick={() => {
+              handleLogout();
+            }}
+            class="cursor-pointer ml-2 p-1.5 rounded-sm text-secondary-600 dark:text-secondary-400 hover:bg-secondary-200 dark:hover:bg-secondary-800 focus:outline-hidden focus:ring-2 focus:ring-primary-500"
+            title="Sign out"
+            aria-label="Sign out"
+          >
+            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+              />
+            </svg>
+          </button>
+        </div>
+      {/if}
+    </div>
+  {/if}
+</nav>

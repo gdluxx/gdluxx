@@ -1,0 +1,219 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-primary-50: #f8f9fb;
+  --color-primary-100: #f1f3f7;
+  --color-primary-200: #e2e7ef;
+  --color-primary-300: #d1d9e3;
+  --color-primary-400: #a8b8d1;
+  --color-primary-500: #7a8eb8;
+  --color-primary-600: #5d72a0;
+  --color-primary-700: #4a5d85;
+  --color-primary-800: #3a4b6b;
+  --color-primary-900: #2d3a52;
+  --color-primary-950: #1e2638;
+
+  --color-secondary-50: #f9f9fa;
+  --color-secondary-100: #f3f4f5;
+  --color-secondary-200: #e5e7ea;
+  --color-secondary-300: #d3d6db;
+  --color-secondary-400: #b0b6bf;
+  --color-secondary-500: #8b93a0;
+  --color-secondary-600: #6b7685;
+  --color-secondary-700: #555d6b;
+  --color-secondary-800: #424952;
+  --color-secondary-900: #32373e;
+  --color-secondary-950: #21252b;
+
+  --color-accent-50: #f7f8fb;
+  --color-accent-100: #eff2f6;
+  --color-accent-200: #dde4ed;
+  --color-accent-300: #c8d3e0;
+  --color-accent-400: #a3b5cc;
+  --color-accent-500: #7d92b3;
+  --color-accent-600: #637699;
+  --color-accent-700: #526180;
+  --color-accent-800: #434f66;
+  --color-accent-900: #363f4d;
+  --color-accent-950: #252b35;
+
+  --color-white: #ffffff;
+  --color-black: #1a1d23;
+
+  /* Status colors */
+  --color-success-100: #f0f9f4;
+  --color-success-250: #daf0e3;
+  --color-success-500: #4a9d5f;
+  --color-success-750: #356e47;
+  --color-success-900: #1e4a29;
+
+  --color-warning-100: #fefaf0;
+  --color-warning-250: #f8ecd0;
+  --color-warning-500: #d69e2e;
+  --color-warning-750: #a26f1e;
+  --color-warning-900: #4a3a1a;
+
+  --color-error-100: #fef2f2;
+  --color-error-250: #fbdada;
+  --color-error-500: #dc5a5a;
+  --color-error-750: #8a3e3e;
+  --color-error-900: #4a1d1d;
+
+  --color-info-100: #f0f6ff;
+  --color-info-250: #dae7f8;
+  --color-info-500: #5a8dc7;
+  --color-info-750: #3e6299;
+  --color-info-900: #1d2e4a;
+
+  --color-focus-ring: #7a8eb8;
+  --color-focus-ring-offset: #ffffff;
+}
+
+@theme dark {
+  --color-primary-50: #1e2638;
+  --color-primary-100: #2d3a52;
+  --color-primary-200: #3a4b6b;
+  --color-primary-300: #4a5d85;
+  --color-primary-400: #5d72a0;
+  --color-primary-500: #7a8eb8;
+  --color-primary-600: #a8b8d1;
+  --color-primary-700: #d1d9e3;
+  --color-primary-800: #e2e7ef;
+  --color-primary-900: #f1f3f7;
+  --color-primary-950: #f8f9fb;
+
+  --color-secondary-50: #21252b;
+  --color-secondary-100: #32373e;
+  --color-secondary-200: #424952;
+  --color-secondary-300: #555d6b;
+  --color-secondary-400: #6b7685;
+  --color-secondary-500: #8b93a0;
+  --color-secondary-600: #b0b6bf;
+  --color-secondary-700: #d3d6db;
+  --color-secondary-800: #e5e7ea;
+  --color-secondary-900: #f3f4f5;
+  --color-secondary-950: #f9f9fa;
+
+  --color-accent-50: #252b35;
+  --color-accent-100: #363f4d;
+  --color-accent-200: #434f66;
+  --color-accent-300: #526180;
+  --color-accent-400: #637699;
+  --color-accent-500: #7d92b3;
+  --color-accent-600: #a3b5cc;
+  --color-accent-700: #c8d3e0;
+  --color-accent-800: #dde4ed;
+  --color-accent-900: #eff2f6;
+  --color-accent-950: #f7f8fb;
+
+  --color-white: #1a1d23;
+  --color-black: #ffffff;
+
+  --color-focus-ring: #a8b8d1;
+  --color-focus-ring-offset: #1a1d23;
+}
+
+:root {
+  color-scheme: light;
+}
+
+.dark {
+  color-scheme: dark;
+}
+
+@layer base {
+  /* Theme transition - respect user motion preferences */
+  *,
+  *::before,
+  *::after {
+    transition:
+      background-color 0.3s ease-in-out,
+      border-color 0.3s ease-in-out,
+      color 0.3s ease-in-out,
+      fill 0.3s ease-in-out,
+      stroke 0.3s ease-in-out,
+      opacity 0.3s ease-in-out,
+      box-shadow 0.3s ease-in-out,
+      transform 0.3s ease-in-out;
+  }
+
+  /* Respect reduced motion preference */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  /* Enhanced focus styles for better accessibility */
+  :focus-visible {
+    outline: 2px solid var(--color-focus-ring);
+    outline-offset: 2px;
+  }
+
+  /* Screen reader only content */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .not-sr-only {
+    position: static;
+    width: auto;
+    height: auto;
+    padding: 0;
+    margin: 0;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
+  }
+
+  /* High contrast mode */
+  @media (prefers-contrast: more) {
+    button,
+    [role='button'],
+    input,
+    select,
+    textarea {
+      border: 2px solid;
+    }
+  }
+
+  /* Disable Chrome cancel button on search inputs */
+  input[type='search']::-webkit-search-cancel-button {
+    display: none;
+  }
+
+  /* Better visibility for focus indicators */
+  button:focus-visible,
+  [role='button']:focus-visible,
+  a:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    box-shadow:
+      0 0 0 2px var(--color-focus-ring-offset),
+      0 0 0 4px var(--color-focus-ring);
+  }
+
+  /* Ensure sufficient color contrast for text */
+  .text-contrast-high {
+    color: var(--color-secondary-950);
+  }
+
+  .dark .text-contrast-high {
+    color: var(--color-secondary-50);
+  }
+}

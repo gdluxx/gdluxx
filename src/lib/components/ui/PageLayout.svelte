@@ -1,0 +1,67 @@
+<script lang="ts">
+  import type { Snippet } from 'svelte';
+
+  interface Props {
+    title: string;
+    description: string;
+    icon?: Snippet;
+    children: Snippet;
+    ariaLabel?: string;
+  }
+
+  const { title, description, icon, children, ariaLabel }: Props = $props();
+</script>
+
+<svelte:head>
+  <title>{title} - gdluxx</title>
+  <meta name="description" content={description} />
+</svelte:head>
+
+<section
+  class="space-y-6 sm:space-y-8"
+  aria-labelledby="page-title"
+  aria-describedby="page-description"
+  {...ariaLabel && { 'aria-label': ariaLabel }}
+>
+  <header class="text-center">
+    <div class="flex items-center justify-center mb-3 sm:mb-4">
+      {#if icon}
+        <div
+          class="h-6 w-6 sm:h-8 sm:w-8 text-primary-600 dark:text-primary-100 mr-2 sm:mr-3"
+          aria-hidden="true"
+        >
+          {@render icon()}
+        </div>
+      {:else}
+        <div
+          class="h-6 w-6 sm:h-8 sm:w-8 text-primary-600 dark:text-primary-100 mr-2 sm:mr-3"
+          aria-hidden="true"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10" />
+            <path d="m9 12 2 2 4-4" />
+          </svg>
+        </div>
+      {/if}
+
+      <h1
+        id="page-title"
+        class="cursor-default text-xl sm:text-2xl lg:text-3xl font-bold text-secondary-900 dark:text-secondary-100"
+      >
+        {title}
+      </h1>
+    </div>
+
+    <p
+      id="page-description"
+      class="cursor-default text-sm sm:text-base text-secondary-600 dark:text-secondary-400 max-w-2xl mx-auto px-4 sm:px-0"
+    >
+      <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+      {@html description}
+    </p>
+  </header>
+
+  <div aria-labelledby="page-title" class="px-2 sm:px-0">
+    {@render children()}
+  </div>
+</section>
