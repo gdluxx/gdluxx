@@ -28,7 +28,9 @@ async function loadServerConfig(): Promise<void> {
   try {
     const fs = await import('fs/promises');
     const path = await import('path');
-    const { PATHS } = await import('$lib/server/constants');
+    const PATHS = {
+      DATA_DIR: path.join(process.cwd(), 'data'),
+    };
 
     const configPath: string = path.join(PATHS.DATA_DIR, 'logging.json');
 
@@ -204,7 +206,9 @@ const loggerAPI = {
       try {
         const fs = await import('fs/promises');
         const path = await import('path');
-        const { PATHS } = await import('$lib/server/constants');
+        const PATHS = {
+          DATA_DIR: path.join(process.cwd(), 'data'),
+        };
 
         const configPath = path.join(PATHS.DATA_DIR, 'logging.json');
         await fs.writeFile(configPath, JSON.stringify(currentConfig, null, 2), 'utf-8');
