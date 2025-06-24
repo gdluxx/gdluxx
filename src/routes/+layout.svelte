@@ -189,7 +189,6 @@
 
 <ToastContainer />
 
-<!-- TODO: check -->
 {#if !isAuthRoute}
 
   <JobsList variant="modal" isOpen={$isJobListModalOpenStore} onClose={jobStore.hideJobListModal} />
