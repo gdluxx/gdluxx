@@ -18,8 +18,7 @@ let _paths: ReturnType<typeof createPaths> | null = null;
 function createPaths() {
   const cwd = getCwd();
   return {
-    BIN_DIR: path.join(cwd, 'static', 'bin'),
-    BIN_FILE: path.join(cwd, 'static', 'bin', 'gallery-dl.bin'),
+    BIN_FILE: path.join(cwd, 'data', 'gallery-dl.bin'),
     DATA_DIR: path.join(cwd, 'data'),
     CONFIG_FILE: './data/config.json',
     API_KEYS_FILE: path.join(cwd, 'data', 'api-keys.json'),
@@ -34,9 +33,6 @@ function getPaths() {
 }
 
 export const PATHS = {
-  get BIN_DIR() {
-    return getPaths().BIN_DIR;
-  },
   get BIN_FILE() {
     return getPaths().BIN_FILE;
   },
