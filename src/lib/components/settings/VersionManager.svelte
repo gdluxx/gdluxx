@@ -1,10 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import {
-    versionStore,
-    type StoreActionResult,
-    type VersionStoreState,
-  } from '$lib/stores/version';
+  import { versionStore, type StoreActionResult, type VersionStoreState } from '$lib/stores/version';
   import { toastStore } from '$lib/stores/toast';
   import { logger } from '$lib/shared/logger';
   import { Button, Info } from '$lib/components/ui';
@@ -119,12 +115,15 @@
 </script>
 
 {#if versionState?.error && !versionState?.loading && !versionState?.updateInProgress}
-  <div
-    class="rounded-sm bg-error-100 p-3 text-sm text-error-900 dark:bg-error-900 dark:text-error-100"
+  <Info
+    variant="warning"
+    size="default"
+    title="Last Operation Error"
+    dismissible
+    class="my-4"
   >
-    <span class="font-medium">Last Operation Error:</span>
     {versionState.error}
-  </div>
+  </Info>
 {/if}
 
 <div
