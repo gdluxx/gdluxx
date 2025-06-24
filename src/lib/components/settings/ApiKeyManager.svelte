@@ -51,7 +51,6 @@
       return;
     }
 
-    // TODO: Update to use UUID package
     try {
       const response = await fetch('/api/keys', {
         method: 'POST',
