@@ -4,7 +4,6 @@ import { exec } from 'node:child_process';
 import { promisify } from 'node:util';
 import { logger } from '$lib/shared/logger';
 import { PATHS, GITHUB } from '$lib/server/constants';
-import { ensureDir } from '$lib/utils/fs';
 
 const execAsync = promisify(exec);
 
@@ -22,9 +21,18 @@ export const DEFAULT_VERSION_INFO: VersionInfo = {
   lastChecked: null,
 };
 
+async function ensureDataDir(): Promise<void> {
+  try {
+    await mkdir(PATHS.DATA_DIR, { recursive: true });
+  } catch (error) {
+    logger.error('Failed to create data directory:', PATHS.DATA_DIR, error);
+    throw new Error('Failed to ensure data directory exists.');
+  }
+}
+
 export async function readVersionInfo(): Promise<VersionInfo> {
   try {
-    await ensureDir(PATHS.DATA_DIR);
+    await ensureDataDir();
     const fileContent = await readFile(VERSION_FILE_PATH, 'utf-8');
     return JSON.parse(fileContent) as VersionInfo;
   } catch (error) {
@@ -43,7 +51,7 @@ export async function readVersionInfo(): Promise<VersionInfo> {
 
 export async function writeVersionInfo(info: VersionInfo): Promise<void> {
   try {
-    await ensureDir(PATHS.DATA_DIR);
+    await ensureDataDir();
     const data = JSON.stringify(info, null, 2);
     await writeFile(VERSION_FILE_PATH, data, 'utf-8');
   } catch (error) {
@@ -54,11 +62,11 @@ export async function writeVersionInfo(info: VersionInfo): Promise<void> {
 
 export async function getCurrentVersionFromBinary(): Promise<string | null> {
   try {
-    await mkdir(PATHS.BIN_DIR, { recursive: true });
+    await mkdir(PATHS.DATA_DIR, { recursive: true });
     await stat(PATHS.BIN_FILE);
 
     const { stdout } = await execAsync(`"${PATHS.BIN_FILE}" --version`);
-    const versionMatch: RegExpMatchArray | null = stdout.trim().match(/(\d+\.\d+\.\d+)/);
+    const versionMatch = stdout.trim().match(/(\d+\.\d+\.\d+)/);
     return versionMatch ? versionMatch[1] : null;
   } catch (error) {
     if (
@@ -109,7 +117,7 @@ export async function downloadAndInstallBinary(): Promise<boolean> {
     const arrayBuffer: ArrayBuffer = await response.arrayBuffer();
     const buffer: Buffer<ArrayBuffer> = Buffer.from(arrayBuffer);
 
-    await mkdir(PATHS.BIN_DIR, { recursive: true });
+    await mkdir(PATHS.DATA_DIR, { recursive: true });
 
     await writeFile(TEMP_BIN_FILE_PATH, buffer);
     await chmod(TEMP_BIN_FILE_PATH, 0o755);
