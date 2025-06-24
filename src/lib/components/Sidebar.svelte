@@ -168,7 +168,7 @@
             onkeydown={e => handleKeydown(e, item)}
             class="cursor-pointer w-full flex items-center gap-3 px-3 py-2 rounded-sm text-secondary-800 dark:text-secondary-200 hover:bg-secondary-200 dark:hover:bg-primary-800 focus:bg-secondary-200 dark:focus:bg-primary-800 focus:outline-hidden focus:ring-2 focus:ring-primary-500 transition-colors {activeItemId ===
             item.id
-              ? 'bg-secondary-200 dark:bg-primary-900 text-secondary-800 dark:text-secondary-200'
+              ? 'bg-secondary-200 dark:bg-primary-800 text-secondary-800 dark:text-secondary-200'
               : ''}"
             aria-expanded={item.children ? isItemExpanded(item.id) : undefined}
             aria-current={activeItemId === item.id ? 'page' : undefined}
@@ -213,7 +213,7 @@
                     onkeydown={e => handleKeydown(e, child)}
                     class="cursor-pointer w-full flex items-center gap-3 px-3 py-2 rounded-sm text-sm text-secondary-800 dark:text-secondary-200 hover:bg-secondary-200 dark:hover:bg-primary-800 focus:bg-secondary-200 dark:focus:bg-primary-800 focus:outline-hidden focus:ring-2 focus:ring-secondary-500 transition-colors {activeItemId ===
                     child.id
-                      ? 'bg-secondary-200 dark:bg-secondary-900 text-secondary-800 dark:text-secondary-200'
+                      ? 'bg-secondary-200 dark:bg-secondary-800 text-secondary-800 dark:text-secondary-200'
                       : ''}"
                     aria-current={activeItemId === child.id ? 'page' : undefined}
                     tabindex="0"
