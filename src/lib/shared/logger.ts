@@ -36,8 +36,9 @@ async function loadServerConfig(): Promise<void> {
 
     const configPath: string = path.join(PATHS.DATA_DIR, 'logging.json');
 
-    await ensureDir(PATHS.DATA_DIR);
-
+    if (typeof window === 'undefined') {
+      await ensureDir(PATHS.DATA_DIR);
+    }
     try {
       const fileContent = await fs.readFile(configPath, 'utf-8');
       const parsedConfig = JSON.parse(fileContent) as LoggingConfig;

@@ -3,10 +3,13 @@ import Database from 'better-sqlite3';
 import { join } from 'path';
 import { existsSync, readFileSync } from 'fs';
 import { v4 as uuidv4 } from 'uuid';
-import { ensureDirSync } from '$lib/utils/fs';
+import { ensureDir } from '$lib/utils/fs';
 
 const dataDir: string = join(process.cwd(), 'data');
-ensureDirSync(dataDir);
+
+(async () => {
+  await ensureDir(dataDir);
+})();
 
 const dbPath: string = join(dataDir, 'gdluxx.db');
 const db = new Database(dbPath);
