@@ -12,12 +12,9 @@ COPY . .
 
 RUN pnpm build
 
-FROM node:20-alpine AS runner
+FROM node:20-slim AS runner
 
 RUN corepack enable && corepack prepare pnpm@latest --activate
-
-RUN addgroup -g 1000 -S appgroup 2>/dev/null || true && \
-    adduser -S appuser -u 1000 -G $(getent group 1000 | cut -d: -f1 || echo appgroup) -h /app -s /bin/sh 2>/dev/null || true
 
 WORKDIR /app
 
@@ -29,7 +26,7 @@ COPY --from=builder --chown=1000:1000 /app/src/lib/server/schema.sql ./schema.sq
 
 RUN pnpm install --frozen-lockfile --prod && \
     pnpm store prune && \
-    rm -rf /root/.cache /tmp/* /var/cache/apk/* pnpm-lock.yaml
+    rm -rf /root/.cache /tmp/* /var/cache/apt/*
 
 ENV NODE_ENV=production
 ENV PORT=7755
