@@ -1,8 +1,9 @@
 import { json, type RequestEvent } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { writeFile, mkdir } from 'fs/promises';
+import { writeFile } from 'fs/promises';
 import { join, dirname } from 'path';
 import { logger } from '$lib/shared/logger';
+import { ensureDir } from '$lib/utils/fs';
 
 const ALLOWED_BASE_PATH: string = process.env.FILE_STORAGE_PATH || './data';
 const CONFIG_FILE = 'config.json';
@@ -24,13 +25,7 @@ export const POST: RequestHandler = async ({ request }: RequestEvent): Promise<R
 
     const fullPath: string = join(ALLOWED_BASE_PATH, CONFIG_FILE);
 
-    // TODO: add check if directory exists
-    try {
-      await mkdir(dirname(fullPath), { recursive: true });
-    } catch (dirError) {
-      logger.error('Error creating directory:', dirError);
-    }
-
+    await ensureDir(dirname(fullPath));
     await writeFile(fullPath, content, 'utf-8');
 
     return json({

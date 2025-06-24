@@ -1,3 +1,5 @@
+import { ensureDir } from '$lib/utils/fs';
+
 export interface LoggingConfig {
   enabled: boolean;
   level?: 'DEBUG' | 'INFO' | 'WARN' | 'ERROR';
@@ -34,21 +36,7 @@ async function loadServerConfig(): Promise<void> {
 
     const configPath: string = path.join(PATHS.DATA_DIR, 'logging.json');
 
-    try {
-      await fs.mkdir(PATHS.DATA_DIR, { recursive: true });
-    } catch (mkdirError) {
-      if (mkdirError && (mkdirError as { code?: string }).code !== 'EEXIST') {
-        if (logger?.warn) {
-          logger.warn('Problem creating data directory (may be benign):', mkdirError);
-        } else {
-          // eslint-disable-next-line no-console
-          console.warn(
-            '[Logger Init] Problem creating data directory (may be benign):',
-            mkdirError
-          );
-        }
-      }
-    }
+    await ensureDir(PATHS.DATA_DIR);
 
     try {
       const fileContent = await fs.readFile(configPath, 'utf-8');

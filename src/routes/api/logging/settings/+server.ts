@@ -3,6 +3,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { PATHS } from '$lib/server/constants';
 import { logger, type LoggingConfig } from '$lib/shared/logger';
+import { ensureDir } from '$lib/utils/fs';
 
 const LOGGING_CONFIG_PATH: string = path.join(PATHS.DATA_DIR, 'logging.json');
 
@@ -16,7 +17,7 @@ export const GET: RequestHandler = async (): Promise<Response> => {
     logger.info('[API TRACE] GET /api/logging/settings invoked.');
 
     await logger.reloadConfig();
-    const config = logger.getConfig();
+    const config: LoggingConfig = logger.getConfig();
 
     logger.info(`[API TRACE] Config to be returned by API to client: ${JSON.stringify(config)}`);
 
@@ -37,7 +38,7 @@ export const POST: RequestHandler = async ({ request }: RequestEvent): Promise<R
 
     let currentPersistedConfig: LoggingConfig;
     try {
-      await fs.mkdir(PATHS.DATA_DIR, { recursive: true });
+      await ensureDir(PATHS.DATA_DIR);
       const fileContent: string = await fs.readFile(LOGGING_CONFIG_PATH, 'utf-8');
       currentPersistedConfig = JSON.parse(fileContent);
     } catch (readError) {

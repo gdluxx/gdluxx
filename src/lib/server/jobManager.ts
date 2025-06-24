@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { logger } from '$lib/shared/logger';
+import { ensureDir } from '$lib/utils/fs';
 
 export interface JobOutput {
   type: 'info' | 'stdout' | 'stderr' | 'error' | 'fatal' | 'status';
@@ -107,7 +108,7 @@ class JobManager {
         const { process: _process, subscribers: _subscribers, ...jobData } = job;
         jobsToSave[id] = jobData;
       }
-      await fs.mkdir(path.dirname(this.JOBS_FILE), { recursive: true });
+      await ensureDir(path.dirname(this.JOBS_FILE));
       await fs.writeFile(this.JOBS_FILE, JSON.stringify(jobsToSave, null, 2));
       logger.debug('Jobs saved successfully to', this.JOBS_FILE);
     } catch (error) {

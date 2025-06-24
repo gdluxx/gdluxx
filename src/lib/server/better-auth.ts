@@ -1,13 +1,12 @@
 import { betterAuth } from 'better-auth';
 import Database from 'better-sqlite3';
 import { join } from 'path';
-import { existsSync, mkdirSync, readFileSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
 import { v4 as uuidv4 } from 'uuid';
+import { ensureDirSync } from '$lib/utils/fs';
 
 const dataDir: string = join(process.cwd(), 'data');
-if (!existsSync(dataDir)) {
-  mkdirSync(dataDir, { recursive: true });
-}
+ensureDirSync(dataDir);
 
 const dbPath: string = join(dataDir, 'gdluxx.db');
 const db = new Database(dbPath);
