@@ -1,0 +1,20 @@
+name: gdluxx
+
+services:
+    gdluxx:
+        build: .
+        image: gdluxx:latest
+        container_name: gdluxx
+        user: "1000:1000"
+        ports:
+            - "7755:7755"
+        volumes:
+            - ~/Documents/gdluxx/data:/app/data
+        environment:
+            - NODE_ENV=production
+            - PORT=7755
+            - HOST=0.0.0.0
+            - AUTH_SECRET=${AUTH_SECRET:-}
+        env_file:
+            - .env
+        restart: unless-stopped
