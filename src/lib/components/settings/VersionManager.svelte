@@ -1,6 +1,10 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { versionStore, type StoreActionResult } from '$lib/stores/version';
+  import {
+    versionStore,
+    type StoreActionResult,
+    type VersionStoreState,
+  } from '$lib/stores/version';
   import { toastStore } from '$lib/stores/toast';
   import { logger } from '$lib/shared/logger';
   import { Button, Info } from '$lib/components/ui';
@@ -22,7 +26,7 @@
 
   let updateAvailable = $state(false);
 
-  let versionState = $state();
+  let versionState = $state<VersionStoreState>();
 
   $effect(() => {
     return versionStore.subscribe(state => {
@@ -136,7 +140,7 @@
   <div class="flex justify-between">
     <span class="font-medium text-secondary-700 dark:text-secondary-300">Last Checked:</span>
     <span class="text-secondary-900 dark:text-secondary-100">
-      {formatTimestamp(versionState?.lastChecked)}
+      {formatTimestamp(versionState?.lastChecked ?? null)}
     </span>
   </div>
 
