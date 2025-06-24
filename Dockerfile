@@ -10,6 +10,8 @@ RUN pnpm install --frozen-lockfile
 
 COPY . .
 
+RUN mkdir -p data && chown 1000:1000 data
+
 RUN pnpm build
 
 FROM node:20-slim AS runner

@@ -44,6 +44,7 @@ gdluxx is nothing more than a browser based gui for _gallery-dl_
    - [ ] Adjust `api-keys.json` file permissions
    - [ ] Consolidate notification system
    - [ ] Add CLI options
+   - [ ] Prevent `Run` action when _gallery-dl_ isn't available
 
 ## Installation
 
@@ -85,6 +86,7 @@ gdluxx will create a `data/` directory to store:
 - `api-keys.json` - API keys for external access
 - `logging.json` - Debug logging settings
 - `version.json` - _gallery-dl_ version information
+- `gallery-dl.bin` - _gallery-dl_ binary file
 
 ## API Usage
 
@@ -98,3 +100,9 @@ extension, create an API key in the settings, then send POST requests to
   "apiKey": "your-api-key-here"
 }
 ```
+
+## What's in a name?
+
+gdluxx is pronounced `jee dee luks`  
+
+It's a combination of _gallery-dl_ and deluxe

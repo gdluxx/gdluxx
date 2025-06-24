@@ -1,4 +1,5 @@
 {
+  "ci": false,
   "branches": ["main"],
   "plugins": [
     "@semantic-release/commit-analyzer",
@@ -25,5 +26,5 @@
       }
     ]
   ],
-  "repositoryUrl": "git@github.com:gdluxx/gdluxx-test.git"
+  "repositoryUrl": "git@github.com:gdluxx/gdluxx.git"
 }

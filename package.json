@@ -3,6 +3,10 @@
   "sideEffects": false,
   "private": true,
   "version": "0.0.1",
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:gdluxx/gdluxx.git"
+  },
   "type": "module",
   "scripts": {
     "dev": "vite dev",
@@ -21,9 +25,7 @@
     "@better-auth/cli": "^1.2.10",
     "@eslint/compat": "^1.2.5",
     "@eslint/js": "^9.18.0",
-    "@semantic-release/changelog": "^6.0.3",
-    "@semantic-release/git": "^10.0.1",
-    "@semantic-release/github": "^11.0.3",
+    "@release-it/conventional-changelog": "^10.0.1",
     "@sveltejs/adapter-auto": "^6.0.0",
     "@sveltejs/kit": "^2.21.1",
     "@sveltejs/vite-plugin-svelte": "^5.0.3",
@@ -42,7 +44,7 @@
     "prettier": "^3.4.2",
     "prettier-plugin-svelte": "^3.3.3",
     "prettier-plugin-tailwindcss": "^0.6.11",
-    "semantic-release": "^24.2.5",
+    "release-it": "^19.0.3",
     "svelte": "^5.33.11",
     "svelte-check": "^4.0.0",
     "tailwindcss": "^4.0.0",
