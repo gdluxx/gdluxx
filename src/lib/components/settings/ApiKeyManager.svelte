@@ -4,6 +4,7 @@
   import { InfoIcon, SuccessIcon } from '$lib/components/icons';
   import { Button, Info, ConfirmModal } from '$lib/components/ui';
   import { Icon } from '$lib/components/index';
+  import { v4 as uuidv4 } from 'uuid';
 
   let apiKeys = $state<ApiKey[]>([]);
   let newKeyName = $state('');
@@ -50,6 +51,7 @@
       return;
     }
 
+    // TODO: Update to use UUID package
     try {
       const response = await fetch('/api/keys', {
         method: 'POST',
@@ -58,7 +60,7 @@
         },
         body: JSON.stringify({
           action: 'create',
-          id: crypto.randomUUID(),
+          id: uuidv4(),
           name: newKeyName.trim(),
           createdAt: new Date().toISOString(),
         }),

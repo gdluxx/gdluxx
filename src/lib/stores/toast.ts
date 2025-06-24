@@ -1,4 +1,5 @@
 import { writable } from 'svelte/store';
+import { v4 as uuidv4 } from 'uuid';
 
 export type ToastType = 'success' | 'error' | 'warning' | 'info';
 
@@ -24,8 +25,8 @@ export interface ToastStoreMethods {
 function createToastStore(): ToastStoreMethods {
   const { subscribe, update } = writable<Toast[]>([]);
 
-  function addToast(toast: Omit<Toast, 'id'>) {
-    const id = crypto.randomUUID();
+  function addToast(toast: Omit<Toast, 'id'>): string {
+    const id: string = uuidv4();
     const { duration, ...restToast } = toast;
     const newToast: Toast = {
       id,

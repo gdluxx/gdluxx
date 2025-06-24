@@ -2,6 +2,7 @@ import { betterAuth } from 'better-auth';
 import Database from 'better-sqlite3';
 import { join } from 'path';
 import { existsSync, mkdirSync, readFileSync } from 'fs';
+import { v4 as uuidv4 } from 'uuid';
 
 const dataDir: string = join(process.cwd(), 'data');
 if (!existsSync(dataDir)) {
@@ -12,8 +13,21 @@ const dbPath: string = join(dataDir, 'gdluxx.db');
 const db = new Database(dbPath);
 
 try {
-  const schemaPath: string = join(process.cwd(), 'src', 'lib', 'server', 'schema.sql');
-  if (existsSync(schemaPath)) {
+  // Accommodating both prod and dev
+  const schemaPaths = [
+    join(process.cwd(), 'schema.sql'), // prod (docker)
+    join(process.cwd(), 'src', 'lib', 'server', 'schema.sql'), // dev
+  ];
+
+  let schemaPath: string | null = null;
+  for (const path of schemaPaths) {
+    if (existsSync(path)) {
+      schemaPath = path;
+      break;
+    }
+  }
+
+  if (schemaPath) {
     const schema: string = readFileSync(schemaPath, 'utf-8');
 
     const sessionInfo = db.pragma('table_info(session)') as Array<{ name: string }>;
@@ -30,6 +44,9 @@ try {
       db.exec('DROP TABLE IF EXISTS user');
     }
     db.exec(schema);
+  } else {
+    // eslint-disable-next-line no-console
+    console.warn('Schema file not found at any of the expected paths:', schemaPaths);
   }
 } catch (error) {
   // eslint-disable-next-line no-console
@@ -38,6 +55,7 @@ try {
 
 export const auth = betterAuth({
   database: db,
+  secret: process.env.AUTH_SECRET || 'fallback-secret-please-set-AUTH_SECRET-in-production',
   emailAndPassword: {
     enabled: true,
     autoSignIn: true,
@@ -48,7 +66,7 @@ export const auth = betterAuth({
   },
   advanced: {
     database: {
-      generateId: () => crypto.randomUUID(),
+      generateId: (): string => uuidv4(),
     },
   },
 });
