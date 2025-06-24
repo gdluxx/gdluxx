@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { NavBar, Options } from '$lib/components';
+  import { Options } from '$lib/components/settings';
   import type { OptionsData, SelectedOption } from '$lib/types/options';
   import optionsData from '$lib/assets/options.json';
   import { browser } from '$app/environment';
