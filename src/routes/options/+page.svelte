@@ -184,4 +184,3 @@
     onApply={selected => handleApplyOptions(categoryKey, selected)}
   />
 {/each}
-<NavBar />
