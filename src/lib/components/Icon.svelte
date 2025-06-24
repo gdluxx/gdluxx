@@ -17,7 +17,7 @@
     class: className = '',
   }: IconProps = $props();
 
-  const spritePath = $state('/src/lib/assets/sprite.svg');
+  const spritePath = $state('/sprite.svg');
 
   // Special handling for loading icon
   // Animation wasn't working otherwise
