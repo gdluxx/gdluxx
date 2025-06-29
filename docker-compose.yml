@@ -2,8 +2,7 @@ name: gdluxx
 
 services:
   gdluxx:
-    build: .
-    image: gdluxx
+    image: ghcr.io/gdluxx/gdluxx:latest
     container_name: gdluxx
     user: '1000:1000'
     ports:
@@ -15,6 +14,4 @@ services:
       - PORT=${PORT}
       - HOST=${HOST}
       - AUTH_SECRET=${AUTH_SECRET}
-    env_file:
-      - .env
     restart: unless-stopped
