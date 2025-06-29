@@ -1,7 +1,16 @@
+/*
+ * Copyright (C) 2025 jsouthgb
+ *
+ * This file is part of gdluxx.
+ *
+ * gdluxx is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 (GPL-2.0),
+ * as published by the Free Software Foundation.
+ */
+
 import type { Handle } from '@sveltejs/kit';
 import { json, redirect } from '@sveltejs/kit';
 import { auth } from '$lib/server/better-auth';
-
 
 const publicRoutes = ['/auth/login', '/auth/setup', '/api/auth', '/api/extension/external'];
 
