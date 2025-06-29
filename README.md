@@ -1,6 +1,7 @@
 # gdluxx
 
-gdluxx is nothing more than a browser based gui for _gallery-dl_
+gdluxx is nothing more than a self-hosted browser based gui for
+[_gallery-dl_](https://github.com/mikf/gallery-dl)
 
 ## What's it about?
 
@@ -38,6 +39,7 @@ gdluxx is nothing more than a browser based gui for _gallery-dl_
    - [ ] Tie in _gallery-dl_ docs
 
 4. Misc
+
    - [ ] Consolidate SVG icons
    - [ ] Consider alternatives to deprecated `document.execCommand('copy')`
    - [x] Combine `JobList` components
@@ -45,6 +47,20 @@ gdluxx is nothing more than a browser based gui for _gallery-dl_
    - [ ] Consolidate notification system
    - [ ] Add CLI options
    - [ ] Prevent `Run` action when _gallery-dl_ isn't available
+
+5. Incorporate _gallery-dl_ optional dependencies
+
+   - [ ] yt-dlp or youtube-dl: HLS/DASH video downloads, ytdl integration
+   - [ ] FFmpeg: Pixiv Ugoira conversion
+   - [ ] mkvmerge: Accurate Ugoira frame timecodes
+   - [ ] PySocks: SOCKS proxy support
+   - [ ] brotli or brotlicffi: Brotli compression support
+   - [ ] zstandard: Zstandard compression support
+   - [ ] PyYAML: YAML configuration file support
+   - [ ] toml: TOML configuration file support for Python<3.11
+   - [ ] SecretStorage: GNOME keyring passwords for --cookies-from-browser
+   - [ ] Psycopg: PostgreSQL archive support
+   - [ ] truststore: Native system certificate stores
 
 ## Installation
 
@@ -103,6 +119,6 @@ extension, create an API key in the settings, then send POST requests to
 
 ## What's in a name?
 
-gdluxx is pronounced `jee dee luks`  
+gdluxx is pronounced `jee dee luks`
 
 It's a combination of _gallery-dl_ and deluxe
