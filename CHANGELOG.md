@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.3](https://github.com/gdluxx/gdluxx/compare/v0.0.2...v0.0.3) (2025-06-29)
+
+
+### Bug Fixes
+
+* binary path ([3fb1a51](https://github.com/gdluxx/gdluxx/commit/3fb1a519a2434831237f6ed17f0d451bf35c950a))
+* docker compose files and .env.example [skip ci] ([a1e676b](https://github.com/gdluxx/gdluxx/commit/a1e676b9fbbe2794bd5a493a26a950906000803c))
+
 ## 0.0.2 (2025-06-29)
 
 
