@@ -8,6 +8,7 @@
  * as published by the Free Software Foundation.
  */
 
+/* AUTH */
 CREATE TABLE IF NOT EXISTS user (
     id TEXT PRIMARY KEY,
     email TEXT UNIQUE NOT NULL,
@@ -53,6 +54,16 @@ CREATE TABLE IF NOT EXISTS verification (
     expiresAt INTEGER NOT NULL,
     createdAt INTEGER NOT NULL,
     updatedAt INTEGER
+);
+
+/* VERSION */
+CREATE TABLE IF NOT EXISTS version (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    current TEXT,
+    latestAvailable TEXT,
+    lastChecked INTEGER,
+    createdAt INTEGER NOT NULL,
+    updatedAt INTEGER NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_session_userId ON session(userId);

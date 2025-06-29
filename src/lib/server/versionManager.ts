@@ -8,16 +8,18 @@
  * as published by the Free Software Foundation.
  */
 
-import { readFile, writeFile, mkdir, chmod, stat, rename, unlink } from 'fs/promises';
+import { mkdir, chmod, stat, rename, unlink, writeFile } from 'fs/promises';
 import path from 'path';
 import { exec } from 'node:child_process';
 import { promisify } from 'node:util';
+import Database from 'better-sqlite3';
 import { logger } from '$lib/shared/logger';
 import { PATHS, GITHUB } from '$lib/server/constants';
 
 const execAsync = promisify(exec);
 
-export const VERSION_FILE_PATH = path.join(PATHS.DATA_DIR, 'version.json');
+const dbPath = path.join(PATHS.DATA_DIR, 'gdluxx.db');
+const db = new Database(dbPath);
 
 export interface VersionInfo {
   current: string | null;
@@ -40,21 +42,30 @@ async function ensureDataDir(): Promise<void> {
   }
 }
 
+function getCurrentTimestamp(): number {
+  return Date.now();
+}
+
 export async function readVersionInfo(): Promise<VersionInfo> {
   try {
     await ensureDataDir();
-    const fileContent = await readFile(VERSION_FILE_PATH, 'utf-8');
-    return JSON.parse(fileContent) as VersionInfo;
-  } catch (error) {
-    if (
-      typeof error === 'object' &&
-      error !== null &&
-      'code' in error &&
-      (error as { code?: string }).code === 'ENOENT'
-    ) {
-      return { ...DEFAULT_VERSION_INFO };
+    const stmt = db.prepare(
+      'SELECT current, latestAvailable, lastChecked FROM version WHERE id = 1'
+    );
+    const row = stmt.get() as
+      | { current: string | null; latestAvailable: string | null; lastChecked: number | null }
+      | undefined;
+
+    if (row) {
+      return {
+        current: row.current,
+        latestAvailable: row.latestAvailable,
+        lastChecked: row.lastChecked,
+      };
     }
-    logger.error('Error reading version.json:', error);
+    return { ...DEFAULT_VERSION_INFO };
+  } catch (error) {
+    logger.error('Error reading version from database:', error);
     return { ...DEFAULT_VERSION_INFO };
   }
 }
@@ -62,10 +73,18 @@ export async function readVersionInfo(): Promise<VersionInfo> {
 export async function writeVersionInfo(info: VersionInfo): Promise<void> {
   try {
     await ensureDataDir();
-    const data = JSON.stringify(info, null, 2);
-    await writeFile(VERSION_FILE_PATH, data, 'utf-8');
+    const now = getCurrentTimestamp();
+
+    const stmt = db.prepare(`
+      INSERT OR REPLACE INTO version (id, current, latestAvailable, lastChecked, createdAt, updatedAt)
+      VALUES (1, ?, ?, ?, 
+        COALESCE((SELECT createdAt FROM version WHERE id = 1), ?),
+        ?)
+    `);
+
+    stmt.run(info.current, info.latestAvailable, info.lastChecked, now, now);
   } catch (error) {
-    logger.error('Error writing version.json:', error);
+    logger.error('Error writing version to database:', error);
     throw new Error('Failed to write version information.');
   }
 }
