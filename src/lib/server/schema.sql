@@ -66,6 +66,15 @@ CREATE TABLE IF NOT EXISTS version (
     updatedAt INTEGER NOT NULL
 );
 
+/* LOGGING */
+CREATE TABLE IF NOT EXISTS logging (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    enabled INTEGER NOT NULL DEFAULT 0,
+    level TEXT NOT NULL DEFAULT 'INFO',
+    createdAt INTEGER NOT NULL,
+    updatedAt INTEGER NOT NULL
+);
+
 CREATE INDEX IF NOT EXISTS idx_session_userId ON session(userId);
 CREATE INDEX IF NOT EXISTS idx_session_token ON session(token);
 CREATE INDEX IF NOT EXISTS idx_account_userId ON account(userId);

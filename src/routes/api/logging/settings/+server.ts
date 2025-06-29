@@ -9,25 +9,15 @@
  */
 
 import { json, type RequestEvent, type RequestHandler } from '@sveltejs/kit';
-import fs from 'fs/promises';
-import path from 'path';
-import { PATHS } from '$lib/server/constants';
 import { logger, type LoggingConfig } from '$lib/shared/logger';
-import { ensureDir } from '$lib/utils/fs';
-
-const LOGGING_CONFIG_PATH: string = path.join(PATHS.DATA_DIR, 'logging.json');
-
-const DEFAULT_LOGGING_CONFIG_API: LoggingConfig = {
-  enabled: process.env.NODE_ENV === 'development',
-  level: 'INFO',
-};
+import { readLoggingConfig, writeLoggingConfig } from '$lib/server/loggingManager';
 
 export const GET: RequestHandler = async (): Promise<Response> => {
   try {
     logger.info('[API TRACE] GET /api/logging/settings invoked.');
 
-    await logger.reloadConfig();
-    const config: LoggingConfig = logger.getConfig();
+    const config: LoggingConfig = await readLoggingConfig();
+    await logger.setConfig(config);
 
     logger.info(`[API TRACE] Config to be returned by API to client: ${JSON.stringify(config)}`);
 
@@ -46,25 +36,15 @@ export const POST: RequestHandler = async ({ request }: RequestEvent): Promise<R
       return json({ error: 'Invalid payload: "enabled" must be a boolean.' }, { status: 400 });
     }
 
-    let currentPersistedConfig: LoggingConfig;
-    try {
-      await ensureDir(PATHS.DATA_DIR);
-      const fileContent: string = await fs.readFile(LOGGING_CONFIG_PATH, 'utf-8');
-      currentPersistedConfig = JSON.parse(fileContent);
-    } catch (readError) {
-      logger.error('Error reading logging config file:', readError);
-      // If file doesn't exist, start from default
-      currentPersistedConfig = { ...DEFAULT_LOGGING_CONFIG_API };
-    }
+    const currentConfig: LoggingConfig = await readLoggingConfig();
 
     const newConfig: LoggingConfig = {
-      ...currentPersistedConfig,
+      ...currentConfig,
       enabled: body.enabled,
-
       ...(body.level && { level: body.level }),
     };
 
-    await fs.writeFile(LOGGING_CONFIG_PATH, JSON.stringify(newConfig, null, 2), 'utf-8');
+    await writeLoggingConfig(newConfig);
     await logger.setConfig(newConfig);
 
     return json(newConfig);

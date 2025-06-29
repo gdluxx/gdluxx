@@ -8,8 +8,6 @@
  * as published by the Free Software Foundation.
  */
 
-import { ensureDir } from '$lib/utils/fs';
-
 export interface LoggingConfig {
   enabled: boolean;
   level?: 'DEBUG' | 'INFO' | 'WARN' | 'ERROR';
@@ -30,55 +28,23 @@ async function loadServerConfig(): Promise<void> {
     return;
   }
 
-  const initialConsoleError = (...args: unknown[]) => {
-    if (DEFAULT_CONFIG.enabled) {
-      // eslint-disable-next-line no-console
-      console.error('[Logger Init Critical]', ...args);
-    }
-  };
-
   try {
-    const fs = await import('fs/promises');
-    const path = await import('path');
-    const PATHS = {
-      DATA_DIR: path.join(process.cwd(), 'data'),
-    };
+    // Load config from database via API call during initialization
+    // Use defaults until user visits /settings/debug and let the API handle database sync
+    currentConfig = { ...DEFAULT_CONFIG };
 
-    const configPath: string = path.join(PATHS.DATA_DIR, 'logging.json');
-
-    if (typeof window === 'undefined') {
-      await ensureDir(PATHS.DATA_DIR);
-    }
-    try {
-      const fileContent = await fs.readFile(configPath, 'utf-8');
-      const parsedConfig = JSON.parse(fileContent) as LoggingConfig;
-      currentConfig = { ...DEFAULT_CONFIG, ...parsedConfig };
-
-      if (process.env.NODE_ENV === 'development') {
-        logger.debug(`Loaded config from ${configPath}:`, currentConfig);
-      }
-    } catch (error) {
-      if (
-        typeof error === 'object' &&
-        error !== null &&
-        'code' in error &&
-        (error as { code?: string }).code === 'ENOENT'
-      ) {
-        try {
-          await fs.writeFile(configPath, JSON.stringify(DEFAULT_CONFIG, null, 2), 'utf-8');
-
-          logger.info('Created default logging config file as it was missing.');
-        } catch (writeError) {
-          logger.error('Failed to create default logging config:', writeError);
-          currentConfig = { ...DEFAULT_CONFIG };
-        }
-      } else {
-        logger.error('Failed to load logging config, using defaults:', error);
-        currentConfig = { ...DEFAULT_CONFIG };
-      }
+    if (process.env.NODE_ENV === 'development') {
+      // eslint-disable-next-line no-console
+      console.debug(
+        '[Logger Init] Using default config, will sync with database via API:',
+        currentConfig
+      );
     }
   } catch (error) {
-    initialConsoleError('Failed to initialize server config (dynamic imports failed):', error);
+    if (DEFAULT_CONFIG.enabled) {
+      // eslint-disable-next-line no-console
+      console.error('[Logger Init] Failed to initialize config, using defaults:', error);
+    }
     currentConfig = { ...DEFAULT_CONFIG };
   }
 }
@@ -202,22 +168,8 @@ const loggerAPI = {
     }
 
     if (isServer) {
-      try {
-        const fs = await import('fs/promises');
-        const path = await import('path');
-        const PATHS = {
-          DATA_DIR: path.join(process.cwd(), 'data'),
-        };
-
-        const configPath = path.join(PATHS.DATA_DIR, 'logging.json');
-        await fs.writeFile(configPath, JSON.stringify(currentConfig, null, 2), 'utf-8');
-
-        loggerAPI.info('Logger configuration updated and saved to file.', currentConfig);
-      } catch (error) {
-        loggerAPI.error('Failed to save server logging config:', error);
-        currentConfig = oldConfig;
-        throw error;
-      }
+      // Update the in-memory config
+      loggerAPI.info('Logger configuration updated in memory.', currentConfig);
     } else if (typeof window !== 'undefined') {
       try {
         localStorage.setItem('logging-config', JSON.stringify(currentConfig));
