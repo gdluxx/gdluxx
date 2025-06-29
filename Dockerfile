@@ -1,5 +1,7 @@
 FROM node:20-alpine AS builder
 
+LABEL org.opencontainers.image.source=https://github.com/gdluxx/gdluxx
+
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
 WORKDIR /app

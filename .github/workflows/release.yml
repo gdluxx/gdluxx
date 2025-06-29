@@ -78,6 +78,9 @@ jobs:
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
             type=raw,value=${{ steps.release_check.outputs.new_version }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.visibility=public
 
       - name: Build and push
         if: steps.release_check.outputs.new_version != ''
