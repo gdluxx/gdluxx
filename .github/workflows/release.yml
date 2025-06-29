@@ -61,13 +61,13 @@ jobs:
         if: steps.release_check.outputs.new_version != ''
         uses: docker/setup-buildx-action@v3
 
-      - name: Log in to GitHub Container Registry
+      - name: Log in to ghcr
         if: steps.release_check.outputs.new_version != ''
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: ${{ secrets.GH_PAT }}
 
       - name: Extract metadata
         if: steps.release_check.outputs.new_version != ''
