@@ -30,7 +30,7 @@ function createPaths() {
   return {
     BIN_FILE: path.join(cwd, 'data', 'gallery-dl.bin'),
     DATA_DIR: path.join(cwd, 'data'),
-    CONFIG_FILE: './data/config.json',
+    CONFIG_FILE: path.join(cwd, 'data', 'config.json'),
     API_KEYS_FILE: path.join(cwd, 'data', 'api-keys.json'),
   } as const;
 }
