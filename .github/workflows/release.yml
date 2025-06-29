@@ -27,7 +27,7 @@ jobs:
         with:
           fetch-depth: 0
 
-          token: ${{ secrets.GH_PAT }}
+          token: ${{ secrets.BOT_GH_PAT }}
 
       - name: Setup
         uses: pnpm/action-setup@v4
@@ -45,8 +45,8 @@ jobs:
 
       - name: Git
         run: |
-          git config user.name "${{ github.actor }}"
-          git config user.email "${{ github.actor }}@users.noreply.github.com"
+          git config user.name "gdluxx-bot"
+          git config user.email "218500807+gdluxx-bot@users.noreply.github.com"
 
       - name: Check release
         id: release_check
@@ -54,7 +54,7 @@ jobs:
         run: |
           echo "new_version=$(npx release-it --ci --dry-run --release-version || echo '')" >> $GITHUB_OUTPUT
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.BOT_GH_PAT }}
 
       - name: Perform release
         if: steps.release_check.outputs.new_version != ''
@@ -62,7 +62,7 @@ jobs:
           echo "New version detected: ${{ steps.release_check.outputs.new_version }}"
           npx release-it --ci
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.BOT_GH_PAT }}
 
       - name: Setup Docker
         if: steps.release_check.outputs.new_version != ''
@@ -73,8 +73,8 @@ jobs:
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GH_PAT }}
+          username: gdluxx-bot
+          password: ${{ secrets.BOT_GH_PAT }}
 
       - name: Extract metadata
         if: steps.release_check.outputs.new_version != ''
