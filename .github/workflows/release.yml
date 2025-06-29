@@ -27,7 +27,7 @@ jobs:
         with:
           fetch-depth: 0
 
-          token: ${{ secrets.BOT_GH_PAT }}
+          token: ${{ secrets.BOT_GH_TOKEN }}
 
       - name: Setup
         uses: pnpm/action-setup@v4
@@ -54,7 +54,7 @@ jobs:
         run: |
           echo "new_version=$(npx release-it --ci --dry-run --release-version || echo '')" >> $GITHUB_OUTPUT
         env:
-          GITHUB_TOKEN: ${{ secrets.BOT_GH_PAT }}
+          GITHUB_TOKEN: ${{ secrets.BOT_GH_TOKEN }}
 
       - name: Perform release
         if: steps.release_check.outputs.new_version != ''
@@ -62,7 +62,7 @@ jobs:
           echo "New version detected: ${{ steps.release_check.outputs.new_version }}"
           npx release-it --ci
         env:
-          GITHUB_TOKEN: ${{ secrets.BOT_GH_PAT }}
+          GITHUB_TOKEN: ${{ secrets.BOT_GH_TOKEN }}
 
       - name: Setup Docker
         if: steps.release_check.outputs.new_version != ''
@@ -74,7 +74,7 @@ jobs:
         with:
           registry: ${{ env.REGISTRY }}
           username: gdluxx-bot
-          password: ${{ secrets.BOT_GH_PAT }}
+          password: ${{ secrets.BOT_GH_TOKEN }}
 
       - name: Extract metadata
         if: steps.release_check.outputs.new_version != ''
