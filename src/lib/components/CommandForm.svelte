@@ -171,11 +171,7 @@
     </div>
 
     {#if formError}
-      <div
-        class="flex mx-auto justify-center w-6/12 mt-2 rounded-md bg-error-750 dark:bg-error-250 p-3 text-sm dark:text-error-900 text-error-100 whitespace-pre-line"
-      >
-        {formError}
-      </div>
+      <Info variant="warning" dismissible>{formError}</Info>
     {/if}
 
     {#if successMessage && !formError}
