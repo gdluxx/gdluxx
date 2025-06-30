@@ -40,7 +40,6 @@
   });
 </script>
 
-
 <label
   class="flex swap relative swap-rotate cursor-pointer items-center"
   aria-label="Toggle Dark Mode"
