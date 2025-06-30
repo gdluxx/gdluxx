@@ -10,10 +10,14 @@
 
 import type { IPty } from '@homebridge/node-pty-prebuilt-multiarch';
 import { v4 as uuidv4 } from 'uuid';
-import fs from 'node:fs/promises';
-import path from 'node:path';
 import { logger } from '$lib/shared/logger';
-import { ensureDir } from '$lib/utils/fs';
+import {
+  readAllJobs,
+  createJob as dbCreateJob,
+  updateJob as dbUpdateJob,
+  addJobOutput as dbAddJobOutput,
+  deleteJob as dbDeleteJob,
+} from './jobsManager';
 
 export interface JobOutput {
   type: 'info' | 'stdout' | 'stderr' | 'error' | 'fatal' | 'status';
@@ -34,22 +38,9 @@ export interface Job {
   subscribers: Set<ReadableStreamDefaultController<Uint8Array>>;
 }
 
-export interface SavedJob {
-  id: string;
-  url: string;
-  status: 'running' | 'completed' | 'error';
-  output: JobOutput[];
-  startTime: number;
-  endTime?: number;
-  exitCode?: number;
-  useUserConfigPath: boolean;
-}
-
 class JobManager {
   private jobs = new Map<string, Job>();
   private readonly MAX_OUTPUT_LINES: number = 10000;
-  private readonly JOBS_FILE: string = './data/jobs.json';
-  private saveTimer: NodeJS.Timeout | null = null;
   private readonly initializationPromise: Promise<void>;
 
   constructor() {
@@ -65,83 +56,68 @@ class JobManager {
 
   private async loadJobsInternal(): Promise<void> {
     try {
-      const data = await fs.readFile(this.JOBS_FILE, 'utf-8');
-      const savedJobs = JSON.parse(data);
+      const dbJobs = await readAllJobs();
 
-      for (const [id, job] of Object.entries(savedJobs)) {
-        const restoredJob = job as Job;
-        restoredJob.subscribers = new Set();
-        if (restoredJob.status === 'running') {
-          restoredJob.status = 'error';
-          restoredJob.output.push({
+      for (const dbJob of dbJobs) {
+        const job: Job = {
+          id: dbJob.id,
+          url: dbJob.url,
+          status: dbJob.status,
+          output: dbJob.outputs,
+          startTime: dbJob.startTime,
+          endTime: dbJob.endTime,
+          exitCode: dbJob.exitCode,
+          useUserConfigPath: dbJob.useUserConfigPath,
+          subscribers: new Set(),
+        };
+
+        if (job.status === 'running') {
+          job.status = 'error';
+          job.output.push({
             type: 'error',
             data: 'Job was interrupted by server restart',
             timestamp: Date.now(),
           });
+          // Update database to reflect status change
+          await dbUpdateJob(job.id, {
+            status: 'error',
+            endTime: Date.now(),
+          });
         }
-        this.jobs.set(id, restoredJob);
-      }
-      logger.info('Jobs loaded successfully from', this.JOBS_FILE);
-    } catch (error) {
-      if (
-        typeof error === 'object' &&
-        error !== null &&
-        'code' in error &&
-        (error as { code?: string }).code === 'ENOENT'
-      ) {
-        logger.info('No existing jobs file found, starting fresh.');
-      } else {
-        logger.warn('Error loading jobs file, starting fresh:', error);
-      }
-    }
-  }
 
-  private scheduleSave(): void {
-    if (this.saveTimer) {
-      clearTimeout(this.saveTimer);
-    }
-    // saveJobs is only called after initialization is complete
-    this.saveTimer = setTimeout(async () => {
-      try {
-        await this.saveJobs();
-      } catch (error) {
-        logger.error('Error in scheduled saveJobs:', error);
+        this.jobs.set(job.id, job);
       }
-    }, 1000);
-  }
 
-  private async saveJobs(): Promise<void> {
-    await this.initializationPromise; // jobs are loaded before saving
-    try {
-      const jobsToSave: Record<string, SavedJob> = {};
-      for (const [id, job] of this.jobs.entries()) {
-        const { process: _process, subscribers: _subscribers, ...jobData } = job;
-        jobsToSave[id] = jobData;
-      }
-      await ensureDir(path.dirname(this.JOBS_FILE));
-      await fs.writeFile(this.JOBS_FILE, JSON.stringify(jobsToSave, null, 2));
-      logger.debug('Jobs saved successfully to', this.JOBS_FILE);
+      logger.info(`Jobs loaded successfully from database: ${dbJobs.length} jobs`);
     } catch (error) {
-      logger.error('Failed to save jobs:', error);
-      throw error;
+      logger.warn('Error loading jobs from database, starting fresh:', error);
     }
   }
 
   async createJob(url: string, useUserConfigPath: boolean): Promise<string> {
     await this.initializationPromise;
     const id = uuidv4();
+    const startTime = Date.now();
     const job: Job = {
       id,
       url,
       status: 'running',
       output: [],
-      startTime: Date.now(),
+      startTime,
       useUserConfigPath,
       subscribers: new Set(),
     };
+
+    await dbCreateJob({
+      id,
+      url,
+      status: 'running',
+      startTime,
+      useUserConfigPath,
+    });
+
     this.jobs.set(id, job);
     logger.info(`Job created: ${id} for URL: ${url}`);
-    this.scheduleSave();
     return id;
   }
 
@@ -177,6 +153,13 @@ class JobManager {
     if (job.output.length > this.MAX_OUTPUT_LINES) {
       job.output = job.output.slice(-this.MAX_OUTPUT_LINES);
     }
+
+    try {
+      await dbAddJobOutput(id, output);
+    } catch (error) {
+      logger.warn(`Failed to save job output to database for job ${id}:`, error);
+    }
+
     const encoder = new TextEncoder();
     const eventData = `event: ${type}\ndata: ${JSON.stringify(data)}\n\n`;
     for (const controller of job.subscribers) {
@@ -187,7 +170,6 @@ class JobManager {
         job.subscribers.delete(controller);
       }
     }
-    this.scheduleSave();
   }
 
   async completeJob(id: string, exitCode: number): Promise<void> {
@@ -197,6 +179,17 @@ class JobManager {
       job.status = exitCode === 0 ? 'completed' : 'error';
       job.endTime = Date.now();
       job.exitCode = exitCode;
+
+      try {
+        await dbUpdateJob(id, {
+          status: job.status,
+          endTime: job.endTime,
+          exitCode: job.exitCode,
+        });
+      } catch (error) {
+        logger.warn(`Failed to update job completion in database for job ${id}:`, error);
+      }
+
       logger.info(`Job ${id} completed with exit code: ${exitCode}, status: ${job.status}`);
       for (const controller of job.subscribers) {
         try {
@@ -210,7 +203,6 @@ class JobManager {
         }
       }
       job.subscribers.clear();
-      this.scheduleSave();
     }
   }
 
@@ -284,8 +276,14 @@ class JobManager {
         logger.warn(`Error closing subscriber during job ${id} deletion:`, error);
       }
     }
+
+    try {
+      await dbDeleteJob(id);
+    } catch (error) {
+      logger.warn(`Failed to delete job from database for job ${id}:`, error);
+    }
+
     this.jobs.delete(id);
-    this.scheduleSave();
     logger.info(`Job ${id} deleted.`);
     return true;
   }
