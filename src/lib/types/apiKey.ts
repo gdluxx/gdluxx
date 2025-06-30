@@ -11,11 +11,17 @@
 export interface ApiKey {
   id: string;
   name: string;
-  hashedKey: string;
+  userId: string;
   createdAt: string;
+  expiresAt?: string | null;
 }
 
 export interface NewApiKeyResponse {
   apiKey: ApiKey;
   plainKey: string;
+}
+
+export interface CreateApiKeyRequest {
+  name: string;
+  expiresAt?: string;
 }

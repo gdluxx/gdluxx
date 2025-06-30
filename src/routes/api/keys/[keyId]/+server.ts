@@ -18,20 +18,13 @@ export const DELETE: RequestHandler = async ({ params }): Promise<Response> => {
     const { keyId } = params;
 
     if (!keyId) {
-      return json({ error: 'Key ID is required' }, { status: 400 });
+      return json({ error: 'API key ID is required' }, { status: 400 });
     }
 
-    const deletedKey = await deleteApiKey(keyId);
-
-    if (!deletedKey) {
-      return json({ error: 'API key not found' }, { status: 404 });
-    }
-
-    logger.info(`Deleted API key: ${deletedKey.name} (${deletedKey.id})`);
+    await deleteApiKey(keyId);
 
     return json({
-      success: true,
-      message: `API key "${deletedKey.name}" deleted successfully`,
+      message: 'API key deleted successfully',
       deletedKeyId: keyId,
     });
   } catch (error) {

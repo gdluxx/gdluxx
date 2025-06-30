@@ -31,7 +31,6 @@ function createPaths() {
     BIN_FILE: path.join(cwd, 'data', 'gallery-dl.bin'),
     DATA_DIR: path.join(cwd, 'data'),
     CONFIG_FILE: path.join(cwd, 'data', 'config.json'),
-    API_KEYS_FILE: path.join(cwd, 'data', 'api-keys.json'),
   } as const;
 }
 
@@ -51,9 +50,6 @@ export const PATHS = {
   },
   get CONFIG_FILE() {
     return getPaths().CONFIG_FILE;
-  },
-  get API_KEYS_FILE() {
-    return getPaths().API_KEYS_FILE;
   },
 } as const;
 

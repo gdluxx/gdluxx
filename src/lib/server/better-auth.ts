@@ -9,6 +9,7 @@
  */
 
 import { betterAuth } from 'better-auth';
+import { apiKey } from 'better-auth/plugins';
 import Database from 'better-sqlite3';
 import { join } from 'path';
 import { existsSync, readFileSync } from 'fs';
@@ -25,7 +26,6 @@ const dbPath: string = join(dataDir, 'gdluxx.db');
 const db = new Database(dbPath);
 
 try {
-  // Accommodating both prod and dev
   const schemaPaths = [
     join(process.cwd(), 'schema.sql'), // prod (docker)
     join(process.cwd(), 'src', 'lib', 'server', 'schema.sql'), // dev
@@ -56,6 +56,42 @@ try {
       db.exec('DROP TABLE IF EXISTS user');
     }
     db.exec(schema);
+
+    const apiKeyTableInfo = db.pragma('table_info(apiKey)') as Array<{ name: string }>;
+
+    if (apiKeyTableInfo.length === 0) {
+      // eslint-disable-next-line no-console
+      console.log('Creating API key table for better-auth plugin...');
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS apiKey (
+          id TEXT PRIMARY KEY,
+          name TEXT,
+          start TEXT,
+          prefix TEXT,
+          key TEXT NOT NULL,
+          userId TEXT NOT NULL,
+          refillInterval INTEGER,
+          refillAmount INTEGER,
+          lastRefillAt INTEGER,
+          enabled BOOLEAN NOT NULL DEFAULT 1,
+          rateLimitEnabled BOOLEAN NOT NULL DEFAULT 0,
+          rateLimitTimeWindow INTEGER,
+          rateLimitMax INTEGER,
+          requestCount INTEGER NOT NULL DEFAULT 0,
+          remaining INTEGER,
+          lastRequest INTEGER,
+          expiresAt INTEGER,
+          createdAt INTEGER NOT NULL DEFAULT (unixepoch() * 1000),
+          updatedAt INTEGER NOT NULL DEFAULT (unixepoch() * 1000),
+          permissions TEXT,
+          metadata TEXT,
+          FOREIGN KEY (userId) REFERENCES user(id) ON DELETE CASCADE
+        );
+        
+        CREATE INDEX IF NOT EXISTS idx_apiKey_userId ON apiKey(userId);
+        CREATE INDEX IF NOT EXISTS idx_apiKey_key ON apiKey(key);
+      `);
+    }
   } else {
     // eslint-disable-next-line no-console
     console.warn('Schema file not found at any of the expected paths:', schemaPaths);
@@ -76,6 +112,11 @@ export const auth = betterAuth({
     expiresIn: 60 * 60 * 24 * 7, // 7 days
     updateAge: 60 * 60 * 24, // 1 day
   },
+  plugins: [
+    apiKey({
+      defaultPrefix: 'sk_',
+    }),
+  ],
   advanced: {
     database: {
       generateId: (): string => uuidv4(),

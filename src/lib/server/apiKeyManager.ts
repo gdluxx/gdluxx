@@ -8,108 +8,160 @@
  * as published by the Free Software Foundation.
  */
 
-import path from 'path';
-import Database from 'better-sqlite3';
-import { PATHS } from '$lib/server/constants';
+import { auth } from './better-auth';
+import { logger } from '$lib/shared/logger';
 import type { ApiKey } from '$lib/types/apiKey';
+import type BetterSqlite3 from 'better-sqlite3';
+import type { RunResult, Statement } from 'better-sqlite3';
 
-const dbPath = path.join(PATHS.DATA_DIR, 'gdluxx.db');
-const db = new Database(dbPath);
-
-function getCurrentTimestamp(): number {
-  return Date.now();
+interface UserRow {
+  id: string;
 }
 
-export async function readApiKeys(): Promise<ApiKey[]> {
-  try {
-    const stmt = db.prepare(
-      'SELECT id, name, hashedKey, createdAt FROM api_keys ORDER BY createdAt DESC'
-    );
-    const rows = stmt.all() as Array<{
-      id: string;
-      name: string;
-      hashedKey: string;
-      createdAt: number;
-    }>;
+interface ApiKeyRow {
+  id: string;
+  name: string | null;
+  start: string | null;
+  prefix: string | null;
+  key: string;
+  userId: string;
+  refillInterval: number | null;
+  refillAmount: number | null;
+  lastRefillAt: number | null;
+  enabled: boolean;
+  rateLimitEnabled: boolean;
+  rateLimitTimeWindow: number | null;
+  rateLimitMax: number | null;
+  requestCount: number;
+  remaining: number | null;
+  lastRequest: number | null;
+  expiresAt: number | null;
+  createdAt: number;
+  updatedAt: number;
+  permissions: string | null;
+  metadata: string | null;
+}
 
-    return rows.map(row => ({
+async function getAdminUserId(): Promise<string> {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const db = (auth as any).options.database as BetterSqlite3.Database;
+    const stmt: Statement = db.prepare('SELECT id FROM user LIMIT 1');
+    const user = stmt.get() as UserRow | undefined;
+
+    if (!user) {
+      throw new Error('No admin user found');
+    }
+    return user.id;
+  } catch (error) {
+    logger.error('Error getting admin user ID:', error);
+    throw error;
+  }
+}
+
+export async function createApiKey(
+  name: string,
+  expiresAt?: Date
+): Promise<{
+  id: string;
+  name: string;
+  userId: string;
+  createdAt: number;
+  expiresAt?: number;
+  key: string;
+}> {
+  try {
+    const userId: string = await getAdminUserId();
+    const result = await auth.api.createApiKey({
+      body: {
+        name,
+        userId,
+        prefix: 'sk_', // All the big dogs do it (may help with debugging)
+        expiresIn: expiresAt ? Math.floor((expiresAt.getTime() - Date.now()) / 1000) : undefined, // Convert to seconds from now
+      },
+    });
+
+    logger.info(`Created API key: ${name} (${result.id})`);
+
+    return {
+      id: result.id,
+      name: result.name || name,
+      userId: result.userId,
+      createdAt:
+        result.createdAt instanceof Date
+          ? result.createdAt.getTime()
+          : new Date(result.createdAt).getTime(),
+      expiresAt: result.expiresAt
+        ? result.expiresAt instanceof Date
+          ? result.expiresAt.getTime()
+          : new Date(result.expiresAt).getTime()
+        : undefined,
+      key: result.key,
+    };
+  } catch (error) {
+    logger.error('Error creating API key:', error);
+    throw error;
+  }
+}
+
+export async function listApiKeys(): Promise<ApiKey[]> {
+  try {
+    const userId: string = await getAdminUserId();
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const db = (auth as any).options.database as BetterSqlite3.Database;
+    const stmt = db.prepare(`
+      SELECT id, name, userId, createdAt, expiresAt 
+      FROM apiKey 
+      WHERE userId = ? 
+      ORDER BY createdAt DESC
+    `);
+    const rows = stmt.all(userId) as ApiKeyRow[];
+
+    return rows.map((row: ApiKeyRow) => ({
       id: row.id,
-      name: row.name,
-      hashedKey: row.hashedKey,
+      name: row.name || 'Unnamed Key',
+      userId: row.userId,
       createdAt: new Date(row.createdAt).toISOString(),
+      expiresAt: row.expiresAt ? new Date(row.expiresAt).toISOString() : null,
     }));
   } catch (error) {
-    // eslint-disable-next-line no-console
-    console.error('Error reading API keys from database:', error);
+    logger.error('Error listing API keys:', error);
     return [];
   }
 }
 
-export async function createApiKey(apiKey: ApiKey): Promise<void> {
+export async function deleteApiKey(keyId: string): Promise<void> {
   try {
-    const now = getCurrentTimestamp();
-    const createdAt = new Date(apiKey.createdAt).getTime();
+    // better-auth delete not working as expected, revisit
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const db = (auth as any).options.database as BetterSqlite3.Database;
+    const stmt: Statement = db.prepare('DELETE FROM apiKey WHERE id = ?');
+    const result: RunResult = stmt.run(keyId);
 
-    const stmt = db.prepare(`
-      INSERT INTO api_keys (id, name, hashedKey, createdAt, updatedAt)
-      VALUES (?, ?, ?, ?, ?)
-    `);
-
-    stmt.run(apiKey.id, apiKey.name, apiKey.hashedKey, createdAt, now);
-  } catch (error) {
-    // eslint-disable-next-line no-console
-    console.error('Error creating API key in database:', error);
-    throw new Error('Failed to create API key.');
-  }
-}
-
-export async function deleteApiKey(keyId: string): Promise<ApiKey | null> {
-  try {
-    // First, get the key before deleting it
-    const selectStmt = db.prepare(
-      'SELECT id, name, hashedKey, createdAt FROM api_keys WHERE id = ?'
-    );
-    const row = selectStmt.get(keyId) as
-      | {
-          id: string;
-          name: string;
-          hashedKey: string;
-          createdAt: number;
-        }
-      | undefined;
-
-    if (!row) {
-      return null;
+    if (result.changes === 0) {
+      throw new Error('API key not found');
     }
 
-    // Delete the key
-    const deleteStmt = db.prepare('DELETE FROM api_keys WHERE id = ?');
-    deleteStmt.run(keyId);
-
-    return {
-      id: row.id,
-      name: row.name,
-      hashedKey: row.hashedKey,
-      createdAt: new Date(row.createdAt).toISOString(),
-    };
+    logger.info(`Deleted API key: ${keyId}`);
   } catch (error) {
-    // eslint-disable-next-line no-console
-    console.error('Error deleting API key from database:', error);
-    throw new Error('Failed to delete API key.');
+    logger.error('Error deleting API key:', error);
+    throw error;
   }
 }
 
 export async function findApiKeyByName(name: string): Promise<ApiKey | null> {
   try {
-    const stmt = db.prepare('SELECT id, name, hashedKey, createdAt FROM api_keys WHERE name = ?');
-    const row = stmt.get(name) as
-      | {
-          id: string;
-          name: string;
-          hashedKey: string;
-          createdAt: number;
-        }
-      | undefined;
+    const userId: string = await getAdminUserId();
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const db = (auth as any).options.database as BetterSqlite3.Database;
+    const stmt: Statement = db.prepare(`
+      SELECT id, name, userId, createdAt, expiresAt 
+      FROM apiKey 
+      WHERE userId = ? AND name = ?
+    `);
+    const row = stmt.get(userId, name) as ApiKeyRow | undefined;
 
     if (!row) {
       return null;
@@ -117,13 +169,13 @@ export async function findApiKeyByName(name: string): Promise<ApiKey | null> {
 
     return {
       id: row.id,
-      name: row.name,
-      hashedKey: row.hashedKey,
+      name: row.name || 'Unnamed Key',
+      userId: row.userId,
       createdAt: new Date(row.createdAt).toISOString(),
+      expiresAt: row.expiresAt ? new Date(row.expiresAt).toISOString() : null,
     };
   } catch (error) {
-    // eslint-disable-next-line no-console
-    console.error('Error finding API key by name in database:', error);
+    logger.error('Error finding API key by name:', error);
     return null;
   }
 }

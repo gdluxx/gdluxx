@@ -75,15 +75,6 @@ CREATE TABLE IF NOT EXISTS logging (
     updatedAt INTEGER NOT NULL
 );
 
-/* API_KEYS */
-CREATE TABLE IF NOT EXISTS api_keys (
-    id TEXT PRIMARY KEY,
-    name TEXT NOT NULL,
-    hashedKey TEXT NOT NULL,
-    createdAt INTEGER NOT NULL,
-    updatedAt INTEGER NOT NULL
-);
-
 /* JOBS */
 CREATE TABLE IF NOT EXISTS jobs (
     id TEXT PRIMARY KEY,
