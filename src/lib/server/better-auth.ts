@@ -101,6 +101,24 @@ try {
   console.warn('Could not initialize database schema:', error);
 }
 
+const host: string | undefined = process.env.HOST;
+const port: string | undefined = process.env.PORT;
+
+if (host === undefined || port === undefined) {
+  console.error(`Both HOST and PORT must be defined ${host}:${port}`);
+}
+
+const trustedOrigins: string[] = [`http://${host}:${port}`, `https://${host}:${port}`];
+
+if (host === '0.0.0.0' || host === 'localhost' || host === '127.0.0.1') {
+  trustedOrigins.push(
+    `http://localhost:${port}`,
+    `http://127.0.0.1:${port}`,
+    `https://localhost:${port}`,
+    `https://127.0.0.1:${port}`
+  );
+}
+
 export const auth = betterAuth({
   database: db,
   secret: process.env.AUTH_SECRET || 'fallback-secret-please-set-AUTH_SECRET-in-production',
@@ -112,6 +130,7 @@ export const auth = betterAuth({
     expiresIn: 60 * 60 * 24 * 7, // 7 days
     updateAge: 60 * 60 * 24, // 1 day
   },
+  trustedOrigins,
   plugins: [
     apiKey({
       defaultPrefix: 'sk_',
