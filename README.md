@@ -25,13 +25,14 @@ gdluxx is nothing more than a self-hosted browser based gui for
      - [x] Add internal key authentication for internal endpoints
      - [x] Implement RESTful approach to deleting API keys (instead of POST)
      - [ ] Add OIDC support
-     - [ ] Migrate API key generation to _better-auth_
+     - [x] Migrate API key generation to _better-auth_
 
-2. Modal
+2. UX/UI
 
    - [x] Combine JobList and JobListModal components
    - [ ] Fix ConfirmModal not picking up keyboard focus
    - [ ] Add delete confirm modal for individual job deletion
+   - [ ] Fix spacing for <Info> modal in /config for "Loaded example"
 
 3. Docs
 
@@ -43,7 +44,7 @@ gdluxx is nothing more than a self-hosted browser based gui for
    - [ ] Consolidate SVG icons
    - [ ] Consider alternatives to deprecated `document.execCommand('copy')`
    - [x] Combine `JobList` components
-   - [ ] Adjust `api-keys.json` file permissions
+   - [x] ~~Adjust `api-keys.json` file permissions~~
    - [ ] Consolidate notification system
    - [ ] Add CLI options
    - [ ] Prevent `Run` action when _gallery-dl_ isn't available
@@ -72,18 +73,18 @@ gdluxx is nothing more than a self-hosted browser based gui for
 ### Steps
 
 1. Clone the repository
-2.
-3. Install dependencies:
+
+2. Install dependencies:
    ```bash
    pnpm install
    ```
-4. Rename `.env.example` to `.env` and generate `AUTH_SECRET`
+3. Rename `.env.example` to `.env` and generate `AUTH_SECRET`
 
-5. Start the development server:
+4. Start the development server:
    ```bash
    pnpm dev
    ```
-6. Open your browser to `http://localhost:5173`
+5. Open your browser to `http://localhost:5173`
 
 ## Building for Production
 
