@@ -8,13 +8,11 @@
  * as published by the Free Software Foundation.
  */
 
-import { readFile } from 'fs/promises';
 import bcrypt from 'bcrypt';
 import { logger } from '$lib/shared/logger';
-import { PATHS } from '$lib/server/constants';
 import type { ApiKey } from '$lib/types/apiKey';
 import type { RequestEvent } from '@sveltejs/kit';
-import { isValidApiKey } from './apiKeyUtils';
+import { readApiKeys } from './apiKeyManager';
 
 export interface AuthResult {
   success: boolean;
@@ -32,16 +30,12 @@ export async function validateApiKey(providedKey: unknown): Promise<AuthResult> 
       return { success: false, error: 'API key is required' };
     }
 
-    // Load keys
-    const fileContent: string = await readFile(PATHS.API_KEYS_FILE, 'utf-8');
-    const rawData: unknown = JSON.parse(fileContent);
+    // Load keys from database
+    const apiKeys: ApiKey[] = await readApiKeys();
 
-    if (!Array.isArray(rawData) || !rawData.every(isValidApiKey)) {
-      logger.warn('Invalid API keys file structure during validation');
-      return { success: false, error: 'Invalid keys database' };
+    if (apiKeys.length === 0) {
+      return { success: false, error: 'No API keys configured' };
     }
-
-    const apiKeys: ApiKey[] = rawData;
 
     // Check the provided key against hashed keys
     for (const storedKey of apiKeys) {
@@ -63,15 +57,6 @@ export async function validateApiKey(providedKey: unknown): Promise<AuthResult> 
     logger.warn('Invalid API key attempt');
     return { success: false, error: 'Invalid API key' };
   } catch (error) {
-    if (
-      typeof error === 'object' &&
-      error !== null &&
-      'code' in error &&
-      (error as { code?: string }).code === 'ENOENT'
-    ) {
-      return { success: false, error: 'No API keys configured' };
-    }
-
     logger.error('Error validating API key:', error);
     return { success: false, error: 'Validation failed' };
   }
