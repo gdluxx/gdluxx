@@ -22,7 +22,9 @@ function getCurrentTimestamp(): number {
 
 export async function readApiKeys(): Promise<ApiKey[]> {
   try {
-    const stmt = db.prepare('SELECT id, name, hashedKey, createdAt FROM api_keys ORDER BY createdAt DESC');
+    const stmt = db.prepare(
+      'SELECT id, name, hashedKey, createdAt FROM api_keys ORDER BY createdAt DESC'
+    );
     const rows = stmt.all() as Array<{
       id: string;
       name: string;
@@ -64,13 +66,17 @@ export async function createApiKey(apiKey: ApiKey): Promise<void> {
 export async function deleteApiKey(keyId: string): Promise<ApiKey | null> {
   try {
     // First, get the key before deleting it
-    const selectStmt = db.prepare('SELECT id, name, hashedKey, createdAt FROM api_keys WHERE id = ?');
-    const row = selectStmt.get(keyId) as {
-      id: string;
-      name: string;
-      hashedKey: string;
-      createdAt: number;
-    } | undefined;
+    const selectStmt = db.prepare(
+      'SELECT id, name, hashedKey, createdAt FROM api_keys WHERE id = ?'
+    );
+    const row = selectStmt.get(keyId) as
+      | {
+          id: string;
+          name: string;
+          hashedKey: string;
+          createdAt: number;
+        }
+      | undefined;
 
     if (!row) {
       return null;
@@ -96,12 +102,14 @@ export async function deleteApiKey(keyId: string): Promise<ApiKey | null> {
 export async function findApiKeyByName(name: string): Promise<ApiKey | null> {
   try {
     const stmt = db.prepare('SELECT id, name, hashedKey, createdAt FROM api_keys WHERE name = ?');
-    const row = stmt.get(name) as {
-      id: string;
-      name: string;
-      hashedKey: string;
-      createdAt: number;
-    } | undefined;
+    const row = stmt.get(name) as
+      | {
+          id: string;
+          name: string;
+          hashedKey: string;
+          createdAt: number;
+        }
+      | undefined;
 
     if (!row) {
       return null;
