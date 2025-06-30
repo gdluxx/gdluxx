@@ -26,7 +26,7 @@
     defaultCollapsed?: boolean;
     onNavigate?: (item: NavItem) => void;
     isMobile?: boolean;
-    user?;
+    user?: { id: string; name: string; email: string };
   }
 
   const {

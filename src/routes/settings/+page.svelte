@@ -106,7 +106,7 @@
         <CurrentTab.icon />
       {/snippet}
       {#if CurrentTab.name === 'User'}
-        <CurrentTab.component user={data.user} />
+        <UserManager user={data.user} />
       {:else}
         <CurrentTab.component />
       {/if}

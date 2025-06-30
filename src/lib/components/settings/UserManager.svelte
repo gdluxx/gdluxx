@@ -10,7 +10,15 @@
 
 <script lang="ts">
   interface Props {
-    user?;
+    user?: {
+      id: string;
+      name: string;
+      email: string;
+      emailVerified: boolean;
+      createdAt: Date;
+      updatedAt: Date;
+      image?: string | null;
+    };
   }
 
   const { user }: Props = $props();
@@ -57,31 +65,33 @@
           <tbody
             class="bg-primary-100 dark:bg-primary-900 divide-y divide-secondary-200 dark:divide-secondary-700"
           >
-            <tr>
-              <td
-                class="px-6 py-4 whitespace-nowrap text-sm font-medium text-secondary-900 dark:text-secondary-100"
-              >
-                {user.name}
-              </td>
-              <td
-                class="px-6 py-4 whitespace-nowrap text-sm text-secondary-900 dark:text-secondary-100"
-              >
-                {user.email}
-              </td>
-              <td
-                class="px-6 py-4 whitespace-nowrap text-sm text-secondary-900 dark:text-secondary-100"
-              >
-                {new Date(user.createdAt).toLocaleDateString()}
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <span
-                  class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100"
+            {#if user}
+              <tr>
+                <td
+                  class="px-6 py-4 whitespace-nowrap text-sm font-medium text-secondary-900 dark:text-secondary-100"
                 >
-                  Active
-                </span>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium"> </td>
-            </tr>
+                  {user.name}
+                </td>
+                <td
+                  class="px-6 py-4 whitespace-nowrap text-sm text-secondary-900 dark:text-secondary-100"
+                >
+                  {user.email}
+                </td>
+                <td
+                  class="px-6 py-4 whitespace-nowrap text-sm text-secondary-900 dark:text-secondary-100"
+                >
+                  {new Date(user.createdAt).toLocaleDateString()}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <span
+                    class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100"
+                  >
+                    Active
+                  </span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium"> </td>
+              </tr>
+            {/if}
           </tbody>
         </table>
       </div>
