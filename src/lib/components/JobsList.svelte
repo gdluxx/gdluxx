@@ -24,6 +24,8 @@
   const { variant = 'page', isOpen = true, onClose }: Props = $props();
 
   let showDeleteConfirm = $state(false);
+  let deleteAction = $state<'single' | 'all'>('all');
+  let jobToDelete = $state<string | null>(null);
 
   const jobs = $derived(Array.from($jobStore.values()));
 
@@ -82,26 +84,36 @@
     }
   }
 
-  function handleDismiss(event: MouseEvent, jobId: string) {
-    event.stopPropagation();
-    jobStore.deleteJob(jobId);
-  }
 
   function deleteAllJobs(event: MouseEvent) {
     event.stopPropagation();
+    deleteAction = 'all';
+    jobToDelete = null;
     showDeleteConfirm = true;
   }
 
-  function confirmDeleteAll() {
-    jobs.forEach(function (job) {
-      console.log('Job ID:', job.id);
-      jobStore.deleteJob(job.id);
-    });
+  function deleteJob(event: MouseEvent, jobId: string) {
+    event.stopPropagation();
+    deleteAction = 'single';
+    jobToDelete = jobId;
+    showDeleteConfirm = true;
+  }
+
+  function confirmDelete() {
+    if (deleteAction === 'single' && jobToDelete) {
+      jobStore.deleteJob(jobToDelete);
+    } else if (deleteAction === 'all') {
+      jobs.forEach(function (job) {
+        jobStore.deleteJob(job.id);
+      });
+    }
     showDeleteConfirm = false;
+    jobToDelete = null;
   }
 
   function cancelDelete() {
     showDeleteConfirm = false;
+    jobToDelete = null;
   }
 
   const getHeightClass = () => {
@@ -217,7 +229,7 @@
                     </span>
                   </button>
                   <button
-                    onclick={e => handleDismiss(e, job.id)}
+                    onclick={e => deleteJob(e, job.id)}
                     class="ml-4 flex-shrink-0 cursor-pointer p-2 text-secondary-600 transition-all duration-200 hover:scale-120 hover:text-red-600 dark:text-secondary-400 dark:hover:text-red-400"
                     title="Delete job"
                     aria-label={`Delete job ${job.url}`}
@@ -302,7 +314,7 @@
                   </span>
                 </button>
                 <button
-                  onclick={e => handleDismiss(e, job.id)}
+                  onclick={e => deleteJob(e, job.id)}
                   class="ml-4 flex-shrink-0 cursor-pointer p-2 text-secondary-600 transition-all duration-200 hover:scale-120 hover:text-red-600 dark:text-secondary-400 dark:hover:text-red-400"
                   title="Delete job"
                   aria-label={`Delete job ${job.url}`}
@@ -327,18 +339,25 @@
 
 <ConfirmModal
   show={showDeleteConfirm}
-  title="Delete all Jobs?"
-  confirmText="Delete All Jobs"
+  title={deleteAction === 'all' ? 'Delete all Jobs?' : 'Delete Job?'}
+  confirmText={deleteAction === 'all' ? 'Delete All Jobs' : 'Delete Job'}
   cancelText="Cancel"
   confirmVariant="danger"
   cancelVariant="outline-primary"
-  onConfirm={confirmDeleteAll}
+  onConfirm={confirmDelete}
   onCancel={cancelDelete}
 >
-  <p class="text-secondary-700 dark:text-secondary-300 mb-4">
-    This will permanently delete all
-    <span class="text-xl font-bold text-warning-500">{jobs.length}</span>
-    jobs.
-  </p>
-  <Info variant="danger">This is a destructive action that cannot be reversed.</Info>
+  {#if deleteAction === 'all'}
+    <p class="text-secondary-700 dark:text-secondary-300 mb-4">
+      This will permanently delete all
+      <span class="text-xl font-bold text-warning-500">{jobs.length}</span>
+      jobs.
+    </p>
+    <Info variant="danger">This is a destructive action that cannot be reversed.</Info>
+  {:else}
+    <p class="text-secondary-700 dark:text-secondary-300 mb-4">
+      This will permanently delete this job.
+    </p>
+    <Info variant="danger">This action cannot be reversed.</Info>
+  {/if}
 </ConfirmModal>
