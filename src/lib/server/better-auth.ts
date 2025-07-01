@@ -101,22 +101,48 @@ try {
   console.warn('Could not initialize database schema:', error);
 }
 
-const host: string | undefined = process.env.HOST;
-const port: string | undefined = process.env.PORT;
+function isIpAddress(str: string): boolean {
+  const schemeRemoved: string = str.replace(/^(https?:\/\/)/, '');
 
-if (host === undefined || port === undefined) {
-  console.error(`Both HOST and PORT must be defined ${host}:${port}`);
+  const ipv4Regex = /^((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.){3}(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)$/;
+  return ipv4Regex.test(schemeRemoved);
 }
 
-const trustedOrigins: string[] = [`http://${host}:${port}`, `https://${host}:${port}`];
+// Build trusted origins called at runtime
+function buildTrustedOrigins(): string[] {
+  const host: string | undefined = process.env.HOST;
+  const port: string | undefined = process.env.PORT;
+  const trustedOrigins: string[] = [];
 
-if (host === '0.0.0.0' || host === 'localhost' || host === '127.0.0.1') {
-  trustedOrigins.push(
-    `http://localhost:${port}`,
-    `http://127.0.0.1:${port}`,
-    `https://localhost:${port}`,
-    `https://127.0.0.1:${port}`
-  );
+  // environment variables may not be available during build time
+  if (!host) {
+    // Return empty array during build to be populated at runtime
+    return [];
+  }
+
+  if (host.startsWith('http://') || host.startsWith('https://')) {
+    if (isIpAddress(host) && !port) {
+      throw new Error(`PORT required when HOST is IP address with scheme. Got HOST? ${host}, PORT: ${port}`);
+    }
+    trustedOrigins.push(host);
+  } else {
+    if (!port) {
+      throw new Error(`PORT must be defined when HOST is not a full URL. Got PORT? ${host}, PORT: ${port}`);
+    }
+    trustedOrigins.push(`http://${host}:${port}`, `https://${host}:${port}`);
+  }
+
+  // Add localhost variations if host is a bind-all address, or localhost, with a port
+  if (port && (host === '0.0.0.0' || host === 'localhost' || host === '127.0.0.1')) {
+    trustedOrigins.push(
+      `http://localhost:${port}`,
+      `http://127.0.0.1:${port}`,
+      `https://localhost:${port}`,
+      `https://127.0.0.1:${port}`
+    );
+  }
+
+  return trustedOrigins;
 }
 
 export const auth = betterAuth({
@@ -130,7 +156,7 @@ export const auth = betterAuth({
     expiresIn: 60 * 60 * 24 * 7, // 7 days
     updateAge: 60 * 60 * 24, // 1 day
   },
-  trustedOrigins,
+  trustedOrigins: buildTrustedOrigins(),
   plugins: [
     apiKey({
       defaultPrefix: 'sk_',
