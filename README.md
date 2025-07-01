@@ -26,8 +26,8 @@ directory permissions for you. The user in the container is `1000:1000`, not
 root.
 
 For example, if you want everything in the container (downloads, configuration
-file, etc.) to end up at `~Documents/gdluxx`, you'll need to create
-`~Documents/gdluxx/data`. If you want everything located in the same directory
+file, etc.) to end up at `~Documents/gdluxx/`, you'll need to create
+`~Documents/gdluxx/`. If you want everything located in the same directory
 from where you run the Docker compose command, you'll need to make sure you
 create the `data/` directory FIRST.
 
