@@ -17,6 +17,65 @@ gdluxx is nothing more than a self-hosted browser based gui for
   output
 - **Version Management**: Download and update _gallery-dl_ from the browser
 
+## Installation
+
+Only Docker installation is supported. It is absolutely required that you create
+the bind mount directory BEFORE creating the container. Otherwise, you will run
+into startup issues due to permissions. The container will not update the
+directory permissions for you. The user in the container is `1000:1000`, not
+root.
+
+For example, if you want everything in the container (downloads, configuration
+file, etc.) to end up at `~Documents/gdluxx`, you'll need to create
+`~Documents/gdluxx/data`. If you want everything located in the same directory
+from where you run the Docker compose command, you'll need to make sure you
+create the `data/` directory FIRST.
+
+If you try to use a Docker volume, you won't have easy access to your downloads.
+
+You can find the official documentation regarding Docker bind mounts
+[here](https://docs.docker.com/get-started/workshop/06_bind_mounts/).
+
+You'll also want to copy over the `.env.example` file as `.env` to reside with
+your compose file. It is very important that you generate your `AUTH_SECRET`.
+The easiest way to do that is using `openssl rand -hex 32` in your terminal.
+Apologies to Windows users, I don't know much about it these days. I found
+https://www.cryptool.org/en/cto/openssl/, and it allowed me to run the `openssl`
+command, perhaps this will work for you.
+
+I'm still working through some issues with setting `HOST` and `PORT`, so to use
+this application currently, leave them as they are.
+
+```yaml
+name: gdluxx
+
+services:
+  gdluxx:
+    image: ghcr.io/gdluxx/gdluxx:latest
+    container_name: gdluxx
+    user: '1000:1000'
+    ports:
+      - '7755:7755'
+    volumes:
+      - ./data:/app/data
+    environment:
+      - NODE_ENV=production
+      - PORT=${PORT}
+      - HOST=${HOST}
+      - AUTH_SECRET=${AUTH_SECRET}
+    restart: unless-stopped
+```
+
+## Configuration
+
+gdluxx will use the `data/` directory to store:
+
+- `gdluxx.db` - For storing authentication credentials, jobs data, API keys, and
+  _gallery-dl_ version info
+- `config.json` - Your _gallery-dl_ configuration
+- `gallery-dl.bin` - _gallery-dl_ binary file
+- _gallery-dl_ downloads
+
 ## TODO
 
 1. Auth
@@ -62,48 +121,6 @@ gdluxx is nothing more than a self-hosted browser based gui for
    - [ ] SecretStorage: GNOME keyring passwords for --cookies-from-browser
    - [ ] Psycopg: PostgreSQL archive support
    - [ ] truststore: Native system certificate stores
-
-## Installation
-
-### Requirements
-
-- Node.js 18+
-- pnpm
-
-### Steps
-
-1. Clone the repository
-
-2. Install dependencies:
-   ```bash
-   pnpm install
-   ```
-3. Rename `.env.example` to `.env` and generate `AUTH_SECRET`
-
-4. Start the development server:
-   ```bash
-   pnpm dev
-   ```
-5. Open your browser to `http://localhost:5173`
-
-## Building for Production
-
-```bash
-pnpm build
-pnpm preview
-```
-
-## Configuration
-
-gdluxx will create a `data/` directory to store:
-
-- `gdluxx.db` - For managing authentication
-- `config.json` - Your _gallery-dl_ configuration
-- `jobs.json` - Job history and status
-- `api-keys.json` - API keys for external access
-- `logging.json` - Debug logging settings
-- `version.json` - _gallery-dl_ version information
-- `gallery-dl.bin` - _gallery-dl_ binary file
 
 ## API Usage
 
