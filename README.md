@@ -90,7 +90,7 @@ gdluxx will use the `data/` directory to store:
 
    - [x] Combine JobList and JobListModal components
    - [x] Fix ConfirmModal not picking up keyboard focus
-   - [ ] Add delete confirm modal for individual job deletion
+   - [x] Add delete confirm modal for individual job deletion
    - [x] Fix spacing for <Info> modal in /config for "Loaded example"
 
 3. Docs
