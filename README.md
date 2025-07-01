@@ -32,7 +32,7 @@ gdluxx is nothing more than a self-hosted browser based gui for
    - [x] Combine JobList and JobListModal components
    - [x] Fix ConfirmModal not picking up keyboard focus
    - [ ] Add delete confirm modal for individual job deletion
-   - [ ] Fix spacing for <Info> modal in /config for "Loaded example"
+   - [x] Fix spacing for <Info> modal in /config for "Loaded example"
 
 3. Docs
 
