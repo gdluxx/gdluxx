@@ -122,12 +122,16 @@ function buildTrustedOrigins(): string[] {
 
   if (host.startsWith('http://') || host.startsWith('https://')) {
     if (isIpAddress(host) && !port) {
-      throw new Error(`PORT required when HOST is IP address with scheme. Got HOST? ${host}, PORT: ${port}`);
+      throw new Error(
+        `PORT required when HOST is IP address with scheme. Got HOST? ${host}, PORT: ${port}`
+      );
     }
     trustedOrigins.push(host);
   } else {
     if (!port) {
-      throw new Error(`PORT must be defined when HOST is not a full URL. Got PORT? ${host}, PORT: ${port}`);
+      throw new Error(
+        `PORT must be defined when HOST is not a full URL. Got PORT? ${host}, PORT: ${port}`
+      );
     }
     trustedOrigins.push(`http://${host}:${port}`, `https://${host}:${port}`);
   }
