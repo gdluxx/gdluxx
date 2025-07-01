@@ -146,7 +146,7 @@
     </Info>
   {:else}
     {#if loadMessage}
-      <Info variant="warning" size="lg">
+      <Info variant="warning" size="lg" class="my-8">
         {loadMessage}
       </Info>
     {/if}
