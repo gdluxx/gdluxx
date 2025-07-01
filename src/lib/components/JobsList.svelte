@@ -84,7 +84,6 @@
     }
   }
 
-
   function deleteAllJobs(event: MouseEvent) {
     event.stopPropagation();
     deleteAction = 'all';
