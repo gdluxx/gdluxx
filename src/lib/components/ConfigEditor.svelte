@@ -48,7 +48,7 @@
 
   interface Props {
     value?: string;
-    onSave?: ((content: string) => Promise<void>) | undefined;
+    onSave?: ((content: string) => Promise<{ message: string; [key: string]: unknown }>) | undefined;
     theme?: 'light' | 'dark';
     height?: string;
     readonly?: boolean;
@@ -160,8 +160,8 @@
     saveStatus = 'Saving...';
 
     try {
-      await onSave(value);
-      saveStatus = 'Saved successfully!';
+      const result = await onSave(value);
+      saveStatus = result.message;
       setTimeout(() => {
         saveStatus = '';
       }, 3000);

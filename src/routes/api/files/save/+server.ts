@@ -116,6 +116,7 @@ export const POST: RequestHandler = async ({ request }: RequestEvent): Promise<R
     }
 
     const transformedContent: string = transformConfigPaths(content);
+    const wasTransformed: boolean = content !== transformedContent;
 
     const fullPath: string = join(ALLOWED_BASE_PATH, CONFIG_FILE);
 
@@ -124,8 +125,10 @@ export const POST: RequestHandler = async ({ request }: RequestEvent): Promise<R
 
     return json({
       success: true,
-      message: 'Configuration saved successfully (paths transformed for Docker)',
+      message: wasTransformed ? 'Saved successfully (paths transformed)!' : 'Saved successfully!',
       path: CONFIG_FILE,
+      transformed: wasTransformed,
+      content: wasTransformed ? transformedContent : undefined,
     });
   } catch (error) {
     logger.error('Error saving file:', error);
