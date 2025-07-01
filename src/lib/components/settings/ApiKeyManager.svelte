@@ -222,14 +222,12 @@
       aria-hidden="true"
     ></div>
     <span class="ml-3 text-secondary-600">Loading API keys...</span>
-    <span class="sr-only">Loading your API keys, please wait</span>
   </div>
 {:else}
   {#if justCreatedKey}
     {@const createdKey = justCreatedKey}
     <Info
       variant="warning"
-      size="lg"
       title="API Key Created Successfully!"
       dismissible
       onDismiss={dismissNewKey}
@@ -241,7 +239,7 @@
       <strong>Important:</strong> This is the only time you'll be able to see your API key. Make
       sure to copy it now and store it securely.
 
-      <div class="bg-blue dark:bg-black border border-success-300 rounded-md p-3 mb-4">
+      <div class="bg-blue dark:bg-black border border-success-300 rounded-md p-3 my-4">
         <div class="flex items-center justify-between">
           <code
             class="text-lg font-mono text-primary-800 dark:text-primary-200 break-all flex-1 mr-4"
@@ -254,20 +252,7 @@
               class="cursor-pointer p-2 text-success-600 hover:text-success-800 focus:outline-none focus:ring-2 focus:ring-success-500 rounded transition-colors"
               aria-label={`Copy API key for ${createdKey.name} to clipboard`}
             >
-              <svg
-                class="h-4 w-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                aria-hidden="true"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-                />
-              </svg>
+              <Icon iconName="copy-clipboard" size={20} />
             </button>
           {/if}
         </div>
@@ -427,20 +412,7 @@
                   class="bg-secondary-100 dark:bg-secondary-900 rounded-md p-3 mb-3 flex items-center justify-between"
                 >
                   <div class="flex items-center flex-1">
-                    <svg
-                      class="h-4 w-4 text-secondary-500 mr-2"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                      aria-hidden="true"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                      />
-                    </svg>
+                    <Icon iconName="lock" size={16} class="text-secondary-500 mr-2" />
                     <span class="text-sm text-secondary-600 select-none">
                       API key is securely stored
                     </span>
@@ -469,24 +441,11 @@
 
               <button
                 onclick={() => confirmDelete(apiKey.id)}
-                class="cursor-pointer ml-4 p-2 text-error-500 hover:text-error-700 hover:bg-error-900 dark:hover:bg-error-100 rounded-md focus:outline-none focus:ring-2 focus:ring-error-500 focus:ring-offset-2 transition-colors"
+                class="cursor-pointer ml-4 p-1 text-error-500 hover:text-error-700 hover:bg-error-900 dark:hover:bg-error-100 rounded-md focus:outline-none focus:ring-2 focus:ring-error-500 focus:ring-offset-2 transition-colors"
                 class:opacity-75={isExpired(apiKey.expiresAt)}
                 aria-label={`Delete API key for ${apiKey.name}`}
               >
-                <svg
-                  class="h-4 w-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  aria-hidden="true"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                  />
-                </svg>
+                <Icon iconName="delete" size={20} />
               </button>
             </div>
           </article>

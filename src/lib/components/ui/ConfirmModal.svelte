@@ -13,6 +13,7 @@
   import { scale } from 'svelte/transition';
   import { quintOut } from 'svelte/easing';
   import { Button } from '$lib/components/ui';
+  import { Icon } from '$lib/components';
 
   type ButtonVariant =
     | 'default'
@@ -208,20 +209,7 @@
             aria-label="Close modal"
           >
             <span class="sr-only">Close</span>
-            <svg
-              class="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
+            <Icon iconName="close" size={12} />
           </button>
         {/if}
       </div>

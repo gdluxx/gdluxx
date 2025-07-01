@@ -138,22 +138,12 @@
         aria-controls="nav-items-list"
         tabindex="0"
       >
-        <span class="flex-shrink-0 size-5" aria-hidden="true">
-          <svg
-            class="transition-transform"
-            class:rotate-180={collapsed}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            aria-hidden="true"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M11 19l-7-7 7-7m8 14l-7-7 7-7"
-            />
-          </svg>
+        <span class="flex-shrink-0 flex items-center justify-center" aria-hidden="true">
+          <Icon
+            iconName="double-chevron-left"
+            size={24}
+            class="transition-transform {collapsed ? 'rotate-180' : ''}"
+          />
         </span>
       </button>
 
@@ -215,7 +205,7 @@
 
           <!-- Child items -->
           {#if item.children && isItemExpanded(item.id) && (!collapsed || isMobile)}
-            <ul class="mt-1 ml-2 space-y-1" role="group" aria-label="{item.label} submenu">
+            <ul class="mt-1 ml-2 space-y-1" role="list" aria-label="{item.label} submenu">
               {#each item.children as child (child.id)}
                 <li>
                   <button
@@ -275,14 +265,7 @@
               title="Sign out"
               aria-label="Sign out"
             >
-              <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-                />
-              </svg>
+              <Icon iconName="logout" size={24} />
             </button>
           </div>
         </div>
@@ -301,14 +284,7 @@
             title="Sign out"
             aria-label="Sign out"
           >
-            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-              />
-            </svg>
+            <Icon iconName="logout" size={24} />
           </button>
         </div>
       {/if}

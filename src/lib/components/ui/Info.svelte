@@ -11,6 +11,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import type { HTMLAttributes } from 'svelte/elements';
+  import { Icon } from '$lib/components';
 
   type InfoVariant = 'success' | 'warning' | 'danger' | 'info';
   type InfoSize = 'sm' | 'default' | 'lg';
@@ -173,24 +174,11 @@
     {#if dismissible}
       <button
         onclick={handleDismiss}
-        class="cursor-pointer flex-shrink-0 ml-2 p-1 -mr-1 -mt-1 rounded-xs dark:hover:bg-black/5 hover:bg-white/5 transition-colors focus:outline-hidden focus:ring-2 focus:ring-current/20"
+        class="cursor-pointer flex-shrink-0 ml-2 p-1 -mr-1 -mt-1 opacity-60 hover:opacity-100 rounded-xs dark:hover:bg-black/5 hover:bg-white/5 transition-all focus:outline-hidden focus:ring-2 focus:ring-current/20"
         aria-label="Dismiss notification"
         type="button"
       >
-        <svg
-          class="w-4 h-4 text-current opacity-60 hover:opacity-100"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-          aria-hidden="true"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M6 18L18 6M6 6l12 12"
-          />
-        </svg>
+        <Icon iconName="close" size={16} />
       </button>
     {/if}
   </div>

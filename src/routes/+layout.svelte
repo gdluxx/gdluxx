@@ -11,6 +11,7 @@
 <script lang="ts">
   import '../app.css';
   import {
+    Icon,
     JobsList,
     JobOutputModal,
     JobsIndicator,
@@ -35,13 +36,7 @@
   let isMobile = $state(false);
   let sidebarOpen = $state(false);
 
-  interface NavigationItem {
-    id: string;
-    label: string;
-    icon: string;
-    href?: string;
-    children?: NavigationItem[];
-  }
+  import type { NavigationItem } from '$lib/var/navigation';
 
   function handleNavigate(item: NavigationItem) {
     logger.info('Navigating to:', item);
@@ -117,29 +112,11 @@
               aria-label={sidebarOpen ? 'Close navigation menu' : 'Open navigation menu'}
               aria-expanded={sidebarOpen}
             >
-              <svg
-                class="size-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                aria-hidden="true"
-              >
-                {#if sidebarOpen}
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                {:else}
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M4 6h16M4 12h16M4 18h16"
-                  />
-                {/if}
-              </svg>
+              <Icon
+                iconName={sidebarOpen ? 'close' : 'menu'}
+                size={24}
+                ariaLabel={sidebarOpen ? 'Close menu' : 'Open menu'}
+              />
             </button>
           {/if}
 

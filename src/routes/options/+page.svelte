@@ -14,6 +14,7 @@
   import type { OptionsData, SelectedOption } from '$lib/types/options';
   import optionsData from '$lib/assets/options.json';
   import { browser } from '$app/environment';
+  import { Icon } from '$lib/components';
 
   const options = optionsData as OptionsData;
   const STORAGE_KEY = 'selectedOptions';
@@ -153,19 +154,7 @@
                     class="inline-flex items-center gap-2 px-3 py-1.5 bg-primary-100 dark:bg-primary-900 text-primary-800 dark:text-primary-200 rounded-full hover:bg-primary-200 dark:hover:bg-primary-800 transition-colors group"
                   >
                     <span class="text-sm">{option.command}</span>
-                    <svg
-                      class="w-4 h-4 opacity-60 group-hover:opacity-100"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M6 18L18 6M6 6l12 12"
-                      />
-                    </svg>
+                    <Icon iconName="close" size={12} class="opacity-60 group-hover:opacity-100" />
                   </button>
                 {/each}
               </div>

@@ -10,6 +10,7 @@
 
 <script lang="ts">
   import type { Snippet } from 'svelte';
+  import { Icon } from '$lib/components';
 
   interface Props {
     title: string;
@@ -47,10 +48,7 @@
           class="h-6 w-6 sm:h-8 sm:w-8 text-primary-600 dark:text-primary-100 mr-2 sm:mr-3"
           aria-hidden="true"
         >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10" />
-            <path d="m9 12 2 2 4-4" />
-          </svg>
+          <Icon iconName="circle" size={16} />
         </div>
       {/if}
 

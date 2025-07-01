@@ -17,6 +17,7 @@
   import type { ClientJob } from '$lib/stores/jobs';
   import { jobStore } from '$lib/stores/jobs';
   import { CopyTooltip } from '$lib/components/ui';
+  import { Icon } from '$lib/components/index';
 
   interface Props {
     job: ClientJob;
@@ -217,20 +218,10 @@
         <button
           onclick={(event: MouseEvent) => copyToClipboard(job.url, event)}
           aria-label="Copy Job URL"
-          class="cursor-pointer p-1 sm:p-2 text-secondary-600 hover:text-secondary-800 dark:text-secondary-400 dark:hover:text-secondary-200 transition-all duration-200 hover:scale-120 flex-shrink-0"
+          class="cursor-pointer p-1 sm:p-2 text-secondary-600 hover:text-secondary-800 dark:text-secondary-400 dark:hover:text-secondary-200 transition-all duration-200 hover:scale-110 flex-shrink-0"
           title="Copy Job URL"
         >
-          <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <g fill="none" stroke="currentColor" stroke-width="1.5">
-              <path
-                d="M6 11c0-2.828 0-4.243.879-5.121C7.757 5 9.172 5 12 5h3c2.828 0 4.243 0 5.121.879C21 6.757 21 8.172 21 11v5c0 2.828 0 4.243-.879 5.121C19.243 22 17.828 22 15 22h-3c-2.828 0-4.243 0-5.121-.879C6 20.243 6 18.828 6 16z"
-              />
-              <path
-                d="M6 19a3 3 0 0 1-3-3v-6c0-3.771 0-5.657 1.172-6.828S7.229 2 11 2h4a3 3 0 0 1 3 3"
-                opacity="0.5"
-              />
-            </g>
-          </svg>
+          <Icon iconName="copy-clipboard" size={20} />
         </button>
         <CopyTooltip x={tooltip.x} y={tooltip.y} visible={tooltip.visible} text={tooltip.text} />
       </div>
@@ -238,25 +229,10 @@
         <button
           onclick={handleMinimize}
           aria-label="Show Job List"
-          class="cursor-pointer p-1 sm:p-2 text-secondary-600 hover:text-secondary-800 dark:text-secondary-400 dark:hover:text-secondary-200 transition-all duration-200 hover:scale-120"
+          class="cursor-pointer p-1 sm:p-2 text-secondary-600 hover:text-secondary-800 dark:text-secondary-400 dark:hover:text-secondary-200 transition-all duration-200 hover:scale-110"
           title="Show Job List"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="48"
-            height="48"
-            viewBox="0 0 48 48"
-            class="w-5 h-5"
-          >
-            <path
-              fill="none"
-              stroke="currentColor"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="6"
-              d="m8 8l32 32M8 40L40 8"
-            />
-          </svg>
+          <Icon iconName="close" size={20} />
         </button>
       </div>
     </div>
@@ -313,14 +289,7 @@
           class="cursor-pointer p-1 text-secondary-600 hover:text-red-600 dark:text-secondary-400 dark:hover:text-red-400 transition-all duration-200 hover:scale-120 ml-2"
           title="Delete"
         >
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-            />
-          </svg>
+          <Icon iconName="delete" size={20} />
         </button>
       </div>
 
@@ -344,22 +313,10 @@
           <button
             onclick={handleDismiss}
             aria-label="Delete Job"
-            class="cursor-pointer py-1 sm:py-2 text-secondary-600 hover:text-red-600 dark:text-secondary-400 dark:hover:text-red-400 transition-all duration-200 hover:scale-120"
+            class="cursor-pointer py-1 sm:py-2 text-secondary-600 hover:text-red-600 dark:text-secondary-400 dark:hover:text-red-400 transition-all duration-200 hover:scale-105"
             title="Delete"
           >
-            <svg
-              class="w-4 h-4 sm:w-5 sm:h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-              />
-            </svg>
+            <Icon iconName="delete" size={32} />
           </button>
         </div>
       </div>

@@ -14,6 +14,7 @@
   import type { ClientJob } from '$lib/stores/jobs';
   import { jobStore } from '$lib/stores/jobs';
   import { Button, Info, ConfirmModal } from '$lib/components/ui';
+  import { Icon } from '$lib/components/index';
 
   interface Props {
     variant?: 'modal' | 'page';
@@ -172,16 +173,7 @@
               aria-label="Close Job List"
               title="Minimize"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
-                <path
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="1.5"
-                  d="m2 22l7-7m0 0H3.143M9 15v5.857M22 2l-7 7m0 0h5.857M15 9V3.143"
-                />
-              </svg>
+              <Icon iconName="minimize" size={24} />
             </Button>
           </div>
         </div>
@@ -229,18 +221,11 @@
                   </button>
                   <button
                     onclick={e => deleteJob(e, job.id)}
-                    class="ml-4 flex-shrink-0 cursor-pointer p-2 text-secondary-600 transition-all duration-200 hover:scale-120 hover:text-red-600 dark:text-secondary-400 dark:hover:text-red-400"
+                    class="ml-4 flex-shrink-0 cursor-pointer p-2 text-secondary-600 transition-all hover:scale-120 hover:text-red-600 dark:text-secondary-400 dark:hover:text-red-400"
                     title="Delete job"
                     aria-label={`Delete job ${job.url}`}
                   >
-                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                      />
-                    </svg>
+                    <Icon iconName="delete" size={20} />
                   </button>
                 </li>
               {/each}
@@ -314,18 +299,11 @@
                 </button>
                 <button
                   onclick={e => deleteJob(e, job.id)}
-                  class="ml-4 flex-shrink-0 cursor-pointer p-2 text-secondary-600 transition-all duration-200 hover:scale-120 hover:text-red-600 dark:text-secondary-400 dark:hover:text-red-400"
+                  class="ml-4 flex-shrink-0 cursor-pointer p-2 text-secondary-600 transition-all hover:scale-120 hover:text-red-600 dark:text-secondary-400 dark:hover:text-red-400"
                   title="Delete job"
                   aria-label={`Delete job ${job.url}`}
                 >
-                  <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                    />
-                  </svg>
+                  <Icon iconName="delete" size={20} />
                 </button>
               </li>
             {/each}
