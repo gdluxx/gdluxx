@@ -69,6 +69,9 @@
     onClose,
   }: ConfirmModalProps = $props();
 
+  let modalElement: HTMLDivElement | undefined = $state();
+  let previouslyFocusedElement: HTMLElement | null = $state(null);
+
   const sizeClasses: Record<ModalSize, string> = {
     sm: 'sm:max-w-sm',
     md: 'sm:max-w-md',
@@ -76,10 +79,55 @@
     xl: 'sm:max-w-xl',
   };
 
+  // Focus management
+  $effect(() => {
+    if (show) {
+      previouslyFocusedElement = document.activeElement as HTMLElement;
+
+      setTimeout(() => {
+        if (modalElement) {
+          const focusableElements = modalElement.querySelectorAll(
+            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+          );
+          const firstElement = focusableElements[0] as HTMLElement;
+          if (firstElement) {
+            firstElement.focus();
+          } else {
+            modalElement.focus();
+          }
+        }
+      }, 100);
+    } else if (previouslyFocusedElement) {
+      previouslyFocusedElement.focus();
+      previouslyFocusedElement = null;
+    }
+  });
+
   function handleKeydown(event: KeyboardEvent): void {
     if (event.key === 'Escape' && !preventEscapeClose) {
       event.preventDefault();
       handleClose();
+      return;
+    }
+
+    if (event.key === 'Tab' && modalElement) {
+      const focusableElements = modalElement.querySelectorAll(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      const firstElement = focusableElements[0] as HTMLElement;
+      const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
+
+      if (event.shiftKey) {
+        if (document.activeElement === firstElement) {
+          event.preventDefault();
+          lastElement?.focus();
+        }
+      } else {
+        if (document.activeElement === lastElement) {
+          event.preventDefault();
+          firstElement?.focus();
+        }
+      }
     }
   }
 
@@ -125,6 +173,7 @@
 
 {#if show}
   <div
+    bind:this={modalElement}
     class="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-xs"
     onclick={handleBackdropClick}
     onkeydown={handleKeydown}
@@ -132,7 +181,7 @@
     aria-modal="true"
     aria-labelledby="modal-title"
     aria-describedby={message ? 'modal-description' : undefined}
-    tabindex="-1"
+    tabindex="0"
   >
     <!-- Modal dialog -->
     <div
