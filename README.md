@@ -3,6 +3,8 @@
 gdluxx is nothing more than a self-hosted browser based gui for
 [_gallery-dl_](https://github.com/mikf/gallery-dl)
 
+[See some screenshots](#screenshots)
+
 ## What's it about?
 
 - **GUI**: An interface for _gallery-dl_ to act upon one or more URLs
@@ -27,9 +29,9 @@ root.
 
 For example, if you want everything in the container (downloads, configuration
 file, etc.) to end up at `~Documents/gdluxx/`, you'll need to create
-`~Documents/gdluxx/`. If you want everything located in the same directory
-from where you run the Docker compose command, you'll need to make sure you
-create the `data/` directory FIRST.
+`~Documents/gdluxx/`. If you want everything located in the same directory from
+where you run the Docker compose command, you'll need to make sure you create
+the `data/` directory FIRST.
 
 If you try to use a Docker volume, you won't have easy access to your downloads.
 
@@ -75,6 +77,17 @@ gdluxx will use the `data/` directory to store:
 - `config.json` - Your _gallery-dl_ configuration
 - `gallery-dl.bin` - _gallery-dl_ binary file
 - _gallery-dl_ downloads
+
+## Screenshots
+
+<p align="center">
+ <img src="screenshots/screenshot_1.png" alt="Screenshot 1" width="400"/>  
+ <img src="screenshots/screenshot_2.png" alt="Screenshot 2" width="400"/>  
+ <img src="screenshots/screenshot_3.png" alt="Screenshot 3" width="400"/>  
+ <img src="screenshots/screenshot_4.png" alt="Screenshot 4" width="400"/>  
+ <img src="screenshots/screenshot_5.png" alt="Screenshot 5" width="400"/>  
+ <img src="screenshots/screenshot_6.png" alt="Screenshot 6" width="400"/>
+</p>
 
 ## TODO
 
