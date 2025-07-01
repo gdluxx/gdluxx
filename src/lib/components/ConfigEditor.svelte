@@ -48,7 +48,9 @@
 
   interface Props {
     value?: string;
-    onSave?: ((content: string) => Promise<{ message: string; [key: string]: unknown }>) | undefined;
+    onSave?:
+      | ((content: string) => Promise<{ message: string; [key: string]: unknown }>)
+      | undefined;
     theme?: 'light' | 'dark';
     height?: string;
     readonly?: boolean;

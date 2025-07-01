@@ -59,7 +59,7 @@
     }
 
     const result = await response.json();
-    
+
     // If paths were transformed, update editor
     if (result.transformed && result.content) {
       jsonContent = result.content;
@@ -68,7 +68,7 @@
     if (loadMessage) {
       loadMessage = '';
     }
-    
+
     return result;
   }
 
