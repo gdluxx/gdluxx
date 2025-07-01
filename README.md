@@ -113,7 +113,7 @@ gdluxx will use the `data/` directory to store:
 
 4. Misc
 
-   - [ ] Consolidate SVG icons
+   - [x] Consolidate SVG icons
    - [ ] Consider alternatives to deprecated `document.execCommand('copy')`
    - [x] Combine `JobList` components
    - [x] ~~Adjust `api-keys.json` file permissions~~
