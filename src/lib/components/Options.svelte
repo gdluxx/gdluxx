@@ -11,35 +11,45 @@
 <script lang="ts">
   import { fade, scale } from 'svelte/transition';
   import { quintOut } from 'svelte/easing';
-  import type { OptionCategory } from '$lib/types/options';
+  import type { Option, OptionCategory } from '$lib/types/options';
+
+  type SelectedOptions = Map<string, string | number | boolean>;
 
   interface Props {
     isOpen: boolean;
     category: OptionCategory;
-    selectedIds: Set<string>;
+    selectedOptions: SelectedOptions;
     onClose: () => void;
-    onApply: (selected: Set<string>) => void;
+    onApply: (selected: SelectedOptions) => void;
   }
 
-  const { isOpen, category, selectedIds, onClose, onApply }: Props = $props();
+  const { isOpen, category, selectedOptions, onClose, onApply }: Props = $props();
 
-  let localSelected = $state(new Set<string>());
+  let localSelected = $state<SelectedOptions>(new Map());
   let hoveredOption = $state<string | null>(null);
   let tooltipPosition = $state({ x: 0, y: 0 });
 
   $effect(() => {
     if (isOpen) {
-      localSelected = new Set(selectedIds);
+      localSelected = new Map(selectedOptions);
     }
   });
 
-  function toggleOption(optionId: string) {
-    if (localSelected.has(optionId)) {
-      localSelected.delete(optionId);
+  function toggleOption(option: Option) {
+    const { id, defaultValue } = option;
+    if (localSelected.has(id)) {
+      localSelected.delete(id);
     } else {
-      localSelected.add(optionId);
+      localSelected.set(id, defaultValue ?? true);
     }
-    localSelected = new Set(localSelected);
+    localSelected = new Map(localSelected);
+  }
+
+  function updateOptionValue(optionId: string, value: string | number) {
+    if (localSelected.has(optionId)) {
+      localSelected.set(optionId, value);
+      localSelected = new Map(localSelected);
+    }
   }
 
   function handleMouseEnter(event: MouseEvent, optionId: string) {
@@ -47,7 +57,7 @@
     const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
     tooltipPosition = {
       x: rect.right + 10,
-      y: rect.top + rect.height / 2,
+      y: rect.top + rect.height / 2
     };
   }
 
@@ -56,7 +66,7 @@
   }
 
   function handleApply() {
-    onApply(new Set(localSelected));
+    onApply(new Map(localSelected));
     onClose();
   }
 
@@ -91,19 +101,51 @@
       <div class="max-h-[60vh] overflow-y-auto px-6 py-4">
         <div class="space-y-3">
           {#each category.options as option (option.id)}
-            <label
-              class="flex cursor-pointer items-start gap-3 rounded-lg p-3 transition-colors hover:bg-secondary-50 dark:hover:bg-secondary-800"
+            <div
+              class="flex items-start gap-3 rounded-lg p-3 transition-colors hover:bg-secondary-50 dark:hover:bg-secondary-800"
             >
               <input
                 type="checkbox"
+                id="option-{option.id}"
                 checked={localSelected.has(option.id)}
-                onchange={() => toggleOption(option.id)}
+                onchange={() => toggleOption(option)}
                 class="mt-1 h-4 w-4 rounded border-secondary-300 bg-white text-primary-600 focus:ring-2 focus:ring-primary-500 dark:border-secondary-600 dark:bg-secondary-700 dark:focus:ring-primary-400"
               />
               <div class="flex-1">
-                <span class="font-medium text-secondary-900 dark:text-secondary-100">
-                  {option.command}
-                </span>
+                <label for="option-{option.id}" class="cursor-pointer">
+                  <span class="font-medium text-secondary-900 dark:text-secondary-100">
+                    {option.command}
+                  </span>
+                </label>
+                {#if localSelected.has(option.id) && option.type !== 'boolean'}
+                  <div class="mt-2">
+                    {#if option.type === 'string'}
+                      <input
+                        type="text"
+                        placeholder={option.placeholder}
+                        value={localSelected.get(option.id)}
+                        oninput={e => updateOptionValue(option.id, e.currentTarget.value)}
+                        class="w-full rounded-md border-secondary-300 bg-white px-3 py-2 text-secondary-900 focus:border-primary-500 focus:ring-primary-500 dark:border-secondary-600 dark:bg-secondary-800 dark:text-secondary-100"
+                      />
+                    {:else if option.type === 'number'}
+                      <input
+                        type="number"
+                        placeholder={option.placeholder}
+                        value={localSelected.get(option.id)}
+                        oninput={e => updateOptionValue(option.id, e.currentTarget.valueAsNumber)}
+                        class="w-full rounded-md border-secondary-300 bg-white px-3 py-2 text-secondary-900 focus:border-primary-500 focus:ring-primary-500 dark:border-secondary-600 dark:bg-secondary-800 dark:text-secondary-100"
+                      />
+                    {:else if option.type === 'range'}
+                      <input
+                        type="text"
+                        placeholder={option.placeholder}
+                        value={localSelected.get(option.id)}
+                        oninput={e => updateOptionValue(option.id, e.currentTarget.value)}
+                        class="w-full rounded-md border-secondary-300 bg-white px-3 py-2 text-secondary-900 focus:border-primary-500 focus:ring-primary-500 dark:border-secondary-600 dark:bg-secondary-800 dark:text-secondary-100"
+                      />
+                    {/if}
+                  </div>
+                {/if}
               </div>
               <button
                 type="button"
@@ -114,7 +156,7 @@
               >
                 <span class="text-xs text-secondary-600 dark:text-secondary-400">?</span>
               </button>
-            </label>
+            </div>
           {/each}
         </div>
       </div>

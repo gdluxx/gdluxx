@@ -20,14 +20,18 @@ export async function POST({ request }: { request: Request }): Promise<Response>
   const { spawn } = await import('@homebridge/node-pty-prebuilt-multiarch');
 
   try {
-    const { urls, useUserConfigPath = false } = await request.json();
+    const {
+      urls,
+      useUserConfigPath = false,
+      args: receivedArgs = []
+    } = await request.json();
 
     if (!Array.isArray(urls) || urls.length === 0) {
       return json(
         {
           overallSuccess: false,
           results: [],
-          error: 'An array of URLs is required and cannot be empty',
+          error: 'An array of URLs is required and cannot be empty'
         },
         { status: 400 }
       );
@@ -43,8 +47,8 @@ export async function POST({ request }: { request: Request }): Promise<Response>
           results: urls.map((url: string) => ({
             url,
             success: false,
-            error: 'gallery-dl.bin not found or not executable',
-          })),
+            error: 'gallery-dl.bin not found or not executable'
+          }))
         },
         { status: 500 }
       );
@@ -58,7 +62,7 @@ export async function POST({ request }: { request: Request }): Promise<Response>
         batchResults.push({
           url: url || 'INVALID_URL_ENTRY',
           success: false,
-          error: 'Invalid URL entry provided in the list.',
+          error: 'Invalid URL entry provided in the list.'
         });
         overallSuccess = false;
         continue;
@@ -70,13 +74,22 @@ export async function POST({ request }: { request: Request }): Promise<Response>
 
       const args: string[] = [url, '--config', './data/config.json'];
 
+      // Process received arguments
+      for (const [key, value] of receivedArgs) {
+        const command = `--${key.replace(/([A-Z])/g, '-$1').toLowerCase()}`;
+        args.push(command);
+        if (typeof value !== 'boolean') {
+          args.push(String(value));
+        }
+      }
+
       try {
         const ptyProcess: IPty = spawn(PATHS.BIN_FILE, args, {
           name: TERMINAL.NAME,
           cols: TERMINAL.COLS,
           rows: TERMINAL.ROWS,
           cwd: process.cwd(),
-          env: { ...process.env, NO_COLOR: '0', TERM: TERMINAL.NAME },
+          env: { ...process.env, NO_COLOR: '0', TERM: TERMINAL.NAME }
         });
 
         await jobManager.setJobProcess(jobId, ptyProcess);

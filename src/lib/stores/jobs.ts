@@ -67,21 +67,25 @@ function createJobStore() {
     }
   }
 
-  async function startJob(urls: string[], useUserConfigPath = false): Promise<BatchJobStartResult> {
+  async function startJob(
+    urls: string[],
+    useUserConfigPath = false,
+    selectedOptions = new Map<string, string | number | boolean>()
+  ): Promise<BatchJobStartResult> {
     if (!browser) {
       return {
         overallSuccess: false,
         results: urls.map(url => ({
           url,
           success: false,
-          error: 'Cannot start job during SSR',
-        })),
+          error: 'Cannot start job during SSR'
+        }))
       };
     }
     if (!urls || urls.length === 0) {
       return {
         overallSuccess: false,
-        results: [],
+        results: []
       };
     }
 
@@ -90,7 +94,11 @@ function createJobStore() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
 
-        body: JSON.stringify({ urls, useUserConfigPath }),
+        body: JSON.stringify({
+          urls,
+          useUserConfigPath,
+          args: Array.from(selectedOptions.entries())
+        })
       });
 
       const data: BatchJobStartResult = await response.json();

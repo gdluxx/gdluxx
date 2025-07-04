@@ -13,17 +13,44 @@
   import { hasJsonLintErrors } from '$lib/stores/lint';
   import { type BatchJobStartResult, jobStore } from '$lib/stores/jobs';
   import { logger } from '$lib/shared/logger';
-  import { Button, Info } from '$lib/components/ui';
+  import { Button, Chip, Info } from '$lib/components/ui';
+  import Options from '$lib/components/Options.svelte';
+  import optionsData from '$lib/assets/options.json';
+  import type { Option, OptionCategory } from '$lib/types/options';
 
   let commandUrlsInput = $state('');
   const useUserConfigPath = $state(false);
   let isLoading = $state(false);
   let formError = $state<string | null>(null);
   let successMessage = $state<string | null>(null);
+  let isOptionsOpen = $state(false);
+  let selectedOptions = $state(new Map<string, string | number | boolean>());
+  let currentCategory = $state<OptionCategory | null>(null);
 
-  onMount(() => {
-    checkConfigFileForErrors();
+  const allOptions: Option[] = Object.values(optionsData).flatMap(category => category.options);
+
+  onMount(async () => {
+    await checkConfigFileForErrors();
   });
+
+  function openOptions(category: OptionCategory) {
+    currentCategory = category;
+    isOptionsOpen = true;
+  }
+
+  function handleApplyOptions(newOptions: Map<string, string | number | boolean>) {
+    selectedOptions = new Map(newOptions);
+    isOptionsOpen = false;
+  }
+
+  function removeOption(optionId: string) {
+    selectedOptions.delete(optionId);
+    selectedOptions = new Map(selectedOptions);
+  }
+
+  function getOptionById(optionId: string): Option | undefined {
+    return allOptions.find(opt => opt.id === optionId);
+  }
 
   async function checkConfigFileForErrors() {
     try {
@@ -65,7 +92,8 @@
 
     const batchStartResult: BatchJobStartResult = await jobStore.startJob(
       urlsToProcess,
-      useUserConfigPath
+      useUserConfigPath,
+      selectedOptions
     );
 
     isLoading = false;
@@ -152,6 +180,33 @@
       </div>
     </div>
 
+    <div class="m-4 flex flex-wrap gap-2">
+      {#each Object.values(optionsData) as category (category.title)}
+        <Button
+          type="button"
+          onclick={() => openOptions(category)}
+          class="bg-secondary-200 text-secondary-800 hover:bg-secondary-300 dark:bg-secondary-700 dark:text-secondary-200 dark:hover:bg-secondary-600"
+        >
+          {category.title}
+        </Button>
+      {/each}
+    </div>
+
+    {#if selectedOptions.size > 0}
+      <div class="m-4 flex flex-wrap gap-2">
+        {#each [...selectedOptions.entries()] as [id, value] (id)}
+          {@const option = getOptionById(id)}
+          {#if option}
+            <Chip
+              label={option.command}
+              {value}
+              on:remove={() => removeOption(id)}
+            />
+          {/if}
+        {/each}
+      </div>
+    {/if}
+
     <div class="flex justify-end m-4 gap-6">
       <Button
         onclick={clearUrlsInput}
@@ -187,3 +242,13 @@
     {/if}
   </form>
 </div>
+
+{#if isOptionsOpen && currentCategory}
+  <Options
+    isOpen={isOptionsOpen}
+    category={currentCategory}
+    {selectedOptions}
+    onClose={() => (isOptionsOpen = false)}
+    onApply={handleApplyOptions}
+  />
+{/if}

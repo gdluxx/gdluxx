@@ -12,6 +12,9 @@ export interface Option {
   id: string;
   command: string;
   description: string;
+  type: 'boolean' | 'string' | 'number' | 'range';
+  placeholder?: string;
+  defaultValue?: string | number | boolean;
 }
 
 export interface OptionCategory {
