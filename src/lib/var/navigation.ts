@@ -8,7 +8,15 @@
  * as published by the Free Software Foundation.
  */
 
-export const navItems = [
+export interface NavigationItem {
+  id: string;
+  label: string;
+  icon: string;
+  href?: string;
+  children?: NavigationItem[];
+}
+
+export const navItems: NavigationItem[] = [
   {
     id: 'home',
     label: 'Home',
