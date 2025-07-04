@@ -94,6 +94,7 @@
     };
   });
 </script>
+
 <!--  rounded-lg bg-secondary-100 dark:bg-secondary-800 hover:bg-secondary-200 dark:hover:bg-secondary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 focus:ring-offset-secondary-50 dark:focus:ring-offset-secondary-900 transition-all duration-200 -->
 <button
   type="button"
@@ -104,7 +105,9 @@
 >
   <!-- light mode -->
   <svg
-    class="absolute w-6 h-6 text-primary-600 dark:text-primary-400 transition-all duration-400 {isDark ? 'opacity-0 rotate-180 scale-75' : 'opacity-100 rotate-0 scale-100'}"
+    class="absolute w-6 h-6 text-primary-600 dark:text-primary-400 transition-all duration-400 {isDark
+      ? 'opacity-0 rotate-180 scale-75'
+      : 'opacity-100 rotate-0 scale-100'}"
     fill="none"
     stroke="currentColor"
     viewBox="0 0 24 24"
@@ -120,7 +123,9 @@
 
   <!-- dark mode -->
   <svg
-    class="absolute w-6 h-6 text-primary-600 dark:text-primary-400 transition-all duration-400 {isDark ? 'opacity-100 rotate-0 scale-100' : 'opacity-0 rotate-180 scale-75'}"
+    class="absolute w-6 h-6 text-primary-600 dark:text-primary-400 transition-all duration-400 {isDark
+      ? 'opacity-100 rotate-0 scale-100'
+      : 'opacity-0 rotate-180 scale-75'}"
     xmlns="http://www.w3.org/2000/svg"
     viewBox="0 0 24 24"
     aria-hidden="true"

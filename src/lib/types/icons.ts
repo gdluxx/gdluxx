@@ -35,7 +35,8 @@ export type IconName =
   | 'magnifying-glass'
   | 'settings'
   | 'run'
-  | 'setup';
+  | 'setup'
+  | 'sort';
 
 export interface IconConfig {
   name: IconName;
@@ -71,4 +72,5 @@ export const ICON_CATALOG: IconConfig[] = [
   { name: 'magnifying-glass', label: 'Magnifying Glass', category: 'object' },
   { name: 'settings', label: 'Settings', category: 'navigation' },
   { name: 'run', label: 'Run', category: 'object' },
+  { name: 'sort', label: 'Sort', category: 'action' },
 ];

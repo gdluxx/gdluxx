@@ -25,10 +25,20 @@
   const { variant = 'page', isOpen = true, onClose }: Props = $props();
 
   let showDeleteConfirm = $state(false);
-  let deleteAction = $state<'single' | 'all'>('all');
+  let deleteAction = $state<'single' | 'all' | 'selected'>('all');
   let jobToDelete = $state<string | null>(null);
+  let sortNewestFirst = $state(true);
+  let selectedJobs = $state<Set<string>>(new Set());
 
-  const jobs = $derived(Array.from($jobStore.values()));
+  const allJobs = $derived(Array.from($jobStore.values()));
+  const jobs = $derived(
+    [...allJobs].sort((a, b) => {
+      return sortNewestFirst ? b.startTime - a.startTime : a.startTime - b.startTime;
+    })
+  );
+  const selectedCount = $derived(selectedJobs.size);
+  const hasSelection = $derived(selectedCount > 0);
+  const allSelected = $derived(selectedCount === jobs.length && jobs.length > 0);
 
   function handleBackdropClick(event: MouseEvent) {
     if (event.target === event.currentTarget && variant === 'modal' && onClose) {
@@ -92,6 +102,35 @@
     showDeleteConfirm = true;
   }
 
+  function deleteSelectedJobs(event: MouseEvent) {
+    event.stopPropagation();
+    deleteAction = 'selected';
+    jobToDelete = null;
+    showDeleteConfirm = true;
+  }
+
+  function toggleSort() {
+    sortNewestFirst = !sortNewestFirst;
+  }
+
+  function toggleJobSelection(jobId: string) {
+    if (selectedJobs.has(jobId)) {
+      selectedJobs.delete(jobId);
+    } else {
+      selectedJobs.add(jobId);
+    }
+    selectedJobs = new Set(selectedJobs);
+  }
+
+  function toggleSelectAll() {
+    if (allSelected) {
+      selectedJobs.clear();
+    } else {
+      selectedJobs = new Set(jobs.map(job => job.id));
+    }
+    selectedJobs = new Set(selectedJobs);
+  }
+
   function deleteJob(event: MouseEvent, jobId: string) {
     event.stopPropagation();
     deleteAction = 'single';
@@ -106,6 +145,12 @@
       jobs.forEach(function (job) {
         jobStore.deleteJob(job.id);
       });
+    } else if (deleteAction === 'selected') {
+      Array.from(selectedJobs).forEach(function (jobId) {
+        jobStore.deleteJob(jobId);
+      });
+      selectedJobs.clear();
+      selectedJobs = new Set(selectedJobs);
     }
     showDeleteConfirm = false;
     jobToDelete = null;
@@ -153,17 +198,54 @@
         >
           <h2 class="text-xl font-semibold text-secondary-900 dark:text-secondary-100">
             Jobs: {jobs.length}
+            {#if hasSelection}
+              <span class="text-sm text-secondary-600 dark:text-secondary-400">
+                ({selectedCount} selected)
+              </span>
+            {/if}
           </h2>
-          <div class="flex items-center gap-4">
+          <div class="flex items-center gap-2">
             {#if jobs.length > 0}
               <Button
-                name="Delete All Jobs"
-                onclick={deleteAllJobs}
-                aria-label="Delete All Jobs"
-                variant="danger"
+                onclick={toggleSort}
+                aria-label={`Sort ${sortNewestFirst ? 'oldest' : 'newest'} first`}
+                variant="outline-primary"
+                size="sm"
+                title={`Sort ${sortNewestFirst ? 'oldest' : 'newest'} first`}
               >
-                Delete All Jobs
+                <Icon iconName="sort" size={16} class={sortNewestFirst ? '' : 'rotate-180'} />
               </Button>
+
+              <Button
+                onclick={toggleSelectAll}
+                aria-label={allSelected ? 'Deselect all' : 'Select all'}
+                variant="outline-primary"
+                size="sm"
+              >
+                {allSelected ? 'Deselect All' : 'Select All'}
+              </Button>
+
+              {#if hasSelection}
+                <Button
+                  name="Delete Selected Jobs"
+                  onclick={deleteSelectedJobs}
+                  aria-label="Delete Selected Jobs"
+                  variant="danger"
+                  size="sm"
+                >
+                  Delete Selected ({selectedCount})
+                </Button>
+              {:else}
+                <Button
+                  name="Delete All Jobs"
+                  onclick={deleteAllJobs}
+                  aria-label="Delete All Jobs"
+                  variant="danger"
+                  size="sm"
+                >
+                  Delete All
+                </Button>
+              {/if}
             {/if}
 
             <!-- Close button for modal -->
@@ -172,8 +254,9 @@
               onclick={onClose}
               aria-label="Close Job List"
               title="Minimize"
+              size="sm"
             >
-              <Icon iconName="minimize" size={24} />
+              <Icon iconName="minimize" size={20} />
             </Button>
           </div>
         </div>
@@ -190,6 +273,140 @@
                 <li
                   class="flex w-full items-center justify-between p-4 transition-colors hover:bg-primary-100 dark:hover:bg-primary-900 hover:rounded-sm"
                 >
+                  <div class="flex items-center gap-3 flex-1 min-w-0">
+                    <input
+                      type="checkbox"
+                      checked={selectedJobs.has(job.id)}
+                      onchange={() => toggleJobSelection(job.id)}
+                      class="w-4 h-4 text-primary-600 bg-white border-2 border-primary-300 rounded transition-all duration-150 ease-in-out hover:border-primary-400 focus:ring-2 focus:ring-primary-300 focus:ring-offset-2 focus:border-primary-500 checked:bg-primary-600 checked:border-primary-600 checked:hover:bg-primary-700 checked:hover:border-primary-700 dark:bg-primary-800 dark:border-primary-600 dark:checked:bg-primary-500 dark:checked:border-primary-500 dark:hover:border-primary-500 dark:focus:ring-primary-400 dark:focus:ring-offset-primary-900"
+                      aria-label={`Select job ${job.url}`}
+                    />
+                    <button
+                      onclick={() => handleJobClick(job)}
+                      class="flex min-w-0 flex-1 cursor-pointer flex-col text-left hover:scale-101 focus:outline-none"
+                      aria-label={`View details for job ${job.url}`}
+                    >
+                      <div class="flex-grow">
+                        <div class="mb-1 flex items-center gap-2">
+                          <div class={`h-3 w-3 rounded-full ${getStatusColor(job.status)}`}></div>
+                          <span
+                            class="text-sm font-medium text-secondary-900 dark:text-secondary-100"
+                          >
+                            {getStatusText(job.status)}
+                          </span>
+                          <span class="text-xs text-secondary-500 dark:text-secondary-400">
+                            {formatDuration(job.startTime, job.endTime)}
+                          </span>
+                        </div>
+                        <p class="truncate text-sm text-secondary-700 dark:text-secondary-300">
+                          {job.url}
+                        </p>
+                      </div>
+
+                      <span class="mt-2 text-xs text-secondary-500 dark:text-secondary-400">
+                        Started: {new Date(job.startTime).toLocaleString()}
+                        {#if job.endTime}
+                          | Ended: {new Date(job.endTime).toLocaleString()}
+                        {/if}
+                      </span>
+                    </button>
+                  </div>
+                  <button
+                    onclick={e => deleteJob(e, job.id)}
+                    class="ml-4 flex-shrink-0 cursor-pointer p-2 text-secondary-600 transition-all hover:scale-120 hover:text-red-600 dark:text-secondary-400 dark:hover:text-red-400"
+                    title="Delete job"
+                    aria-label={`Delete job ${job.url}`}
+                  >
+                    <Icon iconName="delete" size={20} />
+                  </button>
+                </li>
+              {/each}
+            </ul>
+          {/if}
+        </div>
+      </div>
+    </div>
+  {:else}
+    <!-- Page variant -->
+    <div class={getContainerClass()}>
+      <!-- Header -->
+      <div
+        class="cursor-default flex items-center justify-between border-b border-secondary-200 px-6 py-4 dark:border-secondary-700"
+      >
+        <h2 class="text-xl font-semibold text-secondary-900 dark:text-secondary-100">
+          Jobs: {jobs.length}
+          {#if hasSelection}
+            <span class="text-sm text-secondary-600 dark:text-secondary-400">
+              ({selectedCount} selected)
+            </span>
+          {/if}
+        </h2>
+        <div class="flex items-center gap-2">
+          {#if jobs.length > 0}
+            <Button
+              onclick={toggleSort}
+              aria-label={`Sort ${sortNewestFirst ? 'oldest' : 'newest'} first`}
+              variant="outline-primary"
+              size="sm"
+              title={`Sort ${sortNewestFirst ? 'oldest' : 'newest'} first`}
+            >
+              <Icon iconName="sort" size={20} class={sortNewestFirst ? '' : 'rotate-180'} />
+            </Button>
+
+            <Button
+              onclick={toggleSelectAll}
+              aria-label={allSelected ? 'Deselect all' : 'Select all'}
+              variant="outline-primary"
+              size="sm"
+            >
+              {allSelected ? 'Deselect All' : 'Select All'}
+            </Button>
+
+            {#if hasSelection}
+              <Button
+                name="Delete Selected Jobs"
+                onclick={deleteSelectedJobs}
+                aria-label="Delete Selected Jobs"
+                variant="danger"
+                size="sm"
+              >
+                Delete Selected ({selectedCount})
+              </Button>
+            {:else}
+              <Button
+                name="Delete All Jobs"
+                onclick={deleteAllJobs}
+                aria-label="Delete All Jobs"
+                variant="danger"
+                size="sm"
+              >
+                Delete All
+              </Button>
+            {/if}
+          {/if}
+        </div>
+      </div>
+
+      <!-- Job list -->
+      <div class={`${getHeightClass()} overflow-y-auto`}>
+        {#if jobs.length === 0}
+          <div class="p-8 text-center text-secondary-600 dark:text-secondary-400">
+            No jobs to display
+          </div>
+        {:else}
+          <ul class="divide-y divide-secondary-200 dark:divide-secondary-700">
+            {#each jobs as job (job.id)}
+              <li
+                class="flex w-full items-center justify-between p-4 transition-colors hover:bg-primary-100 dark:hover:bg-primary-900 hover:rounded-sm"
+              >
+                <div class="flex items-center gap-3 flex-1 min-w-0">
+                  <input
+                    type="checkbox"
+                    checked={selectedJobs.has(job.id)}
+                    onchange={() => toggleJobSelection(job.id)}
+                    class="w-4 h-4 text-primary-600 bg-white border-2 border-primary-300 rounded transition-all duration-150 ease-in-out hover:border-primary-400 focus:ring-2 focus:ring-primary-300 focus:ring-offset-2 focus:border-primary-500 checked:bg-primary-600 checked:border-primary-600 checked:hover:bg-primary-700 checked:hover:border-primary-700 dark:bg-primary-800 dark:border-primary-600 dark:checked:bg-primary-500 dark:checked:border-primary-500 dark:hover:border-primary-500 dark:focus:ring-primary-400 dark:focus:ring-offset-primary-900"
+                    aria-label={`Select job ${job.url}`}
+                  />
                   <button
                     onclick={() => handleJobClick(job)}
                     class="flex min-w-0 flex-1 cursor-pointer flex-col text-left hover:scale-101 focus:outline-none"
@@ -219,84 +436,7 @@
                       {/if}
                     </span>
                   </button>
-                  <button
-                    onclick={e => deleteJob(e, job.id)}
-                    class="ml-4 flex-shrink-0 cursor-pointer p-2 text-secondary-600 transition-all hover:scale-120 hover:text-red-600 dark:text-secondary-400 dark:hover:text-red-400"
-                    title="Delete job"
-                    aria-label={`Delete job ${job.url}`}
-                  >
-                    <Icon iconName="delete" size={20} />
-                  </button>
-                </li>
-              {/each}
-            </ul>
-          {/if}
-        </div>
-      </div>
-    </div>
-  {:else}
-    <!-- Page variant -->
-    <div class={getContainerClass()}>
-      <!-- Header -->
-      <div
-        class="cursor-default flex items-center justify-between border-b border-secondary-200 px-6 py-4 dark:border-secondary-700"
-      >
-        <h2 class="text-xl font-semibold text-secondary-900 dark:text-secondary-100">
-          Jobs: {jobs.length}
-        </h2>
-        <div class="flex items-center gap-4">
-          {#if jobs.length > 0}
-            <Button
-              name="Delete All Jobs"
-              onclick={deleteAllJobs}
-              aria-label="Delete All Jobs"
-              variant="danger"
-            >
-              Delete All Jobs
-            </Button>
-          {/if}
-        </div>
-      </div>
-
-      <!-- Job list -->
-      <div class={`${getHeightClass()} overflow-y-auto`}>
-        {#if jobs.length === 0}
-          <div class="p-8 text-center text-secondary-600 dark:text-secondary-400">
-            No jobs to display
-          </div>
-        {:else}
-          <ul class="divide-y divide-secondary-200 dark:divide-secondary-700">
-            {#each jobs as job (job.id)}
-              <li
-                class="flex w-full items-center justify-between p-4 transition-colors hover:bg-primary-100 dark:hover:bg-primary-900 hover:rounded-sm"
-              >
-                <button
-                  onclick={() => handleJobClick(job)}
-                  class="flex min-w-0 flex-1 cursor-pointer flex-col text-left hover:scale-101 focus:outline-none"
-                  aria-label={`View details for job ${job.url}`}
-                >
-                  <div class="flex-grow">
-                    <div class="mb-1 flex items-center gap-2">
-                      <div class={`h-3 w-3 rounded-full ${getStatusColor(job.status)}`}></div>
-                      <span class="text-sm font-medium text-secondary-900 dark:text-secondary-100">
-                        {getStatusText(job.status)}
-                      </span>
-                      <span class="text-xs text-secondary-500 dark:text-secondary-400">
-                        {formatDuration(job.startTime, job.endTime)}
-                      </span>
-                    </div>
-                    <p class="truncate text-sm text-secondary-700 dark:text-secondary-300">
-                      {job.url}
-                    </p>
-                  </div>
-
-                  <span class="mt-2 text-xs text-secondary-500 dark:text-secondary-400">
-                    Started: {new Date(job.startTime).toLocaleString()}
-                    {#if job.endTime}
-                      | Ended: {new Date(job.endTime).toLocaleString()}
-                    {/if}
-                  </span>
-                </button>
+                </div>
                 <button
                   onclick={e => deleteJob(e, job.id)}
                   class="ml-4 flex-shrink-0 cursor-pointer p-2 text-secondary-600 transition-all hover:scale-120 hover:text-red-600 dark:text-secondary-400 dark:hover:text-red-400"
@@ -316,8 +456,16 @@
 
 <ConfirmModal
   show={showDeleteConfirm}
-  title={deleteAction === 'all' ? 'Delete all Jobs?' : 'Delete Job?'}
-  confirmText={deleteAction === 'all' ? 'Delete All Jobs' : 'Delete Job'}
+  title={deleteAction === 'all'
+    ? 'Delete all Jobs?'
+    : deleteAction === 'selected'
+      ? 'Delete Selected Jobs?'
+      : 'Delete Job?'}
+  confirmText={deleteAction === 'all'
+    ? 'Delete All Jobs'
+    : deleteAction === 'selected'
+      ? `Delete ${selectedCount} Jobs`
+      : 'Delete Job'}
   cancelText="Cancel"
   confirmVariant="danger"
   cancelVariant="outline-primary"
@@ -329,6 +477,13 @@
       This will permanently delete all
       <span class="text-xl font-bold text-warning-500">{jobs.length}</span>
       jobs.
+    </p>
+    <Info variant="danger">This is a destructive action that cannot be reversed.</Info>
+  {:else if deleteAction === 'selected'}
+    <p class="text-secondary-700 dark:text-secondary-300 mb-4">
+      This will permanently delete
+      <span class="text-xl font-bold text-warning-500">{selectedCount}</span>
+      selected jobs.
     </p>
     <Info variant="danger">This is a destructive action that cannot be reversed.</Info>
   {:else}
