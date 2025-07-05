@@ -12,6 +12,7 @@
   import { fade, scale } from 'svelte/transition';
   import { quintOut } from 'svelte/easing';
   import type { Option, OptionCategory } from '$lib/types/options';
+  import { Button } from '$lib/components/ui';
 
   type SelectedOptions = Map<string, string | number | boolean>;
 
@@ -242,15 +243,17 @@
                   </div>
                 {/if}
               </div>
-              <button
+              <Button
+                pill
                 type="button"
-                class="relative flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-secondary-200 transition-colors hover:bg-secondary-300 dark:bg-secondary-700 dark:hover:bg-secondary-600"
+                size="sm"
+                variant="light"
                 onmouseenter={e => handleMouseEnter(e, option.id)}
                 onmouseleave={handleMouseLeave}
                 onclick={e => e.preventDefault()}
               >
-                <span class="text-xs text-secondary-600 dark:text-secondary-400">?</span>
-              </button>
+                <span class="">?</span>
+              </Button>
             </div>
           {/each}
         </div>
@@ -260,18 +263,20 @@
       <div
         class="flex justify-end gap-3 border-t border-secondary-200 px-6 py-4 dark:border-secondary-700"
       >
-        <button
+        <Button
           onclick={onClose}
-          class="cursor-pointer rounded-md px-4 py-2 text-secondary-700 transition-colors hover:bg-secondary-100 hover:text-secondary-800 dark:text-secondary-300 dark:hover:bg-secondary-800 dark:hover:text-secondary-200"
+          variant="outline-primary"
+          size="sm"
         >
           Close
-        </button>
-        <button
+        </Button>
+        <Button
           onclick={handleApply}
-          class="cursor-pointer rounded-md bg-primary-600 px-4 py-2 text-white transition-colors hover:bg-primary-700"
+          variant="primary"
+          size="sm"
         >
           Apply Options
-        </button>
+        </Button>
       </div>
     </div>
 

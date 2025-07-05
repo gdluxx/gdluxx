@@ -276,66 +276,6 @@
       </div>
     </div>
 
-    <div class="m-4 flex flex-wrap gap-2">
-      {#each Object.entries(optionsData as OptionsData) as [categoryKey, category] (category.title)}
-        <button
-          type="button"
-          onclick={() => openOptions(category)}
-          class="relative px-4 py-2 bg-secondary-200 text-secondary-800 hover:bg-secondary-300 dark:bg-secondary-700 dark:text-secondary-200 dark:hover:bg-secondary-600 rounded-lg transition-colors font-medium"
-        >
-          {category.title}
-          {#if getSelectedCountForCategory(categoryKey) > 0}
-            <span
-              class="absolute -top-2 -right-2 w-5 h-5 bg-primary-600 text-white text-xs rounded-full flex items-center justify-center"
-            >
-              {getSelectedCountForCategory(categoryKey)}
-            </span>
-          {/if}
-        </button>
-      {/each}
-    </div>
-
-    {#if selectedOptions.size > 0}
-      <div class="m-4">
-        <div class="flex justify-between items-center mb-4">
-          <span class="text-sm font-medium text-secondary-700 dark:text-secondary-300">
-            Selected Options ({selectedOptions.size})
-          </span>
-          <Button
-            onclick={clearAllOptions}
-            class="text-xs px-2 py-1 bg-secondary-200 text-secondary-800 hover:bg-secondary-300 dark:bg-secondary-700 dark:text-secondary-200 dark:hover:bg-secondary-600"
-          >
-            Clear All
-          </Button>
-        </div>
-        <div class="space-y-4">
-          {#each [...selectedOptionsByCategory.entries()] as [categoryKey, categoryOptions] (categoryKey)}
-            {#if categoryOptions.size > 0}
-              <div>
-                <h3 class="text-sm font-medium text-secondary-600 dark:text-secondary-400 mb-2">
-                  {getCategoryTitle(categoryKey)} ({categoryOptions.size})
-                </h3>
-                <div class="flex flex-wrap gap-2">
-                  {#each [...categoryOptions.entries()] as [optionId, value] (optionId)}
-                    {@const option = getOptionById(optionId)}
-                    {#if option}
-                      <Chip
-                        label={option.command}
-                        {value}
-                        editable={option.type !== 'boolean'}
-                        on:remove={() => removeOption(optionId)}
-                        on:edit={e => editOption(optionId, e.detail.value)}
-                      />
-                    {/if}
-                  {/each}
-                </div>
-              </div>
-            {/if}
-          {/each}
-        </div>
-      </div>
-    {/if}
-
     <div class="flex justify-end m-4 gap-6">
       <Button
         onclick={clearUrlsInput}
@@ -344,6 +284,14 @@
       >
         Clear
       </Button>
+
+      <Button
+        variant="outline-primary"
+        class="mt-2 w-full"
+      >
+        Options
+      </Button>
+
       <Button
         type="submit"
         disabled={isLoading || $hasJsonLintErrors || !commandUrlsInput}
@@ -369,6 +317,71 @@
         that you must fix before proceeding!
       </Info>
     {/if}
+
+    <!-- Options --> <!-- bg-primary-50 p-4 dark:border-primary-400 rounded-sm border border-primary-600 dark:bg-primary-800 -->
+    <div class="bg-secondary-50 dark:bg-primary-900 p-2 rounded-sm border border-primary-400">
+      <div class="m-4 flex flex-wrap gap-2">
+        {#each Object.entries(optionsData as OptionsData) as [categoryKey, category] (category.title)}
+          <Button
+            variant="light"
+            type="button"
+            onclick={() => openOptions(category)}
+            class="relative"
+          >
+            {category.title}
+            {#if getSelectedCountForCategory(categoryKey) > 0}
+              <span
+                class="absolute -top-2 -right-2 w-5 h-5 bg-primary-600 text-white text-xs rounded-full flex items-center justify-center"
+              >
+                {getSelectedCountForCategory(categoryKey)}
+              </span>
+            {/if}
+          </Button>
+        {/each}
+      </div>
+
+      {#if selectedOptions.size > 0}
+        <div class="m-4">
+          <div class="flex justify-between items-center mb-4">
+            <span class="text-sm font-medium text-secondary-700 dark:text-secondary-300">
+              Selected Options ({selectedOptions.size})
+            </span>
+            <Button
+              onclick={clearAllOptions}
+              class="text-xs px-2 py-1 bg-secondary-200 text-secondary-800 hover:bg-secondary-300 dark:bg-secondary-700 dark:text-secondary-200 dark:hover:bg-secondary-600"
+            >
+              Clear All
+            </Button>
+          </div>
+          <div class="space-y-4">
+            {#each [...selectedOptionsByCategory.entries()] as [categoryKey, categoryOptions] (categoryKey)}
+              {#if categoryOptions.size > 0}
+                <div>
+                  <h3 class="text-sm font-medium text-secondary-600 dark:text-secondary-400 mb-2">
+                    {getCategoryTitle(categoryKey)} ({categoryOptions.size})
+                  </h3>
+                  <div class="flex flex-wrap gap-2">
+                    {#each [...categoryOptions.entries()] as [optionId, value] (optionId)}
+                      {@const option = getOptionById(optionId)}
+                      {#if option}
+                        <Chip
+                          label={option.command}
+                          {value}
+                          editable={option.type !== 'boolean'}
+                          on:remove={() => removeOption(optionId)}
+                          on:edit={e => editOption(optionId, e.detail.value)}
+                        />
+                      {/if}
+                    {/each}
+                  </div>
+                </div>
+              {/if}
+            {/each}
+          </div>
+        </div>
+      {/if}
+    </div>
+
   </form>
 </div>
 
