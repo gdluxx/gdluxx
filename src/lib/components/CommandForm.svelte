@@ -29,6 +29,9 @@
   let isOptionsOpen = $state(false);
   let selectedOptions = $state(new Map<string, string | number | boolean>());
   let currentCategory = $state<OptionCategory | null>(null);
+  let selectedOptionsByCategory = $state<Map<string, Map<string, string | number | boolean>>>(
+    new Map()
+  );
 
   const STORAGE_KEY = 'commandForm_selectedOptions';
 
@@ -56,6 +59,7 @@
         if (stored) {
           const optionsArray = JSON.parse(stored) as Array<[string, string | number | boolean]>;
           selectedOptions = new Map(optionsArray);
+          updateCategoryTracking();
         }
       } catch (error) {
         logger.error('Failed to load stored options:', error);
@@ -77,6 +81,7 @@
   function handleApplyOptions(newOptions: SelectedOptions | Set<string>) {
     if (newOptions instanceof Map) {
       selectedOptions = new Map(newOptions);
+      updateCategoryTracking();
     }
     isOptionsOpen = false;
   }
@@ -84,17 +89,57 @@
   function removeOption(optionId: string) {
     selectedOptions.delete(optionId);
     selectedOptions = new Map(selectedOptions);
+    updateCategoryTracking();
   }
 
   function editOption(optionId: string, newValue: string | number | boolean) {
     if (selectedOptions.has(optionId)) {
       selectedOptions.set(optionId, newValue);
       selectedOptions = new Map(selectedOptions);
+      updateCategoryTracking();
     }
   }
 
   function getOptionById(optionId: string): Option | undefined {
     return allOptions.find(opt => opt.id === optionId);
+  }
+
+  function getCategoryKeyForOption(optionId: string): string | undefined {
+    for (const [categoryKey, category] of Object.entries(optionsData as OptionsData)) {
+      if (category.options.some(opt => opt.id === optionId)) {
+        return categoryKey;
+      }
+    }
+    return undefined;
+  }
+
+  function getCategoryTitle(categoryKey: string): string {
+    const optionsDataTyped = optionsData as OptionsData;
+    return optionsDataTyped[categoryKey]?.title || categoryKey;
+  }
+
+  function getSelectedCountForCategory(categoryKey: string): number {
+    const categoryMap = selectedOptionsByCategory.get(categoryKey);
+    return categoryMap ? categoryMap.size : 0;
+  }
+
+  function updateCategoryTracking() {
+    selectedOptionsByCategory.clear();
+
+    for (const [optionId, value] of selectedOptions.entries()) {
+      const categoryKey = getCategoryKeyForOption(optionId);
+      if (categoryKey) {
+        if (!selectedOptionsByCategory.has(categoryKey)) {
+          selectedOptionsByCategory.set(categoryKey, new Map());
+        }
+        const categoryMap = selectedOptionsByCategory.get(categoryKey);
+        if (categoryMap) {
+          categoryMap.set(optionId, value);
+        }
+      }
+    }
+
+    selectedOptionsByCategory = new Map(selectedOptionsByCategory);
   }
 
   async function checkConfigFileForErrors() {
@@ -196,6 +241,7 @@
 
   function clearAllOptions() {
     selectedOptions = new Map();
+    selectedOptionsByCategory = new Map();
     clearStoredOptions();
   }
 </script>
@@ -231,20 +277,27 @@
     </div>
 
     <div class="m-4 flex flex-wrap gap-2">
-      {#each Object.values(optionsData as OptionsData) as category (category.title)}
-        <Button
+      {#each Object.entries(optionsData as OptionsData) as [categoryKey, category] (category.title)}
+        <button
           type="button"
           onclick={() => openOptions(category)}
-          class="bg-secondary-200 text-secondary-800 hover:bg-secondary-300 dark:bg-secondary-700 dark:text-secondary-200 dark:hover:bg-secondary-600"
+          class="relative px-4 py-2 bg-secondary-200 text-secondary-800 hover:bg-secondary-300 dark:bg-secondary-700 dark:text-secondary-200 dark:hover:bg-secondary-600 rounded-lg transition-colors font-medium"
         >
           {category.title}
-        </Button>
+          {#if getSelectedCountForCategory(categoryKey) > 0}
+            <span
+              class="absolute -top-2 -right-2 w-5 h-5 bg-primary-600 text-white text-xs rounded-full flex items-center justify-center"
+            >
+              {getSelectedCountForCategory(categoryKey)}
+            </span>
+          {/if}
+        </button>
       {/each}
     </div>
 
     {#if selectedOptions.size > 0}
       <div class="m-4">
-        <div class="flex justify-between items-center mb-2">
+        <div class="flex justify-between items-center mb-4">
           <span class="text-sm font-medium text-secondary-700 dark:text-secondary-300">
             Selected Options ({selectedOptions.size})
           </span>
@@ -255,17 +308,28 @@
             Clear All
           </Button>
         </div>
-        <div class="flex flex-wrap gap-2">
-          {#each [...selectedOptions.entries()] as [id, value] (id)}
-            {@const option = getOptionById(id)}
-            {#if option}
-              <Chip
-                label={option.command}
-                {value}
-                editable={option.type !== 'boolean'}
-                on:remove={() => removeOption(id)}
-                on:edit={e => editOption(id, e.detail.value)}
-              />
+        <div class="space-y-4">
+          {#each [...selectedOptionsByCategory.entries()] as [categoryKey, categoryOptions] (categoryKey)}
+            {#if categoryOptions.size > 0}
+              <div>
+                <h3 class="text-sm font-medium text-secondary-600 dark:text-secondary-400 mb-2">
+                  {getCategoryTitle(categoryKey)} ({categoryOptions.size})
+                </h3>
+                <div class="flex flex-wrap gap-2">
+                  {#each [...categoryOptions.entries()] as [optionId, value] (optionId)}
+                    {@const option = getOptionById(optionId)}
+                    {#if option}
+                      <Chip
+                        label={option.command}
+                        {value}
+                        editable={option.type !== 'boolean'}
+                        on:remove={() => removeOption(optionId)}
+                        on:edit={e => editOption(optionId, e.detail.value)}
+                      />
+                    {/if}
+                  {/each}
+                </div>
+              </div>
             {/if}
           {/each}
         </div>
