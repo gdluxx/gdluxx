@@ -78,14 +78,14 @@ function createJobStore() {
         results: urls.map(url => ({
           url,
           success: false,
-          error: 'Cannot start job during SSR'
-        }))
+          error: 'Cannot start job during SSR',
+        })),
       };
     }
     if (!urls || urls.length === 0) {
       return {
         overallSuccess: false,
-        results: []
+        results: [],
       };
     }
 
@@ -97,8 +97,8 @@ function createJobStore() {
         body: JSON.stringify({
           urls,
           useUserConfigPath,
-          args: Array.from(selectedOptions.entries())
-        })
+          args: Array.from(selectedOptions.entries()),
+        }),
       });
 
       const data: BatchJobStartResult = await response.json();

@@ -16,7 +16,10 @@
   import { Button, Chip, Info } from '$lib/components/ui';
   import Options from '$lib/components/Options.svelte';
   import optionsData from '$lib/assets/options.json';
-  import type { Option, OptionCategory } from '$lib/types/options';
+  import type { Option, OptionCategory, OptionsData } from '$lib/types/options';
+  import { browser } from '$app/environment';
+
+  type SelectedOptions = Map<string, string | number | boolean>;
 
   let commandUrlsInput = $state('');
   const useUserConfigPath = $state(false);
@@ -27,25 +30,67 @@
   let selectedOptions = $state(new Map<string, string | number | boolean>());
   let currentCategory = $state<OptionCategory | null>(null);
 
-  const allOptions: Option[] = Object.values(optionsData).flatMap(category => category.options);
+  const STORAGE_KEY = 'commandForm_selectedOptions';
+
+  const allOptions: Option[] = Object.values(optionsData as OptionsData).flatMap(
+    category => category.options as Option[]
+  );
 
   onMount(async () => {
     await checkConfigFileForErrors();
+    loadSelectedOptions();
   });
+
+  // Save options to localStorage whenever they change
+  $effect(() => {
+    if (browser && selectedOptions.size > 0) {
+      const optionsArray = Array.from(selectedOptions.entries());
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(optionsArray));
+    }
+  });
+
+  function loadSelectedOptions() {
+    if (browser) {
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+          const optionsArray = JSON.parse(stored) as Array<[string, string | number | boolean]>;
+          selectedOptions = new Map(optionsArray);
+        }
+      } catch (error) {
+        logger.error('Failed to load stored options:', error);
+      }
+    }
+  }
+
+  function clearStoredOptions() {
+    if (browser) {
+      localStorage.removeItem(STORAGE_KEY);
+    }
+  }
 
   function openOptions(category: OptionCategory) {
     currentCategory = category;
     isOptionsOpen = true;
   }
 
-  function handleApplyOptions(newOptions: Map<string, string | number | boolean>) {
-    selectedOptions = new Map(newOptions);
+  function handleApplyOptions(newOptions: SelectedOptions | Set<string>) {
+    if (newOptions instanceof Map) {
+      selectedOptions = new Map(newOptions);
+    }
     isOptionsOpen = false;
   }
 
   function removeOption(optionId: string) {
     selectedOptions.delete(optionId);
     selectedOptions = new Map(selectedOptions);
+  }
+
+  function editOption(optionId: string, newValue: string | number | boolean) {
+    if (selectedOptions.has(optionId)) {
+      selectedOptions.set(optionId, newValue);
+      selectedOptions = new Map(selectedOptions);
+    }
   }
 
   function getOptionById(optionId: string): Option | undefined {
@@ -148,6 +193,11 @@
     formError = null;
     successMessage = null;
   }
+
+  function clearAllOptions() {
+    selectedOptions = new Map();
+    clearStoredOptions();
+  }
 </script>
 
 <div
@@ -181,7 +231,7 @@
     </div>
 
     <div class="m-4 flex flex-wrap gap-2">
-      {#each Object.values(optionsData) as category (category.title)}
+      {#each Object.values(optionsData as OptionsData) as category (category.title)}
         <Button
           type="button"
           onclick={() => openOptions(category)}
@@ -193,17 +243,32 @@
     </div>
 
     {#if selectedOptions.size > 0}
-      <div class="m-4 flex flex-wrap gap-2">
-        {#each [...selectedOptions.entries()] as [id, value] (id)}
-          {@const option = getOptionById(id)}
-          {#if option}
-            <Chip
-              label={option.command}
-              {value}
-              on:remove={() => removeOption(id)}
-            />
-          {/if}
-        {/each}
+      <div class="m-4">
+        <div class="flex justify-between items-center mb-2">
+          <span class="text-sm font-medium text-secondary-700 dark:text-secondary-300">
+            Selected Options ({selectedOptions.size})
+          </span>
+          <Button
+            onclick={clearAllOptions}
+            class="text-xs px-2 py-1 bg-secondary-200 text-secondary-800 hover:bg-secondary-300 dark:bg-secondary-700 dark:text-secondary-200 dark:hover:bg-secondary-600"
+          >
+            Clear All
+          </Button>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          {#each [...selectedOptions.entries()] as [id, value] (id)}
+            {@const option = getOptionById(id)}
+            {#if option}
+              <Chip
+                label={option.command}
+                {value}
+                editable={option.type !== 'boolean'}
+                on:remove={() => removeOption(id)}
+                on:edit={e => editOption(id, e.detail.value)}
+              />
+            {/if}
+          {/each}
+        </div>
       </div>
     {/if}
 

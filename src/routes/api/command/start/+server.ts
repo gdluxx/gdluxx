@@ -15,23 +15,52 @@ import { jobManager } from '$lib/server/jobManager';
 import { logger } from '$lib/shared/logger';
 import { PATHS, TERMINAL } from '$lib/server/constants';
 import type { BatchUrlResult } from '$lib/stores/jobs';
+import optionsData from '$lib/assets/options.json';
+import type { Option, OptionsData } from '$lib/types/options';
+
+// Create whitelist of valid options for security
+const validOptions = new Map<string, Option>();
+Object.values(optionsData as OptionsData).forEach(category => {
+  category.options.forEach(option => {
+    validOptions.set(option.id, option as Option);
+  });
+});
+
+// Validate and sanitize option values
+function validateOptionValue(option: Option, value: unknown): string | null {
+  if (option.type === 'boolean') {
+    return typeof value === 'boolean' ? String(value) : null;
+  }
+
+  if (option.type === 'number') {
+    const num = Number(value);
+    return !isNaN(num) && isFinite(num) ? String(num) : null;
+  }
+
+  if (option.type === 'string' || option.type === 'range') {
+    const str = String(value).trim();
+    // Basic sanitization - prevent command injection
+    if (str.includes(';') || str.includes('|') || str.includes('&') || str.includes('`')) {
+      return null;
+    }
+    return str.length > 0 ? str : null;
+  }
+
+  return null;
+}
 
 export async function POST({ request }: { request: Request }): Promise<Response> {
   const { spawn } = await import('@homebridge/node-pty-prebuilt-multiarch');
 
   try {
-    const {
-      urls,
-      useUserConfigPath = false,
-      args: receivedArgs = []
-    } = await request.json();
+    const { urls, useUserConfigPath = false, args: receivedArgs = [] } = await request.json();
 
     if (!Array.isArray(urls) || urls.length === 0) {
       return json(
         {
           overallSuccess: false,
           results: [],
-          error: 'An array of URLs is required and cannot be empty'
+          error: 'An array of URLs is required and cannot be empty',
         },
         { status: 400 }
       );
@@ -47,8 +76,8 @@ export async function POST({ request }: { request: Request }): Promise<Response>
           results: urls.map((url: string) => ({
             url,
             success: false,
-            error: 'gallery-dl.bin not found or not executable'
-          }))
+            error: 'gallery-dl.bin not found or not executable',
+          })),
         },
         { status: 500 }
       );
@@ -62,7 +91,7 @@ export async function POST({ request }: { request: Request }): Promise<Response>
         batchResults.push({
           url: url || 'INVALID_URL_ENTRY',
           success: false,
-          error: 'Invalid URL entry provided in the list.'
+          error: 'Invalid URL entry provided in the list.',
         });
         overallSuccess = false;
         continue;
@@ -74,12 +103,28 @@ export async function POST({ request }: { request: Request }): Promise<Response>
 
       const args: string[] = [url, '--config', './data/config.json'];
 
-      // Process received arguments
-      for (const [key, value] of receivedArgs) {
-        const command = `--${key.replace(/([A-Z])/g, '-$1').toLowerCase()}`;
-        args.push(command);
-        if (typeof value !== 'boolean') {
-          args.push(String(value));
+      // Process received arguments with security validation
+      for (const [optionId, value] of receivedArgs) {
+        // Validate option exists in our whitelist
+        const option = validOptions.get(optionId);
+        if (!option) {
+          logger.warn(`Invalid option attempted: ${optionId}`);
+          continue; // Skip invalid options
+        }
+
+        // Validate and sanitize the value
+        const sanitizedValue = validateOptionValue(option, value);
+        if (sanitizedValue === null) {
+          logger.warn(`Invalid value for option ${optionId}: ${value}`);
+          continue; // Skip invalid values
+        }
+
+        // Add the command flag
+        args.push(option.command);
+
+        // Add value for non-boolean options
+        if (option.type !== 'boolean') {
+          args.push(sanitizedValue);
         }
       }
 
@@ -89,7 +134,7 @@ export async function POST({ request }: { request: Request }): Promise<Response>
           cols: TERMINAL.COLS,
           rows: TERMINAL.ROWS,
           cwd: process.cwd(),
-          env: { ...process.env, NO_COLOR: '0', TERM: TERMINAL.NAME }
+          env: { ...process.env, NO_COLOR: '0', TERM: TERMINAL.NAME },
         });
 
         await jobManager.setJobProcess(jobId, ptyProcess);

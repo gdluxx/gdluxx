@@ -18,20 +18,36 @@
   interface Props {
     isOpen: boolean;
     category: OptionCategory;
-    selectedOptions: SelectedOptions;
+    selectedOptions?: SelectedOptions;
+    selectedIds?: Set<string>;
     onClose: () => void;
-    onApply: (selected: SelectedOptions) => void;
+    onApply: (selected: SelectedOptions | Set<string>) => void;
   }
 
-  const { isOpen, category, selectedOptions, onClose, onApply }: Props = $props();
+  const { isOpen, category, selectedOptions, selectedIds, onClose, onApply }: Props = $props();
 
   let localSelected = $state<SelectedOptions>(new Map());
   let hoveredOption = $state<string | null>(null);
   let tooltipPosition = $state({ x: 0, y: 0 });
+  let validationErrors = $state<Map<string, string>>(new Map());
 
   $effect(() => {
     if (isOpen) {
-      localSelected = new Map(selectedOptions);
+      if (selectedOptions) {
+        // CommandForm usage - Map of option values
+        localSelected = new Map(selectedOptions);
+      } else if (selectedIds) {
+        // Options page usage - Set of option IDs
+        localSelected = new Map();
+        selectedIds.forEach(id => {
+          const option = category.options.find(opt => opt.id === id);
+          if (option) {
+            localSelected.set(id, option.defaultValue ?? true);
+          }
+        });
+      } else {
+        localSelected = new Map();
+      }
     }
   });
 
@@ -45,10 +61,56 @@
     localSelected = new Map(localSelected);
   }
 
+  function validateOptionValue(
+    option: Option,
+    value: unknown
+  ): { valid: boolean; sanitized?: string | number | boolean; error?: string } {
+    if (option.type === 'boolean') {
+      return { valid: true, sanitized: Boolean(value) };
+    }
+
+    if (option.type === 'number') {
+      const num = Number(value);
+      if (isNaN(num) || !isFinite(num)) {
+        return { valid: false, error: 'Please enter a valid number' };
+      }
+      return { valid: true, sanitized: num };
+    }
+
+    if (option.type === 'string' || option.type === 'range') {
+      const str = String(value).trim();
+      if (str.length === 0) {
+        return { valid: false, error: 'This field cannot be empty' };
+      }
+      // Basic sanitization - prevent command injection
+      if (str.includes(';') || str.includes('|') || str.includes('&') || str.includes('`')) {
+        return { valid: false, error: 'Invalid characters detected' };
+      }
+      return { valid: true, sanitized: str };
+    }
+
+    return { valid: false, error: 'Unknown option type' };
+  }
+
   function updateOptionValue(optionId: string, value: string | number) {
     if (localSelected.has(optionId)) {
-      localSelected.set(optionId, value);
-      localSelected = new Map(localSelected);
+      const option = category.options.find(opt => opt.id === optionId);
+      if (option) {
+        const validation = validateOptionValue(option, value);
+        if (validation.valid) {
+          if (validation.sanitized !== undefined) {
+            localSelected.set(optionId, validation.sanitized);
+            localSelected = new Map(localSelected);
+          }
+          // Clear any existing error
+          validationErrors.delete(optionId);
+          validationErrors = new Map(validationErrors);
+        } else {
+          // Set validation error
+          validationErrors.set(optionId, validation.error ?? 'Invalid value');
+          validationErrors = new Map(validationErrors);
+        }
+      }
     }
   }
 
@@ -57,7 +119,7 @@
     const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
     tooltipPosition = {
       x: rect.right + 10,
-      y: rect.top + rect.height / 2
+      y: rect.top + rect.height / 2,
     };
   }
 
@@ -66,7 +128,13 @@
   }
 
   function handleApply() {
-    onApply(new Map(localSelected));
+    if (selectedOptions) {
+      // CommandForm usage - return Map
+      onApply(new Map(localSelected));
+    } else {
+      // Options page usage - return Set of IDs
+      onApply(new Set(localSelected.keys()));
+    }
     onClose();
   }
 
@@ -125,24 +193,51 @@
                         placeholder={option.placeholder}
                         value={localSelected.get(option.id)}
                         oninput={e => updateOptionValue(option.id, e.currentTarget.value)}
-                        class="w-full rounded-md border-secondary-300 bg-white px-3 py-2 text-secondary-900 focus:border-primary-500 focus:ring-primary-500 dark:border-secondary-600 dark:bg-secondary-800 dark:text-secondary-100"
+                        class="w-full rounded-md border-secondary-300 bg-white px-3 py-2 text-secondary-900 focus:border-primary-500 focus:ring-primary-500 dark:border-secondary-600 dark:bg-secondary-800 dark:text-secondary-100 {validationErrors.has(
+                          option.id
+                        )
+                          ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
+                          : ''}"
                       />
+                      {#if validationErrors.has(option.id)}
+                        <div class="mt-1 text-sm text-red-600 dark:text-red-400">
+                          {validationErrors.get(option.id)}
+                        </div>
+                      {/if}
                     {:else if option.type === 'number'}
                       <input
                         type="number"
                         placeholder={option.placeholder}
                         value={localSelected.get(option.id)}
                         oninput={e => updateOptionValue(option.id, e.currentTarget.valueAsNumber)}
-                        class="w-full rounded-md border-secondary-300 bg-white px-3 py-2 text-secondary-900 focus:border-primary-500 focus:ring-primary-500 dark:border-secondary-600 dark:bg-secondary-800 dark:text-secondary-100"
+                        class="w-full rounded-md border-secondary-300 bg-white px-3 py-2 text-secondary-900 focus:border-primary-500 focus:ring-primary-500 dark:border-secondary-600 dark:bg-secondary-800 dark:text-secondary-100 {validationErrors.has(
+                          option.id
+                        )
+                          ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
+                          : ''}"
                       />
+                      {#if validationErrors.has(option.id)}
+                        <div class="mt-1 text-sm text-red-600 dark:text-red-400">
+                          {validationErrors.get(option.id)}
+                        </div>
+                      {/if}
                     {:else if option.type === 'range'}
                       <input
                         type="text"
                         placeholder={option.placeholder}
                         value={localSelected.get(option.id)}
                         oninput={e => updateOptionValue(option.id, e.currentTarget.value)}
-                        class="w-full rounded-md border-secondary-300 bg-white px-3 py-2 text-secondary-900 focus:border-primary-500 focus:ring-primary-500 dark:border-secondary-600 dark:bg-secondary-800 dark:text-secondary-100"
+                        class="w-full rounded-md border-secondary-300 bg-white px-3 py-2 text-secondary-900 focus:border-primary-500 focus:ring-primary-500 dark:border-secondary-600 dark:bg-secondary-800 dark:text-secondary-100 {validationErrors.has(
+                          option.id
+                        )
+                          ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
+                          : ''}"
                       />
+                      {#if validationErrors.has(option.id)}
+                        <div class="mt-1 text-sm text-red-600 dark:text-red-400">
+                          {validationErrors.get(option.id)}
+                        </div>
+                      {/if}
                     {/if}
                   </div>
                 {/if}

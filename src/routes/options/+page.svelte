@@ -58,21 +58,22 @@
     activeModal = null;
   }
 
-  function handleApplyOptions(categoryKey: string, selected: Set<string>) {
+  function handleApplyOptions(categoryKey: string, selected: Map<string, unknown> | Set<string>) {
+    const selectedSet = selected instanceof Set ? selected : new Set(selected.keys());
     // Remove all options from category
     selectedOptions = selectedOptions.filter(opt => opt.category !== categoryKey);
 
     // Add newly selected options
     const category = options[categoryKey];
     const newOptions = category.options
-      .filter(opt => selected.has(opt.id))
+      .filter(opt => selectedSet.has(opt.id))
       .map(opt => ({
         ...opt,
         category: categoryKey,
       }));
 
     selectedOptions = [...selectedOptions, ...newOptions];
-    selectedIdsByCategory[categoryKey] = new Set(selected);
+    selectedIdsByCategory[categoryKey] = new Set(selectedSet);
   }
 
   function removeOption(option: SelectedOption) {
