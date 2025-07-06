@@ -9,109 +9,85 @@
   -->
 
 <script lang="ts">
-  import {
-    VersionManager,
-    ApiKeyManager,
-    LogSettings,
-    UserManager,
-  } from '$lib/components/settings';
   import { PageLayout } from '$lib/components/ui';
-  import { ToastContainer } from '$lib/components';
+  import { Button } from '$lib/components/ui';
+  import { Icon } from '$lib/components';
   import { VersionIcon, DebugIcon, KeyIcon } from '$lib/components/icons';
+  import type { IconName } from '$lib/types/icons';
 
-  const { data } = $props();
-
-  const tabs = [
+  const settingsPages = [
     {
       name: 'Version',
       title: 'Version Manager',
-      description: 'Manage your <i>gallery-dl</i> version',
+      description: 'Manage your gallery-dl version',
       icon: VersionIcon,
-      component: VersionManager,
+      href: '/settings/version',
     },
     {
-      name: 'User',
+      name: 'Users',
       title: 'User Manager',
       description: 'Manage user accounts',
-      icon: VersionIcon,
-      component: UserManager,
+      icon: 'user' as IconName,
+      href: '/settings/users',
     },
     {
       name: 'API Keys',
       title: 'Key Manager',
       description: 'Manage your API keys',
       icon: KeyIcon,
-      component: ApiKeyManager,
+      href: '/settings/apikey',
     },
     {
       name: 'Debug',
       title: 'Debug Manager',
       description: 'Manage your log settings',
       icon: DebugIcon,
-      component: LogSettings,
+      href: '/settings/debug',
     },
   ];
-
-  let activeTabIdx = $state(0);
-
-  const CurrentTab = $derived(tabs[activeTabIdx]);
-  const getTabClasses = $derived(
-    (isActive: boolean) =>
-      `inline-block p-4 rounded-t-lg border-b-2 focus:outline-none cursor-pointer ${
-        isActive
-          ? 'border-primary-600 text-primary-700 dark:text-primary-300 dark:border-primary-300 font-semibold'
-          : 'border-transparent text-secondary-500 hover:text-primary-600 hover:border-primary-300 dark:text-secondary-400 dark:hover:text-primary-300 dark:hover:border-primary-300'
-      }`
-  );
-
-  // keyboard nav for accessibility
-  function handleKeydown(e: KeyboardEvent): void {
-    if (e.key === 'ArrowRight') {
-      activeTabIdx = (activeTabIdx + 1) % tabs.length;
-    } else if (e.key === 'ArrowLeft') {
-      activeTabIdx = (activeTabIdx - 1 + tabs.length) % tabs.length;
-    }
-  }
 </script>
 
-<div class="w-full mx-auto">
-  <nav
-    class="text-sm font-medium text-center border-b border-secondary-200 dark:border-secondary-700"
-    aria-label="Settings tabs"
-  >
-    <ul class="flex flex-wrap -mb-px" role="tablist">
-      {#each tabs as tab, idx (tab.name)}
-        <li class="me-2">
-          <button
-            type="button"
-            class={getTabClasses(activeTabIdx === idx)}
-            role="tab"
-            aria-selected={activeTabIdx === idx}
-            aria-controls={`tabpanel-${idx}`}
-            tabindex={activeTabIdx === idx ? 0 : -1}
-            onclick={() => (activeTabIdx = idx)}
-            onkeydown={handleKeydown}
-          >
-            {tab.name}
-          </button>
-        </li>
-      {/each}
-    </ul>
-  </nav>
+<PageLayout title="Settings" description="Configure your gdluxx application">
+  {#snippet icon()}
+    <VersionIcon />
+  {/snippet}
 
-  <!-- Tab content -->
-  <section id={`tabpanel-${activeTabIdx}`} role="tabpanel" tabindex="0" class="pt-6">
-    <PageLayout title={CurrentTab.title} description={CurrentTab.description}>
-      {#snippet icon()}
-        <CurrentTab.icon />
-      {/snippet}
-      {#if CurrentTab.name === 'User'}
-        <UserManager user={data.user} />
-      {:else}
-        <CurrentTab.component />
-      {/if}
-    </PageLayout>
-  </section>
-</div>
-
-<ToastContainer />
+  <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-2">
+    {#each settingsPages as page (page.name)}
+      <div
+        class="bg-primary-50 dark:bg-primary-800 border border-primary-600 dark:border-primary-400 rounded-lg p-6 hover:shadow-md transition-shadow"
+      >
+        <div class="flex items-start justify-between">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              {#if typeof page.icon === 'string'}
+                <Icon
+                  iconName={page.icon}
+                  size={32}
+                  class="text-primary-600 dark:text-primary-400"
+                />
+              {:else}
+                <page.icon size={32} class="text-primary-600 dark:text-primary-400" />
+              {/if}
+            </div>
+            <div class="ml-4">
+              <h3 class="text-lg font-medium text-secondary-900 dark:text-secondary-100">
+                {page.title}
+              </h3>
+              <p class="text-sm text-secondary-600 dark:text-secondary-400 mt-1">
+                {page.description}
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="mt-4">
+          <a href={page.href}>
+            <Button variant="primary" class="w-full">
+              Configure {page.name}
+            </Button>
+          </a>
+        </div>
+      </div>
+    {/each}
+  </div>
+</PageLayout>

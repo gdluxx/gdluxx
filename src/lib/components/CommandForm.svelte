@@ -10,8 +10,8 @@
 
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { enhance } from '$app/forms';
   import { hasJsonLintErrors } from '$lib/stores/lint';
-  import { type BatchJobStartResult, jobStore } from '$lib/stores/jobs';
   import { logger } from '$lib/shared/logger';
   import { Button, Chip, Info } from '$lib/components/ui';
   import optionsData from '$lib/assets/options.json';
@@ -165,47 +165,42 @@
     }
   }
 
-  async function handleSubmit(event: SubmitEvent) {
-    event.preventDefault();
+  function handleFormResult(result: {
+    overallSuccess: boolean;
+    results?: Array<{
+      url: string;
+      success: boolean;
+      jobId?: string;
+      error?: string;
+      message?: string;
+    }>;
+    error?: string;
+  }) {
     successMessage = null;
     formError = null;
 
     const urlsToProcess = commandUrlsInput
-      .split(/[\s\n]+/) // Split by any whitespace; space, tab, newline etc.
+      .split(/[\s\n]+/)
       .map(url => url.trim())
-      .filter(url => url !== ''); // Remove empty strings
+      .filter(url => url !== '');
 
-    if (urlsToProcess.length === 0) {
-      formError = 'Please enter at least one URL.';
-      return;
-    }
-
-    isLoading = true;
-
-    const batchStartResult: BatchJobStartResult = await jobStore.startJob(
-      urlsToProcess,
-      useUserConfigPath,
-      selectedOptions
-    );
-
-    isLoading = false;
     let localStartedCount = 0;
     const localErrorMessages: string[] = [];
 
-    if (batchStartResult.results && batchStartResult.results.length > 0) {
-      batchStartResult.results.forEach(result => {
-        if (result.success && result.jobId) {
+    if (result.results && result.results.length > 0) {
+      result.results.forEach(jobResult => {
+        if (jobResult.success && jobResult.jobId) {
           localStartedCount++;
         } else {
           localErrorMessages.push(
-            `Error for "${result.url}": ${result.error ?? result.message ?? 'Unknown error'}`
+            `Error for "${jobResult.url}": ${jobResult.error ?? jobResult.message ?? 'Unknown error'}`
           );
         }
       });
-    } else if (!batchStartResult.overallSuccess) {
+    } else if (!result.overallSuccess) {
       formError =
-        batchStartResult.results?.[0]?.error ??
-        batchStartResult.error ??
+        result.results?.[0]?.error ??
+        result.error ??
         'Failed to process job request. Check server logs.';
     }
 
@@ -221,13 +216,12 @@
       successMessage = `${localStartedCount} job(s) accepted for processing.`;
       if (localErrorMessages.length === 0) {
         commandUrlsInput = '';
-        // useUserConfigPath = false; // TODO: Future use
       }
       setTimeout(() => (successMessage = null), 5000);
     }
 
     if (localStartedCount === 0 && localErrorMessages.length === 0 && urlsToProcess.length > 0) {
-      if (!batchStartResult.overallSuccess) {
+      if (!result.overallSuccess) {
         formError ??= 'Job submission failed. Please check server logs or try again.';
       } else {
         formError ??= 'No valid URLs found to process, or all URLs were invalid before submission.';
@@ -251,7 +245,52 @@
 <div
   class="bg-primary-50 p-4 dark:border-primary-400 rounded-sm border border-primary-600 dark:bg-primary-800"
 >
-  <form onsubmit={handleSubmit} class="space-y-6">
+  <form
+    method="POST"
+    action="?/start"
+    class="space-y-6"
+    use:enhance={({ cancel }) => {
+      // Validate URLs before submitting
+      const urlsToProcess = commandUrlsInput
+        .split(/[\s\n]+/)
+        .map(url => url.trim())
+        .filter(url => url !== '');
+
+      if (urlsToProcess.length === 0) {
+        formError = 'Please enter at least one URL.';
+        cancel();
+        return;
+      }
+
+      isLoading = true;
+      successMessage = null;
+      formError = null;
+
+      return async ({ result }) => {
+        isLoading = false;
+
+        if (result.type === 'success' && result.data) {
+          handleFormResult(
+            result.data as {
+              overallSuccess: boolean;
+              results?: Array<{
+                url: string;
+                success: boolean;
+                jobId?: string;
+                error?: string;
+                message?: string;
+              }>;
+              error?: string;
+            }
+          );
+        } else if (result.type === 'failure' && result.data) {
+          formError = (result.data as { error?: string }).error ?? 'Failed to process job request';
+        } else {
+          formError = 'An unexpected error occurred';
+        }
+      };
+    }}
+  >
     <div class="m-4">
       <label
         for="commandUrlsInput"
@@ -264,7 +303,7 @@
       <div class="relative">
         <textarea
           id="commandUrlsInput"
-          name="commandUrlsInput"
+          name="urls"
           bind:value={commandUrlsInput}
           placeholder="https://example.com/gallery1&#10;https://example.com/image.jpg https://othersite.com/album"
           autocomplete="off"
@@ -277,6 +316,14 @@
         ></textarea>
       </div>
     </div>
+
+    <!-- Hidden inputs for form data -->
+    <input type="hidden" name="useUserConfigPath" value={useUserConfigPath} />
+    <input
+      type="hidden"
+      name="args"
+      value={JSON.stringify(Array.from(selectedOptions.entries()))}
+    />
 
     <div class="flex justify-end m-4 gap-6">
       <Button

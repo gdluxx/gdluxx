@@ -11,18 +11,21 @@
 <script lang="ts">
   import { fade, scale } from 'svelte/transition';
   import { quintOut } from 'svelte/easing';
+  import { onMount } from 'svelte';
   import type { ClientJob } from '$lib/stores/jobs';
   import { jobStore } from '$lib/stores/jobs';
   import { Button, Info, ConfirmModal } from '$lib/components/ui';
   import { Icon } from '$lib/components/index';
+  import type { Job } from '$lib/server/jobManager';
 
   interface Props {
     variant?: 'modal' | 'page';
     isOpen?: boolean;
     onClose?: () => void;
+    initialJobs?: Job[];
   }
 
-  const { variant = 'page', isOpen = true, onClose }: Props = $props();
+  const { variant = 'page', isOpen = true, onClose, initialJobs = [] }: Props = $props();
 
   let showDeleteConfirm = $state(false);
   let deleteAction = $state<'single' | 'all' | 'selected'>('all');
@@ -176,6 +179,13 @@
       return 'bg-primary-50 dark:border-primary-400 rounded-sm border border-primary-600 dark:bg-primary-800';
     }
   };
+
+  // Initialize job store with server-provided data on mount
+  onMount(() => {
+    if (initialJobs.length > 0) {
+      jobStore.initializeWithJobs(initialJobs);
+    }
+  });
 </script>
 
 {#if variant === 'page' || (variant === 'modal' && isOpen)}

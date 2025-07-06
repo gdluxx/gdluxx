@@ -10,7 +10,7 @@
 
 import { writable, derived, type Writable, type Readable } from 'svelte/store';
 import { browser } from '$app/environment';
-import type { JobOutput } from '$lib/server/jobManager';
+import type { JobOutput, Job } from '$lib/server/jobManager';
 import { logger } from '$lib/shared/logger';
 
 export interface ClientJob {
@@ -377,10 +377,33 @@ function createJobStore() {
     })();
   }
 
+  let isInitialized = false;
+
+  function initializeWithJobs(serverJobs: Job[]): void {
+    const jobMap = new Map<string, ClientJob>();
+    for (const job of serverJobs) {
+      jobMap.set(job.id, {
+        ...job,
+        isVisible: false,
+        eventSource: undefined,
+      });
+    }
+    set(jobMap);
+    isInitialized = true;
+
+    // Reconnect to any running jobs
+    setTimeout(reconnectToRunningJobs, 100);
+  }
+
   if (browser) {
-    loadJobs().then(() => {
-      setTimeout(reconnectToRunningJobs, 100);
-    });
+    // Only auto-load if not initialized from server data
+    setTimeout(() => {
+      if (!isInitialized) {
+        loadJobs().then(() => {
+          setTimeout(reconnectToRunningJobs, 100);
+        });
+      }
+    }, 50);
   }
 
   function toggleJobVisibility(jobId: string) {
@@ -437,6 +460,7 @@ function createJobStore() {
     hideJob,
     loadJobs, // Kept for explicit reload if needed
     reconnectToRunningJobs,
+    initializeWithJobs,
     showJobListModal,
     hideJobListModal,
     toggleJobListModal,
