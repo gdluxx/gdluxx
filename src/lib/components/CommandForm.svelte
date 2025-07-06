@@ -343,7 +343,7 @@
       <div class="border-t border-primary-400">
         <!-- Tabbed interface for categories -->
         <div class="border-b border-secondary-200 dark:border-secondary-700">
-          <div class="flex overflow-x-auto h-24">
+          <div class="flex overflow-x-auto pt-2 pr-2">
             {#each categoriesArray as [categoryKey, category] (categoryKey)}
               <button
                 type="button"
@@ -359,7 +359,7 @@
                 {category.title}
                 {#if getSelectedCountForCategory(categoryKey) > 0}
                   <span
-                    class="absolute -top-1 -right-1 w-5 h-5 bg-primary-600 text-white text-xs rounded-full flex items-center justify-center"
+                    class="absolute -top-1 -right-2 w-5 h-5 bg-primary-600 text-white text-xs rounded-full flex items-center justify-center"
                   >
                     {getSelectedCountForCategory(categoryKey)}
                   </span>
