@@ -69,7 +69,6 @@ function createJobStore() {
 
   async function startJob(
     urls: string[],
-    useUserConfigPath = false,
     selectedOptions = new Map<string, string | number | boolean>()
   ): Promise<BatchJobStartResult> {
     if (!browser) {
@@ -96,7 +95,6 @@ function createJobStore() {
 
         body: JSON.stringify({
           urls,
-          useUserConfigPath,
           args: Array.from(selectedOptions.entries()),
         }),
       });

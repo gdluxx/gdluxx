@@ -53,7 +53,7 @@ export async function POST({ request }: { request: Request }): Promise<Response>
   const { spawn } = await import('@homebridge/node-pty-prebuilt-multiarch');
 
   try {
-    const { urls, useUserConfigPath = false, args: receivedArgs = [] } = await request.json();
+    const { urls, args: receivedArgs = [] } = await request.json();
 
     if (!Array.isArray(urls) || urls.length === 0) {
       return json(
@@ -97,7 +97,7 @@ export async function POST({ request }: { request: Request }): Promise<Response>
         continue;
       }
 
-      const jobId: string = await jobManager.createJob(url, useUserConfigPath);
+      const jobId: string = await jobManager.createJob(url);
       await jobManager.addOutput(jobId, 'info', `Starting download for: ${url}`);
       await jobManager.addOutput(jobId, 'info', `Job ID: ${jobId}`);
 

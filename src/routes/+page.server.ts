@@ -25,7 +25,6 @@ const getClientSafeMessage = (error: Error) => {
     return error.message;
   }
 
-  // Categorize errors for better UX while remaining secure
   if (error.name === 'ValidationError') {
     return 'Invalid input provided.';
   }
@@ -36,7 +35,6 @@ const getClientSafeMessage = (error: Error) => {
   return 'An unexpected error occurred.';
 };
 
-// Create whitelist of valid options for security
 const validOptions = new Map<string, Option>();
 Object.values(optionsData as OptionsData).forEach(category => {
   category.options.forEach(option => {
@@ -44,7 +42,6 @@ Object.values(optionsData as OptionsData).forEach(category => {
   });
 });
 
-// Validate and sanitize option values
 function validateOptionValue(option: Option, value: unknown): string | null {
   if (option.type === 'boolean') {
     return typeof value === 'boolean' ? String(value) : null;
@@ -57,7 +54,7 @@ function validateOptionValue(option: Option, value: unknown): string | null {
 
   if (option.type === 'string' || option.type === 'range') {
     const str = String(value).trim();
-    // Basic sanitization - prevent command injection
+
     if (str.includes(';') || str.includes('|') || str.includes('&') || str.includes('`')) {
       return null;
     }
@@ -74,7 +71,6 @@ export const actions: Actions = {
     try {
       const formData = await request.formData();
       const urlsString = formData.get('urls') as string;
-      const useUserConfigPath = formData.get('useUserConfigPath') === 'true';
       const argsString = formData.get('args') as string;
 
       if (!urlsString?.trim()) {
@@ -139,15 +135,14 @@ export const actions: Actions = {
           continue;
         }
 
-        const jobId: string = await jobManager.createJob(url, useUserConfigPath);
+        const jobId: string = await jobManager.createJob(url);
         await jobManager.addOutput(jobId, 'info', `Starting download for: ${url}`);
         await jobManager.addOutput(jobId, 'info', `Job ID: ${jobId}`);
 
         const args: string[] = [url, '--config', './data/config.json'];
 
-        // Process received arguments with security validation
+        // Process received arguments
         for (const [optionId, value] of receivedArgs) {
-          // Validate option exists in our whitelist
           const option = validOptions.get(optionId);
           if (!option) {
             logger.warn(`Invalid option attempted: ${optionId}`);
@@ -161,7 +156,7 @@ export const actions: Actions = {
             continue; // Skip invalid values
           }
 
-          // Add the command flag
+          // add command flag
           args.push(option.command);
 
           // Add value for non-boolean options

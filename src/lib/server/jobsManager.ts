@@ -27,7 +27,6 @@ export interface DatabaseJob {
   startTime: number;
   endTime?: number;
   exitCode?: number;
-  useUserConfigPath: boolean;
   outputs: JobOutput[];
 }
 
@@ -41,7 +40,6 @@ export async function readAllJobs(): Promise<DatabaseJob[]> {
       startTime: number;
       endTime?: number;
       exitCode?: number;
-      useUserConfigPath: number;
     }>;
 
     const outputsStmt = db.prepare(`
@@ -79,7 +77,6 @@ export async function readAllJobs(): Promise<DatabaseJob[]> {
       startTime: job.startTime,
       endTime: job.endTime,
       exitCode: job.exitCode,
-      useUserConfigPath: Boolean(job.useUserConfigPath),
       outputs: outputsByJobId.get(job.id) || [],
     }));
   } catch (error) {
@@ -94,8 +91,8 @@ export async function createJob(job: Omit<DatabaseJob, 'outputs'>): Promise<void
     const now = getCurrentTimestamp();
 
     const stmt = db.prepare(`
-      INSERT INTO jobs (id, url, status, startTime, endTime, exitCode, useUserConfigPath, createdAt, updatedAt)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO jobs (id, url, status, startTime, endTime, exitCode, createdAt, updatedAt)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     stmt.run(
@@ -105,7 +102,6 @@ export async function createJob(job: Omit<DatabaseJob, 'outputs'>): Promise<void
       job.startTime,
       job.endTime || null,
       job.exitCode || null,
-      job.useUserConfigPath ? 1 : 0,
       now,
       now
     );

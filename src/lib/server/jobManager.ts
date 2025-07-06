@@ -33,7 +33,6 @@ export interface Job {
   startTime: number;
   endTime?: number;
   exitCode?: number;
-  useUserConfigPath: boolean;
   process?: IPty;
   subscribers: Set<ReadableStreamDefaultController<Uint8Array>>;
 }
@@ -67,7 +66,6 @@ class JobManager {
           startTime: dbJob.startTime,
           endTime: dbJob.endTime,
           exitCode: dbJob.exitCode,
-          useUserConfigPath: dbJob.useUserConfigPath,
           subscribers: new Set(),
         };
 
@@ -94,7 +92,7 @@ class JobManager {
     }
   }
 
-  async createJob(url: string, useUserConfigPath: boolean): Promise<string> {
+  async createJob(url: string): Promise<string> {
     await this.initializationPromise;
     const id = uuidv4();
     const startTime = Date.now();
@@ -104,7 +102,6 @@ class JobManager {
       status: 'running',
       output: [],
       startTime,
-      useUserConfigPath,
       subscribers: new Set(),
     };
 
@@ -113,7 +110,6 @@ class JobManager {
       url,
       status: 'running',
       startTime,
-      useUserConfigPath,
     });
 
     this.jobs.set(id, job);

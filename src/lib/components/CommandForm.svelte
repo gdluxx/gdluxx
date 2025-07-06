@@ -19,7 +19,6 @@
   import { browser } from '$app/environment';
 
   let commandUrlsInput = $state('');
-  const useUserConfigPath = $state(false);
   let isLoading = $state(false);
   let formError = $state<string | null>(null);
   let successMessage = $state<string | null>(null);
@@ -252,9 +251,9 @@
     use:enhance={({ cancel }) => {
       // Validate URLs before submitting
       const urlsToProcess = commandUrlsInput
-        .split(/[\s\n]+/)
+        .split(/[\s\n]+/) // Split by any whitespace; space, tab, newline etc.
         .map(url => url.trim())
-        .filter(url => url !== '');
+        .filter(url => url !== ''); // Remove empty strings
 
       if (urlsToProcess.length === 0) {
         formError = 'Please enter at least one URL.';
@@ -318,7 +317,6 @@
     </div>
 
     <!-- Hidden inputs for form data -->
-    <input type="hidden" name="useUserConfigPath" value={useUserConfigPath} />
     <input
       type="hidden"
       name="args"
