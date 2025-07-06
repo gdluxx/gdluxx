@@ -347,7 +347,7 @@
             {#each categoriesArray as [categoryKey, category] (categoryKey)}
               <button
                 type="button"
-                class="px-4 py-2 whitespace-nowrap relative border-b-2 transition-colors hover:bg-secondary-100 dark:hover:bg-primary-800"
+                class="cursor-pointer px-4 py-2 whitespace-nowrap relative border-b-2 transition-colors hover:bg-secondary-100 dark:hover:bg-primary-800"
                 class:border-primary-500={activeTab === categoryKey}
                 class:text-primary-600={activeTab === categoryKey}
                 class:border-transparent={activeTab !== categoryKey}
@@ -356,14 +356,27 @@
                 class:dark:text-secondary-400={activeTab !== categoryKey}
                 onclick={() => (activeTab = categoryKey)}
               >
-                {category.title}
-                {#if getSelectedCountForCategory(categoryKey) > 0}
-                  <span
-                    class="absolute -top-2 -right-2 w-5 h-5 bg-primary-600 text-white text-xs rounded-full flex items-center justify-center"
-                  >
-                    {getSelectedCountForCategory(categoryKey)}
-                  </span>
-                {/if}
+                <div class="flex flex-row">
+                  {#if getSelectedCountForCategory(categoryKey) > 0}
+                    <span
+                      class="mr-1 flex items-center justify-center"
+                      class:text-primary-600={activeTab === categoryKey}
+                      class:text-secondary-600={activeTab !== categoryKey}
+                      class:dark:text-primary-400={activeTab === categoryKey}
+                      class:dark:text-secondary-400={activeTab !== categoryKey}
+                    >
+                      {getSelectedCountForCategory(categoryKey)}
+                    </span>
+                  {/if}
+                  {category.title}
+                </div>
+                <!-- {#if getSelectedCountForCategory(categoryKey) > 0} -->
+                <!--   <span -->
+                <!--     class="absolute -top-1 -right-1 w-5 h-5 bg-primary-600 text-white text-xs rounded-full flex items-center justify-center" -->
+                <!--   > -->
+                <!--     {getSelectedCountForCategory(categoryKey)} -->
+                <!--   </span> -->
+                <!-- {/if} -->
               </button>
             {/each}
           </div>
@@ -400,11 +413,13 @@
                             type={option.type === 'number' ? 'number' : 'text'}
                             value={selectedOptions.get(option.id) ?? ''}
                             oninput={e => {
-                              const target = e.target as HTMLInputElement;
-                              editOption(
-                                option.id,
-                                option.type === 'number' ? Number(target.value) : target.value
-                              );
+                              const target = e.target;
+                              if (target instanceof HTMLInputElement) {
+                                editOption(
+                                  option.id,
+                                  option.type === 'number' ? Number(target.value) : target.value
+                                );
+                              }
                             }}
                             placeholder={option.placeholder ?? ''}
                             class="w-full px-2 py-1 text-sm border border-secondary-300 rounded focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:border-secondary-600 dark:bg-secondary-800 dark:text-secondary-100 dark:focus:ring-primary-400"
