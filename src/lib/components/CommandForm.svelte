@@ -359,7 +359,7 @@
                 {category.title}
                 {#if getSelectedCountForCategory(categoryKey) > 0}
                   <span
-                    class="absolute -top-1 -right-2 w-5 h-5 bg-primary-600 text-white text-xs rounded-full flex items-center justify-center"
+                    class="absolute -top-2 -right-2 w-5 h-5 bg-primary-600 text-white text-xs rounded-full flex items-center justify-center"
                   >
                     {getSelectedCountForCategory(categoryKey)}
                   </span>
@@ -394,6 +394,20 @@
                           {option.description}
                         </span>
                       </label>
+                      {#if selectedOptions.has(option.id) && option.type !== 'boolean'}
+                        <div class="mt-2">
+                          <input
+                            type={option.type === 'number' ? 'number' : 'text'}
+                            value={selectedOptions.get(option.id) ?? ''}
+                            oninput={e => {
+                              const target = e.target as HTMLInputElement;
+                              editOption(option.id, option.type === 'number' ? Number(target.value) : target.value);
+                            }}
+                            placeholder={option.placeholder ?? ''}
+                            class="w-full px-2 py-1 text-sm border border-secondary-300 rounded focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:border-secondary-600 dark:bg-secondary-800 dark:text-secondary-100 dark:focus:ring-primary-400"
+                          />
+                        </div>
+                      {/if}
                     </div>
                   </div>
                 {/each}
