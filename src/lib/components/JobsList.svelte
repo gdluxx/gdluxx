@@ -12,8 +12,8 @@
   import { fade, scale } from 'svelte/transition';
   import { quintOut } from 'svelte/easing';
   import { onMount } from 'svelte';
-  import type { ClientJob } from '$lib/stores/jobs';
-  import { jobStore } from '$lib/stores/jobs';
+  import type { ClientJob } from '$lib/stores/jobs.svelte';
+  import { jobStore } from '$lib/stores/jobs.svelte';
   import { Button, Info, ConfirmModal } from '$lib/components/ui';
   import { Icon } from '$lib/components/index';
   import type { Job } from '$lib/server/jobManager';
@@ -33,7 +33,7 @@
   let sortNewestFirst = $state(true);
   let selectedJobs = $state<Set<string>>(new Set());
 
-  const allJobs = $derived(Array.from($jobStore.values()));
+  const allJobs = $derived(Array.from(jobStore.jobs.values()));
   const jobs = $derived(
     [...allJobs].sort((a, b) => {
       return sortNewestFirst ? b.startTime - a.startTime : a.startTime - b.startTime;

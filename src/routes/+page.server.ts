@@ -16,7 +16,7 @@ import type { IPty } from '@homebridge/node-pty-prebuilt-multiarch';
 import { jobManager } from '$lib/server/jobManager';
 import { logger } from '$lib/shared/logger';
 import { PATHS, TERMINAL } from '$lib/server/constants';
-import type { BatchUrlResult } from '$lib/stores/jobs';
+import type { BatchUrlResult } from '$lib/stores/jobs.svelte';
 import optionsData from '$lib/assets/options.json';
 import type { Option, OptionsData } from '$lib/types/options';
 

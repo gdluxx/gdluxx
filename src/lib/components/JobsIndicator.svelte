@@ -9,8 +9,11 @@
   -->
 
 <script lang="ts">
-  import { jobCount, runningJobCount, jobStore } from '$lib/stores/jobs';
+  import { jobStore } from '$lib/stores/jobs.svelte';
   import { Icon } from '$lib/components/index';
+
+  const jobCount = $derived(jobStore.jobCount);
+  const runningJobCount = $derived(jobStore.runningJobCount);
 
   function handleClick() {
     jobStore.showJobListModal();
@@ -24,17 +27,17 @@
   title="Show jobs list"
 >
   <Icon iconName="job" size={24} />
-  {#if $runningJobCount > 0}
+  {#if runningJobCount > 0}
     <span
       class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center animate-pulse"
     >
-      {$runningJobCount}
+      {runningJobCount}
     </span>
   {:else}
     <span
       class="absolute -top-0.25 -right-0.25 bg-primary-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center"
     >
-      {$jobCount}
+      {jobCount}
     </span>
   {/if}
 </button>

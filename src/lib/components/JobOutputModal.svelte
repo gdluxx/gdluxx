@@ -14,8 +14,8 @@
   import { onMount, tick } from 'svelte';
   import { AnsiUp } from 'ansi_up';
   import DOMPurify from 'dompurify';
-  import type { ClientJob } from '$lib/stores/jobs';
-  import { jobStore } from '$lib/stores/jobs';
+  import type { ClientJob } from '$lib/stores/jobs.svelte';
+  import { jobStore } from '$lib/stores/jobs.svelte';
   import { CopyTooltip } from '$lib/components/ui';
   import { Icon } from '$lib/components/index';
 

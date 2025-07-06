@@ -11,7 +11,7 @@
 import { json, type RequestEvent, type RequestHandler } from '@sveltejs/kit';
 import { logger } from '$lib/shared/logger';
 import { type AuthResult, validateApiKey } from '$lib/server/apiAuth';
-import type { BatchJobStartResult } from '$lib/stores/jobs';
+import type { BatchJobStartResult } from '$lib/stores/jobs.svelte';
 
 interface ExternalApiRequestBody {
   urlToProcess: unknown;
