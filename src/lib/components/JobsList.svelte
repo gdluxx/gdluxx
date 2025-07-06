@@ -33,7 +33,7 @@
   let sortNewestFirst = $state(true);
   let selectedJobs = $state<Set<string>>(new Set());
 
-  const allJobs = $derived(Array.from(jobStore.jobs.values()));
+  const allJobs = $derived(jobStore.jobs);
   const jobs = $derived(
     [...allJobs].sort((a, b) => {
       return sortNewestFirst ? b.startTime - a.startTime : a.startTime - b.startTime;

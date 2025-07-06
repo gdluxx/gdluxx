@@ -259,6 +259,8 @@ function addOutput(jobId: string, type: JobOutput['type'], data: string) {
   if (job.output.length > 10000) {
     job.output = job.output.slice(-10000);
   }
+
+  jobs = { ...jobs };
 }
 
 function updateJobStatus(jobId: string, status: ClientJob['status'], exitCode?: number) {
@@ -280,6 +282,8 @@ function updateJobStatus(jobId: string, status: ClientJob['status'], exitCode?: 
       job.eventSource = undefined;
     }
   }
+
+  jobs = { ...jobs };
 }
 
 async function fetchJobDetails(jobId: string) {
@@ -297,6 +301,8 @@ async function fetchJobDetails(jobId: string) {
         existingJob.output = data.job.output;
         existingJob.endTime = data.job.endTime;
         existingJob.exitCode = data.job.exitCode;
+
+        jobs = { ...jobs };
       }
     }
   } catch (error) {
@@ -317,7 +323,8 @@ async function deleteJob(jobId: string): Promise<void> {
       if (job?.eventSource) {
         job.eventSource.close();
       }
-      delete jobs[jobId];
+      const { [jobId]: _, ...remainingJobs } = jobs;
+      jobs = remainingJobs;
     }
   } catch (error) {
     logger.error('Failed to delete job:', error);
@@ -368,6 +375,8 @@ function toggleJobVisibility(jobId: string) {
   const job = jobs[jobId];
   if (job) {
     job.isVisible = !job.isVisible;
+
+    jobs = { ...jobs };
   }
 }
 
@@ -375,6 +384,8 @@ function showJob(jobId: string) {
   const job = jobs[jobId];
   if (job) {
     job.isVisible = true;
+
+    jobs = { ...jobs };
   }
 }
 
@@ -382,12 +393,14 @@ function hideJob(jobId: string) {
   const job = jobs[jobId];
   if (job) {
     job.isVisible = false;
+
+    jobs = { ...jobs };
   }
 }
 
 export const jobStore = {
   get jobs() {
-    return jobs;
+    return Object.values(jobs);
   },
 
   startJob,
