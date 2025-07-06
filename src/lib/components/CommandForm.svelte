@@ -18,6 +18,44 @@
   import type { Option, OptionsData } from '$lib/types/options';
   import { browser } from '$app/environment';
 
+  const typedOptionsData = optionsData as OptionsData;
+
+  interface FormResult {
+    overallSuccess: boolean;
+    results?: Array<{
+      url: string;
+      success: boolean;
+      jobId?: string;
+      error?: string;
+      message?: string;
+    }>;
+    error?: string;
+  }
+
+  interface ErrorResult {
+    error: string;
+  }
+
+  function isFormResult(data: unknown): data is FormResult {
+    // noinspection SuspiciousTypeOfGuard
+    return (
+      typeof data === 'object' &&
+      data !== null &&
+      'overallSuccess' in data &&
+      typeof (data as FormResult).overallSuccess === 'boolean'
+    );
+  }
+
+  function isErrorResult(data: unknown): data is ErrorResult {
+    // noinspection SuspiciousTypeOfGuard
+    return (
+      typeof data === 'object' &&
+      data !== null &&
+      'error' in data &&
+      typeof (data as ErrorResult).error === 'string'
+    );
+  }
+
   let commandUrlsInput = $state('');
   let isLoading = $state(false);
   let formError = $state<string | null>(null);
@@ -31,17 +69,17 @@
 
   const STORAGE_KEY = 'commandForm_selectedOptions';
 
-  const allOptions: Option[] = Object.values(optionsData as OptionsData).flatMap(
+  const allOptions: Option[] = Object.values(typedOptionsData).flatMap(
     category => category.options as Option[]
   );
 
-  const categoriesArray = Object.entries(optionsData as OptionsData);
+  const categoriesArray = Object.entries(typedOptionsData);
 
   onMount(async () => {
     await checkConfigFileForErrors();
     loadSelectedOptions();
     // Set first category as default active tab
-    const firstCategoryKey = Object.keys(optionsData as OptionsData)[0];
+    const firstCategoryKey = Object.keys(typedOptionsData)[0];
     if (firstCategoryKey) {
       activeTab = firstCategoryKey;
     }
@@ -106,7 +144,7 @@
   }
 
   function getCategoryKeyForOption(optionId: string): string | undefined {
-    for (const [categoryKey, category] of Object.entries(optionsData as OptionsData)) {
+    for (const [categoryKey, category] of Object.entries(typedOptionsData)) {
       if (category.options.some(opt => opt.id === optionId)) {
         return categoryKey;
       }
@@ -115,8 +153,7 @@
   }
 
   function getCategoryTitle(categoryKey: string): string {
-    const optionsDataTyped = optionsData as OptionsData;
-    return optionsDataTyped[categoryKey]?.title || categoryKey;
+    return typedOptionsData[categoryKey]?.title || categoryKey;
   }
 
   function getSelectedCountForCategory(categoryKey: string): number {
@@ -164,17 +201,7 @@
     }
   }
 
-  function handleFormResult(result: {
-    overallSuccess: boolean;
-    results?: Array<{
-      url: string;
-      success: boolean;
-      jobId?: string;
-      error?: string;
-      message?: string;
-    }>;
-    error?: string;
-  }) {
+  function handleFormResult(result: FormResult) {
     successMessage = null;
     formError = null;
 
@@ -268,22 +295,16 @@
       return async ({ result }) => {
         isLoading = false;
 
-        if (result.type === 'success' && result.data) {
-          handleFormResult(
-            result.data as {
-              overallSuccess: boolean;
-              results?: Array<{
-                url: string;
-                success: boolean;
-                jobId?: string;
-                error?: string;
-                message?: string;
-              }>;
-              error?: string;
-            }
-          );
-        } else if (result.type === 'failure' && result.data) {
-          formError = (result.data as { error?: string }).error ?? 'Failed to process job request';
+        if (result.type === 'success' && result.data && isFormResult(result.data)) {
+          handleFormResult(result.data);
+        } else if (result.type === 'failure' && result.data && isErrorResult(result.data)) {
+          formError = result.data.error;
+        } else if (result.type === 'redirect') {
+          // Handle redirect - no data property exists
+          formError = 'Unexpected redirect occurred';
+        } else if (result.type === 'error') {
+          // Handle error - no data property exists
+          formError = 'An error occurred during form submission';
         } else {
           formError = 'An unexpected error occurred';
         }
