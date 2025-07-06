@@ -14,24 +14,21 @@
   import { type BatchJobStartResult, jobStore } from '$lib/stores/jobs';
   import { logger } from '$lib/shared/logger';
   import { Button, Chip, Info } from '$lib/components/ui';
-  import Options from '$lib/components/Options.svelte';
   import optionsData from '$lib/assets/options.json';
-  import type { Option, OptionCategory, OptionsData } from '$lib/types/options';
+  import type { Option, OptionsData } from '$lib/types/options';
   import { browser } from '$app/environment';
-
-  type SelectedOptions = Map<string, string | number | boolean>;
 
   let commandUrlsInput = $state('');
   const useUserConfigPath = $state(false);
   let isLoading = $state(false);
   let formError = $state<string | null>(null);
   let successMessage = $state<string | null>(null);
-  let isOptionsOpen = $state(false);
   let selectedOptions = $state(new Map<string, string | number | boolean>());
-  let currentCategory = $state<OptionCategory | null>(null);
   let selectedOptionsByCategory = $state<Map<string, Map<string, string | number | boolean>>>(
     new Map()
   );
+  let activeTab = $state<string>('');
+  let isAccordionOpen = $state(false);
 
   const STORAGE_KEY = 'commandForm_selectedOptions';
 
@@ -39,9 +36,16 @@
     category => category.options as Option[]
   );
 
+  const categoriesArray = Object.entries(optionsData as OptionsData);
+
   onMount(async () => {
     await checkConfigFileForErrors();
     loadSelectedOptions();
+    // Set first category as default active tab
+    const firstCategoryKey = Object.keys(optionsData as OptionsData)[0];
+    if (firstCategoryKey) {
+      activeTab = firstCategoryKey;
+    }
   });
 
   // Save options to localStorage whenever they change
@@ -73,17 +77,15 @@
     }
   }
 
-  function openOptions(category: OptionCategory) {
-    currentCategory = category;
-    isOptionsOpen = true;
-  }
-
-  function handleApplyOptions(newOptions: SelectedOptions | Set<string>) {
-    if (newOptions instanceof Map) {
-      selectedOptions = new Map(newOptions);
-      updateCategoryTracking();
+  function toggleOption(option: Option) {
+    const { id, defaultValue } = option;
+    if (selectedOptions.has(id)) {
+      selectedOptions.delete(id);
+    } else {
+      selectedOptions.set(id, defaultValue ?? true);
     }
-    isOptionsOpen = false;
+    selectedOptions = new Map(selectedOptions);
+    updateCategoryTracking();
   }
 
   function removeOption(optionId: string) {
@@ -286,13 +288,6 @@
       </Button>
 
       <Button
-        variant="outline-primary"
-        class="mt-2 w-full"
-      >
-        Options
-      </Button>
-
-      <Button
         type="submit"
         disabled={isLoading || $hasJsonLintErrors || !commandUrlsInput}
         class="mt-2 w-full"
@@ -318,29 +313,102 @@
       </Info>
     {/if}
 
-    <!-- Options --> <!-- bg-primary-50 p-4 dark:border-primary-400 rounded-sm border border-primary-600 dark:bg-primary-800 -->
-    <div class="bg-secondary-50 dark:bg-primary-900 p-2 rounded-sm border border-primary-400">
-      <div class="m-4 flex flex-wrap gap-2">
-        {#each Object.entries(optionsData as OptionsData) as [categoryKey, category] (category.title)}
-          <Button
-            variant="light"
-            type="button"
-            onclick={() => openOptions(category)}
-            class="relative"
+    <!-- Options Accordion -->
+    <details
+      class="group border border-primary-400 rounded-sm bg-secondary-50 dark:bg-primary-900"
+      bind:open={isAccordionOpen}
+    >
+      <summary
+        class="flex items-center justify-between p-4 cursor-pointer hover:bg-secondary-100 dark:hover:bg-primary-800 transition-colors"
+      >
+        <span class="font-medium text-secondary-900 dark:text-secondary-100"
+          >Gallery-dl Options</span
+        >
+        <div class="flex items-center gap-2">
+          {#if selectedOptions.size > 0}
+            <span
+              class="px-2 py-1 bg-primary-100 text-primary-800 dark:bg-primary-700 dark:text-primary-100 rounded-full text-sm"
+            >
+              {selectedOptions.size} selected
+            </span>
+          {/if}
+          <span
+            class="transform group-open:rotate-180 transition-transform text-secondary-600 dark:text-secondary-400"
           >
-            {category.title}
-            {#if getSelectedCountForCategory(categoryKey) > 0}
-              <span
-                class="absolute -top-2 -right-2 w-5 h-5 bg-primary-600 text-white text-xs rounded-full flex items-center justify-center"
-              >
-                {getSelectedCountForCategory(categoryKey)}
-              </span>
-            {/if}
-          </Button>
-        {/each}
-      </div>
+            ▼
+          </span>
+        </div>
+      </summary>
 
-      {#if selectedOptions.size > 0}
+      <div class="border-t border-primary-400">
+        <!-- Tabbed interface for categories -->
+        <div class="border-b border-secondary-200 dark:border-secondary-700">
+          <div class="flex overflow-x-auto h-24">
+            {#each categoriesArray as [categoryKey, category] (categoryKey)}
+              <button
+                type="button"
+                class="px-4 py-2 whitespace-nowrap relative border-b-2 transition-colors hover:bg-secondary-100 dark:hover:bg-primary-800"
+                class:border-primary-500={activeTab === categoryKey}
+                class:text-primary-600={activeTab === categoryKey}
+                class:border-transparent={activeTab !== categoryKey}
+                class:text-secondary-600={activeTab !== categoryKey}
+                class:dark:text-primary-400={activeTab === categoryKey}
+                class:dark:text-secondary-400={activeTab !== categoryKey}
+                onclick={() => (activeTab = categoryKey)}
+              >
+                {category.title}
+                {#if getSelectedCountForCategory(categoryKey) > 0}
+                  <span
+                    class="absolute -top-1 -right-1 w-5 h-5 bg-primary-600 text-white text-xs rounded-full flex items-center justify-center"
+                  >
+                    {getSelectedCountForCategory(categoryKey)}
+                  </span>
+                {/if}
+              </button>
+            {/each}
+          </div>
+        </div>
+
+        <!-- Tab content -->
+        <div class="p-4 max-h-60 overflow-y-auto">
+          {#each categoriesArray as [categoryKey, category] (categoryKey)}
+            {#if activeTab === categoryKey}
+              <div class="space-y-3">
+                {#each category.options as option (option.id)}
+                  <div
+                    class="flex items-start gap-3 p-2 hover:bg-secondary-100 dark:hover:bg-primary-800 rounded transition-colors"
+                  >
+                    <input
+                      type="checkbox"
+                      id="inline-option-{option.id}"
+                      checked={selectedOptions.has(option.id)}
+                      onchange={() => toggleOption(option)}
+                      class="mt-1 h-4 w-4 rounded border-secondary-300 bg-white text-primary-600 focus:ring-2 focus:ring-primary-500 dark:border-secondary-600 dark:bg-secondary-700 dark:focus:ring-primary-400"
+                    />
+                    <div class="flex-1 min-w-0">
+                      <label for="inline-option-{option.id}" class="cursor-pointer">
+                        <span class="font-medium text-secondary-900 dark:text-secondary-100 block">
+                          {option.command}
+                        </span>
+                        <span class="text-sm text-secondary-600 dark:text-secondary-400 mt-1 block">
+                          {option.description}
+                        </span>
+                      </label>
+                    </div>
+                  </div>
+                {/each}
+              </div>
+            {/if}
+          {/each}
+        </div>
+      </div>
+    </details>
+
+    <!-- Selected Options Display -->
+    {#if selectedOptions.size > 0}
+      <div
+        class="bg-secondary-50 dark:bg-primary-900 p-2 rounded-sm border border-primary-400 mt-4"
+      >
         <div class="m-4">
           <div class="flex justify-between items-center mb-4">
             <span class="text-sm font-medium text-secondary-700 dark:text-secondary-300">
@@ -379,18 +447,7 @@
             {/each}
           </div>
         </div>
-      {/if}
-    </div>
-
+      </div>
+    {/if}
   </form>
 </div>
-
-{#if isOptionsOpen && currentCategory}
-  <Options
-    isOpen={isOptionsOpen}
-    category={currentCategory}
-    {selectedOptions}
-    onClose={() => (isOptionsOpen = false)}
-    onApply={handleApplyOptions}
-  />
-{/if}

@@ -1,51 +1,82 @@
 {
-  "general": {
-    "title": "General Options",
+  "download-control": {
+    "title": "Download Control",
     "options": [
       {
-        "id": "help",
-        "command": "--help",
-        "description": "Print this help message and exit",
+        "id": "simulate",
+        "command": "--simulate",
+        "description": "Simulate data extraction; do not download anything",
         "type": "boolean",
         "defaultValue": false
       },
       {
-        "id": "version",
-        "command": "--version",
-        "description": "Print program version and exit",
+        "id": "get-urls",
+        "command": "--get-urls",
+        "description": "Print URLs instead of downloading",
         "type": "boolean",
         "defaultValue": false
       },
       {
-        "id": "filename",
-        "command": "--filename",
-        "description": "Filename format string for downloaded files ('/O' for 'original')",
+        "id": "resolve-urls",
+        "command": "--resolve-urls",
+        "description": "Print URLs instead of downloading; resolve intermediary URLs",
+        "type": "boolean",
+        "defaultValue": false
+      },
+      {
+        "id": "no-download",
+        "command": "--no-download",
+        "description": "Do not download any files",
+        "type": "boolean",
+        "defaultValue": false
+      },
+      {
+        "id": "no-skip",
+        "command": "--no-skip",
+        "description": "Do not skip downloads; overwrite existing files",
+        "type": "boolean",
+        "defaultValue": false
+      },
+      {
+        "id": "verbose",
+        "command": "--verbose",
+        "description": "Print various debugging information",
+        "type": "boolean",
+        "defaultValue": false
+      },
+      {
+        "id": "no-colors",
+        "command": "--no-colors",
+        "description": "Do not emit ANSI color codes in output",
+        "type": "boolean",
+        "defaultValue": false
+      },
+      {
+        "id": "no-input",
+        "command": "--no-input",
+        "description": "Do not prompt for passwords/tokens",
+        "type": "boolean",
+        "defaultValue": false
+      }
+    ]
+  },
+  "authentication": {
+    "title": "Authentication",
+    "options": [
+      {
+        "id": "username",
+        "command": "--username",
+        "description": "Username to login with",
         "type": "string",
-        "placeholder": "e.g. %Y-%m-%d_%H-%M-%S",
+        "placeholder": "e.g. user123",
         "defaultValue": ""
       },
       {
-        "id": "destination",
-        "command": "--destination",
-        "description": "Target location for file downloads",
+        "id": "password",
+        "command": "--password",
+        "description": "Password belonging to the given username",
         "type": "string",
-        "placeholder": "e.g. /path/to/downloads",
-        "defaultValue": ""
-      },
-      {
-        "id": "directory",
-        "command": "--directory",
-        "description": "Exact location for file downloads",
-        "type": "string",
-        "placeholder": "e.g. /path/to/exact/location",
-        "defaultValue": ""
-      },
-      {
-        "id": "extractors",
-        "command": "--extractors",
-        "description": "Load external extractors from PATH",
-        "type": "string",
-        "placeholder": "e.g. /path/to/extractors",
+        "placeholder": "e.g. hunter2",
         "defaultValue": ""
       },
       {
@@ -66,221 +97,8 @@
       }
     ]
   },
-  "update": {
-    "title": "Update Options",
-    "options": [
-      {
-        "id": "update",
-        "command": "--update",
-        "description": "Update to the latest version",
-        "type": "boolean",
-        "defaultValue": false
-      },
-      {
-        "id": "update-to",
-        "command": "--update-to",
-        "description": "Switch to a different release channel (stable or dev) or upgrade/downgrade to a specific version",
-        "type": "string",
-        "placeholder": "e.g. stable, dev, v1.2.3",
-        "defaultValue": ""
-      },
-      {
-        "id": "update-check",
-        "command": "--update-check",
-        "description": "Check if a newer version is available",
-        "type": "boolean",
-        "defaultValue": false
-      }
-    ]
-  },
-  "input": {
-    "title": "Input Options",
-    "options": [
-      {
-        "id": "input-file",
-        "command": "--input-file",
-        "description": "Download URLs found in FILE ('-' for stdin). More than one --input-file can be specified",
-        "type": "string",
-        "placeholder": "e.g. /path/to/urls.txt",
-        "defaultValue": ""
-      },
-      {
-        "id": "input-file-comment",
-        "command": "--input-file-comment",
-        "description": "Download URLs found in FILE. Comment them out after they were downloaded successfully.",
-        "type": "string",
-        "placeholder": "e.g. /path/to/urls.txt",
-        "defaultValue": ""
-      },
-      {
-        "id": "input-file-delete",
-        "command": "--input-file-delete",
-        "description": "Download URLs found in FILE. Delete them after they were downloaded successfully.",
-        "type": "string",
-        "placeholder": "e.g. /path/to/urls.txt",
-        "defaultValue": ""
-      },
-      {
-        "id": "no-input",
-        "command": "--no-input",
-        "description": "Do not prompt for passwords/tokens",
-        "type": "boolean",
-        "defaultValue": false
-      }
-    ]
-  },
-  "output": {
-    "title": "Output Options",
-    "options": [
-      {
-        "id": "quiet",
-        "command": "--quiet",
-        "description": "Activate quiet mode",
-        "type": "boolean",
-        "defaultValue": false
-      },
-      {
-        "id": "warning",
-        "command": "--warning",
-        "description": "Print only warnings and errors",
-        "type": "boolean",
-        "defaultValue": false
-      },
-      {
-        "id": "verbose",
-        "command": "--verbose",
-        "description": "Print various debugging information",
-        "type": "boolean",
-        "defaultValue": false
-      },
-      {
-        "id": "get-urls",
-        "command": "--get-urls",
-        "description": "Print URLs instead of downloading",
-        "type": "boolean",
-        "defaultValue": false
-      },
-      {
-        "id": "resolve-urls",
-        "command": "--resolve-urls",
-        "description": "Print URLs instead of downloading; resolve intermediary URLs",
-        "type": "boolean",
-        "defaultValue": false
-      },
-      {
-        "id": "dump-json",
-        "command": "--dump-json",
-        "description": "Print JSON information",
-        "type": "boolean",
-        "defaultValue": false
-      },
-      {
-        "id": "resolve-json",
-        "command": "--resolve-json",
-        "description": "Print JSON information; resolve intermediary URLs",
-        "type": "boolean",
-        "defaultValue": false
-      },
-      {
-        "id": "simulate",
-        "command": "--simulate",
-        "description": "Simulate data extraction; do not download anything",
-        "type": "boolean",
-        "defaultValue": false
-      },
-      {
-        "id": "extractor-info",
-        "command": "--extractor-info",
-        "description": "Print extractor defaults and settings",
-        "type": "boolean",
-        "defaultValue": false
-      },
-      {
-        "id": "list-keywords",
-        "command": "--list-keywords",
-        "description": "Print a list of available keywords and example values for the given URLs",
-        "type": "boolean",
-        "defaultValue": false
-      },
-      {
-        "id": "error-file",
-        "command": "--error-file",
-        "description": "Add input URLs which returned an error to FILE",
-        "type": "string",
-        "placeholder": "e.g. /path/to/errors.txt",
-        "defaultValue": ""
-      },
-      {
-        "id": "print",
-        "command": "--print",
-        "description": "Write FORMAT during EVENT (default 'prepare') to standard output. Examples: 'id' or 'post:{md5[:8]}'",
-        "type": "string",
-        "placeholder": "e.g. 'id'",
-        "defaultValue": ""
-      },
-      {
-        "id": "print-to",
-        "command": "--print-to-file",
-        "description": "Append FORMAT during EVENT to FILE",
-        "type": "string",
-        "placeholder": "e.g. /path/to/log.txt",
-        "defaultValue": ""
-      },
-      {
-        "id": "list-modules",
-        "command": "--list-modules",
-        "description": "Print a list of available extractor modules",
-        "type": "boolean",
-        "defaultValue": false
-      },
-      {
-        "id": "list-extractors",
-        "command": "--list-extractors",
-        "description": "Print a list of extractor classes with description, (sub)category and example URL",
-        "type": "boolean",
-        "defaultValue": false
-      },
-      {
-        "id": "write-log",
-        "command": "--write-log",
-        "description": "Write logging output to FILE",
-        "type": "string",
-        "placeholder": "e.g. /path/to/log.txt",
-        "defaultValue": ""
-      },
-      {
-        "id": "write-unsupported",
-        "command": "--write-unsupported",
-        "description": "Write URLs, which get emitted by other extractors but cannot be handled, to FILE",
-        "type": "string",
-        "placeholder": "e.g. /path/to/unsupported.txt",
-        "defaultValue": ""
-      },
-      {
-        "id": "write-pages",
-        "command": "--write-pages",
-        "description": "Write downloaded intermediary pages to files in the current directory to debug problems",
-        "type": "boolean",
-        "defaultValue": false
-      },
-      {
-        "id": "print-traffic",
-        "command": "--print-traffic",
-        "description": "Display sent and read HTTP traffic",
-        "type": "boolean",
-        "defaultValue": false
-      },
-      {
-        "id": "no-colors",
-        "command": "--no-colors",
-        "description": "Do not emit ANSI color codes in output",
-        "type": "boolean",
-        "defaultValue": false
-      }
-    ]
-  },
-  "networking": {
-    "title": "Networking Options",
+  "network-performance": {
+    "title": "Network & Performance",
     "options": [
       {
         "id": "retries",
@@ -307,39 +125,12 @@
         "defaultValue": ""
       },
       {
-        "id": "source-address",
-        "command": "--source-address",
-        "description": "Client-side IP address to bind to",
-        "type": "string",
-        "placeholder": "e.g. 192.168.1.100",
-        "defaultValue": ""
-      },
-      {
-        "id": "force-ipv4",
-        "command": "--force-ipv4",
-        "description": "Make all connections via IPv4",
-        "type": "boolean",
-        "defaultValue": false
-      },
-      {
-        "id": "force-ipv6",
-        "command": "--force-ipv6",
-        "description": "Make all connections via IPv6",
-        "type": "boolean",
-        "defaultValue": false
-      },
-      {
         "id": "no-check",
         "command": "--no-check-certificate",
         "description": "Disable HTTPS certificate validation",
         "type": "boolean",
         "defaultValue": false
-      }
-    ]
-  },
-  "downloader": {
-    "title": "Downloader Options",
-    "options": [
+      },
       {
         "id": "limit-rate",
         "command": "--limit-rate",
@@ -379,161 +170,11 @@
         "type": "string",
         "placeholder": "e.g. 3",
         "defaultValue": ""
-      },
-      {
-        "id": "no-part",
-        "command": "--no-part",
-        "description": "Do not use .part files",
-        "type": "boolean",
-        "defaultValue": false
-      },
-      {
-        "id": "no-skip",
-        "command": "--no-skip",
-        "description": "Do not skip downloads; overwrite existing files",
-        "type": "boolean",
-        "defaultValue": false
-      },
-      {
-        "id": "no-mtime",
-        "command": "--no-mtime",
-        "description": "Do not set file modification times according to Last-Modified HTTP response headers",
-        "type": "boolean",
-        "defaultValue": false
-      },
-      {
-        "id": "no-download",
-        "command": "--no-download",
-        "description": "Do not download any files",
-        "type": "boolean",
-        "defaultValue": false
       }
     ]
   },
-  "configuration": {
-    "title": "Configuration Options",
-    "options": [
-      {
-        "id": "option",
-        "command": "--option",
-        "description": "     Additional options. Example: -o browser=firefox",
-        "type": "string",
-        "placeholder": "e.g. browser=firefox",
-        "defaultValue": ""
-      },
-      {
-        "id": "config",
-        "command": "--config",
-        "description": "Additional configuration files",
-        "type": "string",
-        "placeholder": "e.g. /path/to/config.json",
-        "defaultValue": ""
-      },
-      {
-        "id": "config-yaml",
-        "command": "--config-yaml",
-        "description": "Additional configuration files in YAML format",
-        "type": "string",
-        "placeholder": "e.g. /path/to/config.yaml",
-        "defaultValue": ""
-      },
-      {
-        "id": "config-toml",
-        "command": "--config-toml",
-        "description": "Additional configuration files in TOML format",
-        "type": "string",
-        "placeholder": "e.g. /path/to/config.toml",
-        "defaultValue": ""
-      },
-      {
-        "id": "config-create",
-        "command": "--config-create",
-        "description": "Create a basic configuration file",
-        "type": "boolean",
-        "defaultValue": false
-      },
-      {
-        "id": "config-status",
-        "command": "--config-status",
-        "description": "Show configuration file status",
-        "type": "boolean",
-        "defaultValue": false
-      },
-      {
-        "id": "config-open",
-        "command": "--config-open",
-        "description": "Open configuration file in external application",
-        "type": "boolean",
-        "defaultValue": false
-      },
-      {
-        "id": "config-ignore",
-        "command": "--config-ignore",
-        "description": "Do not read default configuration files",
-        "type": "boolean",
-        "defaultValue": false
-      }
-    ]
-  },
-  "authentication": {
-    "title": "Authentication Options",
-    "options": [
-      {
-        "id": "username",
-        "command": "--username",
-        "description": "Username to login with",
-        "type": "string",
-        "placeholder": "e.g. user123",
-        "defaultValue": ""
-      },
-      {
-        "id": "password",
-        "command": "--password",
-        "description": "Password belonging to the given username",
-        "type": "string",
-        "placeholder": "e.g.hunter2",
-        "defaultValue": ""
-      },
-      {
-        "id": "netrc",
-        "command": "--netrc",
-        "description": "Enable .netrc authentication data",
-        "type": "boolean",
-        "defaultValue": false
-      }
-    ]
-  },
-  "cookie": {
-    "title": "Cookie Options",
-    "options": [
-      {
-        "id": "cookies",
-        "command": "--cookies",
-        "description": "File to load additional cookies from",
-        "type": "string",
-        "placeholder": "e.g. /path/to/cookies.txt",
-        "defaultValue": ""
-      },
-      {
-        "id": "cookies-export",
-        "command": "--cookies-export",
-        "description": "Export session cookies to FILE",
-        "type": "string",
-        "placeholder": "e.g. /path/to/cookies.txt",
-        "defaultValue": ""
-      },
-      {
-        "id": "cookies-from",
-        "command": "--cookies-from-browser",
-        "description": "Name of the browser to load cookies from, with optional domain prefixed with '/', keyring name prefixed with '+', profile prefixed with ':', and container prefixed with '::' ('none' for no container (default), 'all' for all containers)",
-        "type": "string",
-        "placeholder": "e.g. chrome",
-        "defaultValue": ""
-      }
-    ]
-  },
-  "selection": {
-    "title": "Selection Options",
+  "selection-filtering": {
+    "title": "Selection & Filtering",
     "options": [
       {
         "id": "abort",
@@ -562,7 +203,7 @@
       {
         "id": "filesize-max",
         "command": "--filesize-max",
-        "description": "Do not download files larger than SIZE (e.g. 500k or 2.5M) and skip downloading any file already in it",
+        "description": "Do not download files larger than SIZE (e.g. 500k or 2.5M)",
         "type": "string",
         "placeholder": "e.g. 2.5M",
         "defaultValue": ""
@@ -570,17 +211,9 @@
       {
         "id": "range",
         "command": "--range",
-        "description": "Index range(s) specifying which files to,",
+        "description": "Index range(s) specifying which files to download",
         "type": "range",
         "placeholder": "e.g. 1-5, 8, 10-12",
-        "defaultValue": ""
-      },
-      {
-        "id": "download-archive",
-        "command": "--download-archive",
-        "description": "Record all downloaded or skipped files in FILE download. These can be either a constant value, range, or slice (e.g. '5', '8-20', or '1:24:3')",
-        "type": "string",
-        "placeholder": "e.g. /path/to/archive.txt",
         "defaultValue": ""
       },
       {
@@ -594,7 +227,7 @@
       {
         "id": "filter",
         "command": "--filter",
-        "description": "Python expression controlling which files to download. Files for which the expression evaluates to False are ignored. Available keys are the filename-specific ones listed by '-K'. Example: --filter 'image_width >= 1000 and rating in ('s', 'q')'",
+        "description": "Python expression controlling which files to download. Files for which the expression evaluates to False are ignored",
         "type": "string",
         "placeholder": "e.g. 'image_width >= 1000'",
         "defaultValue": ""
@@ -610,8 +243,16 @@
     ]
   },
   "post-processing": {
-    "title": "Post-processing Options",
+    "title": "Post-processing & Output",
     "options": [
+      {
+        "id": "filename",
+        "command": "--filename",
+        "description": "Filename format string for downloaded files ('/O' for 'original')",
+        "type": "string",
+        "placeholder": "e.g. %Y-%m-%d_%H-%M-%S",
+        "defaultValue": ""
+      },
       {
         "id": "postprocessor",
         "command": "--postprocessor",
@@ -673,49 +314,32 @@
       {
         "id": "mtime",
         "command": "--mtime",
-        "description": "Set file modification times according to metadata selected by NAME. Examples: 'date' or 'status[date]'",
+        "description": "Set file modification times according to metadata selected by NAME",
         "type": "string",
         "placeholder": "e.g. date",
         "defaultValue": ""
       },
       {
-        "id": "rename",
-        "command": "--rename",
-        "description": "Rename previously downloaded files from FORMAT to the current filename format",
-        "type": "string",
-        "placeholder": "e.g. {md5}.{extension}",
-        "defaultValue": ""
-      },
-      {
-        "id": "rename-to",
-        "command": "--rename-to",
-        "description": "Rename previously downloaded files from the current filename format to FORMAT",
-        "type": "string",
-        "placeholder": "e.g. {md5}.{extension}",
-        "defaultValue": ""
-      },
-      {
         "id": "ugoira",
         "command": "--ugoira",
-        "description": "Convert Pixiv Ugoira to FMT using FFmpeg. Supported formats are 'webm', 'mp4', 'gif', 'vp8', 'vp9', 'vp9-lossless', 'copy', 'zip'.",
+        "description": "Convert Pixiv Ugoira to FMT using FFmpeg. Supported formats are 'webm', 'mp4', 'gif', 'vp8', 'vp9', 'vp9-lossless', 'copy', 'zip'",
         "type": "string",
         "placeholder": "e.g. webm",
         "defaultValue": ""
       },
       {
-        "id": "exec",
-        "command": "--exec",
-        "description": "Execute CMD for each downloaded file. Supported replacement fields are {} or {_path}, {_directory}, {_filename}. Example: --exec 'convert {} {}.png && rm {}'",
-        "type": "string",
-        "placeholder": "e.g. 'convert {} {}.png'",
-        "defaultValue": ""
+        "id": "dump-json",
+        "command": "--dump-json",
+        "description": "Print JSON information",
+        "type": "boolean",
+        "defaultValue": false
       },
       {
-        "id": "exec-after",
-        "command": "--exec-after",
-        "description": "Execute CMD after all files were downloaded. Example: --exec-after 'cd {_directory} && convert * ../doc.pdf'",
+        "id": "option",
+        "command": "--option",
+        "description": "Additional options. Example: -o browser=firefox",
         "type": "string",
-        "placeholder": "e.g. 'cd {_directory} && convert * ../doc.pdf'",
+        "placeholder": "e.g. browser=firefox",
         "defaultValue": ""
       }
     ]

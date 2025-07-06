@@ -263,20 +263,8 @@
       <div
         class="flex justify-end gap-3 border-t border-secondary-200 px-6 py-4 dark:border-secondary-700"
       >
-        <Button
-          onclick={onClose}
-          variant="outline-primary"
-          size="sm"
-        >
-          Close
-        </Button>
-        <Button
-          onclick={handleApply}
-          variant="primary"
-          size="sm"
-        >
-          Apply Options
-        </Button>
+        <Button onclick={onClose} variant="outline-primary" size="sm">Close</Button>
+        <Button onclick={handleApply} variant="primary" size="sm">Apply Options</Button>
       </div>
     </div>
 
