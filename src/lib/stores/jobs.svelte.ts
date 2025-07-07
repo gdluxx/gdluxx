@@ -127,6 +127,8 @@ async function startJob(
         }
       }
 
+      jobs = { ...jobs };
+
       return { overallSuccess: data.overallSuccess, results: data.results };
     } else {
       const errorMsg: string =
@@ -171,6 +173,8 @@ function connectToJob(jobId: string): void {
 
   const eventSource = new EventSource(`/api/command/stream/${jobId}`);
   job.eventSource = eventSource;
+
+  jobs = { ...jobs };
 
   eventSource.onopen = () => {
     logger.info(`EventSource connected for job ${jobId}`);
