@@ -10,106 +10,15 @@
 
 import { fail } from '@sveltejs/kit';
 import type { Actions } from './$types';
-import { writeFile } from 'fs/promises';
-import { join, dirname } from 'path';
 import { logger } from '$lib/shared/logger';
-import { ensureDir } from '$lib/utils/fs';
 import { createPageLoad } from '$lib/utils/page-load';
 import { getClientSafeMessage } from '$lib/server/api-utils';
-
-const DATA_PATH = process.env.FILE_STORAGE_PATH ?? './data';
-const CONFIG_FILE = 'config.json';
-
-
-// To accommodate for Docker bind mount pathing, we need to ensure user's config paths are correct
-// If not, they'll be prefixed with `/app/data`, some assumptions will be made
-function transformConfigPaths(jsonString: string): string {
-  try {
-    const config = JSON.parse(jsonString);
-
-    // Check if a path needs prefixing
-    const needsPrefixing = (value: string): boolean => {
-      if (!value) {
-        return false;
-      }
-
-      // Skip if already using `/app/data`
-      if (value.startsWith('/app/data')) {
-        return false;
-      }
-
-      // Only prefix absolute paths that won't work in the container
-      return value.startsWith('/') || value.startsWith('~/') || value.startsWith('./');
-    };
-
-    // Prefix paths for container compatibility while preserving user structure
-    // We don't want to assume user is OK with the path being reduced to `/app/data`
-    const prefixForDocker = (value: string): string => {
-      if (!needsPrefixing(value)) {
-        return value;
-      }
-
-      if (value.startsWith('~/')) {
-        // ~/mydownloads/... → /app/data/mydownloads/...
-        return `/app/data/${value.substring(2)}`;
-      }
-
-      if (value.startsWith('./')) {
-        // ./mydownloads/... → /app/data/mydownloads/...
-        return `/app/data/${value.substring(2)}`;
-      }
-
-      if (value.startsWith('/')) {
-        // /home/user/mydownloads/... → /app/data/home/user/mydownloads/...
-        return `/app/data${value}`;
-      }
-
-      return value;
-    };
-
-    // Recursively transform paths in the config object
-    const transformObject = (obj: unknown): unknown => {
-      if (typeof obj === 'string') {
-        return prefixForDocker(obj);
-      }
-
-      if (Array.isArray(obj)) {
-        return obj.map(transformObject);
-      }
-
-      if (obj && typeof obj === 'object') {
-        const transformed: Record<string, unknown> = {};
-        for (const [key, value] of Object.entries(obj)) {
-          // Transform specific known path fields and directory keys
-          if (['base-directory', 'archive', 'path', 'part-directory', 'directory'].includes(key)) {
-            if (typeof value === 'string') {
-              transformed[key] = prefixForDocker(value);
-            } else {
-              transformed[key] = transformObject(value);
-            }
-          } else {
-            transformed[key] = transformObject(value);
-          }
-        }
-        return transformed;
-      }
-
-      return obj;
-    };
-
-    const transformedConfig: unknown = transformObject(config);
-    return JSON.stringify(transformedConfig, null, 2);
-  } catch (error) {
-    // If JSON parsing fails, return original content
-    logger.warn('Failed to parse JSON for path transformation:', error);
-    return jsonString;
-  }
-}
+import { writeConfigFile } from '$lib/server/config-utils';
 
 export const load = createPageLoad({
   endpoint: '/config',
   fallback: { content: '{}', source: 'fallback' },
-  errorMessage: 'Failed to load configuration'
+  errorMessage: 'Failed to load configuration',
 });
 
 export const actions: Actions = {
@@ -122,25 +31,8 @@ export const actions: Actions = {
         return fail(400, { error: 'Invalid content - must be string' });
       }
 
-      if (!content) {
-        return fail(400, { error: 'Content cannot be empty' });
-      }
-
-      const transformedContent: string = transformConfigPaths(content);
-      const wasTransformed: boolean = content !== transformedContent;
-
-      const fullPath: string = join(DATA_PATH, CONFIG_FILE);
-
-      await ensureDir(dirname(fullPath));
-      await writeFile(fullPath, transformedContent, 'utf-8');
-
-      return {
-        success: true,
-        message: wasTransformed ? 'Saved successfully (paths transformed)!' : 'Saved successfully!',
-        path: CONFIG_FILE,
-        transformed: wasTransformed,
-        content: wasTransformed ? transformedContent : undefined,
-      };
+      const result = await writeConfigFile(content);
+      return result;
     } catch (error) {
       logger.error('Error saving file:', error);
       return fail(500, { error: getClientSafeMessage(error as Error) });

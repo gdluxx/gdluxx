@@ -14,6 +14,14 @@
   import { Button, Info, ConfirmModal } from '$lib/components/ui';
   import { Icon } from '$lib/components/index';
   import { API_KEY_VALIDATION, validateApiKeyInput, type ApiKey } from '../../../routes/settings/apikey/lib';
+  import {
+    type ApiKeyCreateSuccessResult,
+    type ApiKeyDeleteSuccessResult,
+    type FormFailureResult,
+    isApiKeyCreateSuccess,
+    isApiKeyDeleteSuccess,
+    isFormFailure
+  } from '$lib/types/form-results';
 
   interface InitialData {
     success: boolean;
@@ -226,26 +234,26 @@
           isLoading = false;
 
           if (result.type === 'success' && result.data) {
-            const data = result.data as {
-              success: boolean;
-              apiKey?: ApiKey;
-              plainKey?: string;
-            };
+            if (isApiKeyCreateSuccess(result.data)) {
+              const data: ApiKeyCreateSuccessResult = result.data;
 
-            if (data.success && data.apiKey && data.plainKey) {
-              apiKeys = [...apiKeys, data.apiKey];
-              justCreatedKey = {
-                key: data.plainKey,
-                name: data.apiKey.name,
-              };
-              newKeyName = '';
-              expirationDate = '';
-              neverExpires = true;
-              error = null;
+              if (data.success && data.apiKey && data.plainKey) {
+                apiKeys = [...apiKeys, data.apiKey];
+                justCreatedKey = {
+                  key: data.plainKey,
+                  name: data.apiKey.name,
+                };
+                newKeyName = '';
+                expirationDate = '';
+                neverExpires = true;
+                error = null;
+              }
             }
           } else if (result.type === 'failure' && result.data) {
-            const data = result.data as { error?: string };
-            error = data.error ?? 'Failed to create API key';
+            if (isFormFailure(result.data)) {
+              const data: FormFailureResult = result.data;
+              error = data.error ?? 'Failed to create API key';
+            }
           } else {
             error = 'An unexpected error occurred';
           }
@@ -440,23 +448,23 @@
       isLoading = false;
 
       if (result.type === 'success' && result.data) {
-        const data = result.data as {
-          success: boolean;
-          message?: string;
-          deletedKeyId?: string;
-        };
+        if (isApiKeyDeleteSuccess(result.data)) {
+          const data: ApiKeyDeleteSuccessResult = result.data;
 
-        if (data.success && data.deletedKeyId) {
-          apiKeys = apiKeys.filter(key => key.id !== data.deletedKeyId);
-          copyFeedback = data.message ?? 'API key deleted successfully';
-          setTimeout(() => {
-            copyFeedback = null;
-          }, 3000);
-          error = null;
+          if (data.success && data.deletedKeyId) {
+            apiKeys = apiKeys.filter(key => key.id !== data.deletedKeyId);
+            copyFeedback = data.message ?? 'API key deleted successfully';
+            setTimeout(() => {
+              copyFeedback = null;
+            }, 3000);
+            error = null;
+          }
         }
       } else if (result.type === 'failure' && result.data) {
-        const data = result.data as { error?: string };
-        error = data.error ?? 'Failed to delete API key';
+        if (isFormFailure(result.data)) {
+          const data: FormFailureResult = result.data;
+          error = data.error ?? 'Failed to delete API key';
+        }
       } else {
         error = 'An unexpected error occurred';
       }

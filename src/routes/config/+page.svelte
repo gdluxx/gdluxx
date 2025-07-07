@@ -13,6 +13,10 @@
   import { enhance } from '$app/forms';
   import { ConfigEditor, Icon } from '$lib/components';
   import { Info, PageLayout } from '$lib/components/ui';
+  import {
+    type ConfigSaveSuccessResult,
+    isConfigSaveSuccess
+  } from '$lib/types/form-results';
 
   const { data } = $props();
 
@@ -89,9 +93,12 @@
           _isSubmitting = false;
 
           if (result.type === 'success' && result.data) {
-            // If paths were transformed, update editor
-            if (result.data.transformed && result.data.content) {
-              jsonContent = result.data.content as string;
+            if (isConfigSaveSuccess(result.data)) {
+              const data: ConfigSaveSuccessResult = result.data;
+              // If paths were transformed, update editor
+              if (data.transformed && data.content) {
+                jsonContent = data.content;
+              }
             }
 
             if (loadMessage) {
