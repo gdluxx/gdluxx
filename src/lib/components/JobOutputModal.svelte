@@ -133,29 +133,39 @@
     }
   }
 
+  function fallbackCopy(text: string): void {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-999999px';
+    textArea.style.top = '-999999px';
+    textArea.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+
+    const successful = document.execCommand('copy');
+    document.body.removeChild(textArea);
+
+    if (!successful) {
+      throw new Error('Fallback copy method failed');
+    }
+  }
+
   async function copyToClipboard(jobUrl: string, event: MouseEvent) {
     try {
+      // Modern clipboard
       if (navigator.clipboard && window.isSecureContext) {
-        await navigator.clipboard.writeText(jobUrl);
-      } else {
-        // Fallback for mobile/unsupported browsers
-        const textArea = document.createElement('textarea');
-        textArea.value = jobUrl;
-        textArea.style.position = 'fixed';
-        textArea.style.left = '-999999px';
-        textArea.style.top = '-999999px';
-        textArea.setAttribute('aria-hidden', 'true');
-        document.body.appendChild(textArea);
-        textArea.focus();
-        textArea.select();
-
-        // TODO: Need to find modern option that works as well as this does
-        const successful = document.execCommand('copy');
-        document.body.removeChild(textArea);
-
-        if (!successful) {
-          throw new Error('Fallback copy method failed');
+        try {
+          await navigator.clipboard.writeText(jobUrl);
+        } catch (clipboardError) {
+          // if errors received, fall back
+          console.warn('Clipboard API failed, falling back to execCommand:', clipboardError);
+          fallbackCopy(jobUrl);
         }
+      } else {
+        // Last effort
+        fallbackCopy(jobUrl);
       }
 
       tooltip.text = 'Copied!';

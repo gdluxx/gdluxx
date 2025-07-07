@@ -24,6 +24,3 @@ export interface OptionCategory {
 
 export type OptionsData = Record<string, OptionCategory>;
 
-export interface SelectedOption extends Option {
-  category: string;
-}

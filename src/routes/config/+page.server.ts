@@ -31,8 +31,7 @@ export const actions: Actions = {
         return fail(400, { error: 'Invalid content - must be string' });
       }
 
-      const result = await writeConfigFile(content);
-      return result;
+      return await writeConfigFile(content);
     } catch (error) {
       logger.error('Error saving file:', error);
       return fail(500, { error: getClientSafeMessage(error as Error) });
