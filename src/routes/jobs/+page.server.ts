@@ -9,17 +9,19 @@
  */
 
 import type { PageServerLoad } from './$types';
-import { type Job, jobManager } from '$lib/server/jobManager';
+import { logger } from '$lib/shared/logger';
 
-export const load: PageServerLoad = async () => {
+export const load: PageServerLoad = async ({ fetch }) => {
+  // Use the co-located API endpoint instead of duplicating logic
   try {
-    const jobs: Job[] = await jobManager.getAllJobs();
-    return {
-      success: true,
-      jobs,
-    };
-  } catch (_error) {
-    // Use logger instead of console for consistency
+    const response = await fetch('/jobs');
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    logger.error('Error loading jobs via API:', error);
     return {
       success: false,
       jobs: [],

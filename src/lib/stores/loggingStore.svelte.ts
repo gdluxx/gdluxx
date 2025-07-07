@@ -25,7 +25,7 @@ export async function fetchLoggingStatus(): Promise<void> {
   _error = null;
   try {
     logger.info('[Store TRACE] Client store calling fetchLoggingStatus.');
-    const response: Response = await fetch('/api/logging/settings', {
+    const response: Response = await fetch('/settings/debug', {
       cache: 'no-store',
     });
     if (!response.ok) {
@@ -54,7 +54,7 @@ export async function updateLoggingStatus(newEnabledState: boolean): Promise<voi
   _isLoading = true;
   _error = null;
   try {
-    const response: Response = await fetch('/api/logging/settings', {
+    const response: Response = await fetch('/settings/debug', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ enabled: newEnabledState }),

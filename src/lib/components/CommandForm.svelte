@@ -160,7 +160,7 @@
 
   async function checkConfigFileForErrors() {
     try {
-      const response = await fetch('/api/files/read');
+      const response = await fetch('/config');
       const data = await response.json();
 
       if (data.success) {

@@ -52,7 +52,7 @@ async function loadJobs(): Promise<void> {
     return;
   }
   try {
-    const response: Response = await fetch('/api/command/jobs');
+    const response: Response = await fetch('/jobs');
     const data = await response.json();
     if (data.success) {
       const jobMap: Record<string, ClientJob> = {};

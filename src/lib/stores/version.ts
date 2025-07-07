@@ -86,7 +86,7 @@ function createVersionStore() {
     loadStatus: async (): Promise<StoreActionResult> => {
       setLoading(true);
       try {
-        const response: Response = await fetch('/api/version/status');
+        const response: Response = await fetch('/settings/version');
         if (!response.ok) {
           return await handleApiError(response, 'Failed to fetch status');
         }
@@ -104,7 +104,7 @@ function createVersionStore() {
     checkForUpdates: async (): Promise<StoreActionResult> => {
       setLoading(true);
       try {
-        const response = await fetch('/api/version/check', { method: 'POST' });
+        const response = await fetch('/settings/version', { method: 'POST' });
         if (!response.ok) {
           return await handleApiError(response, 'Failed to check for updates');
         }
@@ -130,7 +130,7 @@ function createVersionStore() {
     performUpdate: async (): Promise<StoreActionResult> => {
       setUpdateInProgress(true);
       try {
-        const response: Response = await fetch('/api/update', { method: 'POST' });
+        const response: Response = await fetch('/settings/version/update', { method: 'POST' });
         const result: VersionInfo & { message?: string; error?: string } = await response.json();
 
         if (!response.ok) {

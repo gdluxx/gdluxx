@@ -15,7 +15,6 @@ import { logger } from '$lib/shared/logger';
 import type { ApiKey, NewApiKeyResponse } from '$lib/types/apiKey';
 import {
   createApiKey,
-  listApiKeys,
   findApiKeyByName,
   deleteApiKey,
 } from '$lib/server/apiKeyManager';
@@ -41,15 +40,20 @@ const getClientSafeMessage = (error: Error) => {
   return 'An unexpected error occurred.';
 };
 
-export const load: PageServerLoad = async () => {
+export const load: PageServerLoad = async ({ fetch }) => {
+  // Use the co-located API endpoint instead of duplicating logic
   try {
-    const apiKeys: ApiKey[] = await listApiKeys();
+    const response = await fetch('/settings/apikey');
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    const apiKeys: ApiKey[] = await response.json();
     return {
       success: true,
       apiKeys,
     };
   } catch (error) {
-    logger.error('Error loading API keys:', error);
+    logger.error('Error loading API keys via API:', error);
     return {
       success: false,
       apiKeys: [],
