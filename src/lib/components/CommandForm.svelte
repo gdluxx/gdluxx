@@ -10,13 +10,13 @@
 
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { enhance } from '$app/forms';
   import { hasJsonLintErrors } from '$lib/stores/lint';
   import { logger } from '$lib/shared/logger';
   import { Button, Chip, Info } from '$lib/components/ui';
   import optionsData from '$lib/assets/options.json';
   import type { Option, OptionsData } from '$lib/types/options';
   import { browser } from '$app/environment';
+  import { jobStore } from '$lib/stores/jobs.svelte';
 
   const typedOptionsData = optionsData as OptionsData;
 
@@ -32,29 +32,7 @@
     error?: string;
   }
 
-  interface ErrorResult {
-    error: string;
-  }
 
-  function isFormResult(data: unknown): data is FormResult {
-    // noinspection SuspiciousTypeOfGuard
-    return (
-      typeof data === 'object' &&
-      data !== null &&
-      'overallSuccess' in data &&
-      typeof (data as FormResult).overallSuccess === 'boolean'
-    );
-  }
-
-  function isErrorResult(data: unknown): data is ErrorResult {
-    // noinspection SuspiciousTypeOfGuard
-    return (
-      typeof data === 'object' &&
-      data !== null &&
-      'error' in data &&
-      typeof (data as ErrorResult).error === 'string'
-    );
-  }
 
   let commandUrlsInput = $state('');
   let isLoading = $state(false);
@@ -266,50 +244,43 @@
     selectedOptionsByCategory = new Map();
     clearStoredOptions();
   }
+
+  async function handleSubmit(event: SubmitEvent) {
+    event.preventDefault();
+    
+    // Validate URLs before submitting
+    const urlsToProcess = commandUrlsInput
+      .split(/[\s\n]+/) // Split by any whitespace; space, tab, newline etc.
+      .map(url => url.trim())
+      .filter(url => url !== ''); // Remove empty strings
+
+    if (urlsToProcess.length === 0) {
+      formError = 'Please enter at least one URL.';
+      return;
+    }
+
+    isLoading = true;
+    successMessage = null;
+    formError = null;
+
+    try {
+      const result = await jobStore.startJob(urlsToProcess, selectedOptions);
+      handleFormResult(result);
+    } catch (error) {
+      logger.error('Failed to start jobs:', error);
+      formError = error instanceof Error ? error.message : 'An unexpected error occurred';
+    } finally {
+      isLoading = false;
+    }
+  }
 </script>
 
 <div
   class="bg-primary-50 p-4 dark:border-primary-400 rounded-sm border border-primary-600 dark:bg-primary-800"
 >
   <form
-    method="POST"
-    action="?/start"
     class="space-y-6"
-    use:enhance={({ cancel }) => {
-      // Validate URLs before submitting
-      const urlsToProcess = commandUrlsInput
-        .split(/[\s\n]+/) // Split by any whitespace; space, tab, newline etc.
-        .map(url => url.trim())
-        .filter(url => url !== ''); // Remove empty strings
-
-      if (urlsToProcess.length === 0) {
-        formError = 'Please enter at least one URL.';
-        cancel();
-        return;
-      }
-
-      isLoading = true;
-      successMessage = null;
-      formError = null;
-
-      return async ({ result }) => {
-        isLoading = false;
-
-        if (result.type === 'success' && result.data && isFormResult(result.data)) {
-          handleFormResult(result.data);
-        } else if (result.type === 'failure' && result.data && isErrorResult(result.data)) {
-          formError = result.data.error;
-        } else if (result.type === 'redirect') {
-          // Handle redirect - no data property exists
-          formError = 'Unexpected redirect occurred';
-        } else if (result.type === 'error') {
-          // Handle error - no data property exists
-          formError = 'An error occurred during form submission';
-        } else {
-          formError = 'An unexpected error occurred';
-        }
-      };
-    }}
+    onsubmit={handleSubmit}
   >
     <div class="m-4">
       <label

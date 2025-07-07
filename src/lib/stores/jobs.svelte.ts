@@ -93,7 +93,7 @@ async function startJob(
   }
 
   try {
-    const response: Response = await fetch('/api/command/start', {
+    const response: Response = await fetch('/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
