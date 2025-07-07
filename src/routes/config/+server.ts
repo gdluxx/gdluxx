@@ -8,15 +8,32 @@
  * as published by the Free Software Foundation.
  */
 
-import { json, type RequestEvent } from '@sveltejs/kit';
+import { json } from '@sveltejs/kit';
+import { dev } from '$app/environment';
 import type { RequestHandler } from './$types';
-import { writeFile } from 'fs/promises';
+import { readFile, writeFile } from 'fs/promises';
 import { join, dirname } from 'path';
 import { logger } from '$lib/shared/logger';
 import { ensureDir } from '$lib/utils/fs';
 
-const ALLOWED_BASE_PATH: string = process.env.FILE_STORAGE_PATH || './data';
+const DATA_PATH = process.env.FILE_STORAGE_PATH ?? './data';
 const CONFIG_FILE = 'config.json';
+const EXAMPLE_CONFIG_FILE = './static/config-example.json';
+
+const getClientSafeMessage = (error: Error) => {
+  if (dev) {
+    return error.message;
+  }
+
+  if (error.name === 'ValidationError') {
+    return 'Invalid input provided.';
+  }
+  if (error.name === 'NotFoundError') {
+    return 'Resource not found.';
+  }
+
+  return 'An unexpected error occurred.';
+};
 
 // To accommodate for Docker bind mount pathing, we need to ensure user's config paths are correct
 // If not, they'll be prefixed with `/app/data`, some assumptions will be made
@@ -103,7 +120,71 @@ function transformConfigPaths(jsonString: string): string {
   }
 }
 
-export const POST: RequestHandler = async ({ request }: RequestEvent): Promise<Response> => {
+export const GET: RequestHandler = async (): Promise<Response> => {
+  try {
+    const configPath = join(DATA_PATH, CONFIG_FILE);
+
+    try {
+      const content: string = await readFile(configPath, 'utf-8');
+
+      // Don't validate JSON here - just return the raw content
+      // Otherwise the editor won't show parts of the JSON that are invalid,
+      //   yet it will exist in the file
+      // The frontend editor will handle validation and show linting errors
+
+      return json({
+        success: true,
+        content,
+        source: 'config',
+        path: CONFIG_FILE,
+      });
+    } catch (configError) {
+      // If it doesn't exist, load the example config
+      if ((configError as NodeJS.ErrnoException).code === 'ENOENT') {
+        try {
+          const exampleContent: string = await readFile(EXAMPLE_CONFIG_FILE, 'utf-8');
+
+          return json({
+            success: true,
+            content: exampleContent,
+            source: 'example',
+            path: CONFIG_FILE,
+            message: 'Loaded example configuration. Save to create your config file.',
+          });
+        } catch (exampleError) {
+          return json(
+            {
+              error: 'Failed to load configuration',
+              details: 'Both config.json and config-example.json are unavailable',
+              errorMessage:
+                exampleError instanceof Error ? exampleError.message : String(exampleError),
+            },
+            { status: 500 }
+          );
+        }
+      } else {
+        return json(
+          {
+            error: 'Failed to read configuration file',
+            details: (configError as Error).message,
+          },
+          { status: 500 }
+        );
+      }
+    }
+  } catch (error) {
+    logger.error('Error reading config file:', error);
+    return json(
+      {
+        error: 'Failed to read configuration',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      },
+      { status: 500 }
+    );
+  }
+};
+
+export const POST: RequestHandler = async ({ request }): Promise<Response> => {
   try {
     const { content } = await request.json();
 
@@ -118,7 +199,7 @@ export const POST: RequestHandler = async ({ request }: RequestEvent): Promise<R
     const transformedContent: string = transformConfigPaths(content);
     const wasTransformed: boolean = content !== transformedContent;
 
-    const fullPath: string = join(ALLOWED_BASE_PATH, CONFIG_FILE);
+    const fullPath: string = join(DATA_PATH, CONFIG_FILE);
 
     await ensureDir(dirname(fullPath));
     await writeFile(fullPath, transformedContent, 'utf-8');
@@ -135,7 +216,7 @@ export const POST: RequestHandler = async ({ request }: RequestEvent): Promise<R
     return json(
       {
         error: 'Failed to save file',
-        details: error instanceof Error ? error.message : 'Unknown error',
+        details: getClientSafeMessage(error as Error),
       },
       { status: 500 }
     );

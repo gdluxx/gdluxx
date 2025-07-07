@@ -14,7 +14,7 @@ import { readLoggingConfig, writeLoggingConfig } from '$lib/server/loggingManage
 
 export const GET: RequestHandler = async (): Promise<Response> => {
   try {
-    logger.info('[API TRACE] GET /api/logging/settings invoked.');
+    logger.info('[API TRACE] GET /settings/debug invoked.');
 
     const config: LoggingConfig = await readLoggingConfig();
     await logger.setConfig(config);

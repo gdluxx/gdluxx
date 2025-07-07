@@ -14,6 +14,7 @@ import {
   readVersionInfo,
   writeVersionInfo,
   getCurrentVersionFromBinary,
+  getLatestVersionFromGithub,
   DEFAULT_VERSION_INFO,
   type VersionInfo,
 } from '$lib/server/versionManager';
@@ -41,10 +42,33 @@ export const GET: RequestHandler = async (): Promise<Response> => {
     }
     return json(versionInfo);
   } catch (error) {
-    logger.error('Error in /api/version/status:', error);
+    logger.error('Error in version status:', error);
     return json(
       { ...DEFAULT_VERSION_INFO, error: 'Failed to get version status' },
       { status: 500 }
     );
+  }
+};
+
+export const POST: RequestHandler = async (): Promise<Response> => {
+  try {
+    const versionInfo: VersionInfo = await readVersionInfo();
+
+    if (versionInfo.current === null) {
+      const currentActual: string | null = await getCurrentVersionFromBinary();
+      if (currentActual) {
+        versionInfo.current = currentActual;
+      }
+    }
+
+    versionInfo.latestAvailable = await getLatestVersionFromGithub();
+    versionInfo.lastChecked = Date.now();
+
+    await writeVersionInfo(versionInfo);
+
+    return json(versionInfo);
+  } catch (error) {
+    logger.error('Error checking for updates:', error);
+    return json({ ...DEFAULT_VERSION_INFO, error: 'Failed to check for updates' }, { status: 500 });
   }
 };

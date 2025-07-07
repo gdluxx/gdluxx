@@ -77,7 +77,7 @@ export const POST: RequestHandler = async (): Promise<Response> => {
 
     return json({ ...versionInfo, message: 'Update completed successfully.' });
   } catch (error) {
-    logger.error('Error in /api/update:', error);
+    logger.error('Error in update:', error);
     const currentInfo: VersionInfo = await readVersionInfo().catch(() => DEFAULT_VERSION_INFO);
     return json(
       {
