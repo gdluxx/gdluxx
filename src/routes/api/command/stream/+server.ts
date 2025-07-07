@@ -80,37 +80,6 @@ export async function GET({ request }: { request: Request }): Promise<Response> 
       const args: string[] = [commandToRunUrl, '--config', './data/config.json'];
       const effectiveCwd: string | undefined = undefined; // Default to project root
 
-      // if (useUserConfigPath) {
-      //   sendEvent(
-      //     'info',
-      //     `Relying on user's gallery-dl config for output path. No '-o' flag set by server.`
-      //   );
-      //   // Optional: Set a specific CWD if user's config might use relative paths
-      //   // effectiveCwd = path.join(os.tmpdir(), 'gdl-web-user-config-runs');
-      //   // if (!fs.existsSync(effectiveCwd)) fs.mkdirSync(effectiveCwd, { recursive: true });
-      // } else {
-      //   // Server defines output path
-      //   if (!fs.existsSync(serverDefinedOutputBase)) {
-      //     fs.mkdirSync(serverDefinedOutputBase, { recursive: true });
-      //     sendEvent('info', `Created server base output directory: ${serverDefinedOutputBase}`);
-      //   }
-      //   const safeUrlPart: string = commandToRunUrl.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 50);
-      //   const timestamp: string = new Date().toISOString().replace(/[:.]/g, '-');
-      //   const uniqueOutputDir: string = path.join(
-      //     serverDefinedOutputBase,
-      //     `${timestamp}_${safeUrlPart}`
-      //   );
-      //   if (!fs.existsSync(uniqueOutputDir)) {
-      //     fs.mkdirSync(uniqueOutputDir, { recursive: true });
-      //   }
-      //   args.push(
-      //     '-o',
-      //     `output-format=${path.join(uniqueOutputDir, '%(extractor)s/%(category)s/%(artist)s/%(album)s/%(filename)s.%(ext)s')}`
-      //   );
-      //   sendEvent('info', `Server-defined output directory: ${uniqueOutputDir}`);
-      //   // effectiveCwd = uniqueOutputDir; // Or serverDefinedOutputBase or undefined
-      // }
-
       sendEvent(
         'info',
         `Executing in PTY: ${PATHS.BIN_FILE} ${args.join(' ')} ${effectiveCwd ? `(CWD: ${effectiveCwd})` : '(CWD: project root or default)'}`

@@ -13,11 +13,7 @@ import { dev } from '$app/environment';
 import type { PageServerLoad, Actions } from './$types';
 import { logger } from '$lib/shared/logger';
 import type { ApiKey, NewApiKeyResponse } from '$lib/types/apiKey';
-import {
-  createApiKey,
-  findApiKeyByName,
-  deleteApiKey,
-} from '$lib/server/apiKeyManager';
+import { createApiKey, findApiKeyByName, deleteApiKey } from '$lib/server/apiKeyManager';
 import {
   API_KEY_VALIDATION,
   validateApiKeyName,
@@ -29,7 +25,6 @@ const getClientSafeMessage = (error: Error) => {
     return error.message;
   }
 
-  // Categorize errors for better UX while remaining secure
   if (error.name === 'ValidationError') {
     return 'Invalid input provided.';
   }
@@ -41,7 +36,6 @@ const getClientSafeMessage = (error: Error) => {
 };
 
 export const load: PageServerLoad = async ({ fetch }) => {
-  // Use the co-located API endpoint instead of duplicating logic
   try {
     const response = await fetch('/settings/apikey');
     if (!response.ok) {
@@ -77,7 +71,6 @@ export const actions: Actions = {
         });
       }
 
-      // Validate API key name using shared validation
       const nameError: string | null = validateApiKeyName(name);
       if (nameError) {
         return fail(400, {
@@ -86,7 +79,6 @@ export const actions: Actions = {
         });
       }
 
-      // Check for duplicate name
       const trimmedName: string = name.trim();
       const existingKey: ApiKey | null = await findApiKeyByName(trimmedName);
       if (existingKey) {
@@ -96,7 +88,6 @@ export const actions: Actions = {
         });
       }
 
-      // Validate expiration date if provided
       const expirationDate = !neverExpires && expiresAt ? expiresAt : undefined;
       if (expirationDate) {
         const expirationError: string | null = validateExpirationDate(expirationDate);

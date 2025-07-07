@@ -12,7 +12,6 @@ import type { PageServerLoad } from './$types';
 import { logger } from '$lib/shared/logger';
 
 export const load: PageServerLoad = async ({ fetch }) => {
-  // Use the co-located API endpoint instead of duplicating logic
   try {
     const response = await fetch('/jobs');
     if (!response.ok) {

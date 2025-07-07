@@ -98,7 +98,7 @@ export const POST: RequestHandler = async ({ request }) => {
       );
     }
 
-    // Parse args - expect array of [string, string|number|boolean] tuples
+    // Parse args
     let receivedArgs: Array<[string, string | number | boolean]> = [];
     if (args && Array.isArray(args)) {
       receivedArgs = args;

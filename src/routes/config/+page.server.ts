@@ -24,7 +24,6 @@ const getClientSafeMessage = (error: Error) => {
     return error.message;
   }
 
-  // Categorize errors for better UX while remaining secure
   if (error.name === 'ValidationError') {
     return 'Invalid input provided.';
   }
@@ -121,7 +120,6 @@ function transformConfigPaths(jsonString: string): string {
 }
 
 export const load: PageServerLoad = async ({ fetch }) => {
-  // Use the co-located API endpoint instead of duplicating logic
   try {
     const response = await fetch('/config');
     const data = await response.json();

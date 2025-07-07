@@ -19,7 +19,6 @@ const getClientSafeMessage = (error: Error) => {
     return error.message;
   }
 
-  // Categorize errors for better UX while remaining secure
   if (error.name === 'ValidationError') {
     return 'Invalid input provided.';
   }
@@ -31,7 +30,6 @@ const getClientSafeMessage = (error: Error) => {
 };
 
 export const load: PageServerLoad = async ({ fetch }) => {
-  // Use the co-located API endpoint
   try {
     const response = await fetch('/settings/debug');
     if (!response.ok) {
@@ -55,8 +53,8 @@ export const load: PageServerLoad = async ({ fetch }) => {
 export const actions: Actions = {
   update: async ({ request }) => {
     try {
-      const formData = await request.formData();
-      const enabled = formData.get('enabled') === 'true';
+      const formData: FormData = await request.formData();
+      const enabled: boolean = formData.get('enabled') === 'true';
       const level = formData.get('level') as string;
 
       const currentConfig: LoggingConfig = await readLoggingConfig();

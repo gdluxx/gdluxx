@@ -33,20 +33,17 @@ export const POST: RequestHandler = async ({ request }): Promise<Response> => {
   try {
     const body: CreateApiKeyRequest = await request.json();
 
-    // Validate API key name using shared validation
     const nameError: string | null = validateApiKeyName(body.name || '');
     if (nameError) {
       return json({ error: nameError }, { status: 400 });
     }
 
-    // Check for duplicate name
     const trimmedName: string = body.name.trim();
     const existingKey: ApiKey | null = await findApiKeyByName(trimmedName);
     if (existingKey) {
       return json({ error: API_KEY_VALIDATION.NAME.DUPLICATE_MESSAGE }, { status: 400 });
     }
 
-    // Validate expiration date if provided
     if (body.expiresAt) {
       const expirationError: string | null = validateExpirationDate(body.expiresAt);
       if (expirationError) {

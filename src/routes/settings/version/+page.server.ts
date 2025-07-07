@@ -14,7 +14,6 @@ import { logger } from '$lib/shared/logger';
 import { DEFAULT_VERSION_INFO, type VersionInfo } from '$lib/server/versionManager';
 
 export const load: PageServerLoad = async ({ fetch }) => {
-  // Use the co-located API endpoint
   try {
     const response = await fetch('/settings/version');
     if (!response.ok) {

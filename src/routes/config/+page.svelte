@@ -22,7 +22,7 @@
   const loadError = $state(data.success ? '' : (data.error ?? 'Failed to load configuration'));
   let _isSubmitting = $state(false);
 
-  // Form reference for programmatic submission
+
   let configForm: HTMLFormElement | undefined = $state();
 
   async function saveJsonFile(content: string) {
@@ -30,13 +30,13 @@
       return { message: 'Form not available' };
     }
 
-    // Update the hidden input value
+
     const contentInput = configForm.querySelector('input[name="content"]') as HTMLInputElement;
     if (contentInput) {
       contentInput.value = content;
     }
 
-    // Submit the form programmatically
+
     configForm.requestSubmit();
 
     return { message: 'Submitting...' };
