@@ -11,7 +11,7 @@
 import { fail } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
 import { logger } from '$lib/shared/logger';
-import { DEFAULT_VERSION_INFO, type VersionInfo } from '$lib/server/versionManager';
+import { DEFAULT_VERSION_INFO, type VersionInfo } from './lib/server-exports';
 
 export const load: PageServerLoad = async ({ fetch }) => {
   try {

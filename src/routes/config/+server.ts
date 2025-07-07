@@ -8,32 +8,19 @@
  * as published by the Free Software Foundation.
  */
 
-import { json } from '@sveltejs/kit';
-import { dev } from '$app/environment';
 import type { RequestHandler } from './$types';
 import { readFile, writeFile } from 'fs/promises';
 import { join, dirname } from 'path';
 import { logger } from '$lib/shared/logger';
 import { ensureDir } from '$lib/utils/fs';
+import { createApiResponse, handleApiError } from '$lib/server/api-utils';
+import { validateInput } from '$lib/server/validation-utils';
+import { configUpdateSchema } from '$lib/server/config-validation';
 
 const DATA_PATH = process.env.FILE_STORAGE_PATH ?? './data';
 const CONFIG_FILE = 'config.json';
 const EXAMPLE_CONFIG_FILE = './static/config-example.json';
 
-const getClientSafeMessage = (error: Error) => {
-  if (dev) {
-    return error.message;
-  }
-
-  if (error.name === 'ValidationError') {
-    return 'Invalid input provided.';
-  }
-  if (error.name === 'NotFoundError') {
-    return 'Resource not found.';
-  }
-
-  return 'An unexpected error occurred.';
-};
 
 // To accommodate for Docker bind mount pathing, we need to ensure user's config paths are correct
 // If not, they'll be prefixed with `/app/data`, some assumptions will be made
@@ -132,8 +119,7 @@ export const GET: RequestHandler = async (): Promise<Response> => {
       //   yet it will exist in the file
       // The frontend editor will handle validation and show linting errors
 
-      return json({
-        success: true,
+      return createApiResponse({
         content,
         source: 'config',
         path: CONFIG_FILE,
@@ -144,57 +130,32 @@ export const GET: RequestHandler = async (): Promise<Response> => {
         try {
           const exampleContent: string = await readFile(EXAMPLE_CONFIG_FILE, 'utf-8');
 
-          return json({
-            success: true,
+          return createApiResponse({
             content: exampleContent,
             source: 'example',
             path: CONFIG_FILE,
             message: 'Loaded example configuration. Save to create your config file.',
           });
-        } catch (exampleError) {
-          return json(
-            {
-              error: 'Failed to load configuration',
-              details: 'Both config.json and config-example.json are unavailable',
-              errorMessage:
-                exampleError instanceof Error ? exampleError.message : String(exampleError),
-            },
-            { status: 500 }
-          );
+        } catch (_exampleError) {
+          return handleApiError(new Error('Both config.json and config-example.json are unavailable'));
         }
       } else {
-        return json(
-          {
-            error: 'Failed to read configuration file',
-            details: (configError as Error).message,
-          },
-          { status: 500 }
-        );
+        return handleApiError(new Error(`Failed to read configuration file: ${(configError as Error).message}`));
       }
     }
   } catch (error) {
     logger.error('Error reading config file:', error);
-    return json(
-      {
-        error: 'Failed to read configuration',
-        details: error instanceof Error ? error.message : 'Unknown error',
-      },
-      { status: 500 }
-    );
+    return handleApiError(error as Error);
   }
 };
 
 export const POST: RequestHandler = async ({ request }): Promise<Response> => {
   try {
-    const { content } = await request.json();
-
-    if (typeof content !== 'string') {
-      return json({ error: 'Invalid content - must be string' }, { status: 400 });
-    }
-
-    if (!content) {
-      return json({ error: 'Content cannot be empty' }, { status: 400 });
-    }
+    const body = await request.json();
+    
+    validateInput(body, configUpdateSchema);
+    
+    const { content } = body;
 
     const transformedContent: string = transformConfigPaths(content);
     const wasTransformed: boolean = content !== transformedContent;
@@ -204,8 +165,7 @@ export const POST: RequestHandler = async ({ request }): Promise<Response> => {
     await ensureDir(dirname(fullPath));
     await writeFile(fullPath, transformedContent, 'utf-8');
 
-    return json({
-      success: true,
+    return createApiResponse({
       message: wasTransformed ? 'Saved successfully (paths transformed)!' : 'Saved successfully!',
       path: CONFIG_FILE,
       transformed: wasTransformed,
@@ -213,12 +173,6 @@ export const POST: RequestHandler = async ({ request }): Promise<Response> => {
     });
   } catch (error) {
     logger.error('Error saving file:', error);
-    return json(
-      {
-        error: 'Failed to save file',
-        details: getClientSafeMessage(error as Error),
-      },
-      { status: 500 }
-    );
+    return handleApiError(error as Error);
   }
 };

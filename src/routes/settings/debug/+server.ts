@@ -10,7 +10,7 @@
 
 import { json, type RequestEvent, type RequestHandler } from '@sveltejs/kit';
 import { logger, type LoggingConfig } from '$lib/shared/logger';
-import { readLoggingConfig, writeLoggingConfig } from '$lib/server/loggingManager';
+import { readLoggingConfig, writeLoggingConfig } from './lib/server-exports';
 
 export const GET: RequestHandler = async (): Promise<Response> => {
   try {

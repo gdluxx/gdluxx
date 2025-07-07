@@ -12,7 +12,7 @@ import { fail } from '@sveltejs/kit';
 import { dev } from '$app/environment';
 import type { PageServerLoad, Actions } from './$types';
 import { logger, type LoggingConfig } from '$lib/shared/logger';
-import { writeLoggingConfig, readLoggingConfig } from '$lib/server/loggingManager';
+import { writeLoggingConfig, readLoggingConfig } from './lib/server-exports';
 
 const getClientSafeMessage = (error: Error) => {
   if (dev) {

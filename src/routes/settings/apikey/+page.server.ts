@@ -10,15 +10,19 @@
 
 import { fail } from '@sveltejs/kit';
 import { dev } from '$app/environment';
-import type { PageServerLoad, Actions } from './$types';
+import type { Actions } from './$types';
 import { logger } from '$lib/shared/logger';
-import type { ApiKey, NewApiKeyResponse } from '$lib/types/apiKey';
-import { createApiKey, findApiKeyByName, deleteApiKey } from '$lib/server/apiKeyManager';
+import { createPageLoad } from '$lib/utils/page-load';
 import {
-  API_KEY_VALIDATION,
-  validateApiKeyName,
-  validateExpirationDate,
-} from '$lib/shared/apiKeyValidation';
+	createApiKey,
+	findApiKeyByName,
+	deleteApiKey,
+	API_KEY_VALIDATION,
+	validateApiKeyName,
+	validateExpirationDate,
+	type ApiKey,
+	type NewApiKeyResponse
+} from './lib/server-exports';
 
 const getClientSafeMessage = (error: Error) => {
   if (dev) {
@@ -35,26 +39,11 @@ const getClientSafeMessage = (error: Error) => {
   return 'An unexpected error occurred.';
 };
 
-export const load: PageServerLoad = async ({ fetch }) => {
-  try {
-    const response = await fetch('/settings/apikey');
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-    const apiKeys: ApiKey[] = await response.json();
-    return {
-      success: true,
-      apiKeys,
-    };
-  } catch (error) {
-    logger.error('Error loading API keys via API:', error);
-    return {
-      success: false,
-      apiKeys: [],
-      error: 'Failed to load API keys',
-    };
-  }
-};
+export const load = createPageLoad({
+  endpoint: '/settings/apikey',
+  fallback: { apiKeys: [] },
+  errorMessage: 'Failed to load API keys'
+});
 
 export const actions: Actions = {
   create: async ({ request }) => {

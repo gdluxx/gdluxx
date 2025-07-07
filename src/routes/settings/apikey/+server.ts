@@ -8,24 +8,30 @@
  * as published by the Free Software Foundation.
  */
 
-import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { logger } from '$lib/shared/logger';
-import type { ApiKey, CreateApiKeyRequest, NewApiKeyResponse } from '$lib/types/apiKey';
-import { createApiKey, listApiKeys, findApiKeyByName } from '$lib/server/apiKeyManager';
 import {
-  API_KEY_VALIDATION,
-  validateApiKeyName,
-  validateExpirationDate,
-} from '$lib/shared/apiKeyValidation';
+	createApiKey,
+	listApiKeys,
+	findApiKeyByName,
+	API_KEY_VALIDATION,
+	validateApiKeyName,
+	validateExpirationDate,
+	type ApiKey,
+	type CreateApiKeyRequest,
+	type NewApiKeyResponse,
+	createApiKeySchema
+} from './lib/server-exports';
+import { createApiResponse, handleApiError } from '$lib/server/api-utils';
+import { validateInput } from '$lib/server/validation-utils';
 
 export const GET: RequestHandler = async (): Promise<Response> => {
   try {
     const apiKeys: ApiKey[] = await listApiKeys();
-    return json(apiKeys);
+    return createApiResponse({ apiKeys });
   } catch (error) {
     logger.error('Error loading API keys:', error);
-    return json({ error: API_KEY_VALIDATION.SERVER.LOAD_FAILED }, { status: 500 });
+    return handleApiError(new Error(API_KEY_VALIDATION.SERVER.LOAD_FAILED));
   }
 };
 
@@ -33,21 +39,23 @@ export const POST: RequestHandler = async ({ request }): Promise<Response> => {
   try {
     const body: CreateApiKeyRequest = await request.json();
 
+    validateInput(body as unknown as Record<string, unknown>, createApiKeySchema);
+
     const nameError: string | null = validateApiKeyName(body.name || '');
     if (nameError) {
-      return json({ error: nameError }, { status: 400 });
+      return handleApiError(new Error(nameError));
     }
 
     const trimmedName: string = body.name.trim();
     const existingKey: ApiKey | null = await findApiKeyByName(trimmedName);
     if (existingKey) {
-      return json({ error: API_KEY_VALIDATION.NAME.DUPLICATE_MESSAGE }, { status: 400 });
+      return handleApiError(new Error(API_KEY_VALIDATION.NAME.DUPLICATE_MESSAGE));
     }
 
     if (body.expiresAt) {
       const expirationError: string | null = validateExpirationDate(body.expiresAt);
       if (expirationError) {
-        return json({ error: expirationError }, { status: 400 });
+        return handleApiError(new Error(expirationError));
       }
     }
 
@@ -65,9 +73,9 @@ export const POST: RequestHandler = async ({ request }): Promise<Response> => {
       plainKey: result.key,
     };
 
-    return json(response);
+    return createApiResponse(response);
   } catch (error) {
     logger.error('Error creating API key:', error);
-    return json({ error: API_KEY_VALIDATION.SERVER.CREATION_FAILED }, { status: 500 });
+    return handleApiError(new Error(API_KEY_VALIDATION.SERVER.CREATION_FAILED));
   }
 };

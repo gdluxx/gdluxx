@@ -14,7 +14,7 @@
     versionStore,
     type StoreActionResult,
     type VersionStoreState,
-  } from '$lib/stores/version';
+  } from '../../../routes/settings/version/lib';
   import { toastStore } from '$lib/stores/toast';
   import { logger } from '$lib/shared/logger';
   import { Button, Info } from '$lib/components/ui';
@@ -39,7 +39,7 @@
   let versionState = $state<VersionStoreState>();
 
   $effect(() => {
-    return versionStore.subscribe(state => {
+    return versionStore.subscribe((state: VersionStoreState) => {
       versionState = state;
 
       const current = state.current;

@@ -9,30 +9,17 @@
  */
 
 import { fail } from '@sveltejs/kit';
-import { dev } from '$app/environment';
-import type { PageServerLoad, Actions } from './$types';
+import type { Actions } from './$types';
 import { writeFile } from 'fs/promises';
 import { join, dirname } from 'path';
 import { logger } from '$lib/shared/logger';
 import { ensureDir } from '$lib/utils/fs';
+import { createPageLoad } from '$lib/utils/page-load';
+import { getClientSafeMessage } from '$lib/server/api-utils';
 
 const DATA_PATH = process.env.FILE_STORAGE_PATH ?? './data';
 const CONFIG_FILE = 'config.json';
 
-const getClientSafeMessage = (error: Error) => {
-  if (dev) {
-    return error.message;
-  }
-
-  if (error.name === 'ValidationError') {
-    return 'Invalid input provided.';
-  }
-  if (error.name === 'NotFoundError') {
-    return 'Resource not found.';
-  }
-
-  return 'An unexpected error occurred.';
-};
 
 // To accommodate for Docker bind mount pathing, we need to ensure user's config paths are correct
 // If not, they'll be prefixed with `/app/data`, some assumptions will be made
@@ -119,20 +106,11 @@ function transformConfigPaths(jsonString: string): string {
   }
 }
 
-export const load: PageServerLoad = async ({ fetch }) => {
-  try {
-    const response = await fetch('/config');
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    logger.error('Error loading config via API:', error);
-    return {
-      success: false,
-      error: 'Failed to load configuration',
-      details: error instanceof Error ? error.message : 'Unknown error',
-    };
-  }
-};
+export const load = createPageLoad({
+  endpoint: '/config',
+  fallback: { content: '{}', source: 'fallback' },
+  errorMessage: 'Failed to load configuration'
+});
 
 export const actions: Actions = {
   default: async ({ request }) => {

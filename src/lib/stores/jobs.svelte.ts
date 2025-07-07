@@ -55,8 +55,10 @@ async function loadJobs(): Promise<void> {
     const response: Response = await fetch('/jobs');
     const data = await response.json();
     if (data.success) {
+      // Handle standardized API response format
+      const jobsArray = data.data?.jobs ?? data.jobs ?? [];
       const jobMap: Record<string, ClientJob> = {};
-      for (const job of data.jobs) {
+      for (const job of jobsArray) {
         jobMap[job.id] = {
           ...job,
           isVisible: false,

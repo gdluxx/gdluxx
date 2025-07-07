@@ -12,8 +12,15 @@
   import { ApiKeyManager } from '$lib/components/settings';
   import { PageLayout } from '$lib/components/ui';
   import { Icon } from '$lib/components';
+  import type { ApiKey } from './lib';
 
-  const { data } = $props();
+  interface PageData {
+    success: boolean;
+    apiKeys?: ApiKey[];
+    error?: string;
+  }
+
+  const { data }: { data: PageData } = $props();
 </script>
 
 <PageLayout title="Key Manager" description="Manage your API keys">

@@ -8,10 +8,13 @@
  * as published by the Free Software Foundation.
  */
 
-import { json, type RequestEvent, type RequestHandler } from '@sveltejs/kit';
+import type { RequestEvent, RequestHandler } from '@sveltejs/kit';
 import { logger } from '$lib/shared/logger';
 import { type AuthResult, validateApiKey } from '$lib/server/apiAuth';
 import type { BatchJobStartResult } from '$lib/stores/jobs.svelte';
+import { createApiResponse, handleApiError } from '$lib/server/api-utils';
+import { validateInput } from '$lib/server/validation-utils';
+import { externalApiSchema } from '$lib/server/command-validation';
 
 interface ExternalApiRequestBody {
   urlToProcess: unknown;
@@ -34,12 +37,12 @@ export const POST: RequestHandler = async ({
         'Failed to parse request body as JSON for /api/extension/external:',
         jsonParseError
       );
-      return json({ error: 'Invalid request body. Expected valid JSON.' }, { status: 400 });
+      return handleApiError(new Error('Invalid request body. Expected valid JSON.'));
     }
 
     if (typeof body !== 'object' || body === null) {
       logger.warn('Request body is not a valid JSON object for /api/extension/external:', body);
-      return json({ error: 'Invalid request body. Expected a JSON object.' }, { status: 400 });
+      return handleApiError(new Error('Invalid request body. Expected a JSON object.'));
     }
 
     // Try Authorization header first
@@ -58,38 +61,20 @@ export const POST: RequestHandler = async ({
       plainApiKey = body.apiKey;
     }
 
-    // And do we have an API key?
-    if (!plainApiKey?.trim()) {
-      return json(
-        {
-          error:
-            'API key required. Provide via Authorization header (Bearer token), X-API-Key header, or JSON body.',
-        },
-        { status: 400 }
-      );
+    // Validate input
+    try {
+      validateInput({ 
+        apiKey: plainApiKey,
+        urlToProcess: body.urlToProcess 
+      }, externalApiSchema);
+    } catch (error) {
+      return handleApiError(error as Error);
     }
-
-    // How about a URL in the body?
-    // Runtime type check
-    if (typeof body.urlToProcess !== 'string' || !body.urlToProcess.trim()) {
-      logger.debug(
-        'Request body for /api/extension/external missing or invalid urlToProcess:',
-        body
-      );
-      return json(
-        {
-          error: 'urlToProcess is required in the JSON body and must be a non-empty string.',
-        },
-        { status: 400 }
-      );
-    }
+    
     urlToProcess = body.urlToProcess as string;
   } catch (error) {
     logger.warn('Unexpected error processing external endpoint request:', error);
-    return json(
-      { error: 'An unexpected error occurred while processing request.' },
-      { status: 500 }
-    );
+    return handleApiError(error as Error);
   }
 
   const authResult: AuthResult = await validateApiKey(plainApiKey);
@@ -98,7 +83,7 @@ export const POST: RequestHandler = async ({
     logger.warn(
       `Invalid API key attempt via extension endpoint: ${(plainApiKey as string).substring(0, Math.min(5, (plainApiKey as string).length))}... Error: ${authResult.error}`
     );
-    return json({ error: authResult.error || 'Invalid API key.' }, { status: 401 });
+    return handleApiError(new Error(authResult.error || 'Invalid API key.'));
   }
 
   logger.info(
@@ -130,15 +115,12 @@ export const POST: RequestHandler = async ({
         'Response Text:',
         responseText
       );
-      return json(
-        { error: 'Internal error: Could not process response from command service.' },
-        { status: 502 }
-      );
+      return handleApiError(new Error('Internal error: Could not process response from command service.'));
     }
 
-    return json(commandStartResult, { status: commandStartResponse.status });
+    return createApiResponse(commandStartResult);
   } catch (error) {
     logger.error('Error forwarding request to start endpoint:', error);
-    return json({ error: 'Failed to process the URL via the command service.' }, { status: 500 });
+    return handleApiError(new Error('Failed to process the URL via the command service.'));
   }
 };

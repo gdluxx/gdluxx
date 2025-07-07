@@ -13,12 +13,38 @@ import type { ReadableStreamDefaultController } from 'node:stream/web';
 import type { IPty } from '@homebridge/node-pty-prebuilt-multiarch';
 import { logger } from '$lib/shared/logger';
 import { PATHS, TERMINAL } from '$lib/server/constants';
+import { validateInput } from '$lib/server/validation-utils';
+import { commandStreamSchema } from '$lib/server/command-validation';
 
 export async function GET({ request }: { request: Request }): Promise<Response> {
   const { spawn } = await import('@homebridge/node-pty-prebuilt-multiarch');
   const requestUrl = new URL(request.url);
   const commandToRunUrl: string | null = requestUrl.searchParams.get('url');
   const useUserConfigPath: boolean = requestUrl.searchParams.get('useUserConfigPath') === 'true';
+
+  try {
+    validateInput({ url: commandToRunUrl }, commandStreamSchema);
+  } catch (_error) {
+    const stream = new ReadableStream({
+      start(controller: ReadableStreamDefaultController<Uint8Array>): void {
+        const encoder = new TextEncoder();
+        controller.enqueue(
+          encoder.encode(
+            `event: error\ndata: ${JSON.stringify({ message: 'Invalid URL parameter' })}\n\n`
+          )
+        );
+        controller.close();
+      },
+    });
+    return new Response(stream, {
+      status: 400,
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        Connection: 'keep-alive',
+      },
+    });
+  }
 
   logger.info(
     `[SERVER STREAM] URL: ${commandToRunUrl}, Use User Config Path: ${useUserConfigPath}`

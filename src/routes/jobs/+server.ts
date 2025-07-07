@@ -8,11 +8,15 @@
  * as published by the Free Software Foundation.
  */
 
-import { json } from '@sveltejs/kit';
 import { type Job, jobManager } from '$lib/server/jobManager';
 import type { RequestHandler } from './$types';
+import { createApiResponse, handleApiError } from '$lib/server/api-utils';
 
 export const GET: RequestHandler = async (): Promise<Response> => {
-  const jobs: Job[] = await jobManager.getAllJobs();
-  return json({ success: true, jobs });
+  try {
+    const jobs: Job[] = await jobManager.getAllJobs();
+    return createApiResponse({ jobs });
+  } catch (error) {
+    return handleApiError(error as Error);
+  }
 };

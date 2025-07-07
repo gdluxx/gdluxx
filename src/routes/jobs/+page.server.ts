@@ -8,23 +8,10 @@
  * as published by the Free Software Foundation.
  */
 
-import type { PageServerLoad } from './$types';
-import { logger } from '$lib/shared/logger';
+import { createPageLoad } from '$lib/utils/page-load';
 
-export const load: PageServerLoad = async ({ fetch }) => {
-  try {
-    const response = await fetch('/jobs');
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    logger.error('Error loading jobs via API:', error);
-    return {
-      success: false,
-      jobs: [],
-      error: 'Failed to load jobs',
-    };
-  }
-};
+export const load = createPageLoad({
+  endpoint: '/jobs',
+  fallback: { jobs: [] },
+  errorMessage: 'Failed to load jobs'
+});

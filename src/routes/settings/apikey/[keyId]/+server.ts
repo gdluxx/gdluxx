@@ -11,7 +11,7 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { logger } from '$lib/shared/logger';
-import { deleteApiKey } from '$lib/server/apiKeyManager';
+import { deleteApiKey } from '../lib/server-exports';
 
 export const DELETE: RequestHandler = async ({ params }): Promise<Response> => {
   try {

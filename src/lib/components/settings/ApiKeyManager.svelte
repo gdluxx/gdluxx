@@ -10,11 +10,10 @@
 
 <script lang="ts">
   import { enhance } from '$app/forms';
-  import type { ApiKey } from '$lib/types/apiKey';
   import { InfoIcon, SuccessIcon } from '$lib/components/icons';
   import { Button, Info, ConfirmModal } from '$lib/components/ui';
   import { Icon } from '$lib/components/index';
-  import { API_KEY_VALIDATION, validateApiKeyInput } from '$lib/shared/apiKeyValidation';
+  import { API_KEY_VALIDATION, validateApiKeyInput, type ApiKey } from '../../../routes/settings/apikey/lib';
 
   interface InitialData {
     success: boolean;

@@ -165,7 +165,9 @@
 
       if (data.success) {
         try {
-          JSON.parse(data.content);
+          // Handle standardized API response format
+          const content = data.data?.content ?? data.content;
+          JSON.parse(content);
           hasJsonLintErrors.set(false);
         } catch (parseError) {
           logger.error('Config file parsing error:', parseError);
