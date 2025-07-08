@@ -11,6 +11,7 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "fix-all": "pnpm format; pnpm lint:fix",
+    "typecheck": "tsc --noEmit",
     "dev:chrome": "wxt",
     "build:chrome": "wxt build",
     "zip:chrome": "wxt zip",
