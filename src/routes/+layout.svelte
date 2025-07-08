@@ -23,7 +23,7 @@
   import { jobStore } from '$lib/stores/jobs.svelte';
   import icon from '$lib/assets/gdl-ico.png';
   import { goto } from '$app/navigation';
-  import { navItems } from '$lib/var/navigation';
+  import { navItems } from './navigation';
   import { page } from '$app/state';
   import { logger } from '$lib/shared/logger';
 

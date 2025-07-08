@@ -11,19 +11,19 @@
 import type { RequestHandler } from './$types';
 import { logger } from '$lib/shared/logger';
 import {
-	createApiKey,
-	listApiKeys,
-	findApiKeyByName,
-	API_KEY_VALIDATION,
-	validateApiKeyName,
-	validateExpirationDate,
-	type ApiKey,
-	type CreateApiKeyRequest,
-	type NewApiKeyResponse,
-	createApiKeySchema
+  createApiKey,
+  listApiKeys,
+  findApiKeyByName,
+  API_KEY_VALIDATION,
+  validateApiKeyName,
+  validateExpirationDate,
+  type ApiKey,
+  type CreateApiKeyRequest,
+  type NewApiKeyResponse,
+  createApiKeySchema,
 } from './lib/server-exports';
 import { createApiResponse, handleApiError } from '$lib/server/api-utils';
-import { validateInput } from '$lib/server/validation-utils';
+import { validateInput } from '$lib/server/validation/validation-utils';
 
 export const GET: RequestHandler = async (): Promise<Response> => {
   try {

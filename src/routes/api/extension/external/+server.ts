@@ -10,11 +10,11 @@
 
 import type { RequestEvent, RequestHandler } from '@sveltejs/kit';
 import { logger } from '$lib/shared/logger';
-import { type AuthResult, validateApiKey } from '$lib/server/apiAuth';
+import { type AuthResult, validateApiKey } from '$lib/server/auth/apiAuth';
 import type { BatchJobStartResult } from '$lib/stores/jobs.svelte';
 import { createApiResponse, handleApiError } from '$lib/server/api-utils';
-import { validateInput } from '$lib/server/validation-utils';
-import { externalApiSchema } from '$lib/server/command-validation';
+import { validateInput } from '$lib/server/validation/validation-utils';
+import { externalApiSchema } from '$lib/server/validation/command-validation';
 
 interface ExternalApiRequestBody {
   urlToProcess: unknown;
@@ -63,14 +63,17 @@ export const POST: RequestHandler = async ({
 
     // Validate input
     try {
-      validateInput({ 
-        apiKey: plainApiKey,
-        urlToProcess: body.urlToProcess 
-      }, externalApiSchema);
+      validateInput(
+        {
+          apiKey: plainApiKey,
+          urlToProcess: body.urlToProcess,
+        },
+        externalApiSchema
+      );
     } catch (error) {
       return handleApiError(error as Error);
     }
-    
+
     urlToProcess = body.urlToProcess as string;
   } catch (error) {
     logger.warn('Unexpected error processing external endpoint request:', error);
@@ -115,7 +118,9 @@ export const POST: RequestHandler = async ({
         'Response Text:',
         responseText
       );
-      return handleApiError(new Error('Internal error: Could not process response from command service.'));
+      return handleApiError(
+        new Error('Internal error: Could not process response from command service.')
+      );
     }
 
     return createApiResponse(commandStartResult);

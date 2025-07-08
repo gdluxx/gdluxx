@@ -8,7 +8,7 @@
  * as published by the Free Software Foundation.
  */
 
-import { type Job, jobManager } from '$lib/server/jobManager';
+import { type Job, jobManager } from '$lib/server/jobs/jobManager';
 import type { RequestHandler } from './$types';
 import { createApiResponse, handleApiError } from '$lib/server/api-utils';
 

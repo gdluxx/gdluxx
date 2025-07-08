@@ -11,7 +11,7 @@
 import path from 'path';
 import Database from 'better-sqlite3';
 import { PATHS } from '$lib/server/constants';
-import type { JobOutput } from '$lib/server/jobManager';
+import type { JobOutput } from '$lib/server/jobs/jobManager';
 
 const dbPath = path.join(PATHS.DATA_DIR, 'gdluxx.db');
 const db = new Database(dbPath);

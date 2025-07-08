@@ -125,7 +125,12 @@ gdluxx will use the `data/` directory to store:
 
    - [ ] Drag and drop for input files
 
-6. Incorporate _gallery-dl_ optional dependencies
+6. Considerations
+
+    - [ ] Job queuing
+    - [ ] Job scheduling
+
+7. Incorporate _gallery-dl_ optional dependencies
 
    - [ ] yt-dlp or youtube-dl: HLS/DASH video downloads, ytdl integration
    - [ ] FFmpeg: Pixiv Ugoira conversion

@@ -13,8 +13,8 @@ import type { ReadableStreamDefaultController } from 'node:stream/web';
 import type { IPty } from '@homebridge/node-pty-prebuilt-multiarch';
 import { logger } from '$lib/shared/logger';
 import { PATHS, TERMINAL } from '$lib/server/constants';
-import { validateInput } from '$lib/server/validation-utils';
-import { commandStreamSchema } from '$lib/server/command-validation';
+import { validateInput } from '$lib/server/validation/validation-utils';
+import { commandStreamSchema } from '$lib/server/validation/command-validation';
 
 export async function GET({ request }: { request: Request }): Promise<Response> {
   const { spawn } = await import('@homebridge/node-pty-prebuilt-multiarch');

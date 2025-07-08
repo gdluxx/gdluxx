@@ -16,7 +16,7 @@
   import { jobStore } from '$lib/stores/jobs.svelte';
   import { Button, Info, ConfirmModal } from '$lib/components/ui';
   import { Icon } from '$lib/components/index';
-  import type { Job } from '$lib/server/jobManager';
+  import type { Job } from '$lib/server/jobs/jobManager';
 
   interface Props {
     variant?: 'modal' | 'page';

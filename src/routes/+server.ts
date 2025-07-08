@@ -13,7 +13,7 @@ import { dev } from '$app/environment';
 import type { RequestHandler } from './$types';
 import fs from 'node:fs';
 import type { IPty } from '@homebridge/node-pty-prebuilt-multiarch';
-import { jobManager } from '$lib/server/jobManager';
+import { jobManager } from '$lib/server/jobs/jobManager';
 import { logger } from '$lib/shared/logger';
 import { PATHS, TERMINAL } from '$lib/server/constants';
 import type { BatchUrlResult } from '$lib/stores/jobs.svelte';

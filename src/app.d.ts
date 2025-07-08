@@ -10,7 +10,7 @@
 
 // See https://svelte.dev/docs/kit/types#app.d.ts
 // for information about these interfaces
-import type { Session, User } from '$lib/server/better-auth';
+import type { Session, User } from '$lib/server/auth/better-auth';
 
 declare global {
   namespace App {

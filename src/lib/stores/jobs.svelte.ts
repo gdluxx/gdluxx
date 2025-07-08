@@ -9,7 +9,7 @@
  */
 
 import { browser } from '$app/environment';
-import type { JobOutput, Job } from '$lib/server/jobManager';
+import type { JobOutput, Job } from '$lib/server/jobs/jobManager';
 import { logger } from '$lib/shared/logger';
 
 export interface ClientJob {

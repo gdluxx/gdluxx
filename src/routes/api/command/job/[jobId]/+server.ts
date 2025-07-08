@@ -9,11 +9,11 @@
  */
 
 import type { RequestEvent } from '@sveltejs/kit';
-import { type Job, jobManager } from '$lib/server/jobManager';
+import { type Job, jobManager } from '$lib/server/jobs/jobManager';
 import type { RequestHandler } from './$types';
 import { createApiResponse, handleApiError } from '$lib/server/api-utils';
-import { validateInput } from '$lib/server/validation-utils';
-import { jobIdSchema } from '$lib/server/command-validation';
+import { validateInput } from '$lib/server/validation/validation-utils';
+import { jobIdSchema } from '$lib/server/validation/command-validation';
 
 export const GET: RequestHandler = async ({ params }: RequestEvent): Promise<Response> => {
   try {

@@ -11,10 +11,9 @@
 import type { RequestHandler } from './$types';
 import { logger } from '$lib/shared/logger';
 import { createApiResponse, handleApiError } from '$lib/server/api-utils';
-import { validateInput } from '$lib/server/validation-utils';
-import { configUpdateSchema } from '$lib/server/config-validation';
+import { validateInput } from '$lib/server/validation/validation-utils';
+import { configUpdateSchema } from '$lib/server/validation/config-validation';
 import { readConfigFile, writeConfigFile } from '$lib/server/config-utils';
-
 
 export const GET: RequestHandler = async (): Promise<Response> => {
   try {
@@ -29,9 +28,9 @@ export const GET: RequestHandler = async (): Promise<Response> => {
 export const POST: RequestHandler = async ({ request }): Promise<Response> => {
   try {
     const body = await request.json();
-    
+
     validateInput(body, configUpdateSchema);
-    
+
     const { content } = body;
 
     const result = await writeConfigFile(content);
