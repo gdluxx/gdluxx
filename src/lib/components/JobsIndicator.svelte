@@ -35,7 +35,7 @@
     </span>
   {:else}
     <span
-      class="absolute -top-0.25 -right-0.25 bg-primary-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center"
+      class="absolute -top-0.25 -right-0.25 bg-primary-500 text-white text-xs rounded-full w-5.5 h-5.5 font-semibold flex items-center justify-center"
     >
       {jobCount}
     </span>
