@@ -91,10 +91,12 @@
         ALLOWED_ATTR: ['style'],
       });
 
-      // Custom styling for success/skip indicators // TODO: stopped working?
-      if (htmlContent.startsWith('✔ ')) {
+      // Custom styling for success/skip indicators
+      // added trim to handle carriage returns
+      const trimmedData = output.data.trim();
+      if (trimmedData.startsWith('✔ ')) {
         htmlContent = `<span style="color: limegreen;">${htmlContent}</span>`;
-      } else if (htmlContent.startsWith('# ')) {
+      } else if (trimmedData.startsWith('# ')) {
         htmlContent = `<span style="color: gray;">${htmlContent}</span>`;
       }
     }
