@@ -1,6 +1,6 @@
 {
   "git": {
-    "commitMessage": "chore: release v${version} [skip ci]",
+    "commitMessage": "chore: release v${version}",
     "tagName": "v${version}",
     "pushArgs": ["--follow-tags"]
   },
