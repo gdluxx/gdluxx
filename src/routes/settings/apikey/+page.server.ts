@@ -14,14 +14,14 @@ import type { Actions } from './$types';
 import { logger } from '$lib/shared/logger';
 import { createPageLoad } from '$lib/utils/page-load';
 import {
-	createApiKey,
-	findApiKeyByName,
-	deleteApiKey,
-	API_KEY_VALIDATION,
-	validateApiKeyName,
-	validateExpirationDate,
-	type ApiKey,
-	type NewApiKeyResponse
+  createApiKey,
+  findApiKeyByName,
+  deleteApiKey,
+  API_KEY_VALIDATION,
+  validateApiKeyName,
+  validateExpirationDate,
+  type ApiKey,
+  type NewApiKeyResponse,
 } from './lib/server-exports';
 
 const getClientSafeMessage = (error: Error) => {
@@ -42,7 +42,7 @@ const getClientSafeMessage = (error: Error) => {
 export const load = createPageLoad({
   endpoint: '/settings/apikey',
   fallback: { apiKeys: [] },
-  errorMessage: 'Failed to load API keys'
+  errorMessage: 'Failed to load API keys',
 });
 
 export const actions: Actions = {

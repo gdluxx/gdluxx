@@ -13,10 +13,7 @@
   import { enhance } from '$app/forms';
   import { ConfigEditor, Icon } from '$lib/components';
   import { Info, PageLayout } from '$lib/components/ui';
-  import {
-    type ConfigSaveSuccessResult,
-    isConfigSaveSuccess
-  } from '$lib/types/form-results';
+  import { type ConfigSaveSuccessResult, isConfigSaveSuccess } from '$lib/types/form-results';
 
   const { data } = $props();
 
@@ -26,7 +23,6 @@
   const loadError = $state(data.success ? '' : (data.error ?? 'Failed to load configuration'));
   let _isSubmitting = $state(false);
 
-
   let configForm: HTMLFormElement | undefined = $state();
 
   async function saveJsonFile(content: string) {
@@ -34,12 +30,10 @@
       return { message: 'Form not available' };
     }
 
-
     const contentInput = configForm.querySelector('input[name="content"]') as HTMLInputElement;
     if (contentInput) {
       contentInput.value = content;
     }
-
 
     configForm.requestSubmit();
 

@@ -43,4 +43,3 @@ export interface IconConfig {
   label: string;
   category: 'navigation' | 'action' | 'status' | 'object' | 'theme' | 'work';
 }
-

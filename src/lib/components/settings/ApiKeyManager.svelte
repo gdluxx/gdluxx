@@ -13,14 +13,18 @@
   import { InfoIcon, SuccessIcon } from '$lib/components/icons';
   import { Button, Info, ConfirmModal } from '$lib/components/ui';
   import { Icon } from '$lib/components/index';
-  import { API_KEY_VALIDATION, validateApiKeyInput, type ApiKey } from '../../../routes/settings/apikey/lib';
+  import {
+    API_KEY_VALIDATION,
+    validateApiKeyInput,
+    type ApiKey,
+  } from '../../../routes/settings/apikey/lib';
   import {
     type ApiKeyCreateSuccessResult,
     type ApiKeyDeleteSuccessResult,
     type FormFailureResult,
     isApiKeyCreateSuccess,
     isApiKeyDeleteSuccess,
-    isFormFailure
+    isFormFailure,
   } from '$lib/types/form-results';
 
   interface InitialData {

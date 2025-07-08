@@ -33,8 +33,6 @@
     error?: string;
   }
 
-
-
   let commandUrlsInput = $state('');
   let isLoading = $state(false);
   let formError = $state<string | null>(null);
@@ -250,7 +248,7 @@
 
   async function handleSubmit(event: SubmitEvent) {
     event.preventDefault();
-    
+
     // Validate URLs before submitting
     const urlsToProcess = commandUrlsInput
       .split(/[\s\n]+/) // Split by any whitespace; space, tab, newline etc.
@@ -281,10 +279,7 @@
 <div
   class="bg-primary-50 p-4 dark:border-primary-400 rounded-sm border border-primary-600 dark:bg-primary-800"
 >
-  <form
-    class="space-y-6"
-    onsubmit={handleSubmit}
-  >
+  <form class="space-y-6" onsubmit={handleSubmit}>
     <div class="m-4">
       <label
         for="commandUrlsInput"
@@ -361,9 +356,7 @@
       <summary
         class="flex items-center justify-between p-4 cursor-pointer hover:bg-secondary-100 dark:hover:bg-primary-800 transition-colors"
       >
-        <span class="font-medium text-secondary-900 dark:text-secondary-100"
-          >Options</span
-        >
+        <span class="font-medium text-secondary-900 dark:text-secondary-100">Options</span>
         <div class="flex items-center gap-2">
           {#if selectedOptions.size > 0}
             <span
@@ -372,11 +365,11 @@
               {selectedOptions.size} selected
             </span>
           {/if}
-          <span class="transform group-open:rotate-90 transition-transform text-secondary-600 dark:text-secondary-400" aria-hidden="true">
-            <Icon
-              iconName="chevron-right"
-              size={24}
-            />
+          <span
+            class="transform group-open:rotate-90 transition-transform text-secondary-600 dark:text-secondary-400"
+            aria-hidden="true"
+          >
+            <Icon iconName="chevron-right" size={24} />
           </span>
         </div>
       </summary>

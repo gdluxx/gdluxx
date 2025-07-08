@@ -23,4 +23,3 @@ export interface OptionCategory {
 }
 
 export type OptionsData = Record<string, OptionCategory>;
-

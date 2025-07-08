@@ -9,19 +9,19 @@
  */
 
 export interface ApiKey {
-	id: string;
-	name: string;
-	userId: string;
-	createdAt: string;
-	expiresAt?: string | null;
+  id: string;
+  name: string;
+  userId: string;
+  createdAt: string;
+  expiresAt?: string | null;
 }
 
 export interface NewApiKeyResponse {
-	apiKey: ApiKey;
-	plainKey: string;
+  apiKey: ApiKey;
+  plainKey: string;
 }
 
 export interface CreateApiKeyRequest {
-	name: string;
-	expiresAt?: string;
+  name: string;
+  expiresAt?: string;
 }

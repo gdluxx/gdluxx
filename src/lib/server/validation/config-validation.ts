@@ -14,7 +14,7 @@ export const configUpdateSchema: ValidationSchema = {
   content: {
     required: true,
     minLength: 1,
-    custom: (value) => {
+    custom: value => {
       if (typeof value !== 'string') {
         return false;
       }
@@ -24,6 +24,6 @@ export const configUpdateSchema: ValidationSchema = {
       } catch {
         return false;
       }
-    }
-  }
+    },
+  },
 };

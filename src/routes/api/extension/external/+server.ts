@@ -24,9 +24,7 @@ interface ExternalApiRequestBody {
   apiKey?: unknown;
 }
 
-export const POST: RequestHandler = async ({
-  request,
-}: RequestEvent): Promise<Response> => {
+export const POST: RequestHandler = async ({ request }: RequestEvent): Promise<Response> => {
   let plainApiKey: string | null = null;
   let urlToProcess: string;
   let body: ExternalApiRequestBody;
@@ -158,7 +156,7 @@ export const POST: RequestHandler = async ({
       logger.error(`[Job ${jobId}] Failed to start process for ${urlToProcess}:`, spawnError);
       await jobManager.addOutput(jobId, 'error', `Failed to start process: ${errorMessage}`);
       await jobManager.completeJob(jobId, 1);
-      
+
       return handleApiError(new Error(`Failed to start process: ${errorMessage}`));
     }
   } catch (error) {

@@ -11,12 +11,12 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import {
-	readVersionInfo,
-	writeVersionInfo,
-	getCurrentVersionFromBinary,
-	getLatestVersionFromGithub,
-	DEFAULT_VERSION_INFO,
-	type VersionInfo,
+  readVersionInfo,
+  writeVersionInfo,
+  getCurrentVersionFromBinary,
+  getLatestVersionFromGithub,
+  DEFAULT_VERSION_INFO,
+  type VersionInfo,
 } from './lib/server-exports';
 import { logger } from '$lib/shared/logger';
 

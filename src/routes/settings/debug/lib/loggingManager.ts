@@ -11,23 +11,19 @@
 import { createSettingsManager } from '$lib/server/settingsManager';
 
 export interface LoggingConfig {
-	enabled: boolean;
-	level?: 'DEBUG' | 'INFO' | 'WARN' | 'ERROR';
+  enabled: boolean;
+  level?: 'DEBUG' | 'INFO' | 'WARN' | 'ERROR';
 }
 
 export const DEFAULT_LOGGING_CONFIG: LoggingConfig = {
-	enabled: process.env.NODE_ENV === 'development',
-	level: 'INFO',
+  enabled: process.env.NODE_ENV === 'development',
+  level: 'INFO',
 };
 
-const settingsManager = createSettingsManager(
-	'logging',
-	DEFAULT_LOGGING_CONFIG,
-	(row) => ({
-		enabled: Boolean(row.enabled),
-		level: row.level as 'DEBUG' | 'INFO' | 'WARN' | 'ERROR',
-	})
-);
+const settingsManager = createSettingsManager('logging', DEFAULT_LOGGING_CONFIG, row => ({
+  enabled: Boolean(row.enabled),
+  level: row.level as 'DEBUG' | 'INFO' | 'WARN' | 'ERROR',
+}));
 
 export const readLoggingConfig = settingsManager.read;
 export const writeLoggingConfig = settingsManager.write;

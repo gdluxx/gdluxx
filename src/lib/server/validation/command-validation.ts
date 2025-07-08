@@ -11,22 +11,22 @@
 import type { ValidationSchema } from './validation-utils';
 
 export const commandStreamSchema: ValidationSchema = {
-  url: { 
-    required: true, 
+  url: {
+    required: true,
     minLength: 1,
-    pattern: /^https?:\/\/.+/
-  }
+    pattern: /^https?:\/\/.+/,
+  },
 };
 
 export const externalApiSchema: ValidationSchema = {
   apiKey: { required: true, minLength: 1 },
-  urlToProcess: { 
-    required: true, 
-    minLength: 1, 
-    pattern: /^https?:\/\/.+/ 
-  }
+  urlToProcess: {
+    required: true,
+    minLength: 1,
+    pattern: /^https?:\/\/.+/,
+  },
 };
 
 export const jobIdSchema: ValidationSchema = {
-  jobId: { required: true, minLength: 1 }
+  jobId: { required: true, minLength: 1 },
 };
