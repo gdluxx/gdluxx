@@ -8,7 +8,7 @@
  * as published by the Free Software Foundation.
  */
 
-import { auth } from '$lib/server/better-auth';
+import { auth } from '$lib/server/auth/better-auth';
 import type { RequestHandler } from '@sveltejs/kit';
 
 const handler: RequestHandler = async ({ request }) => {

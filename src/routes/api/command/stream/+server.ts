@@ -13,12 +13,38 @@ import type { ReadableStreamDefaultController } from 'node:stream/web';
 import type { IPty } from '@homebridge/node-pty-prebuilt-multiarch';
 import { logger } from '$lib/shared/logger';
 import { PATHS, TERMINAL } from '$lib/server/constants';
+import { validateInput } from '$lib/server/validation/validation-utils';
+import { commandStreamSchema } from '$lib/server/validation/command-validation';
 
 export async function GET({ request }: { request: Request }): Promise<Response> {
   const { spawn } = await import('@homebridge/node-pty-prebuilt-multiarch');
   const requestUrl = new URL(request.url);
   const commandToRunUrl: string | null = requestUrl.searchParams.get('url');
   const useUserConfigPath: boolean = requestUrl.searchParams.get('useUserConfigPath') === 'true';
+
+  try {
+    validateInput({ url: commandToRunUrl }, commandStreamSchema);
+  } catch (_error) {
+    const stream = new ReadableStream({
+      start(controller: ReadableStreamDefaultController<Uint8Array>): void {
+        const encoder = new TextEncoder();
+        controller.enqueue(
+          encoder.encode(
+            `event: error\ndata: ${JSON.stringify({ message: 'Invalid URL parameter' })}\n\n`
+          )
+        );
+        controller.close();
+      },
+    });
+    return new Response(stream, {
+      status: 400,
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        Connection: 'keep-alive',
+      },
+    });
+  }
 
   logger.info(
     `[SERVER STREAM] URL: ${commandToRunUrl}, Use User Config Path: ${useUserConfigPath}`
@@ -79,37 +105,6 @@ export async function GET({ request }: { request: Request }): Promise<Response> 
 
       const args: string[] = [commandToRunUrl, '--config', './data/config.json'];
       const effectiveCwd: string | undefined = undefined; // Default to project root
-
-      // if (useUserConfigPath) {
-      //   sendEvent(
-      //     'info',
-      //     `Relying on user's gallery-dl config for output path. No '-o' flag set by server.`
-      //   );
-      //   // Optional: Set a specific CWD if user's config might use relative paths
-      //   // effectiveCwd = path.join(os.tmpdir(), 'gdl-web-user-config-runs');
-      //   // if (!fs.existsSync(effectiveCwd)) fs.mkdirSync(effectiveCwd, { recursive: true });
-      // } else {
-      //   // Server defines output path
-      //   if (!fs.existsSync(serverDefinedOutputBase)) {
-      //     fs.mkdirSync(serverDefinedOutputBase, { recursive: true });
-      //     sendEvent('info', `Created server base output directory: ${serverDefinedOutputBase}`);
-      //   }
-      //   const safeUrlPart: string = commandToRunUrl.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 50);
-      //   const timestamp: string = new Date().toISOString().replace(/[:.]/g, '-');
-      //   const uniqueOutputDir: string = path.join(
-      //     serverDefinedOutputBase,
-      //     `${timestamp}_${safeUrlPart}`
-      //   );
-      //   if (!fs.existsSync(uniqueOutputDir)) {
-      //     fs.mkdirSync(uniqueOutputDir, { recursive: true });
-      //   }
-      //   args.push(
-      //     '-o',
-      //     `output-format=${path.join(uniqueOutputDir, '%(extractor)s/%(category)s/%(artist)s/%(album)s/%(filename)s.%(ext)s')}`
-      //   );
-      //   sendEvent('info', `Server-defined output directory: ${uniqueOutputDir}`);
-      //   // effectiveCwd = uniqueOutputDir; // Or serverDefinedOutputBase or undefined
-      // }
 
       sendEvent(
         'info',

@@ -11,11 +11,13 @@
 <script lang="ts">
   import { Icon, JobsList } from '$lib/components';
   import { PageLayout } from '$lib/components/ui';
+
+  const { data } = $props();
 </script>
 
 <PageLayout title="Jobs" description="Manage your job logs">
   {#snippet icon()}
     <Icon iconName="job" size={32} />
   {/snippet}
-  <JobsList variant="page" />
+  <JobsList variant="page" initialJobs={data.success ? data.jobs : []} />
 </PageLayout>

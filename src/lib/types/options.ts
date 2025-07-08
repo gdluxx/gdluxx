@@ -12,6 +12,9 @@ export interface Option {
   id: string;
   command: string;
   description: string;
+  type: 'boolean' | 'string' | 'number' | 'range';
+  placeholder?: string;
+  defaultValue?: string | number | boolean;
 }
 
 export interface OptionCategory {
@@ -21,6 +24,3 @@ export interface OptionCategory {
 
 export type OptionsData = Record<string, OptionCategory>;
 
-export interface SelectedOption extends Option {
-  category: string;
-}

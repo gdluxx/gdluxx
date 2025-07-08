@@ -10,7 +10,7 @@
 
 import type { Handle } from '@sveltejs/kit';
 import { json, redirect } from '@sveltejs/kit';
-import { auth } from '$lib/server/better-auth';
+import { auth } from '$lib/server/auth/better-auth';
 
 const publicRoutes = ['/auth/login', '/auth/setup', '/api/auth', '/api/extension/external'];
 

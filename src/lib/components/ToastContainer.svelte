@@ -10,10 +10,10 @@
 
 <script lang="ts">
   import { toastStore } from '$lib/stores/toast.js';
-  import { jobCount } from '$lib/stores/jobs';
+  import { jobStore } from '$lib/stores/jobs.svelte';
   import { Toast } from '$lib/components';
 
-  $: hasJobButton = $jobCount > 0;
+  const hasJobButton = $derived(jobStore.jobCount > 0);
 </script>
 
 <div class="pointer-events-none fixed inset-0 z-50 flex items-end justify-end p-6 sm:p-6">

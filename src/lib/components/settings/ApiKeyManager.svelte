@@ -9,19 +9,34 @@
   -->
 
 <script lang="ts">
-  import { onMount } from 'svelte';
-  import type { ApiKey, NewApiKeyResponse, CreateApiKeyRequest } from '$lib/types/apiKey';
+  import { enhance } from '$app/forms';
   import { InfoIcon, SuccessIcon } from '$lib/components/icons';
   import { Button, Info, ConfirmModal } from '$lib/components/ui';
   import { Icon } from '$lib/components/index';
-  import { API_KEY_VALIDATION, validateApiKeyInput } from '$lib/shared/apiKeyValidation';
+  import { API_KEY_VALIDATION, validateApiKeyInput, type ApiKey } from '../../../routes/settings/apikey/lib';
+  import {
+    type ApiKeyCreateSuccessResult,
+    type ApiKeyDeleteSuccessResult,
+    type FormFailureResult,
+    isApiKeyCreateSuccess,
+    isApiKeyDeleteSuccess,
+    isFormFailure
+  } from '$lib/types/form-results';
 
-  let apiKeys = $state<ApiKey[]>([]);
+  interface InitialData {
+    success: boolean;
+    apiKeys?: ApiKey[];
+    error?: string;
+  }
+
+  const { initialData }: { initialData: InitialData } = $props();
+
+  let apiKeys = $state<ApiKey[]>(initialData.success ? (initialData.apiKeys ?? []) : []);
   let newKeyName = $state('');
   let expirationDate = $state('');
   let neverExpires = $state(true);
-  let isLoading = $state(true);
-  let error = $state<string | null>(null);
+  let isLoading = $state(false);
+  let error = $state<string | null>(initialData.success ? null : (initialData.error ?? null));
   let copyFeedback = $state<string | null>(null);
   let justCreatedKey = $state<{ key: string; name: string } | null>(null);
   let keyToDelete = $state<string | null>(null);
@@ -64,27 +79,7 @@
     neverExpires = true;
   }
 
-  async function loadApiKeys() {
-    try {
-      const response = await fetch('/api/keys');
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error ?? `HTTP error! status: ${response.status}`);
-      }
-      const data = await response.json();
-
-      if (data.error) {
-        throw new Error(data.error);
-      }
-
-      apiKeys = Array.isArray(data) ? data : [];
-    } catch (err) {
-      error = err instanceof Error ? err.message : API_KEY_VALIDATION.SERVER.LOAD_FAILED;
-      console.error('Error loading API keys:', err);
-    } finally {
-      isLoading = false;
-    }
-  }
+  // No longer needed - data comes from server load function
 
   function validateInput(): string | null {
     return validateApiKeyInput(
@@ -93,55 +88,7 @@
     );
   }
 
-  async function createApiKey() {
-    error = null;
-
-    const validationError = validateInput();
-    if (validationError) {
-      error = validationError;
-      return;
-    }
-
-    try {
-      const requestBody: CreateApiKeyRequest = {
-        name: newKeyName.trim(),
-        expiresAt: !neverExpires && expirationDate ? expirationDate : undefined,
-      };
-
-      const response = await fetch('/api/keys', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error ?? `HTTP error! status: ${response.status}`);
-      }
-
-      const result: NewApiKeyResponse = await response.json();
-      if (result.apiKey && result.plainKey) {
-        apiKeys = [...apiKeys, result.apiKey];
-
-        justCreatedKey = {
-          key: result.plainKey,
-          name: result.apiKey.name,
-        };
-
-        newKeyName = '';
-        expirationDate = '';
-        neverExpires = true;
-        error = null;
-      } else {
-        throw new Error('Invalid response from server');
-      }
-    } catch (err) {
-      error = err instanceof Error ? err.message : API_KEY_VALIDATION.SERVER.CREATION_FAILED;
-      console.error('Error creating API key:', err);
-    }
-  }
+  // Form submission is handled by use:enhance
 
   async function copyApiKey(key: string, keyName: string) {
     try {
@@ -156,34 +103,7 @@
     }
   }
 
-  async function deleteApiKey(keyId: string) {
-    try {
-      const response = await fetch(`/api/keys/${keyId}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error ?? `HTTP error! status: ${response.status}`);
-      }
-
-      const result = await response.json();
-      if (result.error) {
-        throw new Error(result.error);
-      }
-
-      apiKeys = apiKeys.filter(key => key.id !== keyId);
-      error = null;
-
-      copyFeedback = result.message ?? 'API key deleted successfully';
-      setTimeout(() => {
-        copyFeedback = null;
-      }, 3000);
-    } catch (err) {
-      error = err instanceof Error ? err.message : API_KEY_VALIDATION.SERVER.DELETE_FAILED;
-      console.error('Error deleting API key:', err);
-    }
-  }
+  // Form submission is handled by use:enhance
 
   function dismissNewKey() {
     justCreatedKey = null;
@@ -191,7 +111,12 @@
 
   function handleKeyDown(event: KeyboardEvent) {
     if (event.key === 'Enter') {
-      createApiKey();
+      // Form submission will be handled by the form's submit event
+      const target = event.currentTarget as HTMLElement;
+      const form = target?.closest('form');
+      if (form) {
+        form.requestSubmit();
+      }
     }
   }
 
@@ -205,14 +130,16 @@
 
   async function handleConfirmDelete() {
     if (keyToDelete) {
-      await deleteApiKey(keyToDelete);
+      // Submit the delete form
+      const deleteForm = document.getElementById('delete-form') as HTMLFormElement;
+      if (deleteForm) {
+        deleteForm.requestSubmit();
+      }
       keyToDelete = null;
     }
   }
 
-  onMount(() => {
-    loadApiKeys();
-  });
+  // No longer needed - data comes from server load function
 </script>
 
 {#if isLoading}
@@ -288,87 +215,137 @@
       Create New API Key
     </h2>
 
-    <div class="flex gap-4">
-      <div class="flex-1">
-        <label
-          for="keyName"
-          class="ml-2 block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2"
-        >
-          API Key Name
-        </label>
-        <div class="space-y-4">
-          <!-- API Key Name -->
-          <div>
-            <input
-              id="keyName"
-              type="text"
-              bind:value={newKeyName}
-              onkeydown={handleKeyDown}
-              placeholder="Enter a descriptive name..."
-              maxlength={API_KEY_VALIDATION.NAME.MAX_LENGTH}
-              class="w-full px-3 py-2 border border-secondary-300 bg-secondary-100 dark:bg-secondary-900 text-secondary-900 dark:text-secondary-100 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:border-secondary-400"
-              aria-describedby="keyNameHelp"
-            />
-            <p id="keyNameHelp" class="mt-1 ml-2 text-xs text-secondary-500">
-              Choose a descriptive name to remember this API key
-            </p>
-          </div>
-          <div class="flex flex-col sm:flex-row sm:justify-between gap-4 w-full">
-            <!-- Expiration -->
-            <div class="flex flex-col">
-              <span
-                class="ml-2 block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2"
-              >
-                Expiration
-              </span>
-              <div
-                class="flex space-y-3 justify-start sm:items-center flex-col sm:flex-row items-start"
-              >
-                <label class="flex items-center">
-                  <input
-                    type="checkbox"
-                    bind:checked={neverExpires}
-                    class="mr-2 h-4 w-4 text-primary-600 focus:ring-primary-500 border-secondary-300 rounded"
-                  />
-                  <span class="text-sm text-secondary-700 dark:text-secondary-300">
-                    Never expires?
-                  </span>
-                </label>
+    <form
+      method="POST"
+      action="?/create"
+      use:enhance={({ cancel }) => {
+        const validationError = validateInput();
+        if (validationError) {
+          error = validationError;
+          cancel();
+          return;
+        }
 
-                {#if !neverExpires}
-                  <div class="flex items-center sm:justify-end ml-2 w-full">
-                    <input
-                      type="datetime-local"
-                      bind:value={expirationDate}
-                      min={new Date(Date.now() + 60000).toISOString().slice(0, 16)}
-                      class="w-full h-10 px-3 py-2 border border-secondary-300 bg-secondary-100 dark:bg-secondary-900 text-secondary-900 dark:text-secondary-100 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:border-secondary-400"
-                      aria-describedby="expirationHelp"
-                    />
-                    <p id="expirationHelp" class="mt-1 ml-2 text-xs text-secondary-500">
-                      Set expiration date
-                    </p>
-                  </div>
-                {/if}
-              </div>
+        isLoading = true;
+        error = null;
+        copyFeedback = null;
+
+        return async ({ result }) => {
+          isLoading = false;
+
+          if (result.type === 'success' && result.data) {
+            if (isApiKeyCreateSuccess(result.data)) {
+              const data: ApiKeyCreateSuccessResult = result.data;
+
+              if (data.success && data.apiKey && data.plainKey) {
+                apiKeys = [...apiKeys, data.apiKey];
+                justCreatedKey = {
+                  key: data.plainKey,
+                  name: data.apiKey.name,
+                };
+                newKeyName = '';
+                expirationDate = '';
+                neverExpires = true;
+                error = null;
+              }
+            }
+          } else if (result.type === 'failure' && result.data) {
+            if (isFormFailure(result.data)) {
+              const data: FormFailureResult = result.data;
+              error = data.error ?? 'Failed to create API key';
+            }
+          } else {
+            error = 'An unexpected error occurred';
+          }
+        };
+      }}
+    >
+      <div class="flex gap-4">
+        <div class="flex-1">
+          <label
+            for="keyName"
+            class="ml-2 block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2"
+          >
+            API Key Name
+          </label>
+          <div class="space-y-4">
+            <!-- API Key Name -->
+            <div>
+              <input
+                id="keyName"
+                name="name"
+                type="text"
+                bind:value={newKeyName}
+                onkeydown={handleKeyDown}
+                placeholder="Enter a descriptive name..."
+                maxlength={API_KEY_VALIDATION.NAME.MAX_LENGTH}
+                class="w-full px-3 py-2 border border-secondary-300 bg-secondary-100 dark:bg-secondary-900 text-secondary-900 dark:text-secondary-100 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:border-secondary-400"
+                aria-describedby="keyNameHelp"
+              />
+              <p id="keyNameHelp" class="mt-1 ml-2 text-xs text-secondary-500">
+                Choose a descriptive name to remember this API key
+              </p>
             </div>
+            <div class="flex flex-col sm:flex-row sm:justify-between gap-4 w-full">
+              <!-- Expiration -->
+              <div class="flex flex-col">
+                <span
+                  class="ml-2 block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2"
+                >
+                  Expiration
+                </span>
+                <div
+                  class="flex space-y-3 justify-start sm:items-center flex-col sm:flex-row items-start"
+                >
+                  <label class="flex items-center">
+                    <input
+                      type="checkbox"
+                      name="neverExpires"
+                      bind:checked={neverExpires}
+                      value={neverExpires}
+                      class="mr-2 h-4 w-4 text-primary-600 focus:ring-primary-500 border-secondary-300 rounded"
+                    />
+                    <span class="text-sm text-secondary-700 dark:text-secondary-300">
+                      Never expires?
+                    </span>
+                  </label>
 
-            <!-- Generate Button -->
-            <div class="flex justify-end flex-col">
-              <Button
-                onclick={createApiKey}
-                disabled={!newKeyName.trim()}
-                variant="info"
-                class="h-10"
-                aria-label="Generate new API key"
-              >
-                <Icon iconName="plus" size={20} class="mr-2" />
-                Generate Key
-              </Button>
+                  {#if !neverExpires}
+                    <div class="flex items-center sm:justify-end ml-2 w-full">
+                      <input
+                        type="datetime-local"
+                        name="expiresAt"
+                        bind:value={expirationDate}
+                        min={new Date(Date.now() + 60000).toISOString().slice(0, 16)}
+                        class="w-full h-10 px-3 py-2 border border-secondary-300 bg-secondary-100 dark:bg-secondary-900 text-secondary-900 dark:text-secondary-100 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:border-secondary-400"
+                        aria-describedby="expirationHelp"
+                      />
+                      <p id="expirationHelp" class="mt-1 ml-2 text-xs text-secondary-500">
+                        Set expiration date
+                      </p>
+                    </div>
+                  {/if}
+                </div>
+              </div>
+
+              <!-- Generate Button -->
+              <div class="flex justify-end flex-col">
+                <Button
+                  type="submit"
+                  disabled={!newKeyName.trim() || isLoading}
+                  variant="info"
+                  class="h-10"
+                  aria-label="Generate new API key"
+                >
+                  <Icon iconName="plus" size={20} class="mr-2" />
+                  Generate Key
+                </Button>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </form>
   </section>
 
   <Info variant="info" size="lg" class="my-8">
@@ -440,6 +417,7 @@
               </div>
 
               <button
+                type="button"
                 onclick={() => confirmDelete(apiKey.id)}
                 class="cursor-pointer ml-4 p-1 text-error-500 hover:text-error-700 hover:bg-error-900 dark:hover:bg-error-100 rounded-md focus:outline-none focus:ring-2 focus:ring-error-500 focus:ring-offset-2 transition-colors"
                 class:opacity-75={isExpired(apiKey.expiresAt)}
@@ -454,6 +432,47 @@
     {/if}
   </section>
 {/if}
+
+<!-- Hidden delete form -->
+<form
+  id="delete-form"
+  method="POST"
+  action="?/delete"
+  style:display="none"
+  use:enhance={() => {
+    isLoading = true;
+    error = null;
+    copyFeedback = null;
+
+    return async ({ result }) => {
+      isLoading = false;
+
+      if (result.type === 'success' && result.data) {
+        if (isApiKeyDeleteSuccess(result.data)) {
+          const data: ApiKeyDeleteSuccessResult = result.data;
+
+          if (data.success && data.deletedKeyId) {
+            apiKeys = apiKeys.filter(key => key.id !== data.deletedKeyId);
+            copyFeedback = data.message ?? 'API key deleted successfully';
+            setTimeout(() => {
+              copyFeedback = null;
+            }, 3000);
+            error = null;
+          }
+        }
+      } else if (result.type === 'failure' && result.data) {
+        if (isFormFailure(result.data)) {
+          const data: FormFailureResult = result.data;
+          error = data.error ?? 'Failed to delete API key';
+        }
+      } else {
+        error = 'An unexpected error occurred';
+      }
+    };
+  }}
+>
+  <input type="hidden" name="keyId" value={keyToDelete} />
+</form>
 
 {#if keyToDelete}
   {@const keyName = apiKeys.find(k => k.id === keyToDelete)?.name ?? 'Unknown'}

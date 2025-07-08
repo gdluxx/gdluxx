@@ -10,7 +10,7 @@
 
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { loggingStore } from '$lib/stores/loggingStore.svelte';
+  import { loggingStore } from '../../../routes/settings/debug/lib';
 
   onMount(() => {
     loggingStore.fetchStatus();

@@ -11,18 +11,21 @@
 <script lang="ts">
   import { fade, scale } from 'svelte/transition';
   import { quintOut } from 'svelte/easing';
-  import type { ClientJob } from '$lib/stores/jobs';
-  import { jobStore } from '$lib/stores/jobs';
+  import { onMount } from 'svelte';
+  import type { ClientJob } from '$lib/stores/jobs.svelte';
+  import { jobStore } from '$lib/stores/jobs.svelte';
   import { Button, Info, ConfirmModal } from '$lib/components/ui';
   import { Icon } from '$lib/components/index';
+  import type { Job } from '$lib/server/jobs/jobManager';
 
   interface Props {
     variant?: 'modal' | 'page';
     isOpen?: boolean;
     onClose?: () => void;
+    initialJobs?: Job[];
   }
 
-  const { variant = 'page', isOpen = true, onClose }: Props = $props();
+  const { variant = 'page', isOpen = true, onClose, initialJobs = [] }: Props = $props();
 
   let showDeleteConfirm = $state(false);
   let deleteAction = $state<'single' | 'all' | 'selected'>('all');
@@ -30,7 +33,7 @@
   let sortNewestFirst = $state(true);
   let selectedJobs = $state<Set<string>>(new Set());
 
-  const allJobs = $derived(Array.from($jobStore.values()));
+  const allJobs = $derived(jobStore.jobs);
   const jobs = $derived(
     [...allJobs].sort((a, b) => {
       return sortNewestFirst ? b.startTime - a.startTime : a.startTime - b.startTime;
@@ -176,6 +179,13 @@
       return 'bg-primary-50 dark:border-primary-400 rounded-sm border border-primary-600 dark:bg-primary-800';
     }
   };
+
+  // Initialize job store with server-provided data on mount
+  onMount(() => {
+    if (initialJobs.length > 0) {
+      jobStore.initializeWithJobs(initialJobs);
+    }
+  });
 </script>
 
 {#if variant === 'page' || (variant === 'modal' && isOpen)}

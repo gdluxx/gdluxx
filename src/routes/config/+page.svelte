@@ -10,66 +10,40 @@
 
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { enhance } from '$app/forms';
   import { ConfigEditor, Icon } from '$lib/components';
   import { Info, PageLayout } from '$lib/components/ui';
+  import {
+    type ConfigSaveSuccessResult,
+    isConfigSaveSuccess
+  } from '$lib/types/form-results';
 
-  let theme: 'light' | 'dark' = 'light';
-  let jsonContent = '';
-  let isLoading = true;
-  let loadError = '';
-  let loadMessage = '';
+  const { data } = $props();
 
-  async function loadConfig() {
-    try {
-      const response = await fetch('/api/files/read');
-      const data = await response.json();
+  let theme = $state<'light' | 'dark'>('light');
+  let jsonContent = $state(data.success ? data.content : '{}');
+  let loadMessage = $state(data.message ?? '');
+  const loadError = $state(data.success ? '' : (data.error ?? 'Failed to load configuration'));
+  let _isSubmitting = $state(false);
 
-      if (data.success) {
-        jsonContent = data.content;
-        if (data.message) {
-          loadMessage = data.message;
-        }
-      } else {
-        //eslint-disable-next-line
-        loadError = data.error || 'Failed to load configuration';
-      }
-    } catch (error) {
-      loadError = 'Failed to connect to server';
-      console.error('Error loading config:', error);
-    } finally {
-      isLoading = false;
-    }
-  }
+
+  let configForm: HTMLFormElement | undefined = $state();
 
   async function saveJsonFile(content: string) {
-    const response = await fetch('/api/files/save', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        content,
-      }),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      //eslint-disable-next-line
-      throw new Error(errorData.error || `Failed to save: ${response.statusText}`);
+    if (!configForm) {
+      return { message: 'Form not available' };
     }
 
-    const result = await response.json();
 
-    // If paths were transformed, update editor
-    if (result.transformed && result.content) {
-      jsonContent = result.content;
+    const contentInput = configForm.querySelector('input[name="content"]') as HTMLInputElement;
+    if (contentInput) {
+      contentInput.value = content;
     }
 
-    if (loadMessage) {
-      loadMessage = '';
-    }
 
-    return result;
+    configForm.requestSubmit();
+
+    return { message: 'Submitting...' };
   }
 
   function checkTheme() {
@@ -78,7 +52,6 @@
 
   onMount(() => {
     checkTheme();
-    loadConfig();
 
     const observer = new MutationObserver(() => {
       checkTheme();
@@ -100,15 +73,7 @@
     <Icon iconName="json" size={32} />
   {/snippet}
 
-  {#if isLoading}
-    <div class="flex items-center justify-center py-12" role="status" aria-live="polite">
-      <div
-        class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"
-        aria-hidden="true"
-      ></div>
-      <span class="ml-3 text-secondary-600">Loading configuration...</span>
-    </div>
-  {:else if loadError}
+  {#if loadError}
     <Info variant="warning" size="lg">
       {loadError}
     </Info>
@@ -119,6 +84,32 @@
       </Info>
     {/if}
 
-    <ConfigEditor bind:value={jsonContent} {theme} onSave={saveJsonFile} height="75vh" />
+    <form
+      bind:this={configForm}
+      method="POST"
+      use:enhance={() => {
+        _isSubmitting = true;
+        return async ({ result }) => {
+          _isSubmitting = false;
+
+          if (result.type === 'success' && result.data) {
+            if (isConfigSaveSuccess(result.data)) {
+              const data: ConfigSaveSuccessResult = result.data;
+              // If paths were transformed, update editor
+              if (data.transformed && data.content) {
+                jsonContent = data.content;
+              }
+            }
+
+            if (loadMessage) {
+              loadMessage = '';
+            }
+          }
+        };
+      }}
+    >
+      <input type="hidden" name="content" value={jsonContent} />
+      <ConfigEditor bind:value={jsonContent} {theme} onSave={saveJsonFile} height="75vh" />
+    </form>
   {/if}
 </PageLayout>

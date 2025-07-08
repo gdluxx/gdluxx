@@ -222,7 +222,9 @@
     if (container) {
       container.removeEventListener('keydown', handleKeyDown);
     }
-    document.removeEventListener('keydown', handleKeyDown);
+    if (typeof document !== 'undefined') {
+      document.removeEventListener('keydown', handleKeyDown);
+    }
   });
 
   // React to theme, readonly, and height changes

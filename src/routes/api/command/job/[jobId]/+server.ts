@@ -8,38 +8,53 @@
  * as published by the Free Software Foundation.
  */
 
-import { json, type RequestEvent } from '@sveltejs/kit';
-import { type Job, jobManager } from '$lib/server/jobManager';
+import type { RequestEvent } from '@sveltejs/kit';
+import { type Job, jobManager } from '$lib/server/jobs/jobManager';
 import type { RequestHandler } from './$types';
+import { createApiResponse, handleApiError } from '$lib/server/api-utils';
+import { validateInput } from '$lib/server/validation/validation-utils';
+import { jobIdSchema } from '$lib/server/validation/command-validation';
 
 export const GET: RequestHandler = async ({ params }: RequestEvent): Promise<Response> => {
-  const { jobId } = params;
+  try {
+    const { jobId } = params;
 
-  if (!jobId) {
-    return json({ success: false, error: 'Job ID is required' }, { status: 400 });
+    validateInput({ jobId }, jobIdSchema);
+
+    if (!jobId) {
+      return handleApiError(new Error('Job ID is required'));
+    }
+
+    const job: Job | undefined = await jobManager.getJob(jobId);
+    if (!job) {
+      return handleApiError(new Error('Job not found'));
+    }
+
+    const { process: _process, subscribers: _subscribers, ...jobData } = job;
+    return createApiResponse({ job: jobData });
+  } catch (error) {
+    return handleApiError(error as Error);
   }
-
-  const job: Job | undefined = await jobManager.getJob(jobId);
-  if (!job) {
-    return json({ success: false, error: 'Job not found' }, { status: 404 });
-  }
-
-  const { process: _process, subscribers: _subscribers, ...jobData } = job;
-  return json({ success: true, job: jobData });
 };
 
 export const DELETE: RequestHandler = async ({ params }: RequestEvent): Promise<Response> => {
-  const { jobId } = params;
+  try {
+    const { jobId } = params;
 
-  if (!jobId) {
-    return json({ success: false, error: 'Job ID is required' }, { status: 400 });
+    validateInput({ jobId }, jobIdSchema);
+
+    if (!jobId) {
+      return handleApiError(new Error('Job ID is required'));
+    }
+
+    const deleted: boolean = await jobManager.deleteJob(jobId);
+
+    if (!deleted) {
+      return handleApiError(new Error('Job not found'));
+    }
+
+    return createApiResponse({ message: 'Job deleted successfully' });
+  } catch (error) {
+    return handleApiError(error as Error);
   }
-
-  const deleted: boolean = await jobManager.deleteJob(jobId);
-
-  if (!deleted) {
-    return json({ success: false, error: 'Job not found' }, { status: 404 });
-  }
-
-  return json({ success: true, message: 'Job deleted successfully' });
 };
