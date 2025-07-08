@@ -9,17 +9,13 @@
  */
 
 import { mkdir, chmod, stat, rename, unlink, writeFile } from 'fs/promises';
-import path from 'path';
 import { exec } from 'node:child_process';
 import { promisify } from 'node:util';
-import Database from 'better-sqlite3';
 import { logger } from '$lib/shared/logger';
 import { PATHS, GITHUB } from '$lib/server/constants';
+import { createSettingsManager } from '$lib/server/settingsManager';
 
 const execAsync = promisify(exec);
-
-const dbPath = path.join(PATHS.DATA_DIR, 'gdluxx.db');
-const db = new Database(dbPath);
 
 export interface VersionInfo {
 	current: string | null;
@@ -42,28 +38,12 @@ async function ensureDataDir(): Promise<void> {
 	}
 }
 
-function getCurrentTimestamp(): number {
-	return Date.now();
-}
+const settingsManager = createSettingsManager('version', DEFAULT_VERSION_INFO);
 
 export async function readVersionInfo(): Promise<VersionInfo> {
 	try {
 		await ensureDataDir();
-		const stmt = db.prepare(
-			'SELECT current, latestAvailable, lastChecked FROM version WHERE id = 1'
-		);
-		const row = stmt.get() as
-			| { current: string | null; latestAvailable: string | null; lastChecked: number | null }
-			| undefined;
-
-		if (row) {
-			return {
-				current: row.current,
-				latestAvailable: row.latestAvailable,
-				lastChecked: row.lastChecked,
-			};
-		}
-		return { ...DEFAULT_VERSION_INFO };
+		return await settingsManager.read();
 	} catch (error) {
 		logger.error('Error reading version from database:', error);
 		return { ...DEFAULT_VERSION_INFO };
@@ -73,16 +53,7 @@ export async function readVersionInfo(): Promise<VersionInfo> {
 export async function writeVersionInfo(info: VersionInfo): Promise<void> {
 	try {
 		await ensureDataDir();
-		const now = getCurrentTimestamp();
-
-		const stmt = db.prepare(`
-			INSERT OR REPLACE INTO version (id, current, latestAvailable, lastChecked, createdAt, updatedAt)
-			VALUES (1, ?, ?, ?, 
-				COALESCE((SELECT createdAt FROM version WHERE id = 1), ?),
-				?)
-		`);
-
-		stmt.run(info.current, info.latestAvailable, info.lastChecked, now, now);
+		await settingsManager.write(info);
 	} catch (error) {
 		logger.error('Error writing version to database:', error);
 		throw new Error('Failed to write version information.');
