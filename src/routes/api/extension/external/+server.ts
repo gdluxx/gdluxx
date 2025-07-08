@@ -26,7 +26,6 @@ interface ExternalApiRequestBody {
 
 export const POST: RequestHandler = async ({
   request,
-  fetch: serverFetch,
 }: RequestEvent): Promise<Response> => {
   let plainApiKey: string | null = null;
   let urlToProcess: string;
