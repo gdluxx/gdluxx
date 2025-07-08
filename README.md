@@ -21,52 +21,79 @@ gdluxx is nothing more than a self-hosted browser based gui for
 
 ## Installation
 
-Only Docker installation is supported. It is absolutely required that you create
-the bind mount directory BEFORE creating the container. Otherwise, you will run
-into startup issues due to permissions. The container will not update the
-directory permissions for you. The user in the container is `1000:1000`, not
-root.
+Only Docker installation is supported.
 
-For example, if you want everything in the container (downloads, configuration
-file, etc.) to end up at `~Documents/gdluxx/`, you'll need to create
-`~Documents/gdluxx/`. If you want everything located in the same directory from
-where you run the Docker compose command, you'll need to make sure you create
-the `data/` directory FIRST.
+### Quick Start
 
-If you try to use a Docker volume, you won't have easy access to your downloads.
+1. ⚠️ Create the data directory first ⚠️
 
-You can find the official documentation regarding Docker bind mounts
-[here](https://docs.docker.com/get-started/workshop/06_bind_mounts/).
+   ```bash
+    mkdir data
+   ```
 
-You'll also want to copy over the `.env.example` file as `.env` to reside with
-your compose file. It is very important that you generate your `AUTH_SECRET`.
-The easiest way to do that is using `openssl rand -hex 32` in your terminal.
-Apologies to Windows users, I don't know much about it these days. I found
-https://www.cryptool.org/en/cto/openssl/, and it allowed me to run the `openssl`
-command, perhaps this will work for you.
+2. Copy environment file
 
-I'm still working through some issues with setting `HOST` and `PORT`, so to use
-this application currently, leave them as they are.
+   `cp .env.example .env`
 
-```yaml
-name: gdluxx
+3. Generate your `AUTH_SECRET`
 
-services:
-  gdluxx:
-    image: ghcr.io/gdluxx/gdluxx:latest
-    container_name: gdluxx
-    user: '1000:1000'
-    ports:
-      - '7755:7755'
-    volumes:
-      - ./data:/app/data
-    environment:
-      - NODE_ENV=production
-      - PORT=${PORT}
-      - HOST=${HOST}
-      - AUTH_SECRET=${AUTH_SECRET}
-    restart: unless-stopped
-```
+   `openssl rand -hex 32`
+
+4. Paste your generated `AUTH_SECRET` into your `.env` file
+
+5. Run `docker compose up -d`
+
+   ```yaml
+   name: gdluxx
+
+   services:
+     gdluxx:
+       image: ghcr.io/gdluxx/gdluxx:latest
+       container_name: gdluxx
+       ports:
+         - '7755:7755'
+       volumes:
+         - ./data:/app/data
+       environment:
+         - AUTH_SECRET=${AUTH_SECRET}
+       restart: unless-stopped
+       deploy:
+         restart_policy:
+           condition: on-failure
+           max_attempts: 3
+           delay: 3s
+   ```
+
+### ⚠️ **Critical: Directory Permissions** ⚠️
+
+You MUST create the bind mount directory before starting the container. The
+container runs as user 1000:1000, not root, and _cannot modify host directory
+permissions_ for you.
+
+If you skip step 1 above, Docker will create the directory as root and the
+container will fail to start with permission errors.
+
+### Custom paths: Want your data elsewhere?
+
+Create the directory first:
+
+`mkdir -p ~/Documents/gdluxx/data`
+
+Then update your compose volumes to: `~/Documents/gdluxx/data:/app/data`
+
+### Windows Users
+
+For generating AUTH_SECRET on Windows, try
+[CryptoTool's OpenSSL](https://www.cryptool.org/en/cto/openssl/) or install
+OpenSSL via WSL/Git Bash.
+
+### Why Not Docker Volumes?
+
+Docker volumes hide your downloads inside Docker's storage. Bind mounts give you
+direct file access for easy management.
+
+If you're not familiar with Docker bind mounts, you can read about them
+[here](https://docs.docker.com/get-started/workshop/06_bind_mounts/)
 
 ## Configuration
 
@@ -115,13 +142,24 @@ gdluxx will use the `data/` directory to store:
 
    - [x] Consolidate SVG icons
    - [ ] Consider alternatives to deprecated `document.execCommand('copy')`
+         (jobOutputModal)
    - [x] Combine `JobList` components
    - [x] ~~Adjust `api-keys.json` file permissions~~
    - [ ] Consolidate notification system
    - [ ] Add CLI options
    - [ ] Prevent `Run` action when _gallery-dl_ isn't available
 
-5. Incorporate _gallery-dl_ optional dependencies
+5. Features
+
+   - [ ] Drag and drop for input files
+   - [ ] Add `--extractor-info` and `--list-keywords`
+
+6. Considerations
+
+   - [ ] Job queuing
+   - [ ] Job scheduling
+
+7. Incorporate _gallery-dl_ optional dependencies
 
    - [ ] yt-dlp or youtube-dl: HLS/DASH video downloads, ytdl integration
    - [ ] FFmpeg: Pixiv Ugoira conversion
