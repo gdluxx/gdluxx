@@ -15,6 +15,9 @@ import type { BatchJobStartResult } from '$lib/stores/jobs.svelte';
 import { createApiResponse, handleApiError } from '$lib/server/api-utils';
 import { validateInput } from '$lib/server/validation/validation-utils';
 import { externalApiSchema } from '$lib/server/validation/command-validation';
+import { jobManager } from '$lib/server/jobs/jobManager';
+import { PATHS, TERMINAL } from '$lib/server/constants';
+import type { IPty } from '@homebridge/node-pty-prebuilt-multiarch';
 
 interface ExternalApiRequestBody {
   urlToProcess: unknown;
@@ -94,38 +97,73 @@ export const POST: RequestHandler = async ({
   );
 
   try {
-    const commandStartResponse: Response = await serverFetch('/api/command/start', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        urls: [urlToProcess],
-        useUserConfigPath: false,
-      }),
-    });
+    const { spawn } = await import('@homebridge/node-pty-prebuilt-multiarch');
 
-    let commandStartResult: BatchJobStartResult | { error: string };
+    // Create job
+    const jobId: string = await jobManager.createJob(urlToProcess);
+    await jobManager.addOutput(jobId, 'info', `Starting download for: ${urlToProcess}`);
+    await jobManager.addOutput(jobId, 'info', `Job ID: ${jobId}`);
+
+    const processArgs: string[] = [urlToProcess, '--config', './data/config.json'];
+
     try {
-      commandStartResult = await commandStartResponse.json();
-    } catch (parseError) {
-      const responseText: string = await commandStartResponse.text();
-      logger.error(
-        'Failed to parse JSON response from start endpoint:',
-        parseError,
-        'Status:',
-        commandStartResponse.status,
-        'Response Text:',
-        responseText
-      );
-      return handleApiError(
-        new Error('Internal error: Could not process response from command service.')
-      );
-    }
+      const ptyProcess: IPty = spawn(PATHS.BIN_FILE, processArgs, {
+        name: TERMINAL.NAME,
+        cols: TERMINAL.COLS,
+        rows: TERMINAL.ROWS,
+        cwd: process.cwd(),
+        env: { ...process.env, NO_COLOR: '0', TERM: TERMINAL.NAME },
+      });
 
-    return createApiResponse(commandStartResult);
+      await jobManager.setJobProcess(jobId, ptyProcess);
+      await jobManager.addOutput(jobId, 'info', `Process started with PID: ${ptyProcess.pid}`);
+
+      ptyProcess.onData(async (data: string): Promise<void> => {
+        await jobManager.addOutput(jobId, 'stdout', data);
+      });
+
+      ptyProcess.onExit(
+        async ({
+          exitCode,
+          signal,
+        }: {
+          exitCode: number;
+          signal?: number | undefined;
+        }): Promise<void> => {
+          logger.info(`[Job ${jobId}] Process exited with code ${exitCode}, signal ${signal}`);
+          await jobManager.addOutput(
+            jobId,
+            'info',
+            `Process exited with code ${exitCode}${signal ? ` (signal ${signal})` : ''}`
+          );
+          await jobManager.completeJob(jobId, exitCode || 0);
+        }
+      );
+
+      const result: BatchJobStartResult = {
+        overallSuccess: true,
+        results: [
+          {
+            jobId,
+            url: urlToProcess,
+            success: true,
+            message: 'Job started successfully',
+          },
+        ],
+      };
+
+      return createApiResponse(result);
+    } catch (spawnError) {
+      const errorMessage: string =
+        spawnError instanceof Error ? spawnError.message : 'Unknown spawn error';
+      logger.error(`[Job ${jobId}] Failed to start process for ${urlToProcess}:`, spawnError);
+      await jobManager.addOutput(jobId, 'error', `Failed to start process: ${errorMessage}`);
+      await jobManager.completeJob(jobId, 1);
+      
+      return handleApiError(new Error(`Failed to start process: ${errorMessage}`));
+    }
   } catch (error) {
-    logger.error('Error forwarding request to start endpoint:', error);
-    return handleApiError(new Error('Failed to process the URL via the command service.'));
+    logger.error('Error creating job:', error);
+    return handleApiError(new Error('Failed to create job.'));
   }
 };
