@@ -44,4 +44,4 @@ VOLUME ["/app/data"]
 
 STOPSIGNAL SIGTERM
 
-CMD ["node", "build/index.js"]
+CMD ["sh", "-c", "[ -w /app/data ] || (echo 'ERROR: /app/data not writable' && exit 1) && node build/index.js"]

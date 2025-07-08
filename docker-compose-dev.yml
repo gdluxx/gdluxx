@@ -5,16 +5,19 @@ services:
     build: .
     image: gdluxx
     container_name: gdluxx
-    user: '1000:1000'
     ports:
       - '7755:7755'
     volumes:
       - ./data:/app/data
     environment:
-      - NODE_ENV=production
-      - PORT=${PORT}
-      - HOST=${HOST}
+      # - PORT=${PORT}
+      # - HOST=${HOST}
       - AUTH_SECRET=${AUTH_SECRET}
     env_file:
       - .env
     restart: unless-stopped
+    deploy:
+      restart_policy:
+        condition: on-failure
+        max_attempts: 3
+        delay: 3s
