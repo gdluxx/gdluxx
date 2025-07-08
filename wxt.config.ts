@@ -7,7 +7,6 @@ export default defineConfig({
   }),
   manifest: {
     permissions: ['activeTab', 'storage'],
-    host_permissions: ['https://*/*', 'http://*/*'],
     name: 'Tab URL Sender',
     description: 'Send current tab URL to a custom endpoint with API key',
     browser_specific_settings: {
