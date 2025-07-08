@@ -17,6 +17,7 @@
   import type { Option, OptionsData } from '$lib/types/options';
   import { browser } from '$app/environment';
   import { jobStore } from '$lib/stores/jobs.svelte';
+  import { Icon } from '$lib/components/index';
 
   const typedOptionsData = optionsData as OptionsData;
 
@@ -361,7 +362,7 @@
         class="flex items-center justify-between p-4 cursor-pointer hover:bg-secondary-100 dark:hover:bg-primary-800 transition-colors"
       >
         <span class="font-medium text-secondary-900 dark:text-secondary-100"
-          >Gallery-dl Options</span
+          >Options</span
         >
         <div class="flex items-center gap-2">
           {#if selectedOptions.size > 0}
@@ -371,10 +372,11 @@
               {selectedOptions.size} selected
             </span>
           {/if}
-          <span
-            class="transform group-open:rotate-180 transition-transform text-secondary-600 dark:text-secondary-400"
-          >
-            ▼
+          <span class="transform group-open:rotate-90 transition-transform text-secondary-600 dark:text-secondary-400" aria-hidden="true">
+            <Icon
+              iconName="chevron-right"
+              size={24}
+            />
           </span>
         </div>
       </summary>
