@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.2](https://github.com/gdluxx/gdluxx/compare/v0.1.1...v0.1.2) (2025-07-09)
+
+
+### Bug Fixes
+
+* hardcoded path in Icon component was preventing some icons from displaying ([d03f836](https://github.com/gdluxx/gdluxx/commit/d03f836445bbf1cefd0f9ca0d42944e5a905edd1))
+* remove unused parameter ([fd45daa](https://github.com/gdluxx/gdluxx/commit/fd45daa66ab091330c183847d79126978de32a24))
+
 ## [0.1.1](https://github.com/gdluxx/gdluxx/compare/v0.1.0...v0.1.1) (2025-07-08)
 
 
