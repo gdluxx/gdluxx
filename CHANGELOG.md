@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.1](https://github.com/gdluxx/gdluxx/compare/v0.1.0...v0.1.1) (2025-07-08)
+
+
+### Bug Fixes
+
+* External endpoint got forgotten during SvelteKit endpoint migration ([a28408a](https://github.com/gdluxx/gdluxx/commit/a28408a857f3452af4d621dafb8afddc3e56338a))
+
 # [0.1.0](https://github.com/gdluxx/gdluxx/compare/v0.0.6...v0.1.0) (2025-07-08)
 
 
