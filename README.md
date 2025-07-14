@@ -146,13 +146,18 @@ gdluxx will use the `data/` directory to store:
    - [x] Combine `JobList` components
    - [x] ~~Adjust `api-keys.json` file permissions~~
    - [ ] Consolidate notification system
-   - [ ] Add CLI options
+   - [x] Add CLI options
    - [ ] Prevent `Run` action when _gallery-dl_ isn't available
 
 5. Features
 
    - [ ] Drag and drop for input files
-   - [ ] Add `--extractor-info` and `--list-keywords`
+   - [ ] Drag and drop for config files
+   - [ ] Add `--extractor-info` and `--list-keywords` page
+   - [x] Allow ConfigEditor component to update paths smartly
+     - log paths - /app/data/logs
+     - archive paths - /app/data/archives
+   - [ ] Add success/failed count per job in JobsList
 
 6. Considerations
 
