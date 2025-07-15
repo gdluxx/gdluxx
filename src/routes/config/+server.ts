@@ -14,10 +14,11 @@ import { createApiResponse, handleApiError } from '$lib/server/api-utils';
 import { validateInput } from '$lib/server/validation/validation-utils';
 import { configUpdateSchema } from '$lib/server/validation/config-validation';
 import { readConfigFile, writeConfigFile } from '$lib/server/config-utils';
+import type { ConfigReadResult, ConfigWriteResult } from '$lib/server/config-utils';
 
 export const GET: RequestHandler = async (): Promise<Response> => {
   try {
-    const result = await readConfigFile();
+    const result: ConfigReadResult = await readConfigFile();
     return createApiResponse(result);
   } catch (error) {
     logger.error('Error reading config file:', error);
@@ -27,13 +28,31 @@ export const GET: RequestHandler = async (): Promise<Response> => {
 
 export const POST: RequestHandler = async ({ request }): Promise<Response> => {
   try {
-    const body = await request.json();
+    const contentType = request.headers.get('content-type') || '';
 
-    validateInput(body, configUpdateSchema);
+    let content: string;
 
-    const { content } = body;
+    if (contentType.includes('multipart/form-data')) {
+      // Handling file upload
+      const formData = await request.formData();
+      const file = formData.get('file') as File;
 
-    const result = await writeConfigFile(content);
+      if (!file) {
+        throw new Error('No file uploaded');
+      }
+
+      if (!file.name.endsWith('.json')) {
+        throw new Error('Only JSON files are allowed');
+      }
+
+      content = await file.text();
+    } else {
+      const body = await request.json();
+      validateInput(body, configUpdateSchema);
+      content = body.content;
+    }
+
+    const result: ConfigWriteResult = await writeConfigFile(content);
     return createApiResponse(result);
   } catch (error) {
     logger.error('Error saving file:', error);
