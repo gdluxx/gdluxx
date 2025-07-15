@@ -286,6 +286,7 @@
           disabled={isSaving}
           loading={isSaving}
           title={hasLintErrors ? 'JSON has errors - click to save anyway' : 'Save (Ctrl+S / Cmd+S)'}
+          size="sm"
         >
           {isSaving ? 'Saving...' : hasLintErrors ? 'Save (Errors)' : 'Save'}
         </Button>
