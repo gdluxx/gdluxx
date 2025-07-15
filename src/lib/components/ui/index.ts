@@ -15,3 +15,4 @@ export { default as ConfirmModal } from './ConfirmModal.svelte';
 export { default as CopyTooltip } from './CopyTooltip.svelte';
 export { default as Info } from './Info.svelte';
 export { default as PageLayout } from './PageLayout.svelte';
+export { default as UploadModal } from './UploadModal.svelte';
