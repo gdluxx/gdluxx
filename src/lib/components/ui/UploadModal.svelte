@@ -58,7 +58,7 @@
     type === 'config'
       ? {
           title: 'Upload Configuration File',
-          description: 'Upload a JSON configuration file for gallery-dl',
+          description: 'Select an existing gallery-dl config',
           acceptedTypes: '.json',
           endpoint: '/config',
         }
@@ -225,7 +225,7 @@
       'border',
       'border-secondary-200',
       'shadow-xl',
-      'rounded-lg',
+      'rounded-sm',
       'pointer-events-auto',
       'dark:bg-secondary-800',
       'dark:border-secondary-700',
@@ -294,7 +294,7 @@
 
         <!-- Drop zone -->
         <div
-          class="relative border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer {isDragOver
+          class="relative border-2 border-dashed rounded-sm p-8 text-center transition-colors cursor-pointer {isDragOver
             ? 'border-primary-400 bg-primary-50 dark:border-primary-500 dark:bg-primary-950'
             : selectedFile
               ? 'border-success-400 bg-success-50 dark:border-success-500 dark:bg-success-950'
@@ -327,9 +327,6 @@
                   {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
                 </p>
               </div>
-              <Button variant="outline-secondary" size="sm" onclick={handleRemoveFile}>
-                Remove file
-              </Button>
             {:else}
               <!-- Upload prompt -->
               <div class="flex items-center justify-center">
@@ -344,16 +341,13 @@
                 <p class="text-lg font-medium text-secondary-900 dark:text-secondary-100">
                   Click to upload or drag and drop
                 </p>
-                <p class="text-sm text-secondary-500 dark:text-secondary-400">
-                  Select a {type === 'config' ? 'configuration' : 'text'} file from your computer
-                </p>
               </div>
             {/if}
           </div>
 
           {#if isDragOver}
             <div
-              class="absolute inset-0 bg-primary-100 dark:bg-primary-900 opacity-50 rounded-lg"
+              class="absolute inset-0 bg-primary-100 dark:bg-primary-900 opacity-50 rounded-sm"
             ></div>
           {/if}
         </div>
@@ -364,6 +358,9 @@
         <div
           class="flex justify-end items-center gap-3 py-4 px-6 border-t border-secondary-200 dark:border-secondary-700"
         >
+          <Button variant="outline-secondary" size="sm" onclick={handleRemoveFile}>
+            Remove file
+          </Button>
           <Button variant="outline-secondary" size="sm" onclick={handleClose} type="button"
             >Cancel</Button
           >
