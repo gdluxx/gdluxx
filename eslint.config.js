@@ -9,13 +9,15 @@ import svelteConfig from './svelte.config.js';
 // import pluginTailwindcss from 'eslint-plugin-tailwindcss';
 
 const gitignorePath = fileURLToPath(new URL('./.gitignore', import.meta.url));
+const gitExcludePath = fileURLToPath(new URL('./.git/info/exclude', import.meta.url));
 
 export default ts.config(
   includeIgnoreFile(gitignorePath),
+  includeIgnoreFile(gitExcludePath),
   js.configs.recommended,
   ...ts.configs.recommended,
-  ...ts.configs.strict, // Add strict config for better TypeScript practices
-  ...ts.configs.stylistic, // Add stylistic config for consistency
+  ...ts.configs.strict,
+  ...ts.configs.stylistic,
   ...svelte.configs.recommended,
   prettier,
   {
@@ -23,15 +25,12 @@ export default ts.config(
       globals: { ...globals.browser, ...globals.node },
     },
     rules: {
-      // Keep your existing rule but be more specific
-      'no-undef': 'off', // Necessary for Svelte compiler globals
-
-      // Professional TypeScript/JavaScript rules (no type info required)
+      'no-undef': 'off',
       'prefer-const': 'error',
       'no-var': 'error',
       'no-console': 'warn',
       'no-debugger': 'error',
-      'no-unused-vars': 'off', // Use TypeScript version instead
+      'no-unused-vars': 'off',
       '@typescript-eslint/no-unused-vars': [
         'error',
         {
@@ -40,8 +39,6 @@ export default ts.config(
           caughtErrorsIgnorePattern: '^_',
         },
       ],
-
-      // Basic TypeScript rules (no type info required)
       '@typescript-eslint/consistent-type-imports': [
         'error',
         { prefer: 'type-imports', fixStyle: 'separate-type-imports' },
@@ -49,8 +46,6 @@ export default ts.config(
       '@typescript-eslint/no-import-type-side-effects': 'error',
       '@typescript-eslint/consistent-type-definitions': ['error', 'interface'],
       '@typescript-eslint/array-type': ['error', { default: 'array-simple' }],
-
-      // Code quality rules
       'object-shorthand': 'error',
       'prefer-template': 'error',
       eqeqeq: ['error', 'always', { null: 'ignore' }],
@@ -58,7 +53,6 @@ export default ts.config(
     },
   },
   {
-    // TypeScript files with type checking (excluding config files)
     files: ['**/*.ts', '**/*.tsx'],
     ignores: ['*.config.*'],
     languageOptions: {
@@ -67,13 +61,11 @@ export default ts.config(
       },
     },
     rules: {
-      // Enhanced TypeScript rules that require type information
       // '@typescript-eslint/prefer-nullish-coalescing': 'error',
       '@typescript-eslint/prefer-optional-chain': 'error',
     },
   },
   {
-    // TypeScript files with type checking (excluding config files)
     files: ['**/*.svelte.ts'],
     languageOptions: {
       parser: ts.parser,
@@ -97,11 +89,8 @@ export default ts.config(
       },
     },
     rules: {
-      // Enhanced TypeScript rules that require type information
       '@typescript-eslint/prefer-nullish-coalescing': 'error',
       '@typescript-eslint/prefer-optional-chain': 'error',
-
-      // Svelte-specific rules
       'svelte/no-at-debug-tags': 'warn',
       'svelte/no-reactive-functions': 'error',
       'svelte/no-reactive-literals': 'error',
@@ -110,13 +99,10 @@ export default ts.config(
       'svelte/shorthand-attribute': 'error',
       'svelte/shorthand-directive': 'error',
       'svelte/spaced-html-comment': 'error',
-
-      // Allow console in Svelte files for debugging
       'no-console': 'off',
     },
   },
   {
-    // Configuration for test files (if you have them)
     files: ['**/*.test.ts', '**/*.test.js', '**/*.spec.ts', '**/*.spec.js'],
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
