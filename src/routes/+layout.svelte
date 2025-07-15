@@ -38,7 +38,7 @@
   let isMobile = $state(false);
   let sidebarOpen = $state(false);
 
-  import type { NavigationItem } from '$lib/var/navigation';
+  import type { NavigationItem } from './navigation';
 
   function handleNavigate(item: NavigationItem) {
     logger.info('Navigating to:', item);
