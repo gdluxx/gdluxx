@@ -135,7 +135,7 @@ gdluxx will use the `data/` directory to store:
 
 3. Docs
 
-   - [ ] Build documentation
+   - [x] Build documentation
    - [ ] Tie in _gallery-dl_ docs
 
 4. Misc
