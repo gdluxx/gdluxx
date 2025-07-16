@@ -38,8 +38,8 @@ like much on the surface, but it's been a lot of effort to get to this point.
 Also, I'm a badge wearing [DataHoarder](https://www.reddit.com/r/DataHoarder/).
 
 ::: info  
-There are probably edge cases I can't even dream up. Let me know if you're having issues and I will try to 
-assist.
+There are probably edge cases I can't even dream up. Let me know if you're
+having issues and I will try to assist.
 
 Feedback of all sorts is welcome!  
 :::

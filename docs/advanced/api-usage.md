@@ -19,12 +19,13 @@ curl -X POST \
 ### Request Requirements
 
 - **Authorization Header**: Must include `Authorization: Bearer <api-key>`
-- **URL Format**: Must be a valid HTTP or HTTPS URL (validated with pattern `/^https?:\/\/.+/`)
+- **URL Format**: Must be a valid HTTP or HTTPS URL (validated with pattern
+  `/^https?:\/\/.+/`)
 - **Content-Type**: Must be `application/json`
 
 ### Response Format
 
-A successful request will return a JSON response and queue the job in *gdluxx*:
+A successful request will return a JSON response and queue the job in _gdluxx_:
 
 ```json
 {
@@ -58,7 +59,8 @@ If the request fails, you'll receive an error response:
 
 Common error responses (all return HTTP 500):
 
-- **Missing Authorization Header**: `"Authorization header with Bearer token is required"`
+- **Missing Authorization Header**:
+  `"Authorization header with Bearer token is required"`
 - **Empty Bearer Token**: `"Bearer token cannot be empty"`
 - **Invalid API Key**: `"Invalid API key"`
 - **Invalid URL**: URL validation error message
