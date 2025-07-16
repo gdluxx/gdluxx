@@ -24,3 +24,7 @@ vite.config.ts.timestamp-*
 
 static/bin/*
 /.venv
+
+# vitepress
+docs/.vitepress/cache
+vitepress/dist
