@@ -24,10 +24,10 @@ end first.
 
 ### API Key Manager
 
-- **Create API Keys**: Generate keys for the browser
-  extension.
+- **Create API Keys**: Generate keys for the browser extension and external API access.
   - Multiple keys possible
   - Set expiration dates
+  - Use as Bearer tokens: `Authorization: Bearer <api-key>`
 - **Revoke API Keys**: Delete keys to remove access.
 
 ### Debug Manager

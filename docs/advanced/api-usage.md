@@ -4,9 +4,9 @@ If you have interest in using the API endpoint outside the companion browser
 extension, create an API key in the settings, then send `POST` requests to
 `https://my-cool-domain.com/api/extension/external`.
 
-### Authentication Methods
+### Authentication
 
-You can authenticate with the API using bearer token.
+The API uses Bearer token authentication exclusively:
 
 ```bash
 curl -X POST \
@@ -18,9 +18,9 @@ curl -X POST \
 
 ### Request Requirements
 
+- **Authorization Header**: Must include `Authorization: Bearer <api-key>`
 - **URL Format**: Must be a valid HTTP or HTTPS URL (validated with pattern `/^https?:\/\/.+/`)
-- **Content-Type**: Must be `application/json` when sending JSON body
-- **Authentication**: API key is required via one of the methods above
+- **Content-Type**: Must be `application/json`
 
 ### Response Format
 
@@ -58,8 +58,9 @@ If the request fails, you'll receive an error response:
 
 Common error responses (all return HTTP 500):
 
+- **Missing Authorization Header**: `"Authorization header with Bearer token is required"`
+- **Empty Bearer Token**: `"Bearer token cannot be empty"`
 - **Invalid API Key**: `"Invalid API key"`
-- **Missing API Key**: `"API key is required"`
 - **Invalid URL**: URL validation error message
 - **Invalid JSON**: `"Invalid request body. Expected valid JSON."`
 - **Process Failure**: `"Failed to start process: <details>"`

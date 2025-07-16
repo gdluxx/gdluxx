@@ -184,11 +184,12 @@ If you have interest in using the API endpoint outside the companion browser
 extension, create an API key in the settings, then send POST requests to
 `/api/extension/external`:
 
-```json
-{
-  "urlToProcess": "https://example.com/image-gallery",
-  "apiKey": "your-api-key-here"
-}
+```bash
+curl -X POST \
+  -H "Authorization: Bearer your-api-key-here" \
+  -H "Content-Type: application/json" \
+  -d '{"urlToProcess": "https://example.com/image-gallery"}' \
+  https://your-gdluxx-url/api/extension/external
 ```
 
 ## What's in a name?
