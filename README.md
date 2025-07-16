@@ -120,6 +120,14 @@ Replace `your-gdluxx-server.com` with your actual gdluxx server URL and
 
 ---
 
+1. Features
+
+- [ ] Send multiple tabs
+- [ ] Add check `is URL supported?`
+- [ ] Add context menu for individual images
+
+---
+
 ## Developers
 
 ### Building from Source
