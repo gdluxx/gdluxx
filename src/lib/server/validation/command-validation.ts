@@ -19,7 +19,6 @@ export const commandStreamSchema: ValidationSchema = {
 };
 
 export const externalApiSchema: ValidationSchema = {
-  apiKey: { required: true, minLength: 1 },
   urlToProcess: {
     required: true,
     minLength: 1,

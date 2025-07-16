@@ -21,13 +21,21 @@ import type { IPty } from '@homebridge/node-pty-prebuilt-multiarch';
 
 interface ExternalApiRequestBody {
   urlToProcess: unknown;
-  apiKey?: unknown;
 }
 
 export const POST: RequestHandler = async ({ request }: RequestEvent): Promise<Response> => {
-  let plainApiKey: string | null = null;
-  let urlToProcess: string;
   let body: ExternalApiRequestBody;
+
+  // Extract bearer token from auth header
+  const authHeader: string | null = request.headers.get('authorization');
+  if (!authHeader?.startsWith('Bearer ')) {
+    return handleApiError(new Error('Authorization header with Bearer token is required'));
+  }
+
+  const plainApiKey = authHeader.substring(7);
+  if (!plainApiKey || plainApiKey.trim() === '') {
+    return handleApiError(new Error('Bearer token cannot be empty'));
+  }
 
   try {
     try {
@@ -45,27 +53,10 @@ export const POST: RequestHandler = async ({ request }: RequestEvent): Promise<R
       return handleApiError(new Error('Invalid request body. Expected a JSON object.'));
     }
 
-    // Try Authorization header first
-    const authHeader: string | null = request.headers.get('authorization');
-    if (authHeader?.startsWith('Bearer ')) {
-      plainApiKey = authHeader.substring(7);
-    }
-
-    // Or X-API-Key header
-    if (!plainApiKey) {
-      plainApiKey = request.headers.get('x-api-key');
-    }
-
-    // Or JSON body
-    if (!plainApiKey && typeof body.apiKey === 'string') {
-      plainApiKey = body.apiKey;
-    }
-
     // Validate input
     try {
       validateInput(
         {
-          apiKey: plainApiKey,
           urlToProcess: body.urlToProcess,
         },
         externalApiSchema
@@ -73,19 +64,17 @@ export const POST: RequestHandler = async ({ request }: RequestEvent): Promise<R
     } catch (error) {
       return handleApiError(error as Error);
     }
-
-    urlToProcess = body.urlToProcess as string;
   } catch (error) {
     logger.warn('Unexpected error processing external endpoint request:', error);
     return handleApiError(error as Error);
   }
 
+  const urlToProcess = body.urlToProcess as string;
+
   const authResult: AuthResult = await validateApiKey(plainApiKey);
 
   if (!authResult.success) {
-    logger.warn(
-      `Invalid API key attempt via extension endpoint: ${(plainApiKey as string).substring(0, Math.min(5, (plainApiKey as string).length))}... Error: ${authResult.error}`
-    );
+    logger.warn(`Invalid API key attempt via extension endpoint. Error: ${authResult.error}`);
     return handleApiError(new Error(authResult.error || 'Invalid API key.'));
   }
 
