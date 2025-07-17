@@ -40,7 +40,7 @@ export default defineBackground((): void => {
             let baseApiUrl: string = message.apiUrl;
             if (
               !baseApiUrl.startsWith('https://') &&
-              !baseApiUrl.startsWith('https://')
+              !baseApiUrl.startsWith('http://')
             ) {
               baseApiUrl = urlBuilder.secureScheme + baseApiUrl;
             }
