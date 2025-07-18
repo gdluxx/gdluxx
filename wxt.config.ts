@@ -10,7 +10,7 @@ export default defineConfig({
     },
   }),
   manifest: {
-    permissions: ['activeTab', 'storage'],
+    permissions: ['activeTab', 'storage', 'contextMenus', 'notifications'],
     name: 'Tab URL Sender',
     description: 'Send current tab URL to a custom endpoint with API key',
     browser_specific_settings: {
