@@ -1,0 +1,112 @@
+name: Release Extension
+
+on:
+  workflow_dispatch:
+    inputs:
+      release-type:
+        description: 'Release type'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'workflow_dispatch' || 
+      (github.actor != 'github-actions[bot]' && 
+       !contains(github.event.head_commit.message, 'chore: release v') &&
+       !contains(github.event.head_commit.message, 'release v'))
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: latest
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Run build checks
+        run: |
+          pnpm compile
+          pnpm lint
+
+      - name: Setup Git
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+
+      - name: Install release-it and dependencies
+        run: pnpm add -D release-it @release-it/conventional-changelog
+
+      - name: Determine release type
+        id: release-type
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "type=${{ github.event.inputs.release-type }}" >> $GITHUB_OUTPUT
+          else
+            echo "type=patch" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run release-it
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: pnpm release-it ${{ steps.release-type.outputs.type }} --ci
+
+      - name: Get release version
+        id: release-version
+        run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+
+      - name: Build Chrome extension
+        run: pnpm build:chrome
+
+      - name: Build Firefox extension
+        run: pnpm build:firefox
+
+      - name: Create Chrome zip
+        run: pnpm zip:chrome
+
+      - name: Create Firefox zip
+        run: pnpm zip:firefox
+
+      - name: Rename zip files with version
+        run: |
+          VERSION=${{ steps.release-version.outputs.version }}
+          mv .output/chrome-mv3.zip ./gdluxx-extension-v${VERSION}-chrome.zip
+          mv .output/firefox-mv2.zip ./gdluxx-extension-v${VERSION}-firefox.zip
+
+      - name: Upload Chrome zip to release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.release-version.outputs.version }}
+          files: ./gdluxx-extension-v${{ steps.release-version.outputs.version }}-chrome.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Firefox zip to release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.release-version.outputs.version }}
+          files: ./gdluxx-extension-v${{ steps.release-version.outputs.version }}-firefox.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
