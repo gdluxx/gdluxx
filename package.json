@@ -1,6 +1,6 @@
 {
   "name": "gdluxx-extension",
-  "description": "companion browser extension for gdluxx",
+  "description": "companion browser extension for gdluxx, a self-hosted browser GUI for gallery-dl",
   "private": true,
   "version": "1.0.0",
   "type": "module",
