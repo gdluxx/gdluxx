@@ -11,8 +11,8 @@ export default defineConfig({
   }),
   manifest: {
     permissions: ['activeTab', 'storage', 'contextMenus', 'notifications'],
-    name: 'Tab URL Sender',
-    description: 'Send current tab URL to a custom endpoint with API key',
+    name: 'gdluxx-extension',
+    description: 'companion browser extension for gdluxx, a self-hosted browser GUI for gallery-dl',
     browser_specific_settings: {
       gecko: {
         id: 'gdluxx@gdluxx.app',
