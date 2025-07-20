@@ -71,17 +71,11 @@ jobs:
       - name: Create Firefox zip
         run: pnpm zip:firefox
 
-      - name: Rename zip files with version
-        run: |
-          VERSION=${{ steps.release-version.outputs.version }}
-          mv .output/chrome-mv3.zip ./gdluxx-extension-v${VERSION}-chrome.zip
-          mv .output/firefox-mv2.zip ./gdluxx-extension-v${VERSION}-firefox.zip
-
       - name: Upload Chrome zip to release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: v${{ steps.release-version.outputs.version }}
-          files: ./gdluxx-extension-v${{ steps.release-version.outputs.version }}-chrome.zip
+          files: .output/gdluxx-extension-${{ steps.release-version.outputs.version }}-chrome.zip
         env:
           GITHUB_TOKEN: ${{ secrets.BOT_GH_TOKEN }}
 
@@ -89,6 +83,6 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           tag_name: v${{ steps.release-version.outputs.version }}
-          files: ./gdluxx-extension-v${{ steps.release-version.outputs.version }}-firefox.zip
+          files: .output/gdluxx-extension-${{ steps.release-version.outputs.version }}-firefox.zip
         env:
           GITHUB_TOKEN: ${{ secrets.BOT_GH_TOKEN }}
