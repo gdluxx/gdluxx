@@ -15,11 +15,13 @@ import { logger } from '$lib/shared/logger';
 export interface ClientJob {
   id: string;
   url: string;
-  status: 'running' | 'completed' | 'error';
+  status: 'running' | 'success' | 'no_action' | 'error';
   output: JobOutput[];
   startTime: number;
   endTime?: number;
   exitCode?: number;
+  downloadCount: number;
+  skipCount: number;
   isVisible: boolean;
   eventSource?: EventSource;
 }
@@ -45,6 +47,24 @@ const visibleJobs = $derived(Object.values(jobs).filter(job => job.isVisible));
 const jobCount = $derived(Object.keys(jobs).length);
 const runningJobCount = $derived(
   Object.values(jobs).filter(job => job.status === 'running').length
+);
+
+const successJobCount = $derived(
+  Object.values(jobs).filter(job => job.status === 'success').length
+);
+
+const noActionJobCount = $derived(
+  Object.values(jobs).filter(job => job.status === 'no_action').length
+);
+
+const errorJobCount = $derived(Object.values(jobs).filter(job => job.status === 'error').length);
+
+const totalDownloads = $derived(
+  Object.values(jobs).reduce((sum, job) => sum + (job.downloadCount ?? 0), 0)
+);
+
+const totalSkips = $derived(
+  Object.values(jobs).reduce((sum, job) => sum + (job.skipCount ?? 0), 0)
 );
 
 async function loadJobs(): Promise<void> {
@@ -117,6 +137,8 @@ async function startJob(
             status: 'running',
             output: [],
             startTime: Date.now(),
+            downloadCount: 0,
+            skipCount: 0,
             isVisible: !firstJobMadeVisible,
             eventSource: undefined,
           };
@@ -196,6 +218,21 @@ function connectToJob(jobId: string): void {
     });
   });
 
+  // Listening for  count updates
+  eventSource.addEventListener('counts', (event: MessageEvent) => {
+    try {
+      const countData = JSON.parse(event.data);
+      const job = jobs[jobId];
+      if (job && countData.downloadCount !== undefined && countData.skipCount !== undefined) {
+        job.downloadCount = countData.downloadCount;
+        job.skipCount = countData.skipCount;
+        jobs = { ...jobs };
+      }
+    } catch (error) {
+      logger.warn(`Failed to parse count update for job ${jobId}:`, error);
+    }
+  });
+
   eventSource.onmessage = (event: MessageEvent) => {
     addOutput(jobId, 'stdout', event.data);
   };
@@ -209,7 +246,18 @@ function connectToJob(jobId: string): void {
         const parsedData = JSON.parse(event.data);
 
         if (typeof parsedData.code === 'number') {
-          updateJobStatus(jobId, parsedData.code === 0 ? 'completed' : 'error', parsedData.code);
+          // Fall back to exit code logic if server-determined status isn't available
+          const status = parsedData.status ?? (parsedData.code === 0 ? 'success' : 'error');
+          updateJobStatus(jobId, status, parsedData.code);
+
+          const job = jobs[jobId];
+          if (job && parsedData.downloadCount !== undefined) {
+            job.downloadCount = parsedData.downloadCount;
+          }
+          if (job && parsedData.skipCount !== undefined) {
+            job.skipCount = parsedData.skipCount;
+          }
+
           serverInitiatedProperClose = true;
         } else {
           logger.warn(
@@ -279,7 +327,7 @@ function updateJobStatus(jobId: string, status: ClientJob['status'], exitCode?: 
   if (exitCode !== undefined) {
     job.exitCode = exitCode;
   }
-  if (status === 'completed' || status === 'error') {
+  if (status === 'success' || status === 'no_action' || status === 'error') {
     job.endTime = Date.now();
     if (job.eventSource) {
       if (job.eventSource.url.endsWith(jobId)) {
@@ -307,6 +355,8 @@ async function fetchJobDetails(jobId: string) {
         existingJob.output = data.job.output;
         existingJob.endTime = data.job.endTime;
         existingJob.exitCode = data.job.exitCode;
+        existingJob.downloadCount = data.job.downloadCount ?? 0;
+        existingJob.skipCount = data.job.skipCount ?? 0;
 
         jobs = { ...jobs };
       }
@@ -438,5 +488,22 @@ export const jobStore = {
   },
   get runningJobCount() {
     return runningJobCount;
+  },
+
+  // Enhanced status tracking getters
+  get successJobCount() {
+    return successJobCount;
+  },
+  get noActionJobCount() {
+    return noActionJobCount;
+  },
+  get errorJobCount() {
+    return errorJobCount;
+  },
+  get totalDownloads() {
+    return totalDownloads;
+  },
+  get totalSkips() {
+    return totalSkips;
   },
 };

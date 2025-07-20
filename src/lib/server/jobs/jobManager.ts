@@ -28,11 +28,13 @@ export interface JobOutput {
 export interface Job {
   id: string;
   url: string;
-  status: 'running' | 'completed' | 'error';
+  status: 'running' | 'success' | 'no_action' | 'error';
   output: JobOutput[];
   startTime: number;
   endTime?: number;
   exitCode?: number;
+  downloadCount: number;
+  skipCount: number;
   process?: IPty;
   subscribers: Set<ReadableStreamDefaultController<Uint8Array>>;
 }
@@ -41,6 +43,23 @@ class JobManager {
   private jobs = new Map<string, Job>();
   private readonly MAX_OUTPUT_LINES: number = 10000;
   private readonly initializationPromise: Promise<void>;
+
+  private parseGalleryDlOutput(data: string, job: Job): void {
+    const lines: string[] = data.split('\n');
+
+    for (const line of lines) {
+      // Remove ANSI escape codes
+      // eslint-disable-next-line no-control-regex
+      const cleanLine = line.replace(/\x1b\[[0-9;]*m/g, '').trim();
+
+      if (cleanLine.startsWith('✔ ')) {
+        job.downloadCount++;
+      }
+      if (cleanLine.startsWith('# ')) {
+        job.skipCount++;
+      }
+    }
+  }
 
   constructor() {
     this.initializationPromise = this.loadJobsInternal()
@@ -66,6 +85,8 @@ class JobManager {
           startTime: dbJob.startTime,
           endTime: dbJob.endTime,
           exitCode: dbJob.exitCode,
+          downloadCount: dbJob.downloadCount,
+          skipCount: dbJob.skipCount,
           subscribers: new Set(),
         };
 
@@ -102,6 +123,8 @@ class JobManager {
       status: 'running',
       output: [],
       startTime,
+      downloadCount: 0,
+      skipCount: 0,
       subscribers: new Set(),
     };
 
@@ -110,6 +133,8 @@ class JobManager {
       url,
       status: 'running',
       startTime,
+      downloadCount: 0,
+      skipCount: 0,
     });
 
     this.jobs.set(id, job);
@@ -150,6 +175,41 @@ class JobManager {
       job.output = job.output.slice(-this.MAX_OUTPUT_LINES);
     }
 
+    // parse output for download and skip counts
+    if (type === 'stdout' || type === 'stderr') {
+      const previousDownloadCount = job.downloadCount;
+      const previousSkipCount = job.skipCount;
+
+      this.parseGalleryDlOutput(data, job);
+
+      try {
+        await dbUpdateJob(id, {
+          downloadCount: job.downloadCount,
+          skipCount: job.skipCount,
+        });
+      } catch (error) {
+        logger.warn(`Failed to update job counts in database for job ${id}:`, error);
+      }
+
+      // Send count updates to subscribers if counts updated
+      if (job.downloadCount !== previousDownloadCount || job.skipCount !== previousSkipCount) {
+        const encoder = new TextEncoder();
+        const countUpdateData = `event: counts\ndata: ${JSON.stringify({
+          downloadCount: job.downloadCount,
+          skipCount: job.skipCount,
+        })}\n\n`;
+
+        for (const controller of job.subscribers) {
+          try {
+            controller.enqueue(encoder.encode(countUpdateData));
+          } catch (error) {
+            logger.warn(`Error sending count update to subscriber for job ${id}:`, error);
+            job.subscribers.delete(controller);
+          }
+        }
+      }
+    }
+
     try {
       await dbAddJobOutput(id, output);
     } catch (error) {
@@ -172,15 +232,27 @@ class JobManager {
     await this.initializationPromise;
     const job: Job | undefined = this.jobs.get(id);
     if (job) {
-      job.status = exitCode === 0 ? 'completed' : 'error';
       job.endTime = Date.now();
       job.exitCode = exitCode;
+
+      // Get status based on exit code and download counts
+      if (exitCode === 0) {
+        if (job.downloadCount > 0) {
+          job.status = 'success';
+        } else {
+          job.status = 'no_action';
+        }
+      } else {
+        job.status = 'error';
+      }
 
       try {
         await dbUpdateJob(id, {
           status: job.status,
           endTime: job.endTime,
           exitCode: job.exitCode,
+          downloadCount: job.downloadCount,
+          skipCount: job.skipCount,
         });
       } catch (error) {
         logger.warn(`Failed to update job completion in database for job ${id}:`, error);
@@ -191,7 +263,14 @@ class JobManager {
         try {
           const encoder = new TextEncoder();
           controller.enqueue(
-            encoder.encode(`event: close\ndata: ${JSON.stringify({ code: exitCode })}\n\n`)
+            encoder.encode(
+              `event: close\ndata: ${JSON.stringify({
+                code: exitCode,
+                status: job.status,
+                downloadCount: job.downloadCount,
+                skipCount: job.skipCount,
+              })}\n\n`
+            )
           );
           controller.close();
         } catch (error) {
@@ -225,7 +304,14 @@ class JobManager {
       if (job.status !== 'running' && job.exitCode !== undefined) {
         try {
           controller.enqueue(
-            encoder.encode(`event: close\ndata: ${JSON.stringify({ code: job.exitCode })}\n\n`)
+            encoder.encode(
+              `event: close\ndata: ${JSON.stringify({
+                code: job.exitCode,
+                status: job.status,
+                downloadCount: job.downloadCount,
+                skipCount: job.skipCount,
+              })}\n\n`
+            )
           );
           controller.close();
         } catch (error) {

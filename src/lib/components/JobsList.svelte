@@ -18,6 +18,13 @@
   import { Icon } from '$lib/components/index';
   import type { Job } from '$lib/server/jobs/jobManager';
 
+  const tooltip = $state({
+    visible: false,
+    x: 0,
+    y: 0,
+    text: '',
+  });
+
   interface Props {
     variant?: 'modal' | 'page';
     isOpen?: boolean;
@@ -31,17 +38,42 @@
   let deleteAction = $state<'single' | 'all' | 'selected'>('all');
   let jobToDelete = $state<string | null>(null);
   let sortNewestFirst = $state(true);
+  let sortBy = $state<'time' | 'downloads'>('time');
+  let statusFilter = $state<'all' | 'running' | 'success' | 'no_action' | 'error'>('all');
   let selectedJobs = $state<Set<string>>(new Set());
 
   const allJobs = $derived(jobStore.jobs);
+  const filteredJobs = $derived(
+    statusFilter === 'all' ? allJobs : allJobs.filter(job => job.status === statusFilter)
+  );
   const jobs = $derived(
-    [...allJobs].sort((a, b) => {
-      return sortNewestFirst ? b.startTime - a.startTime : a.startTime - b.startTime;
+    [...filteredJobs].sort((a, b) => {
+      if (sortBy === 'downloads') {
+        const aDownloads = a.downloadCount ?? 0;
+        const bDownloads = b.downloadCount ?? 0;
+        return sortNewestFirst ? bDownloads - aDownloads : aDownloads - bDownloads;
+      } else {
+        return sortNewestFirst ? b.startTime - a.startTime : a.startTime - b.startTime;
+      }
     })
   );
   const selectedCount = $derived(selectedJobs.size);
   const hasSelection = $derived(selectedCount > 0);
   const allSelected = $derived(selectedCount === jobs.length && jobs.length > 0);
+
+  // Aggregate statistics
+  const aggregateStats = $derived(() => {
+    const stats = {
+      total: allJobs.length,
+      running: allJobs.filter(job => job.status === 'running').length,
+      success: allJobs.filter(job => job.status === 'success').length,
+      noAction: allJobs.filter(job => job.status === 'no_action').length,
+      error: allJobs.filter(job => job.status === 'error').length,
+      totalDownloads: allJobs.reduce((sum, job) => sum + (job.downloadCount ?? 0), 0),
+      totalSkips: allJobs.reduce((sum, job) => sum + (job.skipCount ?? 0), 0),
+    };
+    return stats;
+  });
 
   function handleBackdropClick(event: MouseEvent) {
     if (event.target === event.currentTarget && variant === 'modal' && onClose) {
@@ -52,11 +84,13 @@
   function getStatusColor(status: ClientJob['status']): string {
     switch (status) {
       case 'running':
-        return 'bg-blue-500';
-      case 'completed':
-        return 'bg-green-500';
+        return 'bg-blue-500 shadow-lg animate-pulse';
+      case 'success':
+        return 'bg-green-500 shadow-lg';
+      case 'no_action':
+        return 'bg-yellow-500 shadow-lg';
       case 'error':
-        return 'bg-red-500';
+        return 'bg-red-500 shadow-lg';
       default:
         return 'bg-gray-500';
     }
@@ -66,13 +100,42 @@
     switch (status) {
       case 'running':
         return 'Running';
-      case 'completed':
-        return 'Completed';
+      case 'success':
+        return 'Success';
+      case 'no_action':
+        return 'No Action';
       case 'error':
         return 'Error';
       default:
+        console.warn(`Unknown job status encountered: "${status}". This may indicate a data migration issue.`);
         return 'Unknown';
     }
+  }
+
+  function getStatusTooltip(job: ClientJob): string {
+    switch (job.status) {
+      case 'running':
+        return 'Job is currently downloading...';
+      case 'success':
+        return `Completed successfully with ${job.downloadCount} file(s) downloaded${job.skipCount > 0 ? ` and ${job.skipCount} file(s) skipped` : ''}`;
+      case 'no_action':
+        return `Completed with no new downloads${job.skipCount > 0 ? ` (${job.skipCount} file(s) already exist)` : ''}`;
+      case 'error':
+        return `Failed with exit code ${job.exitCode ?? 'unknown'}`;
+      default:
+        return 'Status unknown';
+    }
+  }
+
+  function showTooltip(event: MouseEvent, text: string) {
+    tooltip.text = text;
+    tooltip.x = event.clientX;
+    tooltip.y = event.clientY;
+    tooltip.visible = true;
+  }
+
+  function hideTooltip() {
+    tooltip.visible = false;
   }
 
   function formatDuration(startTime: number, endTime?: number): string {
@@ -114,6 +177,17 @@
 
   function toggleSort() {
     sortNewestFirst = !sortNewestFirst;
+  }
+
+  function setSortBy(newSortBy: 'time' | 'downloads') {
+    sortBy = newSortBy;
+  }
+
+  function setStatusFilter(newFilter: 'all' | 'running' | 'success' | 'no_action' | 'error') {
+    statusFilter = newFilter;
+    // Clear selection when changing filter
+    selectedJobs.clear();
+    selectedJobs = new Set(selectedJobs);
   }
 
   function toggleJobSelection(jobId: string) {
@@ -204,70 +278,128 @@
       >
         <!-- Header -->
         <div
-          class="cursor-default flex items-center justify-between border-b border-secondary-200 px-6 py-4 dark:border-secondary-700"
+          class="cursor-default border-b border-secondary-200 px-6 py-4 dark:border-secondary-700"
         >
-          <h2 class="text-xl font-semibold text-secondary-900 dark:text-secondary-100">
-            Jobs: {jobs.length}
-            {#if hasSelection}
-              <span class="text-sm text-secondary-600 dark:text-secondary-400">
-                ({selectedCount} selected)
-              </span>
-            {/if}
-          </h2>
-          <div class="flex items-center gap-2">
-            {#if jobs.length > 0}
-              <Button
-                onclick={toggleSort}
-                aria-label={`Sort ${sortNewestFirst ? 'oldest' : 'newest'} first`}
-                variant="outline-primary"
-                size="sm"
-                title={`Sort ${sortNewestFirst ? 'oldest' : 'newest'} first`}
-              >
-                <Icon iconName="sort" size={16} class={sortNewestFirst ? '' : 'rotate-180'} />
-              </Button>
-
-              <Button
-                onclick={toggleSelectAll}
-                aria-label={allSelected ? 'Deselect all' : 'Select all'}
-                variant="outline-primary"
-                size="sm"
-              >
-                {allSelected ? 'Deselect All' : 'Select All'}
-              </Button>
-
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="text-xl font-semibold text-secondary-900 dark:text-secondary-100">
+              Jobs: {jobs.length} / {aggregateStats().total}
               {#if hasSelection}
-                <Button
-                  name="Delete Selected Jobs"
-                  onclick={deleteSelectedJobs}
-                  aria-label="Delete Selected Jobs"
-                  variant="danger"
-                  size="sm"
-                >
-                  Delete Selected ({selectedCount})
-                </Button>
-              {:else}
-                <Button
-                  name="Delete All Jobs"
-                  onclick={deleteAllJobs}
-                  aria-label="Delete All Jobs"
-                  variant="danger"
-                  size="sm"
-                >
-                  Delete All
-                </Button>
+                <span class="text-sm text-secondary-600 dark:text-secondary-400">
+                  ({selectedCount} selected)
+                </span>
               {/if}
-            {/if}
+            </h2>
+          </div>
 
-            <!-- Close button for modal -->
-            <Button
-              variant="primary"
-              onclick={onClose}
-              aria-label="Close Job List"
-              title="Minimize"
-              size="sm"
+          <!-- Aggregate Statistics -->
+          <div class="flex items-center gap-4 text-sm mb-3">
+            <span class="text-blue-600 dark:text-blue-400"
+              >🔵 {aggregateStats().running} Running</span
             >
-              <Icon iconName="minimize" size={20} />
-            </Button>
+            <span class="text-green-600 dark:text-green-400"
+              >🟢 {aggregateStats().success} Success</span
+            >
+            <span class="text-yellow-600 dark:text-yellow-400"
+              >🟡 {aggregateStats().noAction} No Action</span
+            >
+            <span class="text-red-600 dark:text-red-400">🔴 {aggregateStats().error} Error</span>
+            {#if aggregateStats().totalDownloads > 0}
+              <span class="text-green-600 dark:text-green-400"
+                >↓ {aggregateStats().totalDownloads} Downloads</span
+              >
+            {/if}
+            {#if aggregateStats().totalSkips > 0}
+              <span class="text-yellow-600 dark:text-yellow-400"
+                >⊘ {aggregateStats().totalSkips} Skips</span
+              >
+            {/if}
+          </div>
+
+          <!-- Controls -->
+          <div class="flex items-center justify-between">
+            <!-- Status Filter -->
+            <div class="flex items-center gap-2">
+              <span class="text-sm text-secondary-600 dark:text-secondary-400">Filter:</span>
+              <select
+                bind:value={statusFilter}
+                onchange={() => setStatusFilter(statusFilter)}
+                class="text-sm bg-white dark:bg-secondary-800 border border-secondary-300 dark:border-secondary-600 rounded px-2 py-1"
+              >
+                <option value="all">All</option>
+                <option value="running">Running ({aggregateStats().running})</option>
+                <option value="success">Success ({aggregateStats().success})</option>
+                <option value="no_action">No Action ({aggregateStats().noAction})</option>
+                <option value="error">Error ({aggregateStats().error})</option>
+              </select>
+            </div>
+            <!-- Sort Options -->
+            <div class="flex items-center gap-2">
+              <span class="text-sm text-secondary-600 dark:text-secondary-400">Sort by:</span>
+              <select
+                bind:value={sortBy}
+                onchange={() => setSortBy(sortBy)}
+                class="text-sm bg-white dark:bg-secondary-800 border border-secondary-300 dark:border-secondary-600 rounded px-2 py-1"
+              >
+                <option value="time">Time</option>
+                <option value="downloads">Downloads</option>
+              </select>
+            </div>
+
+            <div class="flex items-center gap-2">
+              {#if jobs.length > 0}
+                <Button
+                  onclick={toggleSort}
+                  aria-label={`Sort ${sortNewestFirst ? 'oldest' : 'newest'} first`}
+                  variant="outline-primary"
+                  size="sm"
+                  title={`Sort ${sortNewestFirst ? 'oldest' : 'newest'} first`}
+                >
+                  <Icon iconName="sort" size={16} class={sortNewestFirst ? '' : 'rotate-180'} />
+                </Button>
+
+                <Button
+                  onclick={toggleSelectAll}
+                  aria-label={allSelected ? 'Deselect all' : 'Select all'}
+                  variant="outline-primary"
+                  size="sm"
+                >
+                  {allSelected ? 'Deselect All' : 'Select All'}
+                </Button>
+
+                {#if hasSelection}
+                  <Button
+                    name="Delete Selected Jobs"
+                    onclick={deleteSelectedJobs}
+                    aria-label="Delete Selected Jobs"
+                    variant="danger"
+                    size="sm"
+                  >
+                    Delete Selected ({selectedCount})
+                  </Button>
+                {:else}
+                  <Button
+                    name="Delete All Jobs"
+                    onclick={deleteAllJobs}
+                    aria-label="Delete All Jobs"
+                    variant="danger"
+                    size="sm"
+                  >
+                    Delete All
+                  </Button>
+                {/if}
+              {/if}
+
+              <!-- Close button for modal -->
+              <Button
+                variant="primary"
+                onclick={onClose}
+                aria-label="Close Job List"
+                title="Minimize"
+                size="sm"
+              >
+                <Icon iconName="minimize" size={20} />
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -298,12 +430,36 @@
                     >
                       <div class="flex-grow">
                         <div class="mb-1 flex items-center gap-2">
-                          <div class={`h-3 w-3 rounded-full ${getStatusColor(job.status)}`}></div>
+                          <div
+                            class={`h-3 w-3 rounded-full cursor-help transition-transform hover:scale-125 ${getStatusColor(job.status)}`}
+                            onmouseenter={e => showTooltip(e, getStatusTooltip(job))}
+                            onmouseleave={hideTooltip}
+                            title={getStatusTooltip(job)}
+                            role="tooltip"
+                            aria-label={getStatusTooltip(job)}
+                          ></div>
                           <span
                             class="text-sm font-medium text-secondary-900 dark:text-secondary-100"
                           >
                             {getStatusText(job.status)}
                           </span>
+
+                          <!-- Show download/skip counts for completed jobs -->
+                          {#if job.status === 'success' || job.status === 'no_action'}
+                            <span class="text-xs text-secondary-600 dark:text-secondary-400">
+                              {#if job.downloadCount > 0}
+                                <span class="text-green-600 dark:text-green-400">
+                                  ↓{job.downloadCount}
+                                </span>
+                              {/if}
+                              {#if job.skipCount > 0}
+                                <span class="text-yellow-600 dark:text-yellow-400">
+                                  ⊘{job.skipCount}
+                                </span>
+                              {/if}
+                            </span>
+                          {/if}
+
                           <span class="text-xs text-secondary-500 dark:text-secondary-400">
                             {formatDuration(job.startTime, job.endTime)}
                           </span>
@@ -340,60 +496,115 @@
     <!-- Page variant -->
     <div class={getContainerClass()}>
       <!-- Header -->
-      <div
-        class="cursor-default flex items-center justify-between border-b border-secondary-200 px-6 py-4 dark:border-secondary-700"
-      >
-        <h2 class="text-xl font-semibold text-secondary-900 dark:text-secondary-100">
-          Jobs: {jobs.length}
-          {#if hasSelection}
-            <span class="text-sm text-secondary-600 dark:text-secondary-400">
-              ({selectedCount} selected)
-            </span>
-          {/if}
-        </h2>
-        <div class="flex items-center gap-2">
-          {#if jobs.length > 0}
-            <Button
-              onclick={toggleSort}
-              aria-label={`Sort ${sortNewestFirst ? 'oldest' : 'newest'} first`}
-              variant="outline-primary"
-              size="sm"
-              title={`Sort ${sortNewestFirst ? 'oldest' : 'newest'} first`}
-            >
-              <Icon iconName="sort" size={20} class={sortNewestFirst ? '' : 'rotate-180'} />
-            </Button>
-
-            <Button
-              onclick={toggleSelectAll}
-              aria-label={allSelected ? 'Deselect all' : 'Select all'}
-              variant="outline-primary"
-              size="sm"
-            >
-              {allSelected ? 'Deselect All' : 'Select All'}
-            </Button>
-
+      <div class="cursor-default border-b border-secondary-200 px-6 py-4 dark:border-secondary-700">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="text-xl font-semibold text-secondary-900 dark:text-secondary-100">
+            Jobs: {jobs.length} / {aggregateStats().total}
             {#if hasSelection}
-              <Button
-                name="Delete Selected Jobs"
-                onclick={deleteSelectedJobs}
-                aria-label="Delete Selected Jobs"
-                variant="danger"
-                size="sm"
-              >
-                Delete Selected ({selectedCount})
-              </Button>
-            {:else}
-              <Button
-                name="Delete All Jobs"
-                onclick={deleteAllJobs}
-                aria-label="Delete All Jobs"
-                variant="danger"
-                size="sm"
-              >
-                Delete All
-              </Button>
+              <span class="text-sm text-secondary-600 dark:text-secondary-400">
+                ({selectedCount} selected)
+              </span>
             {/if}
+          </h2>
+        </div>
+
+        <!-- Aggregate Statistics -->
+        <div class="flex items-center gap-4 text-sm mb-3">
+          <span class="text-blue-600 dark:text-blue-400">🔵 {aggregateStats().running} Running</span
+          >
+          <span class="text-green-600 dark:text-green-400"
+            >🟢 {aggregateStats().success} Success</span
+          >
+          <span class="text-yellow-600 dark:text-yellow-400"
+            >🟡 {aggregateStats().noAction} No Action</span
+          >
+          <span class="text-red-600 dark:text-red-400">🔴 {aggregateStats().error} Error</span>
+          {#if aggregateStats().totalDownloads > 0}
+            <span class="text-green-600 dark:text-green-400"
+              >↓ {aggregateStats().totalDownloads} Downloads</span
+            >
           {/if}
+          {#if aggregateStats().totalSkips > 0}
+            <span class="text-yellow-600 dark:text-yellow-400"
+              >⊘ {aggregateStats().totalSkips} Skips</span
+            >
+          {/if}
+        </div>
+
+        <!-- Controls -->
+        <div class="flex items-center justify-between">
+          <!-- Status Filter -->
+          <div class="flex items-center gap-2">
+            <span class="text-sm text-secondary-600 dark:text-secondary-400">Filter:</span>
+            <select
+              bind:value={statusFilter}
+              onchange={() => setStatusFilter(statusFilter)}
+              class="text-sm bg-white dark:bg-secondary-800 border border-secondary-300 dark:border-secondary-600 rounded px-2 py-1"
+            >
+              <option value="all">All</option>
+              <option value="running">Running ({aggregateStats().running})</option>
+              <option value="success">Success ({aggregateStats().success})</option>
+              <option value="no_action">No Action ({aggregateStats().noAction})</option>
+              <option value="error">Error ({aggregateStats().error})</option>
+            </select>
+          </div>
+          <!-- Sort Options -->
+          <div class="flex items-center gap-2">
+            <span class="text-sm text-secondary-600 dark:text-secondary-400">Sort by:</span>
+            <select
+              bind:value={sortBy}
+              onchange={() => setSortBy(sortBy)}
+              class="text-sm bg-white dark:bg-secondary-800 border border-secondary-300 dark:border-secondary-600 rounded px-2 py-1"
+            >
+              <option value="time">Time</option>
+              <option value="downloads">Downloads</option>
+            </select>
+          </div>
+
+          <div class="flex items-center gap-2">
+            {#if jobs.length > 0}
+              <Button
+                onclick={toggleSort}
+                aria-label={`Sort ${sortNewestFirst ? 'oldest' : 'newest'} first`}
+                variant="outline-primary"
+                size="sm"
+                title={`Sort ${sortNewestFirst ? 'oldest' : 'newest'} first`}
+              >
+                <Icon iconName="sort" size={20} class={sortNewestFirst ? '' : 'rotate-180'} />
+              </Button>
+
+              <Button
+                onclick={toggleSelectAll}
+                aria-label={allSelected ? 'Deselect all' : 'Select all'}
+                variant="outline-primary"
+                size="sm"
+              >
+                {allSelected ? 'Deselect All' : 'Select All'}
+              </Button>
+
+              {#if hasSelection}
+                <Button
+                  name="Delete Selected Jobs"
+                  onclick={deleteSelectedJobs}
+                  aria-label="Delete Selected Jobs"
+                  variant="danger"
+                  size="sm"
+                >
+                  Delete Selected ({selectedCount})
+                </Button>
+              {:else}
+                <Button
+                  name="Delete All Jobs"
+                  onclick={deleteAllJobs}
+                  aria-label="Delete All Jobs"
+                  variant="danger"
+                  size="sm"
+                >
+                  Delete All
+                </Button>
+              {/if}
+            {/if}
+          </div>
         </div>
       </div>
 
@@ -424,12 +635,36 @@
                   >
                     <div class="flex-grow">
                       <div class="mb-1 flex items-center gap-2">
-                        <div class={`h-3 w-3 rounded-full ${getStatusColor(job.status)}`}></div>
+                        <div
+                          class={`h-3 w-3 rounded-full cursor-help transition-transform hover:scale-125 ${getStatusColor(job.status)}`}
+                          onmouseenter={e => showTooltip(e, getStatusTooltip(job))}
+                          onmouseleave={hideTooltip}
+                          title={getStatusTooltip(job)}
+                          role="tooltip"
+                          aria-label={getStatusTooltip(job)}
+                        ></div>
                         <span
                           class="text-sm font-medium text-secondary-900 dark:text-secondary-100"
                         >
                           {getStatusText(job.status)}
                         </span>
+
+                        <!-- Show download/skip counts for completed jobs -->
+                        {#if job.status === 'success' || job.status === 'no_action'}
+                          <span class="text-xs text-secondary-600 dark:text-secondary-400">
+                            {#if job.downloadCount > 0}
+                              <span class="text-green-600 dark:text-green-400">
+                                ↓{job.downloadCount}
+                              </span>
+                            {/if}
+                            {#if job.skipCount > 0}
+                              <span class="text-yellow-600 dark:text-yellow-400">
+                                ⊘{job.skipCount}
+                              </span>
+                            {/if}
+                          </span>
+                        {/if}
+
                         <span class="text-xs text-secondary-500 dark:text-secondary-400">
                           {formatDuration(job.startTime, job.endTime)}
                         </span>
@@ -462,6 +697,18 @@
       </div>
     </div>
   {/if}
+{/if}
+
+<!-- Tooltip -->
+{#if tooltip.visible}
+  <div
+    class="fixed z-50 px-2 py-1 text-xs text-white bg-black rounded shadow-lg pointer-events-none whitespace-nowrap"
+    style:left="{tooltip.x + 10}px"
+    style:top="{tooltip.y - 30}px"
+    transition:fade={{ duration: 150 }}
+  >
+    {tooltip.text}
+  </div>
 {/if}
 
 <ConfirmModal
