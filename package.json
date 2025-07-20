@@ -1,8 +1,8 @@
 {
-  "name": "wxt-starter",
-  "description": "manifest.json description",
+  "name": "gdluxx-extension",
+  "description": "companion browser extension for gdluxx, a self-hosted browser GUI for gallery-dl",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "compile": "tsc --noEmit",
@@ -18,10 +18,12 @@
     "dev:firefox": "wxt -b firefox",
     "build:firefox": "wxt build -b firefox",
     "zip:firefox": "wxt zip -b firefox",
-    "postinstall": "wxt prepare"
+    "postinstall": "wxt prepare",
+    "release": "release-it"
   },
   "devDependencies": {
     "@eslint/js": "^9.28.0",
+    "@release-it/conventional-changelog": "^10.0.1",
     "@tailwindcss/vite": "^4.1.8",
     "@types/chrome": "^0.0.326",
     "@types/webextension-polyfill": "^0.12.3",
@@ -30,6 +32,7 @@
     "eslint-plugin-prettier": "^5.4.1",
     "prettier": "^3.5.3",
     "prettier-plugin-tailwindcss": "^0.6.12",
+    "release-it": "^19.0.4",
     "tailwindcss": "^4.1.8",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.33.1",

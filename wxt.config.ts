@@ -4,11 +4,15 @@ import tailwindcss from '@tailwindcss/vite';
 export default defineConfig({
   vite: () => ({
     plugins: [tailwindcss()],
+    build: {
+      minify: false,
+      sourcemap: false,
+    },
   }),
   manifest: {
-    permissions: ['activeTab', 'storage'],
-    name: 'Tab URL Sender',
-    description: 'Send current tab URL to a custom endpoint with API key',
+    permissions: ['activeTab', 'storage', 'contextMenus', 'notifications'],
+    name: 'gdluxx-extension',
+    description: 'companion browser extension for gdluxx, a self-hosted browser GUI for gallery-dl',
     browser_specific_settings: {
       gecko: {
         id: 'gdluxx@gdluxx.app',
