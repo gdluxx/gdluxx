@@ -17,19 +17,12 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.BOT_GH_TOKEN }}
 
-      - name: Install pnpm
+      - name: Setup
         uses: pnpm/action-setup@v4
         with:
-          version: 9
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install
+          version: latest
+          run_install: |
+            - args: [--frozen-lockfile]
 
       - name: Run build checks
         run: |
