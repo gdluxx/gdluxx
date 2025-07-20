@@ -19,18 +19,13 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
-    if: |
-      github.event_name == 'workflow_dispatch' || 
-      (github.actor != 'github-actions[bot]' && 
-       !contains(github.event.head_commit.message, 'chore: release v') &&
-       !contains(github.event.head_commit.message, 'release v'))
     
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.BOT_GH_TOKEN }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -51,10 +46,17 @@ jobs:
           pnpm compile
           pnpm lint
 
+      - name: Import GPG key
+        uses: crazy-max/ghaction-import-gpg@v6
+        with:
+          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+          git_user_signingkey: true
+          git_commit_gpgsign: true
+
       - name: Setup Git
         run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
+          git config user.name "gdluxx-bot"
+          git config user.email "218500807+gdluxx-bot@users.noreply.github.com"
 
       - name: Install release-it and dependencies
         run: pnpm add -D release-it @release-it/conventional-changelog
@@ -70,7 +72,7 @@ jobs:
 
       - name: Run release-it
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.BOT_GH_TOKEN }}
         run: pnpm release-it ${{ steps.release-type.outputs.type }} --ci
 
       - name: Get release version
@@ -101,7 +103,7 @@ jobs:
           tag_name: v${{ steps.release-version.outputs.version }}
           files: ./gdluxx-extension-v${{ steps.release-version.outputs.version }}-chrome.zip
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.BOT_GH_TOKEN }}
 
       - name: Upload Firefox zip to release
         uses: softprops/action-gh-release@v1
@@ -109,4 +111,4 @@ jobs:
           tag_name: v${{ steps.release-version.outputs.version }}
           files: ./gdluxx-extension-v${{ steps.release-version.outputs.version }}-firefox.zip
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.BOT_GH_TOKEN }}
