@@ -41,11 +41,15 @@
   let sortBy = $state<'time' | 'downloads'>('time');
   let statusFilter = $state<'all' | 'running' | 'success' | 'no_action' | 'error'>('all');
   let selectedJobs = $state<Set<string>>(new Set());
+  let activeFilters = $state<Set<string>>(new Set(['all']));
 
   const allJobs = $derived(jobStore.jobs);
   const filteredJobs = $derived(
-    statusFilter === 'all' ? allJobs : allJobs.filter(job => job.status === statusFilter)
+    activeFilters.has('all') || activeFilters.size === 0
+      ? allJobs
+      : allJobs.filter(job => activeFilters.has(job.status))
   );
+
   const jobs = $derived(
     [...filteredJobs].sort((a, b) => {
       if (sortBy === 'downloads') {
@@ -57,6 +61,27 @@
       }
     })
   );
+
+  function toggleFilter(filterType: string) {
+    if (filterType === 'all') {
+      activeFilters.clear();
+      activeFilters.add('all');
+    } else {
+      activeFilters.delete('all');
+
+      if (activeFilters.has(filterType)) {
+        activeFilters.delete(filterType);
+        if (activeFilters.size === 0) {
+          activeFilters.add('all');
+        }
+      } else {
+        activeFilters.add(filterType);
+      }
+    }
+    activeFilters = new Set(activeFilters);
+    selectedJobs.clear();
+  }
+
   const selectedCount = $derived(selectedJobs.size);
   const hasSelection = $derived(selectedCount > 0);
   const allSelected = $derived(selectedCount === jobs.length && jobs.length > 0);
@@ -510,11 +535,16 @@
           </h2>
         </div>
 
-        <!-- Aggregate Statistics -->
+        <!-- Statistics -->
         <div class="grid grid-cols-3 md:grid-cols-6 gap-3 mb-4">
           <!-- running card -->
-          <div
-            class="bg-secondary-50 dark:bg-secondary-900 rounded-sm border border-secondary-200 dark:border-secondary-700 px-3 py-1.5"
+          <button
+            onclick={() => toggleFilter('running')}
+            class={`bg-secondary-50 dark:bg-secondary-900 rounded-sm border px-3 py-1.5 cursor-pointer ${
+              activeFilters.has('running')
+                ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30'
+                : 'border-secondary-200 dark:border-secondary-700 hover:border-secondary-300'
+            }`}
           >
             <div class="flex items-center gap-2 justify-center">
               <div class="w-2 h-2 rounded-full bg-blue-500"></div>
@@ -527,10 +557,16 @@
             >
               {aggregateStats().running}
             </div>
-          </div>
+          </button>
+
           <!-- success card -->
-          <div
-            class="bg-secondary-50 dark:bg-secondary-900 rounded-sm border border-secondary-200 dark:border-secondary-700 px-3 py-1.5"
+          <button
+            onclick={() => toggleFilter('success')}
+            class={`bg-secondary-50 dark:bg-secondary-900 rounded-sm border px-3 py-1.5 cursor-pointer ${
+              activeFilters.has('success')
+                ? 'border-green-500'
+                : 'border-secondary-200 dark:border-secondary-700 hover:border-secondary-300'
+            }`}
           >
             <div class="flex items-center gap-2 justify-center">
               <div class="w-2 h-2 rounded-full bg-green-500"></div>
@@ -543,10 +579,16 @@
             >
               {aggregateStats().success}
             </div>
-          </div>
+          </button>
+
           <!-- skips card -->
-          <div
-            class="bg-secondary-50 dark:bg-secondary-900 rounded-sm border border-secondary-200 dark:border-secondary-700 px-3 py-1.5"
+          <button
+            onclick={() => toggleFilter('no_action')}
+            class={`bg-secondary-50 dark:bg-secondary-900 rounded-sm border px-3 py-1.5 cursor-pointer ${
+              activeFilters.has('no_action')
+                ? 'border-yellow-500'
+                : 'border-secondary-200 dark:border-secondary-700 hover:border-secondary-300'
+            }`}
           >
             <div class="flex items-center gap-2 justify-center">
               <div class="w-2 h-2 rounded-full bg-yellow-500"></div>
@@ -559,10 +601,16 @@
             >
               {aggregateStats().skips}
             </div>
-          </div>
+          </button>
+
           <!-- error card -->
-          <div
-            class="bg-secondary-50 dark:bg-secondary-900 rounded-sm border border-secondary-200 dark:border-secondary-700 px-3 py-1.5"
+          <button
+            onclick={() => toggleFilter('error')}
+            class={`bg-secondary-50 dark:bg-secondary-900 rounded-sm border px-3 py-1.5 cursor-pointer ${
+              activeFilters.has('error')
+                ? 'border-red-500 bg-red-50 dark:bg-red-900/30'
+                : 'border-secondary-200 dark:border-secondary-700 hover:border-secondary-300'
+            }`}
           >
             <div class="flex items-center gap-2 justify-center">
               <div class="w-2 h-2 rounded-full bg-red-500"></div>
@@ -575,7 +623,8 @@
             >
               {aggregateStats().error}
             </div>
-          </div>
+          </button>
+
           <!-- totalDownloads card -->
           <div
             class="bg-secondary-50 dark:bg-secondary-900 rounded-sm border border-secondary-200 dark:border-secondary-700 px-3 py-1.5"
@@ -592,9 +641,10 @@
               {aggregateStats().totalDownloads}
             </div>
           </div>
+
           <!-- totalSkips card -->
           <div
-            class="bg-secondary-50 dark:bg-secondary-900 rounded-sm border border-secondary-200 dark:border-secondary-700 px-3 py-1.5"
+            class="bg-secondary-50 dark:bg-secondary-900 rounded-sm border px-3 py-1.5 border-secondary-200 dark:border-secondary-700"
           >
             <div class="flex items-center gap-2 justify-center">
               <Icon iconName="no-circle" size={16} class="align-middle text-yellow-500" />
@@ -616,16 +666,6 @@
         >
           <div class="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
             <div class="flex items-center gap-2 flex-wrap">
-              <Button
-                onclick={toggleSort}
-                aria-label={`Sort ${sortNewestFirst ? 'oldest' : 'newest'} first`}
-                variant="outline-primary"
-                size="sm"
-                title={`Sort ${sortNewestFirst ? 'oldest' : 'newest'} first`}
-              >
-                <Icon iconName="sort" size={20} class={`${sortNewestFirst ? '' : 'rotate-180'}`} />
-                <!--{sortNewestFirst ? 'Newest' : 'Oldest'}-->
-              </Button>
               <Button variant="secondary" size="sm" onclick={toggleSelectAll}>
                 {allSelected ? 'Deselect All' : 'Select All'}
               </Button>
@@ -654,31 +694,33 @@
             </div>
 
             <div class="flex items-center gap-3">
-              <select
-                bind:value={statusFilter}
-                onchange={() => setStatusFilter(statusFilter)}
-                class="text-sm rounded-sm border dark:border-secondary-300 dark:bg-secondary-900
-                  px-2 py-1 dark:text-primary-100 dark:placeholder-secondary-500 transition-colors
-                  duration-200 border-secondary-700 bg-secondary-100 text-primary-900
-                  placeholder-secondary-500 cursor-pointer"
+              <Button
+                onclick={toggleSort}
+                aria-label={`Sort ${sortNewestFirst ? 'oldest' : 'newest'} first`}
+                variant="outline-primary"
+                size="sm"
+                title={`Sort ${sortNewestFirst ? 'descending' : 'ascending'}`}
               >
-                <option value="all">All Jobs</option>
-                <option value="running">Running ({aggregateStats().running})</option>
-                <option value="success">Success ({aggregateStats().success})</option>
-                <option value="no_action">Skips ({aggregateStats().skips})</option>
-                <option value="error">Error ({aggregateStats().error})</option>
-              </select>
-              <select
-                bind:value={sortBy}
-                onchange={() => setSortBy(sortBy)}
-                class="text-sm rounded-sm border dark:border-secondary-300 dark:bg-secondary-900
-                  px-2 py-1 dark:text-primary-100 dark:placeholder-secondary-500 transition-colors
-                  duration-200 border-secondary-700 bg-secondary-100 text-primary-900
-                  placeholder-secondary-500 cursor-pointer"
+                <Icon iconName="sort" size={20} class={`${sortNewestFirst ? '' : 'rotate-180'}`} />
+              </Button>
+              <Button
+                onclick={() => setSortBy('time')}
+                aria-label={`Sort ${sortNewestFirst ? 'oldest' : 'newest'} first`}
+                variant={`${sortBy === 'time' ? 'primary' : 'outline-primary'}`}
+                size="sm"
+                title={`Sort ${sortNewestFirst ? 'newest' : 'oldest'} first`}
               >
-                <option value="time">Sort by Date</option>
-                <option value="downloads">Sort by Downloads</option>
-              </select>
+                <Icon iconName="date" class="w-5 h-5" />
+              </Button>
+              <Button
+                onclick={() => setSortBy('downloads')}
+                aria-label={`Sort ${sortNewestFirst ? 'oldest' : 'newest'} first`}
+                variant={`${sortBy === 'downloads' ? 'primary' : 'outline-primary'}`}
+                size="sm"
+                title={`Sort ${sortNewestFirst ? 'most' : 'fewest'} downloads first`}
+              >
+                <Icon iconName="download-arrow" class="w-5 h-5" />
+              </Button>
             </div>
           </div>
         </div>
@@ -724,7 +766,6 @@
                           class={`h-3 w-3 rounded-full cursor-help transition-transform hover:scale-125 ${getStatusColor(job.status)}`}
                           onmouseenter={e => showTooltip(e, getStatusTooltip(job))}
                           onmouseleave={hideTooltip}
-                          title={getStatusTooltip(job)}
                           role="tooltip"
                           aria-label={getStatusTooltip(job)}
                         ></div>
@@ -736,7 +777,6 @@
                           {:else}
                             {getStatusText(job.status)}
                           {/if}
-
                         </span>
 
                         <!-- Show download/skip counts for completed jobs -->
@@ -744,12 +784,20 @@
                           <span class="text-xs text-secondary-600 dark:text-secondary-400">
                             {#if job.downloadCount > 0}
                               <span class="text-green-600 dark:text-green-400">
-                                <Icon iconName="download-arrow" size={18} class="inline -translate-y-px" />{job.downloadCount}
+                                <Icon
+                                  iconName="download-arrow"
+                                  size={18}
+                                  class="inline -translate-y-px"
+                                />{job.downloadCount}
                               </span>
                             {/if}
                             {#if job.skipCount > 0}
                               <span class="text-yellow-600 dark:text-yellow-400">
-                                <Icon iconName="no-circle" size={14} class="inline -translate-y-px" />{job.skipCount}
+                                <Icon
+                                  iconName="no-circle"
+                                  size={14}
+                                  class="inline -translate-y-px"
+                                />{job.skipCount}
                               </span>
                             {/if}
                           </span>

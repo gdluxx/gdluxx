@@ -39,7 +39,8 @@ export type IconName =
   | 'sort'
   | 'download-arrow'
   | 'no-circle'
-  | 'dot';
+  | 'dot'
+  | 'date';
 
 export interface IconConfig {
   name: IconName;
