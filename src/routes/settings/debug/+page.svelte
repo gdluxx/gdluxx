@@ -11,12 +11,20 @@
 <script lang="ts">
   import { LogSettings } from '$lib/components/settings';
   import { Icon } from '$lib/components';
-  import { PageLayout } from '$lib/components/ui';
+  import { PageLayout, Info } from '$lib/components/ui';
+  import { loggingStore } from './lib';
 </script>
 
 <PageLayout title="Debug Manager" description="Manage your log settings">
   {#snippet icon()}
     <Icon iconName="log" size={32} ariaLabel="logIcon" />
   {/snippet}
+
+  {#if loggingStore.error}
+    <Info variant="danger" title="Error" class="mb-4">
+      {loggingStore.error}
+    </Info>
+  {/if}
+
   <LogSettings />
 </PageLayout>
