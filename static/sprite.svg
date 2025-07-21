@@ -112,8 +112,8 @@
         <path fill="currentColor" d="M10 3.5a6.5 6.5 0 1 0 0 13a6.5 6.5 0 0 0 0-13M2.5 10a7.5 7.5 0 1 1 15 0a7.5 7.5 0 0 1-15 0"/><path d="M15.304 4.697a.5.5 0 0 1 0 .707l-9.9 9.9a.5.5 0 1 1-.707-.707l9.9-9.9a.5.5 0 0 1 .707 0"/>
     </symbol>
     <!-- icon-park-outline:dot -->
-    <symbol id="dot" viewBox="0 0 48 48">
-        <path fill="currentColor" stroke="currentColor" stroke-width="4" d="M24 33a9 9 0 1 0 0-18a9 9 0 0 0 0 18Z"/>
+    <symbol id="dot" viewBox="0 0 36 36">
+        <circle cx="18" cy="18" r="18" fill="currentColor"/>
     </symbol>
 
 </svg>
