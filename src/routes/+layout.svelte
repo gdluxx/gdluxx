@@ -12,7 +12,6 @@
   import '../app.css';
   import {
     Icon,
-    JobsList,
     JobOutputModal,
     JobsIndicator,
     Sidebar,
@@ -30,7 +29,6 @@
   const { children, data } = $props();
 
   const visibleJobs = $derived(jobStore.visibleJobs);
-  const isJobListModalOpen = $derived(jobStore.isJobListModalOpen);
 
   const isAuthRoute = $derived(page.route.id?.startsWith('/auth'));
   const user = $derived(data.user);
@@ -179,8 +177,6 @@
 <ToastContainer />
 
 {#if !isAuthRoute}
-  <JobsList variant="modal" isOpen={isJobListModalOpen} onClose={jobStore.hideJobListModal} />
-
   {#each visibleJobs as job (job.id)}
     <JobOutputModal {job} />
   {/each}
