@@ -47,7 +47,19 @@ export function createSettingsManager<T>(
         const dataObj = data as Record<string, unknown>;
         const columns = Object.keys(dataObj);
         const placeholders = columns.map(() => '?').join(', ');
-        const values = Object.values(dataObj);
+        
+        const values = Object.values(dataObj).map(value => {
+          if (typeof value === 'boolean') {
+            return value ? 1 : 0;
+          }
+          if (value === null || value === undefined) {
+            return null;
+          }
+          if (typeof value === 'object') {
+            return JSON.stringify(value);
+          }
+          return value;
+        });
 
         const stmt = db.prepare(`
 					INSERT OR REPLACE INTO ${tableName} (id, ${columns.join(', ')}, createdAt, updatedAt)
