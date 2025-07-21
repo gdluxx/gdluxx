@@ -103,6 +103,21 @@
     <symbol id="sort" viewBox="0 0 16 16">
         <path fill="currentColor" d="M3 1.5a.5.5 0 0 0-1 0v11.8L.85 12.15a.5.5 0 0 0-.707.707l2 2a.5.5 0 0 0 .707 0l2-2a.5.5 0 0 0-.707-.707l-1.15 1.15V1.5zM7.5 12a.5.5 0 0 0 0 1h3a.5.5 0 0 0 0-1zm0-3a.5.5 0 0 0 0 1h4a.5.5 0 0 0 0-1zm0-3a.5.5 0 0 0 0 1h6a.5.5 0 0 0 0-1zm8-2a.5.5 0 0 0 0-1h-8a.5.5 0 0 0 0 1z"/>
     </symbol>
-
+    <!-- material-symbols-light:download -->
+    <symbol id="download-arrow" viewBox="0 0 24 24">
+        <path fill="currentColor" d="m12 15.577l-3.539-3.538l.708-.72L11.5 13.65V5h1v8.65l2.33-2.33l.709.719zM6.616 19q-.691 0-1.153-.462T5 17.384v-2.423h1v2.423q0 .231.192.424t.423.192h10.77q.23 0 .423-.192t.192-.424v-2.423h1v2.423q0 .691-.462 1.153T17.384 19z"/>
+    </symbol>
+    <!-- pepicons-pencil:no-entry -->
+    <symbol id="no-circle" viewBox="0 0 20 20" fill-rule="evenodd" clip-rule="evenodd">
+        <path fill="currentColor" d="M10 3.5a6.5 6.5 0 1 0 0 13a6.5 6.5 0 0 0 0-13M2.5 10a7.5 7.5 0 1 1 15 0a7.5 7.5 0 0 1-15 0"/><path d="M15.304 4.697a.5.5 0 0 1 0 .707l-9.9 9.9a.5.5 0 1 1-.707-.707l9.9-9.9a.5.5 0 0 1 .707 0"/>
+    </symbol>
+    <!-- icon-park-outline:dot -->
+    <symbol id="dot" viewBox="0 0 36 36">
+        <circle cx="18" cy="18" r="18" fill="currentColor"/>
+    </symbol>
+    <!-- fontisto:date -->
+    <symbol id="date" viewBox="0 0 24 24">
+        <path fill="currentColor" d="M22 2.25h-3.25V.75a.75.75 0 0 0-1.5-.001V2.25h-4.5V.75a.75.75 0 0 0-1.5-.001V2.25h-4.5V.75a.75.75 0 0 0-1.5-.001V2.25H2a2 2 0 0 0-2 1.999v17.75a2 2 0 0 0 2 2h20a2 2 0 0 0 2-2V4.249a2 2 0 0 0-2-1.999M22.5 22a.5.5 0 0 1-.499.5H2a.5.5 0 0 1-.5-.5V4.25a.5.5 0 0 1 .5-.499h3.25v1.5a.75.75 0 0 0 1.5.001V3.751h4.5v1.5a.75.75 0 0 0 1.5.001V3.751h4.5v1.5a.75.75 0 0 0 1.5.001V3.751H22a.5.5 0 0 1 .499.499z"/><path fill="currentColor" d="M5.25 9h3v2.25h-3zm0 3.75h3V15h-3zm0 3.75h3v2.25h-3zm5.25 0h3v2.25h-3zm0-3.75h3V15h-3zm0-3.75h3v2.25h-3zm5.25 7.5h3v2.25h-3zm0-3.75h3V15h-3zm0-3.75h3v2.25h-3z"/>
+    </symbol>
 
 </svg>

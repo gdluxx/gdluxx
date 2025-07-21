@@ -36,7 +36,11 @@ export type IconName =
   | 'settings'
   | 'run'
   | 'setup'
-  | 'sort';
+  | 'sort'
+  | 'download-arrow'
+  | 'no-circle'
+  | 'dot'
+  | 'date';
 
 export interface IconConfig {
   name: IconName;

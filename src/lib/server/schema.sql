@@ -79,10 +79,12 @@ CREATE TABLE IF NOT EXISTS logging (
 CREATE TABLE IF NOT EXISTS jobs (
     id TEXT PRIMARY KEY,
     url TEXT NOT NULL,
-    status TEXT NOT NULL CHECK (status IN ('running', 'completed', 'error')),
+    status TEXT NOT NULL CHECK (status IN ('running', 'success', 'no_action', 'error')),
     startTime INTEGER NOT NULL,
     endTime INTEGER,
     exitCode INTEGER,
+    downloadCount INTEGER DEFAULT 0,
+    skipCount INTEGER DEFAULT 0,
     useUserConfigPath INTEGER NOT NULL DEFAULT 0,
     createdAt INTEGER NOT NULL,
     updatedAt INTEGER NOT NULL

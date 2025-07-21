@@ -126,12 +126,30 @@
     switch (status) {
       case 'running':
         return 'bg-blue-500';
-      case 'completed':
+      case 'success':
         return 'bg-green-500';
+      case 'no_action':
+        return 'bg-yellow-500';
       case 'error':
         return 'bg-red-500';
       default:
         return 'bg-gray-500';
+    }
+  }
+
+  function getStatusText(status: ClientJob['status']): string {
+    switch (status) {
+      case 'running':
+        return 'Running';
+      case 'success':
+        return 'Success';
+      case 'no_action':
+        return 'Skips';
+      case 'error':
+        return 'Error';
+      default:
+        console.warn(`Unknown job status encountered: "${status}". This may indicate a data migration issue.`);
+        return 'Unknown';
     }
   }
 
@@ -220,24 +238,41 @@
       class="px-4 sm:px-6 py-3 sm:py-4 border-b border-secondary-200 dark:border-secondary-700 flex items-center justify-between"
     >
       <div class="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-        <div class={`w-3 h-3 rounded-full flex-shrink-0 ${getStatusColor(job.status)}`}></div>
-        <h2
-          class="text-sm sm:text-lg font-semibold text-secondary-900 dark:text-secondary-100 truncate"
-          title={job.url}
-        >
-          {job.url}
+        <div class={`w-4 h-4 rounded-full flex-shrink-0 ${getStatusColor(job.status)}`}></div>
+        <h2 class="text-lg sm:text-xl font-semibold text-secondary-900 dark:text-secondary-100">
+          {getStatusText(job.status)}
         </h2>
+
+        <!-- stats section -->
+        {#if job.status === 'success' || job.status === 'no_action'}
+          <div class="flex items-center gap-4 text-sm">
+            {#if job.downloadCount > 0}
+              <span class="flex items-center gap-1 text-green-600 dark:text-green-400">
+                <Icon iconName="download-arrow" size={24} />
+                {job.downloadCount} downloaded
+              </span>
+            {/if}
+            {#if job.skipCount > 0}
+              <span class="flex items-center gap-1 text-yellow-600 dark:text-yellow-400">
+                <Icon iconName="no-circle" size={18} />
+                {job.skipCount} skipped
+              </span>
+            {/if}
+          </div>
+        {/if}
+      </div>
+
+      <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0">
         <button
           onclick={(event: MouseEvent) => copyToClipboard(job.url, event)}
           aria-label="Copy Job URL"
-          class="cursor-pointer p-1 sm:p-2 text-secondary-600 hover:text-secondary-800 dark:text-secondary-400 dark:hover:text-secondary-200 transition-all duration-200 hover:scale-110 flex-shrink-0"
+          class="cursor-pointer p-1 sm:p-2 text-secondary-600 hover:text-secondary-800 dark:text-secondary-400 dark:hover:text-secondary-200 transition-all duration-200 hover:scale-110"
           title="Copy Job URL"
         >
           <Icon iconName="copy-clipboard" size={20} />
         </button>
         <CopyTooltip x={tooltip.x} y={tooltip.y} visible={tooltip.visible} text={tooltip.text} />
-      </div>
-      <div class="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+
         <button
           onclick={handleMinimize}
           aria-label="Show Job List"
@@ -247,6 +282,15 @@
           <Icon iconName="close" size={20} />
         </button>
       </div>
+    </div>
+
+    <!-- Job URL section -->
+    <div
+      class="px-4 sm:px-6 py-2 border-b border-secondary-200 dark:border-secondary-700 bg-secondary-50 dark:bg-secondary-800"
+    >
+      <p class="text-sm text-secondary-700 dark:text-secondary-300 break-all" title={job.url}>
+        {job.url}
+      </p>
     </div>
 
     <!-- Container -->

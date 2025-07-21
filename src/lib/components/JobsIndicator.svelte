@@ -14,15 +14,10 @@
 
   const jobCount = $derived(jobStore.jobCount);
   const runningJobCount = $derived(jobStore.runningJobCount);
-
-  function handleClick() {
-    jobStore.showJobListModal();
-  }
 </script>
 
-<button
-  onclick={handleClick}
-  class="relative flex items-center justify-center p-2 text-secondary-900 dark:text-secondary-100 hover:bg-secondary-200 dark:hover:bg-secondary-800 rounded-md transition-colors cursor-pointer"
+<div
+  class="relative flex items-center justify-center p-2 text-secondary-900 dark:text-secondary-100 rounded-sm"
   aria-label="Show jobs list"
   title="Show jobs list"
 >
@@ -35,9 +30,9 @@
     </span>
   {:else}
     <span
-      class="absolute -top-0.25 -right-0.25 bg-primary-500 text-white text-xs rounded-full w-5.5 h-5.5 font-semibold flex items-center justify-center"
+      class="absolute -top-0.25 -right-0.25 bg-primary-500 text-white text-xs rounded-full w-5.5 h-5.5 font-semibold flex items-center justify-center cursor-default select-none"
     >
       {jobCount}
     </span>
   {/if}
-</button>
+</div>

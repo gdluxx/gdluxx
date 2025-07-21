@@ -19,5 +19,5 @@
   {#snippet icon()}
     <Icon iconName="job" size={32} />
   {/snippet}
-  <JobsList variant="page" initialJobs={data.success ? data.jobs : []} />
+  <JobsList initialJobs={data.success ? data.jobs : []} />
 </PageLayout>

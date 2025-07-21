@@ -23,10 +23,12 @@ function getCurrentTimestamp(): number {
 export interface DatabaseJob {
   id: string;
   url: string;
-  status: 'running' | 'completed' | 'error';
+  status: 'running' | 'success' | 'no_action' | 'error';
   startTime: number;
   endTime?: number;
   exitCode?: number;
+  downloadCount: number;
+  skipCount: number;
   outputs: JobOutput[];
 }
 
@@ -40,6 +42,8 @@ export async function readAllJobs(): Promise<DatabaseJob[]> {
       startTime: number;
       endTime?: number;
       exitCode?: number;
+      downloadCount: number;
+      skipCount: number;
     }>;
 
     const outputsStmt = db.prepare(`
@@ -70,15 +74,27 @@ export async function readAllJobs(): Promise<DatabaseJob[]> {
     }
 
     // Combine jobs with their outputs
-    return jobRows.map(job => ({
-      id: job.id,
-      url: job.url,
-      status: job.status as DatabaseJob['status'],
-      startTime: job.startTime,
-      endTime: job.endTime,
-      exitCode: job.exitCode,
-      outputs: outputsByJobId.get(job.id) || [],
-    }));
+    return jobRows.map(job => {
+      const validStatuses = ['running', 'success', 'no_action', 'error'] as const;
+      if (!validStatuses.includes(job.status as any)) {
+        console.error(
+          `Invalid job status found: "${job.status}" for job ${job.id}. Defaulting to 'error'.`
+        );
+        job.status = 'error';
+      }
+
+      return {
+        id: job.id,
+        url: job.url,
+        status: job.status as DatabaseJob['status'],
+        startTime: job.startTime,
+        endTime: job.endTime,
+        exitCode: job.exitCode,
+        downloadCount: job.downloadCount || 0,
+        skipCount: job.skipCount || 0,
+        outputs: outputsByJobId.get(job.id) || [],
+      };
+    });
   } catch (error) {
     // eslint-disable-next-line no-console
     console.error('Error reading jobs from database:', error);
@@ -91,8 +107,8 @@ export async function createJob(job: Omit<DatabaseJob, 'outputs'>): Promise<void
     const now = getCurrentTimestamp();
 
     const stmt = db.prepare(`
-      INSERT INTO jobs (id, url, status, startTime, endTime, exitCode, createdAt, updatedAt)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO jobs (id, url, status, startTime, endTime, exitCode, downloadCount, skipCount, createdAt, updatedAt)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     stmt.run(
@@ -102,6 +118,8 @@ export async function createJob(job: Omit<DatabaseJob, 'outputs'>): Promise<void
       job.startTime,
       job.endTime || null,
       job.exitCode || null,
+      job.downloadCount || 0,
+      job.skipCount || 0,
       now,
       now
     );
@@ -114,7 +132,9 @@ export async function createJob(job: Omit<DatabaseJob, 'outputs'>): Promise<void
 
 export async function updateJob(
   jobId: string,
-  updates: Partial<Pick<DatabaseJob, 'status' | 'endTime' | 'exitCode'>>
+  updates: Partial<
+    Pick<DatabaseJob, 'status' | 'endTime' | 'exitCode' | 'downloadCount' | 'skipCount'>
+  >
 ): Promise<void> {
   try {
     const now = getCurrentTimestamp();
@@ -132,6 +152,14 @@ export async function updateJob(
     if (updates.exitCode !== undefined) {
       setParts.push('exitCode = ?');
       values.push(updates.exitCode);
+    }
+    if (updates.downloadCount !== undefined) {
+      setParts.push('downloadCount = ?');
+      values.push(updates.downloadCount);
+    }
+    if (updates.skipCount !== undefined) {
+      setParts.push('skipCount = ?');
+      values.push(updates.skipCount);
     }
 
     if (setParts.length === 0) {
