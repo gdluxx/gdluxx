@@ -294,7 +294,7 @@
           <!-- Aggregate Statistics -->
           <div class="flex items-center gap-4 text-sm mb-3">
             <span class="text-blue-600 dark:text-blue-400"
-              >🔵 {aggregateStats().running} Running</span
+              >🔵 <Icon iconName="dot" size={20} /> {aggregateStats().running} Running</span
             >
             <span class="text-green-600 dark:text-green-400"
               >🟢 {aggregateStats().success} Success</span
@@ -510,23 +510,25 @@
 
         <!-- Aggregate Statistics -->
         <div class="flex items-center gap-4 text-sm mb-3">
-          <span class="text-blue-600 dark:text-blue-400">🔵 {aggregateStats().running} Running</span
+          <span class="text-blue-600 dark:text-blue-400 flex items-center gap-1"
+          ><Icon iconName="dot" size={12} class="align-middle"/> {aggregateStats().running} Running</span
           >
-          <span class="text-green-600 dark:text-green-400"
-            >🟢 {aggregateStats().success} Success</span
+          <span class="text-green-600 dark:text-green-400 flex items-center gap-1"
+          ><Icon iconName="dot" size={12} class="align-middle"/> {aggregateStats().success} Success</span
           >
-          <span class="text-yellow-600 dark:text-yellow-400"
-            >🟡 {aggregateStats().noAction} No Action</span
+          <span class="text-yellow-600 dark:text-yellow-400 flex items-center gap-1"
+          ><Icon iconName="dot" size={12} class="align-middle"/> {aggregateStats().noAction} No Action</span
           >
-          <span class="text-red-600 dark:text-red-400">🔴 {aggregateStats().error} Error</span>
+          <span class="text-red-600 dark:text-red-400 flex items-center gap-1"
+          ><Icon iconName="dot" size={12} class="align-middle"/> {aggregateStats().error} Error</span>
           {#if aggregateStats().totalDownloads > 0}
-            <span class="text-green-600 dark:text-green-400"
-              >↓ {aggregateStats().totalDownloads} Downloads</span
+            <span class="text-green-600 dark:text-green-400 flex items-center gap-1"
+            ><Icon iconName="download-arrow" size={24} class="align-middle -mx-1"/> {aggregateStats().totalDownloads} Downloads</span
             >
           {/if}
           {#if aggregateStats().totalSkips > 0}
-            <span class="text-yellow-600 dark:text-yellow-400"
-              >⊘ {aggregateStats().totalSkips} Skips</span
+            <span class="text-yellow-600 dark:text-yellow-400 flex items-center gap-1"
+            ><Icon iconName="no-circle" size={16} class="align-middle"/> {aggregateStats().totalSkips} Skips</span
             >
           {/if}
         </div>
@@ -539,7 +541,11 @@
             <select
               bind:value={statusFilter}
               onchange={() => setStatusFilter(statusFilter)}
-              class="text-sm bg-white dark:bg-secondary-800 border border-secondary-300 dark:border-secondary-600 rounded px-2 py-1"
+              class="text-sm rounded-sm border dark:border-secondary-300 dark:bg-secondary-900 px-2 py-1 dark:text-primary-100
+              dark:placeholder-secondary-500 transition-colors duration-200
+              dark:focus:border-primary-500 focus:ring-3 dark:focus:ring-primary-500/20 focus:outline-hidden
+              border-secondary-700 bg-secondary-100 text-primary-900
+              placeholder-secondary-500 focus:border-primary-400 focus:ring-primary-400/20"
             >
               <option value="all">All</option>
               <option value="running">Running ({aggregateStats().running})</option>
