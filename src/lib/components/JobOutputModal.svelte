@@ -144,7 +144,7 @@
       case 'success':
         return 'Success';
       case 'no_action':
-        return 'No Action';
+        return 'Skips';
       case 'error':
         return 'Error';
       default:
