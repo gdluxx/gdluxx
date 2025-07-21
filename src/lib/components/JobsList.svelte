@@ -513,74 +513,98 @@
         <!-- Aggregate Statistics -->
         <div class="grid grid-cols-3 md:grid-cols-6 gap-3 mb-4">
           <!-- running card -->
-          <div class="bg-secondary-50 dark:bg-secondary-900 rounded-sm border border-secondary-200 dark:border-secondary-700 px-3 py-1.5">
+          <div
+            class="bg-secondary-50 dark:bg-secondary-900 rounded-sm border border-secondary-200 dark:border-secondary-700 px-3 py-1.5"
+          >
             <div class="flex items-center gap-2 justify-center">
               <div class="w-2 h-2 rounded-full bg-blue-500"></div>
               <span class="text-xs font-medium text-secondary-600 dark:text-secondary-400">
                 Running
               </span>
             </div>
-            <div class="mt-1 text-lg font-semibold text-secondary-900 dark:text-secondary-100 flex justify-center">
+            <div
+              class="mt-1 text-lg font-semibold text-secondary-900 dark:text-secondary-100 flex justify-center"
+            >
               {aggregateStats().running}
             </div>
           </div>
           <!-- success card -->
-          <div class="bg-secondary-50 dark:bg-secondary-900 rounded-sm border border-secondary-200 dark:border-secondary-700 px-3 py-1.5">
+          <div
+            class="bg-secondary-50 dark:bg-secondary-900 rounded-sm border border-secondary-200 dark:border-secondary-700 px-3 py-1.5"
+          >
             <div class="flex items-center gap-2 justify-center">
               <div class="w-2 h-2 rounded-full bg-green-500"></div>
               <span class="text-xs font-medium text-secondary-600 dark:text-secondary-400">
                 Success
               </span>
             </div>
-            <div class="mt-1 text-lg font-semibold text-secondary-900 dark:text-secondary-100 flex justify-center">
+            <div
+              class="mt-1 text-lg font-semibold text-secondary-900 dark:text-secondary-100 flex justify-center"
+            >
               {aggregateStats().success}
             </div>
           </div>
           <!-- skips card -->
-          <div class="bg-secondary-50 dark:bg-secondary-900 rounded-sm border border-secondary-200 dark:border-secondary-700 px-3 py-1.5">
+          <div
+            class="bg-secondary-50 dark:bg-secondary-900 rounded-sm border border-secondary-200 dark:border-secondary-700 px-3 py-1.5"
+          >
             <div class="flex items-center gap-2 justify-center">
               <div class="w-2 h-2 rounded-full bg-yellow-500"></div>
               <span class="text-xs font-medium text-secondary-600 dark:text-secondary-400">
                 Skips
               </span>
             </div>
-            <div class="mt-1 text-lg font-semibold text-secondary-900 dark:text-secondary-100 flex justify-center">
+            <div
+              class="mt-1 text-lg font-semibold text-secondary-900 dark:text-secondary-100 flex justify-center"
+            >
               {aggregateStats().skips}
             </div>
           </div>
           <!-- error card -->
-          <div class="bg-secondary-50 dark:bg-secondary-900 rounded-sm border border-secondary-200 dark:border-secondary-700 px-3 py-1.5">
+          <div
+            class="bg-secondary-50 dark:bg-secondary-900 rounded-sm border border-secondary-200 dark:border-secondary-700 px-3 py-1.5"
+          >
             <div class="flex items-center gap-2 justify-center">
               <div class="w-2 h-2 rounded-full bg-red-500"></div>
               <span class="text-xs font-medium text-secondary-600 dark:text-secondary-400">
                 Errors
               </span>
             </div>
-            <div class="mt-1 text-lg font-semibold text-secondary-900 dark:text-secondary-100 flex justify-center">
+            <div
+              class="mt-1 text-lg font-semibold text-secondary-900 dark:text-secondary-100 flex justify-center"
+            >
               {aggregateStats().error}
             </div>
           </div>
           <!-- totalDownloads card -->
-          <div class="bg-secondary-50 dark:bg-secondary-900 rounded-sm border border-secondary-200 dark:border-secondary-700 px-3 py-1.5">
+          <div
+            class="bg-secondary-50 dark:bg-secondary-900 rounded-sm border border-secondary-200 dark:border-secondary-700 px-3 py-1.5"
+          >
             <div class="flex items-center gap-2 justify-center">
-                <Icon iconName="download-arrow" size={18} class="align-middle -mx-1 text-green-500" />
+              <Icon iconName="download-arrow" size={18} class="align-middle -mx-1 text-green-500" />
               <span class="text-xs font-medium text-secondary-600 dark:text-secondary-400">
                 Downloads
               </span>
             </div>
-            <div class="mt-1 text-lg font-semibold text-secondary-900 dark:text-secondary-100 flex justify-center">
+            <div
+              class="mt-1 text-lg font-semibold text-secondary-900 dark:text-secondary-100 flex justify-center"
+            >
               {aggregateStats().totalDownloads}
             </div>
           </div>
           <!-- totalSkips card -->
-          <div class="bg-secondary-50 dark:bg-secondary-900 rounded-sm border border-secondary-200 dark:border-secondary-700 px-3 py-1.5">
+          <div
+            class="bg-secondary-50 dark:bg-secondary-900 rounded-sm border border-secondary-200 dark:border-secondary-700 px-3 py-1.5"
+          >
             <div class="flex items-center gap-2 justify-center">
-                <Icon iconName="no-circle" size={16} class="align-middle text-yellow-500" />
+              <Icon iconName="no-circle" size={16} class="align-middle text-yellow-500" />
               <span class="text-xs font-medium text-secondary-600 dark:text-secondary-400">
                 Skips
               </span>
             </div>
-            <div class="mt-1 text-lg font-semibold text-secondary-900 dark:text-secondary-100 flex justify-center">
+            <div
+              class="mt-1 text-lg font-semibold text-secondary-900 dark:text-secondary-100 flex justify-center"
+            >
               {aggregateStats().totalSkips}
             </div>
           </div>
@@ -602,7 +626,7 @@
                 <Icon iconName="sort" size={20} class={`${sortNewestFirst ? '' : 'rotate-180'}`} />
                 <!--{sortNewestFirst ? 'Newest' : 'Oldest'}-->
               </Button>
-              <Button variant="outline-primary" size="sm" onclick={toggleSelectAll}>
+              <Button variant="secondary" size="sm" onclick={toggleSelectAll}>
                 {allSelected ? 'Deselect All' : 'Select All'}
               </Button>
 
@@ -614,7 +638,7 @@
                   variant="danger"
                   size="sm"
                 >
-                  Delete Selected ({selectedCount})
+                  Delete Selected
                 </Button>
               {:else}
                 <Button
@@ -636,7 +660,7 @@
                 class="text-sm rounded-sm border dark:border-secondary-300 dark:bg-secondary-900
                   px-2 py-1 dark:text-primary-100 dark:placeholder-secondary-500 transition-colors
                   duration-200 border-secondary-700 bg-secondary-100 text-primary-900
-                  placeholder-secondary-500"
+                  placeholder-secondary-500 cursor-pointer"
               >
                 <option value="all">All Jobs</option>
                 <option value="running">Running ({aggregateStats().running})</option>
@@ -650,7 +674,7 @@
                 class="text-sm rounded-sm border dark:border-secondary-300 dark:bg-secondary-900
                   px-2 py-1 dark:text-primary-100 dark:placeholder-secondary-500 transition-colors
                   duration-200 border-secondary-700 bg-secondary-100 text-primary-900
-                  placeholder-secondary-500"
+                  placeholder-secondary-500 cursor-pointer"
               >
                 <option value="time">Sort by Date</option>
                 <option value="downloads">Sort by Downloads</option>
@@ -677,7 +701,16 @@
                     type="checkbox"
                     checked={selectedJobs.has(job.id)}
                     onchange={() => toggleJobSelection(job.id)}
-                    class="w-4 h-4 text-primary-600 bg-white border-2 border-primary-300 rounded transition-all duration-150 ease-in-out hover:border-primary-400 focus:ring-2 focus:ring-primary-300 focus:ring-offset-2 focus:border-primary-500 checked:bg-primary-600 checked:border-primary-600 checked:hover:bg-primary-700 checked:hover:border-primary-700 dark:bg-primary-800 dark:border-primary-600 dark:checked:bg-primary-500 dark:checked:border-primary-500 dark:hover:border-primary-500 dark:focus:ring-primary-400 dark:focus:ring-offset-primary-900"
+                    class="w-5 h-5 bg-white border-2 border-primary-300 rounded transition-all
+                      duration-150 ease-in-out hover:border-primary-600
+                      dark:checked:bg-primary-600 dark:checked:border-primary-600 dark:checked:hover:bg-primary-700
+                      dark:checked:hover:border-primary-700
+                      dark:bg-primary-800 dark:border-primary-600 checked:bg-primary-500 checked:border-primary-500
+                      dark:hover:border-primary-400 appearance-none cursor-pointer relative
+                      before:content-[''] before:absolute before:top-[2px] before:left-[5px]
+                      before:w-[7px] before:h-[12px] before:border-r-2 before:border-b-2 before:border-white
+                      before:transform before:rotate-45 before:scale-0 before:transition-transform before:duration-150
+                      checked:before:scale-100"
                     aria-label={`Select job ${job.url}`}
                   />
                   <button
@@ -698,7 +731,12 @@
                         <span
                           class="text-sm font-medium text-secondary-900 dark:text-secondary-100"
                         >
-                          {getStatusText(job.status)}
+                          {#if getStatusText(job.status) === 'Skips'}
+                            Skipped
+                          {:else}
+                            {getStatusText(job.status)}
+                          {/if}
+
                         </span>
 
                         <!-- Show download/skip counts for completed jobs -->
@@ -706,12 +744,12 @@
                           <span class="text-xs text-secondary-600 dark:text-secondary-400">
                             {#if job.downloadCount > 0}
                               <span class="text-green-600 dark:text-green-400">
-                                ↓{job.downloadCount}
+                                <Icon iconName="download-arrow" size={18} class="inline -translate-y-px" />{job.downloadCount}
                               </span>
                             {/if}
                             {#if job.skipCount > 0}
                               <span class="text-yellow-600 dark:text-yellow-400">
-                                ⊘{job.skipCount}
+                                <Icon iconName="no-circle" size={14} class="inline -translate-y-px" />{job.skipCount}
                               </span>
                             {/if}
                           </span>
