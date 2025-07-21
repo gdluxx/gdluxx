@@ -157,7 +157,7 @@ gdluxx will use the `data/` directory to store:
    - [x] Allow ConfigEditor component to update paths smartly
      - log paths - /app/data/logs
      - archive paths - /app/data/archives
-   - [ ] Add success/failed count per job in JobsList
+   - [x] Add success/failed count per job in JobsList
 
 6. Considerations
 
