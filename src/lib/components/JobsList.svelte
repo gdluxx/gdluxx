@@ -107,7 +107,9 @@
       case 'error':
         return 'Error';
       default:
-        console.warn(`Unknown job status encountered: "${status}". This may indicate a data migration issue.`);
+        console.warn(
+          `Unknown job status encountered: "${status}". This may indicate a data migration issue.`
+        );
         return 'Unknown';
     }
   }
@@ -509,65 +511,47 @@
         </div>
 
         <!-- Aggregate Statistics -->
-        <div class="flex items-center gap-4 text-sm mb-3">
-          <span class="text-blue-600 dark:text-blue-400 flex items-center gap-1"
-          ><Icon iconName="dot" size={12} class="align-middle"/> {aggregateStats().running} Running</span
+        <div class="flex items-center justify-center gap-4 text-sm mb-3 align-items">
+          <span
+            class="text-blue-600 dark:text-blue-400 flex items-center gap-1 outline outline-accent-200 px-1 py-0.5 rounded-sm bg-secondary-50"
+            ><Icon iconName="dot" size={18} class="align-middle" />
+            {aggregateStats().running} Running</span
           >
-          <span class="text-green-600 dark:text-green-400 flex items-center gap-1"
-          ><Icon iconName="dot" size={12} class="align-middle"/> {aggregateStats().success} Success</span
+          <span
+            class="text-green-600 dark:text-green-400 flex items-center gap-1 outline outline-accent-200 px-1 py-0.5 rounded-sm bg-secondary-50"
+            ><Icon iconName="dot" size={18} class="align-middle" />
+            {aggregateStats().success} Success</span
           >
-          <span class="text-yellow-600 dark:text-yellow-400 flex items-center gap-1"
-          ><Icon iconName="dot" size={12} class="align-middle"/> {aggregateStats().noAction} No Action</span
+          <span
+            class="text-yellow-600 dark:text-yellow-400 flex items-center gap-1 outline outline-accent-200 px-1 py-0.5 rounded-sm bg-secondary-50"
+            ><Icon iconName="dot" size={18} class="align-middle" />
+            {aggregateStats().noAction} No Action</span
           >
-          <span class="text-red-600 dark:text-red-400 flex items-center gap-1"
-          ><Icon iconName="dot" size={12} class="align-middle"/> {aggregateStats().error} Error</span>
+          <span
+            class="text-red-600 dark:text-red-400 flex items-center gap-1 outline outline-accent-200 px-1 py-0.5 rounded-sm bg-secondary-50"
+            ><Icon iconName="dot" size={18} class="align-middle" />
+            {aggregateStats().error} Error</span
+          >
           {#if aggregateStats().totalDownloads > 0}
-            <span class="text-green-600 dark:text-green-400 flex items-center gap-1"
-            ><Icon iconName="download-arrow" size={24} class="align-middle -mx-1"/> {aggregateStats().totalDownloads} Downloads</span
+            <span
+              class="text-green-600 dark:text-green-400 flex items-center gap-1 outline outline-accent-200 px-1 py-0.5 rounded-sm bg-secondary-50"
+              ><Icon iconName="download-arrow" size={24} class="align-middle -mx-1" />
+              {aggregateStats().totalDownloads} Downloads</span
             >
           {/if}
           {#if aggregateStats().totalSkips > 0}
-            <span class="text-yellow-600 dark:text-yellow-400 flex items-center gap-1"
-            ><Icon iconName="no-circle" size={16} class="align-middle"/> {aggregateStats().totalSkips} Skips</span
+            <span
+              class="text-yellow-600 dark:text-yellow-400 flex items-center gap-1 outline outline-accent-200 px-1 py-0.5 rounded-sm bg-secondary-50"
+              ><Icon iconName="no-circle" size={16} class="align-middle" />
+              {aggregateStats().totalSkips} Skips</span
             >
           {/if}
         </div>
 
         <!-- Controls -->
         <div class="flex items-center justify-between">
-          <!-- Status Filter -->
-          <div class="flex items-center gap-2">
-            <span class="text-sm text-secondary-600 dark:text-secondary-400">Filter:</span>
-            <select
-              bind:value={statusFilter}
-              onchange={() => setStatusFilter(statusFilter)}
-              class="text-sm rounded-sm border dark:border-secondary-300 dark:bg-secondary-900 px-2 py-1 dark:text-primary-100
-              dark:placeholder-secondary-500 transition-colors duration-200
-              dark:focus:border-primary-500 focus:ring-3 dark:focus:ring-primary-500/20 focus:outline-hidden
-              border-secondary-700 bg-secondary-100 text-primary-900
-              placeholder-secondary-500 focus:border-primary-400 focus:ring-primary-400/20"
-            >
-              <option value="all">All</option>
-              <option value="running">Running ({aggregateStats().running})</option>
-              <option value="success">Success ({aggregateStats().success})</option>
-              <option value="no_action">No Action ({aggregateStats().noAction})</option>
-              <option value="error">Error ({aggregateStats().error})</option>
-            </select>
-          </div>
-          <!-- Sort Options -->
-          <div class="flex items-center gap-2">
-            <span class="text-sm text-secondary-600 dark:text-secondary-400">Sort by:</span>
-            <select
-              bind:value={sortBy}
-              onchange={() => setSortBy(sortBy)}
-              class="text-sm bg-white dark:bg-secondary-800 border border-secondary-300 dark:border-secondary-600 rounded px-2 py-1"
-            >
-              <option value="time">Time</option>
-              <option value="downloads">Downloads</option>
-            </select>
-          </div>
-
-          <div class="flex items-center gap-2">
+          <!--  -->
+          <div class="flex items-center align-middle gap-2">
             {#if jobs.length > 0}
               <Button
                 onclick={toggleSort}
@@ -610,6 +594,53 @@
                 </Button>
               {/if}
             {/if}
+          </div>
+
+          <!-- Status Filter -->
+          <div class="flex items-center justify-between gap-2">
+            <div class="">
+              <div class="flex items-center gap-2">
+                <label for="filter" class="text-sm text-secondary-600 dark:text-secondary-400"
+                  >Filter</label
+                >
+                <select
+                  name="filter"
+                  bind:value={statusFilter}
+                  onchange={() => setStatusFilter(statusFilter)}
+                  class="text-sm rounded-sm border dark:border-secondary-300 dark:bg-secondary-900
+                  px-2 py-1 dark:text-primary-100 dark:placeholder-secondary-500 transition-colors
+                  duration-200 border-secondary-700 bg-secondary-100 text-primary-900
+                  placeholder-secondary-500"
+                >
+                  <option value="all">All</option>
+                  <option value="running">Running ({aggregateStats().running})</option>
+                  <option value="success">Success ({aggregateStats().success})</option>
+                  <option value="no_action">No Action ({aggregateStats().noAction})</option>
+                  <option value="error">Error ({aggregateStats().error})</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Sort Options -->
+            <div class="">
+              <div class="flex items-center gap-2">
+                <label for="sort-by" class="text-sm text-secondary-600 dark:text-secondary-400"
+                  >Sort by</label
+                >
+                <select
+                  name="sort-by"
+                  bind:value={sortBy}
+                  onchange={() => setSortBy(sortBy)}
+                  class="text-sm rounded-sm border dark:border-secondary-300 dark:bg-secondary-900
+                  px-2 py-1 dark:text-primary-100 dark:placeholder-secondary-500 transition-colors
+                  duration-200 border-secondary-700 bg-secondary-100 text-primary-900
+                  placeholder-secondary-500"
+                >
+                  <option value="time">Time</option>
+                  <option value="downloads">Downloads</option>
+                </select>
+              </div>
+            </div>
           </div>
         </div>
       </div>
