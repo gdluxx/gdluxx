@@ -10,6 +10,7 @@
 
 import { browser } from '$app/environment';
 import type { JobOutput, Job } from '$lib/server/jobs/jobManager';
+import type { OptionWithSource } from '$lib/types/command-form';
 import { logger } from '$lib/shared/logger';
 
 export interface ClientJob {
@@ -95,7 +96,7 @@ async function loadJobs(): Promise<void> {
 
 async function startJob(
   urls: string[],
-  selectedOptions = new Map<string, string | number | boolean>()
+  selectedOptions = new Map<string, OptionWithSource>()
 ): Promise<BatchJobStartResult> {
   if (!browser) {
     return {
@@ -114,13 +115,19 @@ async function startJob(
     };
   }
 
+  // Convert OptionWithSource map to key-value for API
+  const optionsArray = Array.from(selectedOptions.entries()).map(([key, data]) => [
+    key,
+    typeof data === 'object' ? data.value : data,
+  ]);
+
   try {
     const response: Response = await fetch('/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         urls,
-        args: Array.from(selectedOptions.entries()),
+        args: optionsArray,
       }),
     });
 

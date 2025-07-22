@@ -42,7 +42,7 @@
     hasMatch: boolean;
     matchedPattern?: string;
     configName?: string;
-    options: Map<string, string | number | boolean>;
+    options: Record<string, string | number | boolean> | Map<string, string | number | boolean>;
   }
 
   let commandUrlsInput = $state('');
@@ -57,8 +57,6 @@
   let isAccordionOpen = $state(false);
   let showSaveRuleDialog = $state(false);
 
-  const STORAGE_KEY = 'commandForm_selectedOptions';
-
   const allOptions: Option[] = Object.values(typedOptionsData).flatMap(
     category => category.options as Option[]
   );
@@ -67,51 +65,24 @@
 
   onMount(async () => {
     await checkConfigFileForErrors();
-    loadSelectedOptions();
     // Set first category as default active tab
     const firstCategoryKey = Object.keys(typedOptionsData)[0];
     if (firstCategoryKey) {
       activeTab = firstCategoryKey;
     }
-  });
-
-  // Save options to localStorage whenever they change
-  $effect(() => {
-    if (browser && selectedOptions.size > 0) {
-      const optionsArray = Array.from(selectedOptions.entries()).map(([key, optionData]) => [
-        key,
-        optionData.value,
-      ]);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(optionsArray));
-    }
-  });
-
-  function loadSelectedOptions() {
     if (browser) {
-      try {
-        const stored = localStorage.getItem(STORAGE_KEY);
-        if (stored) {
-          const optionsArray = JSON.parse(stored) as Array<[string, string | number | boolean]>;
-          for (const [optionId, value] of optionsArray) {
-            selectedOptions.set(optionId, {
-              value,
-              source: 'user',
-            });
-          }
-          selectedOptions = new Map(selectedOptions);
-          updateCategoryTracking();
-        }
-      } catch (error) {
-        logger.error('Failed to load stored options:', error);
+      const savedUrls = localStorage.getItem('commandForm_urls');
+      if (savedUrls) {
+        commandUrlsInput = savedUrls;
       }
     }
-  }
+  });
 
-  function clearStoredOptions() {
-    if (browser) {
-      localStorage.removeItem(STORAGE_KEY);
+  $effect(() => {
+    if (browser && commandUrlsInput.trim()) {
+      localStorage.setItem('commandForm_urls', commandUrlsInput);
     }
-  }
+  });
 
   function toggleOption(option: Option) {
     const { id, defaultValue } = option;
@@ -228,7 +199,12 @@
 
     // First add site config options
     for (const config of siteConfigs) {
-      for (const [optionId, value] of config.options) {
+      // Handle both Map and plain object formats (JSON deserializes Maps as objects)
+      const optionsEntries = config.options instanceof Map 
+        ? Array.from(config.options.entries())
+        : Object.entries(config.options);
+
+      for (const [optionId, value] of optionsEntries) {
         selectedOptions.set(optionId, {
           value,
           source: 'site-config',
@@ -259,16 +235,6 @@
     selectedOptions = new Map(selectedOptions);
     conflictWarnings = new Map(conflictWarnings);
     updateCategoryTracking();
-  }
-
-  function convertOptionsMapForSubmission(
-    optionsMap: Map<string, OptionWithSource>
-  ): Map<string, string | number | boolean> {
-    const submissionMap = new Map<string, string | number | boolean>();
-    for (const [key, optionData] of optionsMap) {
-      submissionMap.set(key, optionData.value);
-    }
-    return submissionMap;
   }
 
   function handleFormResult(result: FormResult) {
@@ -334,7 +300,6 @@
   function clearAllOptions() {
     selectedOptions = new Map();
     selectedOptionsByCategory = new Map();
-    clearStoredOptions();
   }
 
   function revertToSiteConfig(optionId: string) {
@@ -345,7 +310,12 @@
 
     // Find the original site config value from siteConfigData
     for (const config of siteConfigData) {
-      for (const [siteOptionId, value] of config.options) {
+      // Handle both Map and plain object formats (JSON deserializes Maps as objects)
+      const optionsEntries = config.options instanceof Map 
+        ? Array.from(config.options.entries())
+        : Object.entries(config.options);
+
+      for (const [siteOptionId, value] of optionsEntries) {
         if (siteOptionId === optionId) {
           selectedOptions.set(optionId, {
             value,
@@ -360,7 +330,7 @@
 
     // Remove the conflict warning
     conflictWarnings.delete(optionId);
-    
+
     selectedOptions = new Map(selectedOptions);
     conflictWarnings = new Map(conflictWarnings);
     updateCategoryTracking();
@@ -370,7 +340,7 @@
     if (!commandUrlsInput.trim()) {
       return false;
     }
-    
+
     const userOptions = getUserSelectedOptions();
     return userOptions.size > 0;
   }
@@ -422,8 +392,7 @@
       }
 
       // 2. Proceed with job submission using merged options
-      const finalOptions = convertOptionsMapForSubmission(selectedOptions);
-      const result = await jobStore.startJob(urls, finalOptions);
+      const result = await jobStore.startJob(urls, selectedOptions);
       handleFormResult(result);
     } catch (error) {
       logger.error('Failed to start jobs:', error);
@@ -466,13 +435,19 @@
 
     <!-- Site Config Summary Panel -->
     {#if siteConfigData.length > 0}
-      <div class="site-config-summary bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-sm p-4 mx-4 mb-4">
-        <h4 class="flex items-center gap-2 text-sm font-medium text-blue-800 dark:text-blue-200 mb-3">
+      <div
+        class="site-config-summary bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-sm p-4 mx-4 mb-4"
+      >
+        <h4
+          class="flex items-center gap-2 text-sm font-medium text-blue-800 dark:text-blue-200 mb-3"
+        >
           🔧 Site Configurations Detected
         </h4>
         <div class="space-y-2">
           {#each siteConfigData as config (config.url)}
-            <div class="config-item flex items-center justify-between bg-white dark:bg-blue-800/30 px-3 py-2 rounded border border-blue-200 dark:border-blue-600">
+            <div
+              class="config-item flex items-center justify-between bg-white dark:bg-blue-800/30 px-3 py-2 rounded border border-blue-200 dark:border-blue-600"
+            >
               <div class="flex flex-col">
                 <span class="font-medium text-blue-900 dark:text-blue-100 text-sm">
                   {config.configName}
@@ -481,8 +456,10 @@
                   for {config.matchedPattern}
                 </span>
               </div>
-              <span class="option-count px-2 py-1 bg-blue-100 dark:bg-blue-800 text-blue-700 dark:text-blue-200 rounded-full text-xs font-medium">
-                {config.options.size} options
+              <span
+                class="option-count px-2 py-1 bg-blue-100 dark:bg-blue-800 text-blue-700 dark:text-blue-200 rounded-full text-xs font-medium"
+              >
+                {config.options instanceof Map ? config.options.size : Object.keys(config.options).length} options
               </span>
             </div>
           {/each}
@@ -492,7 +469,9 @@
 
     <!-- Conflict Warnings Panel -->
     {#if conflictWarnings.size > 0}
-      <div class="conflict-warnings bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-sm p-4 mx-4 mb-4">
+      <div
+        class="conflict-warnings bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-sm p-4 mx-4 mb-4"
+      >
         <h4 class="flex items-center gap-2 text-sm font-medium text-red-800 dark:text-red-200 mb-3">
           ⚠️ Option Conflicts Detected
         </h4>
@@ -500,7 +479,9 @@
           {#each Array.from(conflictWarnings.entries()) as [optionId, warning] (optionId)}
             {@const option = getOptionById(optionId)}
             {#if option}
-              <div class="warning-item flex items-center justify-between bg-white dark:bg-red-800/30 px-3 py-2 rounded border border-red-200 dark:border-red-600">
+              <div
+                class="warning-item flex items-center justify-between bg-white dark:bg-red-800/30 px-3 py-2 rounded border border-red-200 dark:border-red-600"
+              >
                 <div class="flex flex-col flex-1 min-w-0">
                   <span class="font-medium text-red-900 dark:text-red-100 text-sm">
                     {option.command}
@@ -509,7 +490,7 @@
                     {warning}
                   </span>
                 </div>
-                <Button 
+                <Button
                   onclick={() => revertToSiteConfig(optionId)}
                   class="ml-3 px-3 py-1 bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-800 dark:text-red-200 dark:hover:bg-red-700 text-xs font-medium rounded border border-red-300 dark:border-red-600"
                 >
@@ -524,7 +505,9 @@
 
     <!-- Save as Site Rule -->
     {#if canSaveAsSiteRule()}
-      <div class="save-site-rule bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-sm p-4 mx-4 mb-4">
+      <div
+        class="save-site-rule bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-sm p-4 mx-4 mb-4"
+      >
         <div class="flex items-center justify-between">
           <div class="flex flex-col">
             <h4 class="text-sm font-medium text-gray-800 dark:text-gray-200">
@@ -781,7 +764,7 @@
                               🔧 {optionData.sitePattern}
                             </span>
                           {:else}
-                            <span 
+                            <span
                               class="source-badge user inline-flex items-center px-2 py-1 bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 rounded text-xs font-medium"
                               title="Manually selected"
                             >
@@ -791,7 +774,7 @@
 
                           <!-- Conflict warning -->
                           {#if conflictWarnings.has(optionId)}
-                            <span 
+                            <span
                               class="conflict-warning text-red-600 dark:text-red-400 text-lg"
                               title={conflictWarnings.get(optionId)}
                             >
@@ -799,7 +782,7 @@
                             </span>
                           {/if}
 
-                          <button 
+                          <button
                             type="button"
                             onclick={() => removeOption(optionId)}
                             class="ml-1 text-secondary-500 hover:text-secondary-700 dark:text-secondary-400 dark:hover:text-secondary-200 text-lg leading-none"
