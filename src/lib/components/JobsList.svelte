@@ -269,7 +269,7 @@
     </div>
 
     <!-- Statistics -->
-    <div class="grid grid-cols-3 md:grid-cols-6 gap-3 mb-4">
+    <div class="grid grid-cols-3 lg:grid-cols-6 gap-3 mb-4">
       <!-- running card -->
       <button
         onclick={() => toggleFilter('running')}
