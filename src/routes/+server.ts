@@ -12,13 +12,12 @@ import { json } from '@sveltejs/kit';
 import { dev } from '$app/environment';
 import type { RequestHandler } from './$types';
 import fs from 'node:fs';
-import type { IPty } from '@homebridge/node-pty-prebuilt-multiarch';
-import { jobManager } from '$lib/server/jobs/jobManager';
 import { logger } from '$lib/shared/logger';
-import { PATHS, TERMINAL } from '$lib/server/constants';
+import { PATHS } from '$lib/server/constants';
 import type { BatchUrlResult } from '$lib/stores/jobs.svelte';
-import optionsData from '$lib/assets/options.json';
-import type { Option, OptionsData } from '$lib/types/options';
+import { siteConfigManager } from '$lib/server/siteConfigManager';
+import { validateAndBuildCliArgs } from '$lib/server/validation/option-validation';
+import { executeGalleryDlCommand } from '$lib/server/jobs/commandExecutor';
 
 const getClientSafeMessage = (error: Error) => {
   if (dev) {
@@ -35,38 +34,7 @@ const getClientSafeMessage = (error: Error) => {
   return 'An unexpected error occurred.';
 };
 
-const validOptions = new Map<string, Option>();
-Object.values(optionsData as OptionsData).forEach(category => {
-  category.options.forEach(option => {
-    validOptions.set(option.id, option as Option);
-  });
-});
-
-function validateOptionValue(option: Option, value: unknown): string | null {
-  if (option.type === 'boolean') {
-    return typeof value === 'boolean' ? String(value) : null;
-  }
-
-  if (option.type === 'number') {
-    const num = Number(value);
-    return !isNaN(num) && isFinite(num) ? String(num) : null;
-  }
-
-  if (option.type === 'string' || option.type === 'range') {
-    const str = String(value).trim();
-
-    if (str.includes(';') || str.includes('|') || str.includes('&') || str.includes('`')) {
-      return null;
-    }
-    return str.length > 0 ? str : null;
-  }
-
-  return null;
-}
-
 export const POST: RequestHandler = async ({ request }) => {
-  const { spawn } = await import('@homebridge/node-pty-prebuilt-multiarch');
-
   try {
     const requestData = await request.json();
     const { urls, args } = requestData;
@@ -137,82 +105,34 @@ export const POST: RequestHandler = async ({ request }) => {
         continue;
       }
 
-      const jobId: string = await jobManager.createJob(url);
-      await jobManager.addOutput(jobId, 'info', `Starting download for: ${url}`);
-      await jobManager.addOutput(jobId, 'info', `Job ID: ${jobId}`);
+      const siteCliOptions = await siteConfigManager.getCliOptionsForUrl(url);
 
-      const processArgs: string[] = [url, '--config', './data/config.json'];
+      const allArgs: Array<[string, string | number | boolean]> = [
+        ...siteCliOptions,
+        ...receivedArgs,
+      ];
 
-      // Process arguments
-      for (const [optionId, value] of receivedArgs) {
-        const option = validOptions.get(optionId);
-        if (!option) {
-          logger.warn(`Invalid option attempted: ${optionId}`);
-          continue; // Skip invalid options
-        }
-
-        // Validate and sanitize the value
-        const sanitizedValue = validateOptionValue(option, value);
-        if (sanitizedValue === null) {
-          logger.warn(`Invalid value for option ${optionId}: ${value}`);
-          continue; // Skip invalid values
-        }
-
-        // add command flag
-        processArgs.push(option.command);
-
-        // Add value for non-boolean options
-        if (option.type !== 'boolean') {
-          processArgs.push(sanitizedValue);
-        }
+      const mergedArgs = new Map<string, string | number | boolean>();
+      for (const [optionId, value] of allArgs) {
+        mergedArgs.set(optionId, value);
       }
 
-      try {
-        const ptyProcess: IPty = spawn(PATHS.BIN_FILE, processArgs, {
-          name: TERMINAL.NAME,
-          cols: TERMINAL.COLS,
-          rows: TERMINAL.ROWS,
-          cwd: process.cwd(),
-          env: { ...process.env, NO_COLOR: '0', TERM: TERMINAL.NAME },
-        });
+      const cliArgs = validateAndBuildCliArgs(mergedArgs);
 
-        await jobManager.setJobProcess(jobId, ptyProcess);
-        await jobManager.addOutput(jobId, 'info', `Process started with PID: ${ptyProcess.pid}`);
+      const result = await executeGalleryDlCommand(url, cliArgs);
 
-        ptyProcess.onData(async (data: string): Promise<void> => {
-          await jobManager.addOutput(jobId, 'stdout', data);
-        });
-
-        ptyProcess.onExit(
-          async ({
-            exitCode,
-            signal,
-          }: {
-            exitCode: number;
-            signal?: number | undefined;
-          }): Promise<void> => {
-            logger.info(`[Job ${jobId}] Process exited with code ${exitCode}, signal ${signal}`);
-            await jobManager.addOutput(
-              jobId,
-              'info',
-              `Process exited with code ${exitCode}${signal ? ` (signal ${signal})` : ''}`
-            );
-            await jobManager.completeJob(jobId, exitCode || 0);
-          }
-        );
-
-        batchResults.push({ jobId, url, success: true, message: 'Job started successfully' });
-      } catch (spawnError) {
-        const errorMessage: string =
-          spawnError instanceof Error ? spawnError.message : 'Unknown spawn error';
-        logger.error(`[Job ${jobId}] Failed to start process for ${url}:`, spawnError);
-        await jobManager.addOutput(jobId, 'error', `Failed to start process: ${errorMessage}`);
-        await jobManager.completeJob(jobId, 1); // Mark job as error
+      if (result.success && result.jobId) {
         batchResults.push({
-          jobId,
+          jobId: result.jobId,
+          url,
+          success: true,
+          message: 'Job started successfully',
+        });
+      } else {
+        batchResults.push({
           url,
           success: false,
-          error: `Failed to start process: ${errorMessage}`,
+          error: result.error || 'Failed to start job',
         });
         overallSuccess = false;
       }

@@ -47,7 +47,7 @@ export function createSettingsManager<T>(
         const dataObj = data as Record<string, unknown>;
         const columns = Object.keys(dataObj);
         const placeholders = columns.map(() => '?').join(', ');
-        
+
         const values = Object.values(dataObj).map(value => {
           if (typeof value === 'boolean') {
             return value ? 1 : 0;
