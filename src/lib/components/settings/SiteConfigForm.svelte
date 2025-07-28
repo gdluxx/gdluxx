@@ -52,8 +52,12 @@
   });
 
   function calculatePriorityFromPattern(pattern: string): number {
-    if (pattern === '*') {return 1000;} // All sites - lowest priority
-    if (pattern.startsWith('*.')) {return 500;} // Wildcard domains
+    if (pattern === '*') {
+      return 1000;
+    } // All sites - lowest priority
+    if (pattern.startsWith('*.')) {
+      return 500;
+    } // Wildcard domains
     return 100; // Exact matches - highest priority
   }
 
@@ -74,6 +78,12 @@
     formData.cli_options = new Map(formData.cli_options);
   }
 
+  function handleOptionInputChange(event: Event, optionId: string, type: 'string' | 'number') {
+    const target = event.target as HTMLInputElement;
+    const value = type === 'number' ? Number(target.value) : target.value;
+    updateOptionValue(optionId, value);
+  }
+
   async function handleSubmit(event: SubmitEvent) {
     event.preventDefault();
     errors = {};
@@ -86,7 +96,9 @@
       errors.display_name = 'Display name is required';
     }
 
-    if (Object.keys(errors).length > 0) {return;}
+    if (Object.keys(errors).length > 0) {
+      return;
+    }
 
     isSubmitting = true;
     try {
@@ -256,28 +268,17 @@
                         <input
                           type="text"
                           value={formData.cli_options.get(option.id) || ''}
-                          oninput={e =>
-                            updateOptionValue(option.id, (e.target as HTMLInputElement).value)}
+                          oninput={e => handleOptionInputChange(e, option.id, 'string')}
                           placeholder="Enter value..."
-                          class="w-full px-2 py-1 text-sm border border-secondary-300 rounded {inputClasses.replace(
-                            'w-full px-3 py-2',
-                            ''
-                          )}"
+                          class="{inputClasses} px-2 py-1 text-sm"
                         />
                       {:else if option.type === 'number'}
                         <input
                           type="number"
                           value={formData.cli_options.get(option.id) || ''}
-                          oninput={e =>
-                            updateOptionValue(
-                              option.id,
-                              Number((e.target as HTMLInputElement).value)
-                            )}
+                          oninput={e => handleOptionInputChange(e, option.id, 'number')}
                           placeholder="Enter number..."
-                          class="w-full px-2 py-1 text-sm border border-secondary-300 rounded {inputClasses.replace(
-                            'w-full px-3 py-2',
-                            ''
-                          )}"
+                          class="{inputClasses} px-2 py-1 text-sm"
                         />
                       {/if}
                     </div>
