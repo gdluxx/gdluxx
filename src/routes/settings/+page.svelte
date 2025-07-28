@@ -38,13 +38,6 @@
       href: '/settings/apikey',
     },
     {
-      name: 'Extension Config',
-      title: 'Extension Configuration',
-      description: 'Configure CLI options for specific sites',
-      icon: 'settings' as IconName,
-      href: '/settings/extension-config',
-    },
-    {
       name: 'Debug',
       title: 'Debug Manager',
       description: 'Manage your log settings',
