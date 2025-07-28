@@ -137,7 +137,7 @@
       type="text"
       bind:value={formData.site_pattern}
       placeholder="*.youtube.com or twitter.com or *"
-      class="{inputClasses}" class:border-red-500={errors.site_pattern}
+      class="{inputClasses} {errors.site_pattern ? 'border-red-500' : ''}"
       required
     />
     {#if errors.site_pattern}
@@ -160,7 +160,7 @@
       type="text"
       bind:value={formData.display_name}
       placeholder="YouTube, Twitter, etc."
-      class="{inputClasses}" class:border-red-500={errors.display_name}
+      class="{inputClasses} {errors.display_name ? 'border-red-500' : ''}"
       required
     />
     {#if errors.display_name}
