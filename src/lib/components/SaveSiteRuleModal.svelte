@@ -59,7 +59,7 @@
           site_pattern: selectedPattern,
           display_name: displayName.trim(),
           priority,
-          cli_options: JSON.stringify(Array.from(userOptions.entries())),
+          cli_options: Array.from(userOptions.entries()),
           enabled: true,
         }),
       });
