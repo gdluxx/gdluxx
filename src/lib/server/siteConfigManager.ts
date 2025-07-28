@@ -84,7 +84,16 @@ class SiteConfigManager {
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error('Error creating site config in database:', error);
-      throw new Error('Failed to create site config.');
+
+      if (
+        error &&
+        typeof error === 'object' &&
+        'code' in error &&
+        error.code === 'SQLITE_CONSTRAINT_UNIQUE'
+      ) {
+        throw new Error('Site pattern already exists');
+      }
+      throw new Error('Failed to create site config');
     }
   }
 
@@ -111,23 +120,6 @@ class SiteConfigManager {
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error('Error reading site config from database:', error);
-      return null;
-    }
-  }
-
-  async getSiteConfigForUrl(url: string): Promise<SiteConfig | null> {
-    try {
-      const configs = await this.getSiteConfigsAll();
-
-      for (const config of configs) {
-        if (this.urlMatchesPattern(url, config.site_pattern)) {
-          return config;
-        }
-      }
-      return null;
-    } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('Error finding site config for URL:', error);
       return null;
     }
   }
@@ -250,7 +242,7 @@ class SiteConfigManager {
         WHERE category IS NOT NULL 
         ORDER BY category ASC
       `);
-      return stmt.all().map((row: any) => (row as Record<string, unknown>).category as string);
+      return stmt.all().map((row): string => (row as Record<string, unknown>).category as string);
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error('Error reading site categories from database:', error);
