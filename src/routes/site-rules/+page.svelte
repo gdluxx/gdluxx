@@ -168,7 +168,7 @@
 
 <PageLayout title="Site Rules" description="Site rules configuration">
   {#snippet icon()}
-    <Icon iconName="settings" size={32} />
+    <Icon iconName="site-rules" size={32} />
   {/snippet}
 
   <!-- Info messages -->
@@ -212,7 +212,7 @@
           class="bg-white dark:bg-secondary-800 border border-secondary-200 dark:border-secondary-700 rounded-lg p-4"
         >
           <h3 class="text-lg font-semibold text-secondary-900 dark:text-secondary-100">
-            Configurations
+            Rules
           </h3>
           <p class="text-3xl font-bold text-primary-600 dark:text-primary-400">
             {configs.length}
@@ -227,17 +227,6 @@
           </h3>
           <p class="text-3xl font-bold text-green-600 dark:text-green-400">
             {supportedSites.length}
-          </p>
-        </div>
-        <!-- Categories card -->
-        <div
-          class="bg-white dark:bg-secondary-800 border border-secondary-200 dark:border-secondary-700 rounded-lg p-4"
-        >
-          <h3 class="text-lg font-semibold text-secondary-900 dark:text-secondary-100">
-            Categories
-          </h3>
-          <p class="text-3xl font-bold text-orange-600 dark:text-orange-400">
-            {categories?.length || 0}
           </p>
         </div>
       </div>
