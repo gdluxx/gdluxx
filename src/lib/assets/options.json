@@ -213,7 +213,7 @@
         "command": "--range",
         "description": "Index range(s) specifying which files to download",
         "type": "range",
-        "placeholder": "e.g. 1-5, 8, 10-12",
+        "placeholder": "e.g. 5, 8-20, 1:24:3",
         "defaultValue": ""
       },
       {
@@ -221,7 +221,7 @@
         "command": "--chapter-range",
         "description": "Like '--range', but applies to manga chapters and other delegated URLs",
         "type": "range",
-        "placeholder": "e.g. 1-3, 5",
+        "placeholder": "e.g. 5, 8-20, 1:24:3",
         "defaultValue": ""
       },
       {

@@ -342,7 +342,7 @@
   <!-- Modal -->
   <Modal show={showAddModal} onClose={closeModal} size="xl">
     <div class="p-6">
-      <h2 class="text-xl font-bold text-secondary-900 dark:text-secondary-100 mb-4">
+      <h2 class="cursor-default text-xl font-bold text-secondary-900 dark:text-secondary-100 mb-4">
         {editingConfig ? 'Edit' : 'Add'} Site Rule
       </h2>
       <SiteConfigForm

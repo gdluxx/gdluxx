@@ -9,7 +9,7 @@
   -->
 
 <script lang="ts">
-  import { Button, Info } from '$lib/components/ui';
+  import { Button } from '$lib/components/ui';
   import { Icon } from '$lib/components';
   import optionsData from '$lib/assets/options.json';
   import type { Option, OptionsData } from '$lib/types/options';
@@ -103,27 +103,12 @@
   }
 
   const inputClasses =
-    'w-full px-3 py-2 border border-secondary-300 bg-secondary-100 dark:bg-secondary-900 text-secondary-900 dark:text-secondary-100 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:border-secondary-400';
+    'w-full px-3 py-2 border border-secondary-300 bg-secondary-100 dark:bg-secondary-900 text-secondary-900' +
+    ' dark:text-secondary-100 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500' +
+    ' focus:border-primary-500 dark:border-secondary-400';
 </script>
 
 <form onsubmit={handleSubmit} class="space-y-6">
-  <!-- Site Selection -->
-  <div>
-    <label
-      for="siteSelect"
-      class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2"
-    >
-      Select Supported Site
-    </label>
-    <select id="siteSelect" bind:value={selectedSiteFromList} class={inputClasses}>
-      <option value="">Choose from supported sites...</option>
-      {#each supportedSites as site}
-        <option value={site.url_pattern}>{site.name} ({site.url_pattern})</option>
-      {/each}
-    </select>
-  </div>
-
-  <!-- Manual Pattern Entry -->
   <div>
     <label
       for="site_pattern"
@@ -131,19 +116,46 @@
     >
       Site Pattern
     </label>
-    <input
-      id="site_pattern"
-      type="text"
+    <input 
+      list="supportedSites" 
+      id="site_pattern" 
+      name="site_pattern" 
       bind:value={formData.site_pattern}
-      placeholder="*.youtube.com or twitter.com or *"
+      placeholder="Type site name, or enter pattern like *.youtube.com, twitter.com, or *"
       class="{inputClasses} {errors.site_pattern ? 'border-red-500' : ''}"
+      autocomplete="off"
     />
+    <datalist id="supportedSites">
+      {#each supportedSites as site}
+        <option value={site.url_pattern}>{site.name}</option>
+      {/each}
+    </datalist>
     {#if errors.site_pattern}
       <p class="text-red-500 text-sm mt-1">{errors.site_pattern}</p>
     {/if}
-    <p class="text-sm text-secondary-600 dark:text-secondary-400 mt-1">
-      Use * for all sites, *.domain.com for subdomains, or exact domain
-    </p>
+
+    <div class="mt-2 mr-1.5 flex justify-end">
+    <div class="relative inline-block group">
+      <span
+        class="rounded-sm text-sm bg-primary-200 dark:bg-primary-600 text-secondary-900 dark:text-secondary-100
+          px-3 py-1 cursor-default transition-colors"
+      >
+    More Info
+  </span>
+      <div
+        class="absolute right-full top-1/2 transform -translate-y-1/2 mr-2 w-64 p-4 bg-accent-200 dark:bg-accent-900
+          rounded shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all"
+      >
+        <p class="cursor-default text-sm text-secondary-800 dark:text-secondary-200 mt-1">
+          Select from <b>{supportedSites.length}</b> supported sites or enter custom pattern
+          <br>- * for all sites
+          <br>- *.domain.com
+        </p>
+      </div>
+    </div>
+    </div>
+
+
   </div>
 
   <div>
@@ -167,33 +179,29 @@
 
   <!-- Enable rule -->
   <div class="space-y-4">
+    <label for="enabled">
     <div
       class="flex items-center justify-between p-3 bg-secondary-50 dark:bg-secondary-800 rounded-lg"
     >
-      <div>
-        <label for="enabled" class="font-medium text-secondary-900 dark:text-secondary-100">
-          Rule {formData.enabled ? 'Enabled' : 'Disabled'}
-        </label>
-        <p class="text-sm text-secondary-600 dark:text-secondary-400">
-          When disabled, this configuration will be ignored
-        </p>
-      </div>
+      <span class="font-medium text-secondary-900 dark:text-secondary-100">
+        Rule {formData.enabled ? 'Enabled' : 'Disabled'}
+      </span>
       <div class="relative inline-block w-[26px] h-4 ml-4">
         <input id="enabled" type="checkbox" bind:checked={formData.enabled} class="sr-only peer" />
-        <label
-          for="enabled"
+        <span
           class="block w-full h-full bg-accent-100 peer-checked:bg-accent-900 rounded-full
           cursor-pointer transition-colors duration-300 relative after:content-[''] after:absolute
           after:top-0.5 after:left-0.5 after:w-3 after:h-3 after:bg-white after:rounded-full
           after:shadow-md after:transition-transform after:duration-300 peer-checked:after:translate-x-[11px]"
-        ></label>
+        ></span>
       </div>
     </div>
+    </label>
   </div>
 
   <!-- CLI Options Selection -->
   <div>
-    <h3 class="text-lg font-medium text-secondary-900 dark:text-secondary-100 mb-4">CLI Options</h3>
+    <h3 class="cursor-default text-lg font-medium text-secondary-900 dark:text-secondary-100 mb-4">CLI Options</h3>
     <div
       class="max-h-96 overflow-y-auto border border-secondary-300 dark:border-secondary-400 rounded p-4 bg-secondary-50 dark:bg-secondary-800"
     >
@@ -224,6 +232,8 @@
                       after:shadow-md after:transition-transform after:duration-300 peer-checked:after:translate-x-[11px]"
                   ></label>
                 </div>
+
+                <!-- Label and description -->
                 <div class="flex-1">
                   <label
                     for="option-{option.id}"
@@ -234,39 +244,46 @@
                   <p class="text-sm text-secondary-600 dark:text-secondary-400">
                     {option.description}
                   </p>
+                </div>
 
+                <!-- Input fields -->
+                <div class="flex-shrink-0 w-48 text-right">
                   <!-- Option value input for non-boolean options -->
                   {#if formData.cli_options.has(option.id) && option.type !== 'boolean'}
-                    <div class="mt-2">
-                      {#if option.type === 'string'}
-                        <input
-                          type="text"
-                          value={formData.cli_options.get(option.id) || ''}
-                          oninput={e => handleOptionInputChange(e, option.id, 'string')}
-                          placeholder="Enter value..."
-                          class="{inputClasses} px-2 py-1 text-sm"
-                        />
-                      {:else if option.type === 'number'}
-                        <input
-                          type="number"
-                          value={formData.cli_options.get(option.id) || ''}
-                          oninput={e => handleOptionInputChange(e, option.id, 'number')}
-                          placeholder="Enter number..."
-                          class="{inputClasses} px-2 py-1 text-sm"
-                        />
-                      {/if}
-                    </div>
+                    {#if option.type === 'string'}
+                      <input
+                        type="text"
+                        value={formData.cli_options.get(option.id) || ''}
+                        oninput={e => handleOptionInputChange(e, option.id, 'string')}
+                        placeholder="Enter value..."
+                        class="{inputClasses} px-2 py-1 text-sm w-full"
+                      />
+                    {:else if option.type === 'number'}
+                      <input
+                        type="number"
+                        value={formData.cli_options.get(option.id) || ''}
+                        oninput={e => handleOptionInputChange(e, option.id, 'number')}
+                        placeholder="Enter number..."
+                        class="{inputClasses} px-2 py-1 text-sm w-full"
+                      />
+                    {:else if option.type === 'range'}
+                      <input
+                        type="text"
+                        value={formData.cli_options.get(option.id) || ''}
+                        oninput={e => handleOptionInputChange(e, option.id, 'string')}
+                        placeholder={option.placeholder}
+                        class="{inputClasses} px-2 py-1 text-sm w-full"
+                      />
+                    {/if}
                   {/if}
 
                   <!-- Show value for boolean options when enabled -->
                   {#if formData.cli_options.has(option.id) && option.type === 'boolean'}
-                    <div class="mt-2">
-                      <span
-                        class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300"
-                      >
-                        ✓ Enabled ({formData.cli_options.get(option.id) ? 'true' : 'false'})
-                      </span>
-                    </div>
+                    <span
+                      class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300"
+                    >
+                      Enabled
+                    </span>
                   {/if}
                 </div>
               </div>
