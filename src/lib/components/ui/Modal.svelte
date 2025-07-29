@@ -59,7 +59,7 @@
 {#if show}
   <!-- Modal backdrop -->
   <div
-    class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
+    class="fixed inset-0 backdrop-blur-sm z-50"
     onclick={handleBackdropClick}
     onkeydown={handleBackdropKeydown}
     role="dialog"
