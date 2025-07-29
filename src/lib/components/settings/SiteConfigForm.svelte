@@ -294,15 +294,15 @@
     </div>
   </div>
 
-  <div class="flex gap-4 pt-4">
-    <Button type="submit" disabled={isSubmitting} variant="primary">
+  <div class="flex gap-4 justify-end">
+    <Button type="submit" disabled={isSubmitting} variant="primary" size="sm">
       {#if isSubmitting}
         <Icon iconName="loading" size={16} class="animate-spin mr-2" />
         Saving...
       {:else}
-        Save Configuration
+        Save Rule
       {/if}
     </Button>
-    <Button type="button" onclick={onCancel}>Cancel</Button>
+    <Button type="button" onclick={onCancel} variant="outline-secondary" size="sm">Cancel</Button>
   </div>
 </form>
