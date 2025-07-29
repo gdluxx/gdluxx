@@ -151,7 +151,7 @@ gdluxx will use the `data/` directory to store:
 
 5. Features
 
-   - [ ] Drag and drop for input files
+   - [ ] ~~Drag and drop for input files~~
    - [x] Drag and drop for config files
    - [ ] Add `--extractor-info` and `--list-keywords` page
    - [x] Allow ConfigEditor component to update paths smartly
