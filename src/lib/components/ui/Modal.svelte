@@ -71,18 +71,19 @@
       <div
         class="bg-white dark:bg-secondary-800 rounded-lg shadow-xl w-full {sizeClasses[
           size
-        ]} max-h-[90vh] overflow-auto"
+        ]} max-h-[90vh] overflow-auto relative"
         transition:scale={{ duration: 200, easing: quintOut }}
       >
         <!-- Close button -->
         {#if onClose}
-          <div class="absolute top-4 right-4">
+          <div class="absolute top-4 right-4 z-10">
             <button
               onclick={onClose}
-              class="text-secondary-400 hover:text-secondary-600 dark:text-secondary-500 dark:hover:text-secondary-300 transition-colors"
+              class="cursor-pointer flex-shrink-0 w-8 h-8 inline-flex justify-center items-center rounded-full border border-transparent bg-secondary-100 text-secondary-800 hover:bg-secondary-200 focus:outline-hidden focus:bg-secondary-200 focus:ring-2 focus:ring-secondary-300 transition-all dark:bg-secondary-700 dark:hover:bg-secondary-600 dark:text-secondary-400 dark:focus:bg-secondary-600 dark:focus:ring-secondary-500"
               aria-label="Close modal"
             >
-              <Icon iconName="close" size={20} />
+              <span class="sr-only">Close</span>
+              <Icon iconName="close" size={12} />
             </button>
           </div>
         {/if}
