@@ -26,6 +26,10 @@
   let error = $state<string | null>(null);
   let success = $state<string | null>(null);
 
+  let sortMode = $state<'alphabetical' | 'cli-options' | 'none'>('none');
+  let isAlphabeticalAscending = $state(true);
+  let isCLIOptionsAscending = $state(false); // Start with descending (highest first)
+
   $effect(() => {
     if (error || success) {
       setTimeout(() => {
@@ -129,6 +133,37 @@
     editingConfig = config;
     showAddModal = true;
   }
+
+  function sortByAlpha() {
+    if (sortMode === 'alphabetical') {
+      isAlphabeticalAscending = !isAlphabeticalAscending;
+    } else {
+      sortMode = 'alphabetical';
+      isAlphabeticalAscending = true;
+    }
+
+    configs = [...configs].sort((a, b) => {
+      const comparison = a.display_name.localeCompare(b.display_name);
+      return isAlphabeticalAscending ? comparison : -comparison;
+    });
+  }
+
+  function sortByCLIOptions() {
+    if (sortMode === 'cli-options') {
+      isCLIOptionsAscending = !isCLIOptionsAscending;
+    } else {
+      sortMode = 'cli-options';
+      isCLIOptionsAscending = false; // Start with descending (highest first)
+    }
+
+    configs = [...configs].sort((a, b) => {
+      const cliDiff = isCLIOptionsAscending
+        ? a.cli_options.length - b.cli_options.length // Ascending: low to high
+        : b.cli_options.length - a.cli_options.length; // Descending: high to low
+      if (cliDiff !== 0) return cliDiff;
+      return a.display_name.localeCompare(b.display_name);
+    });
+  }
 </script>
 
 <PageLayout title="Site Rules" description="Site rules configuration">
@@ -206,73 +241,74 @@
           </p>
         </div>
       </div>
-        <!-- buttons -->
-        <div
-          class="bg-white dark:bg-secondary-800/50 rounded-sm border border-secondary-200 dark:border-secondary-700 p-3"
-        >
-          <div class="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
-            <div class="flex items-center gap-2">
-              <Button
-                onclick={refreshSupportedSites}
-                disabled={isRefreshingSites}
-                variant="outline-primary"
-                size="sm"
-              >
-                {#if isRefreshingSites}
-                  <Icon iconName="loading" size={16} class="animate-spin mr-2" />
-                  Refreshing...
-                {:else}
-                  <Icon iconName="magnifying-glass" size={16} class="mr-2" />
-                  Refresh Sites
-                {/if}
-              </Button>
-              <Button
-                onclick={openAddModal}
-                variant="primary"
-                size="sm"
-              >
-                <Icon iconName="plus" size={16} class="mr-2" />
-                Add Rule
-              </Button>
-            </div>
+      <!-- buttons -->
+      <div
+        class="bg-white dark:bg-secondary-800/50 rounded-sm border border-secondary-200 dark:border-secondary-700 p-3"
+      >
+        <div class="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+          <div class="flex items-center gap-2">
+            <Button
+              onclick={refreshSupportedSites}
+              disabled={isRefreshingSites}
+              variant="outline-primary"
+              size="sm"
+            >
+              {#if isRefreshingSites}
+                <Icon iconName="loading" size={16} class="animate-spin mr-2" />
+                Refreshing...
+              {:else}
+                <Icon iconName="magnifying-glass" size={16} class="mr-2" />
+                Refresh Sites
+              {/if}
+            </Button>
+            <Button onclick={openAddModal} variant="primary" size="sm">
+              <Icon iconName="plus" size={16} class="mr-2" />
+              Add Rule
+            </Button>
+          </div>
 
-            <div class="flex items-center gap-3">
-              <Button
-                aria-label="1label"
-                variant="outline-primary"
-                size="sm"
-                title="1title"
-              >
-                <Icon iconName="sort" size={20} />
-              </Button>
-              <Button
-                aria-label="2label"
-                variant="outline-primary"
-                size="sm"
-                title="2title"
-              >
-                <Icon iconName="date" class="w-5 h-5" />
-              </Button>
-              <Button
-                aria-label="3label"
-                variant="outline-primary"
-                size="sm"
-                title="3title"
-              >
-                <Icon iconName="download-arrow" class="w-5 h-5" />
-              </Button>
-            </div>
+          <div class="flex items-center gap-3">
+            <Button
+              onclick={sortByAlpha}
+              aria-label="Sort alphabetically"
+              variant={sortMode === 'alphabetical' ? 'primary' : 'outline-primary'}
+              size="sm"
+              title={`Sort alphabetically ${sortMode === 'alphabetical' && !isAlphabeticalAscending ? '(Z-A)' : '(A-Z)'}`}
+            >
+              <Icon
+                iconName={sortMode === 'alphabetical'
+                  ? isAlphabeticalAscending
+                    ? 'alpha-asc'
+                    : 'alpha-desc'
+                  : 'alpha-var'}
+                size={24}
+              />
+            </Button>
+            <Button
+              onclick={sortByCLIOptions}
+              aria-label="Sort by CLI options count"
+              variant={sortMode === 'cli-options' ? 'primary' : 'outline-primary'}
+              size="sm"
+              title={`Sort by CLI options count ${sortMode === 'cli-options' && isCLIOptionsAscending ? '(0-9)' : '(9-0)'}`}
+            >
+              <Icon
+                iconName={sortMode === 'cli-options'
+                  ? isCLIOptionsAscending
+                    ? 'num-asc'
+                    : 'num-desc'
+                  : 'num-var'}
+                size={24}
+              />
+            </Button>
           </div>
         </div>
-
+      </div>
     </div>
 
     <!-- Config list -->
     <ul class="divide-y divide-secondary-200 dark:divide-secondary-700">
       {#each configs as config}
-        <li
-          class="flex w-full items-center justify-between p-4"
-        >
+        <li class="flex w-full items-center justify-between p-4">
           <div class="flex-1">
             <div class="flex items-center gap-2 mb-1">
               <h3 class="text-lg font-medium text-secondary-900 dark:text-secondary-100">
