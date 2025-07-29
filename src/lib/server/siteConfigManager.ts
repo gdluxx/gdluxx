@@ -23,7 +23,6 @@ export interface SiteConfig {
   id?: number;
   site_pattern: string;
   display_name: string;
-  priority: number;
   cli_options: Array<[string, string | number | boolean]>;
   is_default: boolean;
   enabled: boolean;
@@ -66,14 +65,13 @@ class SiteConfigManager {
   ): Promise<number> {
     try {
       const stmt = this.db.prepare(`
-        INSERT INTO site_configs (site_pattern, display_name, priority, cli_options, is_default, enabled, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO site_configs (site_pattern, display_name, cli_options, is_default, enabled, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
       `);
       const now = getCurrentTimestamp();
       const result = stmt.run(
         config.site_pattern,
         config.display_name,
-        config.priority,
         JSON.stringify(config.cli_options),
         config.is_default ? 1 : 0,
         config.enabled ? 1 : 0,
@@ -102,7 +100,6 @@ class SiteConfigManager {
       const stmt = this.db.prepare(`
         SELECT * FROM site_configs 
         WHERE enabled = 1 
-        ORDER BY priority DESC, display_name ASC
       `);
       return stmt.all().map(row => this.rowToSiteConfig(row as Record<string, unknown>));
     } catch (error) {
@@ -136,10 +133,6 @@ class SiteConfigManager {
       if (updates.display_name) {
         fields.push('display_name = ?');
         values.push(updates.display_name);
-      }
-      if (updates.priority !== undefined) {
-        fields.push('priority = ?');
-        values.push(updates.priority);
       }
       if (updates.cli_options) {
         fields.push('cli_options = ?');
@@ -330,9 +323,9 @@ class SiteConfigManager {
     try {
       const configs = await this.getSiteConfigsAll();
 
-      const matchingConfigs = configs
-        .filter(config => config.enabled && this.urlMatchesPattern(url, config.site_pattern))
-        .sort((a, b) => b.priority - a.priority);
+      const matchingConfigs = configs.filter(
+        config => config.enabled && this.urlMatchesPattern(url, config.site_pattern)
+      );
 
       if (matchingConfigs.length === 0) {
         return [];
@@ -341,7 +334,7 @@ class SiteConfigManager {
       const selectedConfig = matchingConfigs[0];
       // eslint-disable-next-line no-console
       console.log(
-        `[SiteConfig] Matched URL ${url} to config "${selectedConfig.display_name}" (pattern: ${selectedConfig.site_pattern}, priority: ${selectedConfig.priority})`
+        `[SiteConfig] Matched URL ${url} to config "${selectedConfig.display_name}" (pattern: ${selectedConfig.site_pattern}})`
       );
       // eslint-disable-next-line no-console
       console.log(`[SiteConfig] Applying CLI options:`, selectedConfig.cli_options);
@@ -363,9 +356,9 @@ class SiteConfigManager {
     try {
       const configs = await this.getSiteConfigsAll();
 
-      const matchingConfigs = configs
-        .filter(config => config.enabled && this.urlMatchesPattern(url, config.site_pattern))
-        .sort((a, b) => b.priority - a.priority);
+      const matchingConfigs = configs.filter(
+        config => config.enabled && this.urlMatchesPattern(url, config.site_pattern)
+      );
 
       if (matchingConfigs.length === 0) {
         return {
@@ -377,7 +370,7 @@ class SiteConfigManager {
       const selectedConfig = matchingConfigs[0];
       // eslint-disable-next-line no-console
       console.log(
-        `[SiteConfig] Matched URL ${url} to config "${selectedConfig.display_name}" (pattern: ${selectedConfig.site_pattern}, priority: ${selectedConfig.priority})`
+        `[SiteConfig] Matched URL ${url} to config "${selectedConfig.display_name}" (pattern: ${selectedConfig.site_pattern}})`
       );
 
       // Convert cli_options array to Map
@@ -423,7 +416,6 @@ class SiteConfigManager {
       id: row.id as number,
       site_pattern: row.site_pattern as string,
       display_name: row.display_name as string,
-      priority: row.priority as number,
       cli_options: JSON.parse((row.cli_options as string) || '[]'),
       is_default: Boolean(row.is_default),
       enabled: Boolean(row.enabled),

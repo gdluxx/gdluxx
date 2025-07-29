@@ -132,13 +132,6 @@ export const siteConfigSchema: ValidationSchema = {
       return validateDisplayName(value);
     },
   },
-  priority: {
-    required: true,
-    custom: value => {
-      const num = Number(value);
-      return !isNaN(num) && Number.isInteger(num) && num >= 1 && num <= 1000;
-    },
-  },
   cli_options: {
     required: true,
     custom: validateCliOptions,
@@ -170,12 +163,6 @@ export const siteConfigUpdateSchema: ValidationSchema = {
         return false;
       }
       return validateDisplayName(value);
-    },
-  },
-  priority: {
-    custom: value => {
-      const num = Number(value);
-      return !isNaN(num) && Number.isInteger(num) && num >= 1 && num <= 1000;
     },
   },
   cli_options: {

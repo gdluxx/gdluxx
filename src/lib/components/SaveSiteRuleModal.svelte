@@ -25,7 +25,6 @@
 
   let selectedPattern = $state(detectedPatterns[0] ?? '');
   let displayName = $state('');
-  let priority = $state(1);
   let isSaving = $state(false);
   let error = $state<string | null>(null);
 
@@ -58,7 +57,6 @@
         body: JSON.stringify({
           site_pattern: selectedPattern,
           display_name: displayName.trim(),
-          priority,
           cli_options: Array.from(userOptions.entries()),
           enabled: true,
         }),
@@ -67,7 +65,6 @@
       if (response.ok) {
         onSaved();
         displayName = '';
-        priority = 1;
         error = null;
       } else {
         const data = await response.json();
@@ -169,21 +166,6 @@
                   disabled={isSaving}
                   placeholder="My custom rule"
                   class="w-full rounded-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50"
-                />
-              </div>
-
-              <div>
-                <label for="priority" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Priority:
-                </label>
-                <input
-                  id="priority"
-                  type="number"
-                  bind:value={priority}
-                  disabled={isSaving}
-                  min="1"
-                  max="100"
-                  class="w-full rounded-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:border-primary-500 focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50"
                 />
               </div>
 

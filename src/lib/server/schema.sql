@@ -118,7 +118,6 @@ CREATE TABLE IF NOT EXISTS site_configs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     site_pattern TEXT NOT NULL,
     display_name TEXT NOT NULL,
-    priority INTEGER NOT NULL,
     cli_options TEXT NOT NULL,
     is_default INTEGER DEFAULT 0,
     enabled INTEGER DEFAULT 1,
@@ -162,6 +161,5 @@ CREATE INDEX IF NOT EXISTS idx_job_outputs_jobId ON job_outputs(jobId);
 CREATE INDEX IF NOT EXISTS idx_job_outputs_timestamp ON job_outputs(timestamp);
 CREATE INDEX IF NOT EXISTS idx_apiKey_userId ON apiKey(userId);
 CREATE INDEX IF NOT EXISTS idx_site_configs_pattern ON site_configs(site_pattern);
-CREATE INDEX IF NOT EXISTS idx_site_configs_priority ON site_configs(priority DESC);
 CREATE INDEX IF NOT EXISTS idx_supported_sites_pattern ON supported_sites(url_pattern);
 CREATE INDEX IF NOT EXISTS idx_supported_sites_category ON supported_sites(category);

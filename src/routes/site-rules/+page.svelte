@@ -129,26 +129,6 @@
     editingConfig = config;
     showAddModal = true;
   }
-
-  function getPriorityLabel(priority: number): string {
-    if (priority >= 1000) {
-      return 'Global';
-    }
-    if (priority >= 500) {
-      return 'Domain';
-    }
-    return 'Specific';
-  }
-
-  function getPriorityColor(priority: number): string {
-    if (priority >= 1000) {
-      return 'text-blue-600 dark:text-blue-400';
-    }
-    if (priority >= 500) {
-      return 'text-green-600 dark:text-green-400';
-    }
-    return 'text-orange-600 dark:text-orange-400';
-  }
 </script>
 
 <PageLayout title="Site Rules" description="Site rules configuration">
@@ -186,8 +166,7 @@
     <div class="cursor-default border-b border-secondary-200 px-4 py-4 dark:border-secondary-700">
       <div class="flex items-center justify-between mb-3">
         <p class="font-semibold text-secondary-900 dark:text-secondary-100">
-          Configure CLI options for specific sites when using the browser extension. Higher priority
-          configurations override lower priority ones.
+          Configure site rules using <i>gallery-dl</i>'s CLI options.
         </p>
       </div>
 
@@ -253,7 +232,7 @@
                 size="sm"
               >
                 <Icon iconName="plus" size={16} class="mr-2" />
-                Add Configuration
+                Add Rule
               </Button>
             </div>
 
@@ -299,13 +278,6 @@
               <h3 class="text-lg font-medium text-secondary-900 dark:text-secondary-100">
                 {config.display_name}
               </h3>
-              <span
-                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {getPriorityColor(
-                  config.priority
-                )} bg-secondary-100 dark:bg-secondary-700"
-              >
-                {getPriorityLabel(config.priority)}
-              </span>
               {#if config.is_default}
                 <span
                   class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/20"
@@ -327,7 +299,7 @@
               >
             </p>
             <p class="text-sm text-secondary-600 dark:text-secondary-400">
-              Priority: {config.priority} | CLI Options: {config.cli_options.length}
+              CLI Options: {config.cli_options.length}
             </p>
           </div>
           <!-- Buttons -->
@@ -371,7 +343,7 @@
   <Modal show={showAddModal} onClose={closeModal} size="xl">
     <div class="p-6">
       <h2 class="text-xl font-bold text-secondary-900 dark:text-secondary-100 mb-4">
-        {editingConfig ? 'Edit' : 'Add'} Site Configuration
+        {editingConfig ? 'Edit' : 'Add'} Site Rule
       </h2>
       <SiteConfigForm
         config={editingConfig}

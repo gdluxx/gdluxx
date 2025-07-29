@@ -9,7 +9,7 @@
   -->
 
 <script lang="ts">
-  import { Button } from '$lib/components/ui';
+  import { Button, Info } from '$lib/components/ui';
   import { Icon } from '$lib/components';
   import optionsData from '$lib/assets/options.json';
   import type { Option, OptionsData } from '$lib/types/options';
@@ -29,7 +29,6 @@
   const formData = $state({
     site_pattern: config?.site_pattern ?? '',
     display_name: config?.display_name ?? '',
-    priority: config?.priority ?? 100,
     cli_options: new Map(config?.cli_options ?? []),
     is_default: config?.is_default ?? false,
     enabled: config?.enabled !== false,
@@ -46,20 +45,9 @@
       if (site) {
         formData.site_pattern = site.url_pattern;
         formData.display_name = site.name;
-        formData.priority = calculatePriorityFromPattern(site.url_pattern);
       }
     }
   });
-
-  function calculatePriorityFromPattern(pattern: string): number {
-    if (pattern === '*') {
-      return 1000;
-    } // All sites - lowest priority
-    if (pattern.startsWith('*.')) {
-      return 500;
-    } // Wildcard domains
-    return 100; // Exact matches - highest priority
-  }
 
   function toggleOption(option: Option) {
     if (formData.cli_options.has(option.id)) {
@@ -105,7 +93,6 @@
       await onSave({
         site_pattern: formData.site_pattern,
         display_name: formData.display_name,
-        priority: formData.priority,
         cli_options: Array.from(formData.cli_options.entries()),
         is_default: formData.is_default,
         enabled: formData.enabled,
@@ -150,7 +137,6 @@
       bind:value={formData.site_pattern}
       placeholder="*.youtube.com or twitter.com or *"
       class="{inputClasses} {errors.site_pattern ? 'border-red-500' : ''}"
-      required
     />
     {#if errors.site_pattern}
       <p class="text-red-500 text-sm mt-1">{errors.site_pattern}</p>
@@ -172,58 +158,36 @@
       type="text"
       bind:value={formData.display_name}
       placeholder="YouTube, Twitter, etc."
-      class="{inputClasses} {errors.display_name ? 'border-red-500' : ''}"
-      required
+      class="{inputClasses} {errors.display_name ? 'border-red-300 dark:border-red-700' : ''}"
     />
     {#if errors.display_name}
       <p class="text-red-500 text-sm mt-1">{errors.display_name}</p>
     {/if}
   </div>
 
-  <div>
-    <label
-      for="priority"
-      class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2"
-    >
-      Priority
-    </label>
-    <input
-      id="priority"
-      type="number"
-      bind:value={formData.priority}
-      min="1"
-      max="1000"
-      class={inputClasses}
-    />
-    <p class="text-sm text-secondary-600 dark:text-secondary-400 mt-1">
-      Higher numbers = higher priority. 1000 = all sites, 500 = wildcards, 100 = exact matches
-    </p>
-  </div>
-
-  <!-- Configuration Settings -->
+  <!-- Enable rule -->
   <div class="space-y-4">
-    <h3 class="text-lg font-medium text-secondary-900 dark:text-secondary-100">
-      Configuration Settings
-    </h3>
-
-    <!-- Enabled Toggle -->
     <div
       class="flex items-center justify-between p-3 bg-secondary-50 dark:bg-secondary-800 rounded-lg"
     >
       <div>
         <label for="enabled" class="font-medium text-secondary-900 dark:text-secondary-100">
-          Configuration Enabled
+          Rule {formData.enabled ? 'Enabled' : 'Disabled'}
         </label>
         <p class="text-sm text-secondary-600 dark:text-secondary-400">
-          When disabled, this configuration will be completely ignored (but not deleted)
+          When disabled, this configuration will be ignored
         </p>
       </div>
-      <input
-        id="enabled"
-        type="checkbox"
-        bind:checked={formData.enabled}
-        class="w-4 h-4 text-primary-600 bg-secondary-100 border-secondary-300 rounded focus:ring-primary-500 dark:focus:ring-primary-600 dark:ring-offset-secondary-800 focus:ring-2 dark:bg-secondary-700 dark:border-secondary-600"
-      />
+      <div class="relative inline-block w-[26px] h-4 ml-4">
+        <input id="enabled" type="checkbox" bind:checked={formData.enabled} class="sr-only peer" />
+        <label
+          for="enabled"
+          class="block w-full h-full bg-accent-100 peer-checked:bg-accent-900 rounded-full
+          cursor-pointer transition-colors duration-300 relative after:content-[''] after:absolute
+          after:top-0.5 after:left-0.5 after:w-3 after:h-3 after:bg-white after:rounded-full
+          after:shadow-md after:transition-transform after:duration-300 peer-checked:after:translate-x-[11px]"
+        ></label>
+      </div>
     </div>
   </div>
 
@@ -243,13 +207,23 @@
           <div class="mt-2 space-y-2">
             {#each category.options as option}
               <div class="flex items-start gap-2 p-2 bg-white dark:bg-secondary-700 rounded">
-                <input
-                  type="checkbox"
-                  id="option-{option.id}"
-                  checked={formData.cli_options.has(option.id)}
-                  onchange={() => toggleOption(option)}
-                  class="mt-1"
-                />
+                <!-- slider -->
+                <div class="relative inline-block w-[26px] h-4">
+                  <input
+                    id="option-{option.id}"
+                    type="checkbox"
+                    checked={formData.cli_options.has(option.id)}
+                    onchange={() => toggleOption(option)}
+                    class="sr-only peer"
+                  />
+                  <label
+                    for="option-{option.id}"
+                    class="block w-full h-full bg-accent-100 peer-checked:bg-accent-900 rounded-full
+                      cursor-pointer transition-colors duration-300 relative after:content-[''] after:absolute
+                      after:top-0.5 after:left-0.5 after:w-3 after:h-3 after:bg-white after:rounded-full
+                      after:shadow-md after:transition-transform after:duration-300 peer-checked:after:translate-x-[11px]"
+                  ></label>
+                </div>
                 <div class="flex-1">
                   <label
                     for="option-{option.id}"
