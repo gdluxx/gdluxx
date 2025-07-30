@@ -2,7 +2,7 @@
   "name": "gdluxx",
   "sideEffects": false,
   "private": true,
-  "version": "0.1.2",
+  "version": "0.2.0",
   "repository": {
     "type": "git",
     "url": "git@github.com:gdluxx/gdluxx.git"

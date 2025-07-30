@@ -1,5 +1,26 @@
 # Changelog
 
+# [0.2.0](https://github.com/gdluxx/gdluxx/compare/v0.1.2...v0.2.0) (2025-07-30)
+
+
+### Bug Fixes
+
+* adjust reactive breakpoint for statistics grid ([c14a8e8](https://github.com/gdluxx/gdluxx/commit/c14a8e890e351d6f1bdda9d1d2252f0f1bf5f8b4))
+* data type return expecting array of arrays ([fa4dc8c](https://github.com/gdluxx/gdluxx/commit/fa4dc8ca50dd70a7cc4e2b572916ffc7900aa374))
+* fix JSON serialization/deserialization issue in new CLI options manager ([3980746](https://github.com/gdluxx/gdluxx/commit/3980746883c5a0bce591d3609cb801627ccc00cb))
+* sqlite data type error in settingsManager.ts ([fad016e](https://github.com/gdluxx/gdluxx/commit/fad016eea79bbfccb775a159d8874e2dfeb8618b))
+* styling syntax ([41aa635](https://github.com/gdluxx/gdluxx/commit/41aa635e809be7cb646e961064ab928df77dac3f))
+* update navigation import ([1f500d8](https://github.com/gdluxx/gdluxx/commit/1f500d8ce842ff057aef8b0557477b6829c0463b))
+
+
+### Features
+
+* add extension config page to allow cli options for the browser extension. combining it with the ConfigForm options ([c158b3d](https://github.com/gdluxx/gdluxx/commit/c158b3d34d978e2b27c6af58c54f2c78be46952d))
+* add file upload component ([ef09363](https://github.com/gdluxx/gdluxx/commit/ef09363716775f33b02d6d930623c486b26e0e84))
+* add job count tracking and modified jobsList UI with status icons ([e6e9079](https://github.com/gdluxx/gdluxx/commit/e6e9079b69c7bdaee517d883b289178f78338a05))
+* enhance config path transformation for docker bind mount compatibility ([cf57a13](https://github.com/gdluxx/gdluxx/commit/cf57a134543a222db3aeafe65c6040dea98775a7))
+* users can now upload a configuration file ([960bfda](https://github.com/gdluxx/gdluxx/commit/960bfda2676cb0be3e8f794ce08cc34ff5a4d862))
+
 ## [0.1.2](https://github.com/gdluxx/gdluxx/compare/v0.1.1...v0.1.2) (2025-07-09)
 
 
