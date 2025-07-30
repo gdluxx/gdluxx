@@ -40,7 +40,15 @@ export type IconName =
   | 'download-arrow'
   | 'no-circle'
   | 'dot'
-  | 'date';
+  | 'date'
+  | 'alpha-asc'
+  | 'alpha-desc'
+  | 'alpha-var'
+  | 'num-asc'
+  | 'num-desc'
+  | 'num-var'
+  | 'site-rules'
+  | 'edit';
 
 export interface IconConfig {
   name: IconName;

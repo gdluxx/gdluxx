@@ -15,9 +15,9 @@ import type { BatchJobStartResult } from '$lib/stores/jobs.svelte';
 import { createApiResponse, handleApiError } from '$lib/server/api-utils';
 import { validateInput } from '$lib/server/validation/validation-utils';
 import { externalApiSchema } from '$lib/server/validation/command-validation';
-import { jobManager } from '$lib/server/jobs/jobManager';
-import { PATHS, TERMINAL } from '$lib/server/constants';
-import type { IPty } from '@homebridge/node-pty-prebuilt-multiarch';
+import { siteConfigManager } from '$lib/server/siteConfigManager';
+import { validateAndBuildCliArgs } from '$lib/server/validation/option-validation';
+import { executeGalleryDlCommand } from '$lib/server/jobs/commandExecutor';
 
 interface ExternalApiRequestBody {
   urlToProcess: unknown;
@@ -83,54 +83,22 @@ export const POST: RequestHandler = async ({ request }: RequestEvent): Promise<R
   );
 
   try {
-    const { spawn } = await import('@homebridge/node-pty-prebuilt-multiarch');
+    // Get site-specific CLI options
+    const siteCliOptions = await siteConfigManager.getCliOptionsForUrl(urlToProcess);
+    const optionsMap = new Map(siteCliOptions);
 
-    // Create job
-    const jobId: string = await jobManager.createJob(urlToProcess);
-    await jobManager.addOutput(jobId, 'info', `Starting download for: ${urlToProcess}`);
-    await jobManager.addOutput(jobId, 'info', `Job ID: ${jobId}`);
+    // Build CLI arguments from site options
+    const cliArgs = validateAndBuildCliArgs(optionsMap);
 
-    const processArgs: string[] = [urlToProcess, '--config', './data/config.json'];
+    // Execute command using shared utility
+    const result = await executeGalleryDlCommand(urlToProcess, cliArgs);
 
-    try {
-      const ptyProcess: IPty = spawn(PATHS.BIN_FILE, processArgs, {
-        name: TERMINAL.NAME,
-        cols: TERMINAL.COLS,
-        rows: TERMINAL.ROWS,
-        cwd: process.cwd(),
-        env: { ...process.env, NO_COLOR: '0', TERM: TERMINAL.NAME },
-      });
-
-      await jobManager.setJobProcess(jobId, ptyProcess);
-      await jobManager.addOutput(jobId, 'info', `Process started with PID: ${ptyProcess.pid}`);
-
-      ptyProcess.onData(async (data: string): Promise<void> => {
-        await jobManager.addOutput(jobId, 'stdout', data);
-      });
-
-      ptyProcess.onExit(
-        async ({
-          exitCode,
-          signal,
-        }: {
-          exitCode: number;
-          signal?: number | undefined;
-        }): Promise<void> => {
-          logger.info(`[Job ${jobId}] Process exited with code ${exitCode}, signal ${signal}`);
-          await jobManager.addOutput(
-            jobId,
-            'info',
-            `Process exited with code ${exitCode}${signal ? ` (signal ${signal})` : ''}`
-          );
-          await jobManager.completeJob(jobId, exitCode || 0);
-        }
-      );
-
-      const result: BatchJobStartResult = {
+    if (result.success && result.jobId) {
+      const batchResult: BatchJobStartResult = {
         overallSuccess: true,
         results: [
           {
-            jobId,
+            jobId: result.jobId,
             url: urlToProcess,
             success: true,
             message: 'Job started successfully',
@@ -138,15 +106,9 @@ export const POST: RequestHandler = async ({ request }: RequestEvent): Promise<R
         ],
       };
 
-      return createApiResponse(result);
-    } catch (spawnError) {
-      const errorMessage: string =
-        spawnError instanceof Error ? spawnError.message : 'Unknown spawn error';
-      logger.error(`[Job ${jobId}] Failed to start process for ${urlToProcess}:`, spawnError);
-      await jobManager.addOutput(jobId, 'error', `Failed to start process: ${errorMessage}`);
-      await jobManager.completeJob(jobId, 1);
-
-      return handleApiError(new Error(`Failed to start process: ${errorMessage}`));
+      return createApiResponse(batchResult);
+    } else {
+      return handleApiError(new Error(result.error || 'Failed to start job'));
     }
   } catch (error) {
     logger.error('Error creating job:', error);

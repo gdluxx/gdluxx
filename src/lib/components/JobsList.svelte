@@ -430,6 +430,7 @@
           <Button
             onclick={toggleSort}
             aria-label={`Sort ${sortNewestFirst ? 'oldest' : 'newest'} first`}
+            disabled={jobs.length === 0}
             variant="outline-primary"
             size="sm"
             title={`Sort ${sortNewestFirst ? 'descending' : 'ascending'}`}
@@ -439,6 +440,7 @@
           <Button
             onclick={() => setSortBy('time')}
             aria-label={`Sort ${sortNewestFirst ? 'oldest' : 'newest'} first`}
+            disabled={jobs.length === 0}
             variant={`${sortBy === 'time' ? 'primary' : 'outline-primary'}`}
             size="sm"
             title={`Sort ${sortNewestFirst ? 'newest' : 'oldest'} first`}
@@ -448,6 +450,7 @@
           <Button
             onclick={() => setSortBy('downloads')}
             aria-label={`Sort ${sortNewestFirst ? 'oldest' : 'newest'} first`}
+            disabled={jobs.length === 0}
             variant={`${sortBy === 'downloads' ? 'primary' : 'outline-primary'}`}
             size="sm"
             title={`Sort ${sortNewestFirst ? 'most' : 'fewest'} downloads first`}

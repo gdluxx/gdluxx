@@ -8,7 +8,6 @@
  * as published by the Free Software Foundation.
  */
 
-// Auto-generated barrel file, manual edits will be lost
 export { default as DebugIcon } from './DebugIcon.svelte';
 export { default as InfoIcon } from './InfoIcon.svelte';
 export { default as KeyIcon } from './KeyIcon.svelte';

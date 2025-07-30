@@ -65,7 +65,7 @@
 
 <div
   class="pointer-events-auto w-full max-w-sm overflow-hidden rounded-lg border-l-4 shadow-lg {styles.container}"
-  transition:fly={{ y: -400, duration: 300 }}
+  transition:fly={{ x: 400, duration: 300 }}
 >
   <div class="p-4">
     <div class="flex items-start">

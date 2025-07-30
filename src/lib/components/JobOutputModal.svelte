@@ -148,7 +148,9 @@
       case 'error':
         return 'Error';
       default:
-        console.warn(`Unknown job status encountered: "${status}". This may indicate a data migration issue.`);
+        console.warn(
+          `Unknown job status encountered: "${status}". This may indicate a data migration issue.`
+        );
         return 'Unknown';
     }
   }
