@@ -18,7 +18,7 @@
   import type { SiteConfig } from '$lib/server/siteConfigManager';
 
   const { data } = $props<{ data: PageData }>();
-  const { categories } = data;
+  const { categories: _categories } = data;
 
   let configs = $state<SiteConfig[]>(data.configs || []);
   const supportedSites = data.supportedSites || [];
@@ -45,7 +45,7 @@
         const result = await response.json();
 
         if (editingConfig) {
-          const index = configs.findIndex(c => c.id === editingConfig!.id);
+          const index = configs.findIndex(c => c.id === editingConfig?.id);
           if (index >= 0) {
             configs[index] = result.data.config;
           }
@@ -60,7 +60,7 @@
         closeModal();
       } else {
         const errorResult = await response.json();
-        toastStore.error('Save Failed', errorResult.error || 'Failed to save configuration');
+        toastStore.error('Save Failed', errorResult.error ?? 'Failed to save configuration');
       }
     } catch (err) {
       toastStore.error('Save Failed', err instanceof Error ? err.message : 'An unexpected error occurred');
@@ -82,7 +82,7 @@
         toastStore.success('Success', 'Configuration deleted successfully');
       } else {
         const errorResult = await response.json();
-        toastStore.error('Delete Failed', errorResult.error || 'Failed to delete configuration');
+        toastStore.error('Delete Failed', errorResult.error ?? 'Failed to delete configuration');
       }
     } catch (err) {
       toastStore.error('Delete Failed', err instanceof Error ? err.message : 'An unexpected error occurred');
@@ -98,7 +98,7 @@
         window.location.reload();
       } else {
         const errorResult = await response.json();
-        toastStore.error('Refresh Failed', errorResult.error || 'Failed to refresh sites');
+        toastStore.error('Refresh Failed', errorResult.error ?? 'Failed to refresh sites');
       }
     } catch (err) {
       toastStore.error('Refresh Failed', err instanceof Error ? err.message : 'Failed to refresh sites');
@@ -148,7 +148,9 @@
       const cliDiff = isCLIOptionsAscending
         ? a.cli_options.length - b.cli_options.length // Ascending: low to high
         : b.cli_options.length - a.cli_options.length; // Descending: high to low
-      if (cliDiff !== 0) return cliDiff;
+      if (cliDiff !== 0) {
+        return cliDiff;
+      }
       return a.display_name.localeCompare(b.display_name);
     });
   }
@@ -240,7 +242,7 @@
           <div class="flex items-center gap-3">
             <Button
               onclick={sortByAlpha}
-              disabled={supportedSites.length === 0}
+              disabled={configs.length === 0}
               aria-label="Sort alphabetically"
               variant={sortMode === 'alphabetical' ? 'primary' : 'outline-primary'}
               size="sm"
@@ -257,7 +259,7 @@
             </Button>
             <Button
               onclick={sortByCLIOptions}
-              disabled={supportedSites.length === 0}
+              disabled={configs.length === 0}
               aria-label="Sort by CLI options count"
               variant={sortMode === 'cli-options' ? 'primary' : 'outline-primary'}
               size="sm"
@@ -279,7 +281,7 @@
 
     <!-- Config list -->
     <ul class="divide-y divide-secondary-200 dark:divide-secondary-700">
-      {#each configs as config}
+      {#each configs as config (config.id)}
         <li class="flex w-full items-center justify-between p-4">
           <div class="flex-1">
             <div class="flex items-center gap-2 mb-1">
