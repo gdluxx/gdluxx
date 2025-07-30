@@ -11,7 +11,7 @@
 import { fail } from '@sveltejs/kit';
 import { dev } from '$app/environment';
 import type { Actions } from './$types';
-import { logger } from '$lib/shared/logger';
+import { serverLogger as logger } from '$lib/server/logger';
 import { createPageLoad } from '$lib/utils/page-load';
 import {
   createApiKey,

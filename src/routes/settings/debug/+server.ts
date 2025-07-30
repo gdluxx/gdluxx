@@ -9,7 +9,8 @@
  */
 
 import { json, type RequestEvent, type RequestHandler } from '@sveltejs/kit';
-import { logger, type LoggingConfig } from '$lib/shared/logger';
+import { serverLogger as logger } from '$lib/server/logger';
+import type { LoggingConfig } from '$lib/server/loggingManager';
 import { readLoggingConfig, writeLoggingConfig } from './lib/server-exports';
 
 export const GET: RequestHandler = async (): Promise<Response> => {
@@ -17,7 +18,7 @@ export const GET: RequestHandler = async (): Promise<Response> => {
     logger.info('[API TRACE] GET /settings/debug invoked.');
 
     const config: LoggingConfig = await readLoggingConfig();
-    await logger.setConfig(config);
+    // Server logger config is loaded from database on startup
 
     logger.info(`[API TRACE] Config to be returned by API to client: ${JSON.stringify(config)}`);
 
@@ -45,7 +46,7 @@ export const POST: RequestHandler = async ({ request }: RequestEvent): Promise<R
     };
 
     await writeLoggingConfig(newConfig);
-    await logger.setConfig(newConfig);
+    // Server logger config is updated when database is written
 
     return json(newConfig);
   } catch (e) {

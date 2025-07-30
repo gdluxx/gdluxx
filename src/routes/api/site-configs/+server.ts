@@ -13,7 +13,7 @@ import { siteConfigManager } from '$lib/server/siteConfigManager';
 import { validateInput } from '$lib/server/validation/validation-utils';
 import { createApiResponse, createApiError, handleApiError } from '$lib/server/api-utils';
 import { siteConfigSchema } from '$lib/server/validation/site-config-validation';
-import { logger } from '$lib/shared/logger';
+import { serverLogger as logger } from '$lib/server/logger';
 
 export const GET: RequestHandler = async () => {
   try {

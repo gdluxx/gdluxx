@@ -10,7 +10,7 @@
 
 import type { IPty } from '@homebridge/node-pty-prebuilt-multiarch';
 import { v4 as uuidv4 } from 'uuid';
-import { logger } from '$lib/shared/logger';
+import { serverLogger as logger } from '$lib/server/logger';
 import {
   readAllJobs,
   createJob as dbCreateJob,

@@ -9,7 +9,7 @@
  */
 
 import type { RequestEvent, RequestHandler } from '@sveltejs/kit';
-import { logger } from '$lib/shared/logger';
+import { serverLogger as logger } from '$lib/server/logger';
 import { type AuthResult, validateApiKey } from '$lib/server/auth/apiAuth';
 import type { BatchJobStartResult } from '$lib/stores/jobs.svelte';
 import { createApiResponse, handleApiError } from '$lib/server/api-utils';

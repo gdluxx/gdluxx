@@ -12,7 +12,7 @@ import { json } from '@sveltejs/kit';
 import { dev } from '$app/environment';
 import type { RequestHandler } from './$types';
 import fs from 'node:fs';
-import { logger } from '$lib/shared/logger';
+import { serverLogger as logger } from '$lib/server/logger';
 import { PATHS } from '$lib/server/constants';
 import type { BatchUrlResult } from '$lib/stores/jobs.svelte';
 import { siteConfigManager } from '$lib/server/siteConfigManager';

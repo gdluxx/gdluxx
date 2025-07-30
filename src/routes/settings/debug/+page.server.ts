@@ -11,7 +11,8 @@
 import { fail } from '@sveltejs/kit';
 import { dev } from '$app/environment';
 import type { PageServerLoad, Actions } from './$types';
-import { logger, type LoggingConfig } from '$lib/shared/logger';
+import { serverLogger as logger } from '$lib/server/logger';
+import type { LoggingConfig } from '$lib/server/loggingManager';
 import { writeLoggingConfig, readLoggingConfig } from './lib/server-exports';
 
 const getClientSafeMessage = (error: Error) => {
@@ -66,7 +67,7 @@ export const actions: Actions = {
       };
 
       await writeLoggingConfig(newConfig);
-      await logger.setConfig(newConfig);
+      // Server logger config is updated when database is written
 
       return {
         success: true,

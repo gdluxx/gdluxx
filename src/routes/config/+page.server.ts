@@ -10,7 +10,7 @@
 
 import { fail } from '@sveltejs/kit';
 import type { Actions } from './$types';
-import { logger } from '$lib/shared/logger';
+import { serverLogger as logger } from '$lib/server/logger';
 import { createPageLoad } from '$lib/utils/page-load';
 import { getClientSafeMessage } from '$lib/server/api-utils';
 import { writeConfigFile } from '$lib/server/config-utils';

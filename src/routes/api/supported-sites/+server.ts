@@ -12,7 +12,7 @@ import type { RequestHandler } from './$types';
 import { siteConfigManager } from '$lib/server/siteConfigManager';
 import { siteDataFetcher } from '$lib/server/siteDataFetcher';
 import { createApiResponse, handleApiError } from '$lib/server/api-utils';
-import { logger } from '$lib/shared/logger';
+import { serverLogger as logger } from '$lib/server/logger';
 
 export const GET: RequestHandler = async ({ url }) => {
   try {

@@ -10,7 +10,7 @@
 
 import { type Job, jobManager } from '$lib/server/jobs/jobManager';
 import type { RequestEvent, RequestHandler } from '@sveltejs/kit';
-import { logger } from '$lib/shared/logger';
+import { serverLogger as logger } from '$lib/server/logger';
 
 export const GET: RequestHandler = async ({ params, request }: RequestEvent): Promise<Response> => {
   const { jobId } = params;

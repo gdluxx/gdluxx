@@ -75,6 +75,23 @@ CREATE TABLE IF NOT EXISTS logging (
     updatedAt INTEGER NOT NULL
 );
 
+/* SERVER_LOGGING */
+CREATE TABLE IF NOT EXISTS server_logging (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    enabled INTEGER NOT NULL DEFAULT 1,
+    level TEXT NOT NULL DEFAULT 'info' CHECK (level IN ('debug', 'info', 'warn', 'error')),
+    format TEXT NOT NULL DEFAULT 'json' CHECK (format IN ('json', 'simple')),
+    consoleEnabled INTEGER NOT NULL DEFAULT 1,
+    fileEnabled INTEGER NOT NULL DEFAULT 0,
+    fileDirectory TEXT NOT NULL DEFAULT './logs',
+    fileMaxSize TEXT NOT NULL DEFAULT '10m',
+    fileMaxFiles TEXT NOT NULL DEFAULT '7d',
+    performanceLogging INTEGER NOT NULL DEFAULT 1,
+    slowQueryThreshold INTEGER NOT NULL DEFAULT 1000,
+    createdAt INTEGER NOT NULL,
+    updatedAt INTEGER NOT NULL
+);
+
 /* JOBS */
 CREATE TABLE IF NOT EXISTS jobs (
     id TEXT PRIMARY KEY,

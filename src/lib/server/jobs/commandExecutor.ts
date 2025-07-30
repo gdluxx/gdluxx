@@ -11,7 +11,7 @@
 import { spawn } from '@homebridge/node-pty-prebuilt-multiarch';
 import type { IPty } from '@homebridge/node-pty-prebuilt-multiarch';
 import { jobManager } from './jobManager';
-import { logger } from '$lib/shared/logger';
+import { serverLogger as logger } from '$lib/server/logger';
 import { PATHS, TERMINAL } from '$lib/server/constants';
 
 export interface CommandExecutionResult {

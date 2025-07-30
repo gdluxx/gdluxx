@@ -10,7 +10,7 @@
 
 import optionsData from '$lib/assets/options.json';
 import type { Option, OptionsData } from '$lib/types/options';
-import { logger } from '$lib/shared/logger';
+import { serverLogger as logger } from '$lib/server/logger';
 
 const validOptions = new Map<string, Option>();
 Object.values(optionsData as OptionsData).forEach(category => {

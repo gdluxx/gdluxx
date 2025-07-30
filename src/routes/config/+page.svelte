@@ -15,7 +15,7 @@
   import { ConfigEditor, Icon } from '$lib/components';
   import { Info, PageLayout, UploadModal, Button } from '$lib/components/ui';
   import { type ConfigSaveSuccessResult, isConfigSaveSuccess } from '$lib/types/form-results';
-  import { logger } from '$lib/shared/logger';
+  import { clientLogger as logger } from '$lib/client/logger';
 
   const { data } = $props();
 

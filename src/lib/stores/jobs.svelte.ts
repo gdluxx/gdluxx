@@ -11,7 +11,7 @@
 import { browser } from '$app/environment';
 import type { JobOutput, Job } from '$lib/server/jobs/jobManager';
 import type { OptionWithSource } from '$lib/types/command-form';
-import { logger } from '$lib/shared/logger';
+import { clientLogger as logger } from '$lib/client/logger';
 
 export interface ClientJob {
   id: string;

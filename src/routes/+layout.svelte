@@ -24,7 +24,7 @@
   import { goto } from '$app/navigation';
   import { navItems } from './navigation';
   import { page } from '$app/state';
-  import { logger } from '$lib/shared/logger';
+  import { clientLogger as logger } from '$lib/client/logger';
 
   const { children, data } = $props();
 

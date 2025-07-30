@@ -9,7 +9,7 @@
  */
 
 import type { RequestHandler } from './$types';
-import { logger } from '$lib/shared/logger';
+import { serverLogger as logger } from '$lib/server/logger';
 import { createApiResponse, handleApiError } from '$lib/server/api-utils';
 import { validateInput } from '$lib/server/validation/validation-utils';
 import { configUpdateSchema } from '$lib/server/validation/config-validation';

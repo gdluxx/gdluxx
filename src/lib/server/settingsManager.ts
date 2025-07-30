@@ -11,6 +11,7 @@
 import path from 'path';
 import Database from 'better-sqlite3';
 import { PATHS } from '$lib/server/constants';
+import { serverLogger } from '$lib/server/logger';
 
 const dbPath = path.join(PATHS.DATA_DIR, 'gdluxx.db');
 const db = new Database(dbPath);
@@ -35,8 +36,7 @@ export function createSettingsManager<T>(
         }
         return { ...defaults };
       } catch (error) {
-        // eslint-disable-next-line no-console
-        console.error(`Error reading ${tableName} config from database:`, error);
+        serverLogger.error('Error reading config from database:', { tableName, error });
         return { ...defaults };
       }
     },
@@ -70,8 +70,7 @@ export function createSettingsManager<T>(
 
         stmt.run(...values, now, now);
       } catch (error) {
-        // eslint-disable-next-line no-console
-        console.error(`Error writing ${tableName} config to database:`, error);
+        serverLogger.error('Error writing config to database:', { tableName, error });
         throw new Error(`Failed to write ${tableName} configuration.`);
       }
     },

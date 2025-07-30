@@ -11,6 +11,7 @@
 import path from 'path';
 import Database from 'better-sqlite3';
 import { PATHS } from '$lib/server/constants';
+import { serverLogger } from '$lib/server/logger';
 
 const dbPath = path.join(PATHS.DATA_DIR, 'gdluxx.db');
 const db = new Database(dbPath);
@@ -80,8 +81,7 @@ class SiteConfigManager {
       );
       return result.lastInsertRowid as number;
     } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('Error creating site config in database:', error);
+      serverLogger.error('Error creating site config in database:', error);
 
       if (
         error &&
@@ -103,8 +103,7 @@ class SiteConfigManager {
       `);
       return stmt.all().map(row => this.rowToSiteConfig(row as Record<string, unknown>));
     } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('Error reading site configs from database:', error);
+      serverLogger.error('Error reading site configs from database:', error);
       return [];
     }
   }
@@ -115,8 +114,7 @@ class SiteConfigManager {
       const row = stmt.get(id);
       return row ? this.rowToSiteConfig(row as Record<string, unknown>) : null;
     } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('Error reading site config from database:', error);
+      serverLogger.error('Error reading site config from database:', error);
       return null;
     }
   }
@@ -158,8 +156,7 @@ class SiteConfigManager {
       const result = stmt.run(...values);
       return result.changes > 0;
     } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('Error updating site config in database:', error);
+      serverLogger.error('Error updating site config in database:', error);
       throw new Error('Failed to update site config.');
     }
   }
@@ -170,8 +167,7 @@ class SiteConfigManager {
       const result = stmt.run(id);
       return result.changes > 0;
     } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('Error deleting site config from database:', error);
+      serverLogger.error('Error deleting site config from database:', error);
       throw new Error('Failed to delete site config.');
     }
   }
@@ -201,8 +197,7 @@ class SiteConfigManager {
         now
       );
     } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('Error upserting supported site in database:', error);
+      serverLogger.error('Error upserting supported site in database:', error);
       throw new Error('Failed to update supported site.');
     }
   }
@@ -222,8 +217,7 @@ class SiteConfigManager {
         .all(...params)
         .map(row => this.rowToSupportedSite(row as Record<string, unknown>));
     } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('Error reading supported sites from database:', error);
+      serverLogger.error('Error reading supported sites from database:', error);
       return [];
     }
   }
@@ -237,8 +231,7 @@ class SiteConfigManager {
       `);
       return stmt.all().map((row): string => (row as Record<string, unknown>).category as string);
     } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('Error reading site categories from database:', error);
+      serverLogger.error('Error reading site categories from database:', error);
       return [];
     }
   }
@@ -247,8 +240,7 @@ class SiteConfigManager {
     try {
       this.db.prepare('DELETE FROM supported_sites').run();
     } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('Error clearing supported_sites table:', error);
+      serverLogger.error('Error clearing supported_sites table:', error);
       throw new Error('Failed to clear supported sites.');
     }
   }
@@ -266,8 +258,7 @@ class SiteConfigManager {
             fetch_error: undefined,
           };
     } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('Error reading site data meta from database:', error);
+      serverLogger.error('Error reading site data meta from database:', error);
       return {
         last_fetch_attempt: 0,
         last_successful_fetch: 0,
@@ -313,8 +304,7 @@ class SiteConfigManager {
 
       stmt.run(...values, now, now);
     } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('Error updating site data meta in database:', error);
+      serverLogger.error('Error updating site data meta in database:', error);
       throw new Error('Failed to update site data meta.');
     }
   }
@@ -332,17 +322,18 @@ class SiteConfigManager {
       }
 
       const selectedConfig = matchingConfigs[0];
-      // eslint-disable-next-line no-console
-      console.log(
-        `[SiteConfig] Matched URL ${url} to config "${selectedConfig.display_name}" (pattern: ${selectedConfig.site_pattern}})`
-      );
-      // eslint-disable-next-line no-console
-      console.log(`[SiteConfig] Applying CLI options:`, selectedConfig.cli_options);
+      serverLogger.info('Matched URL to site config', {
+        url,
+        configName: selectedConfig.display_name,
+        pattern: selectedConfig.site_pattern,
+      });
+      serverLogger.debug('Applying CLI options for site config', {
+        options: selectedConfig.cli_options,
+      });
 
       return selectedConfig.cli_options;
     } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('Error getting CLI options for URL:', error);
+      serverLogger.error('Error getting CLI options for URL:', error);
       return [];
     }
   }
@@ -368,10 +359,11 @@ class SiteConfigManager {
       }
 
       const selectedConfig = matchingConfigs[0];
-      // eslint-disable-next-line no-console
-      console.log(
-        `[SiteConfig] Matched URL ${url} to config "${selectedConfig.display_name}" (pattern: ${selectedConfig.site_pattern}})`
-      );
+      serverLogger.info('Matched URL to site config', {
+        url,
+        configName: selectedConfig.display_name,
+        pattern: selectedConfig.site_pattern,
+      });
 
       // Convert cli_options array to Map
       const optionsMap = new Map<string, string | number | boolean>();
@@ -386,8 +378,7 @@ class SiteConfigManager {
         options: optionsMap,
       };
     } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('Error getting config metadata for URL:', error);
+      serverLogger.error('Error getting config metadata for URL:', error);
       return {
         hasMatch: false,
         options: new Map(),

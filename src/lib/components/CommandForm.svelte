@@ -11,7 +11,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { hasJsonLintErrors } from '$lib/stores/lint';
-  import { logger } from '$lib/shared/logger';
+  import { clientLogger as logger } from '$lib/client/logger';
   import { Button, Info } from '$lib/components/ui';
   import optionsData from '$lib/assets/options.json';
   import type { Option, OptionsData } from '$lib/types/options';

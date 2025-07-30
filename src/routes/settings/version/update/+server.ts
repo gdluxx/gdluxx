@@ -20,7 +20,7 @@ import {
   DEFAULT_VERSION_INFO,
   type VersionInfo,
 } from '../lib/server-exports';
-import { logger } from '$lib/shared/logger';
+import { serverLogger as logger } from '$lib/server/logger';
 
 export const POST: RequestHandler = async (): Promise<Response> => {
   try {

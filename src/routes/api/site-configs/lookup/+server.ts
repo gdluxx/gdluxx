@@ -11,7 +11,7 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { siteConfigManager } from '$lib/server/siteConfigManager';
-import { logger } from '$lib/shared/logger';
+import { serverLogger as logger } from '$lib/server/logger';
 
 interface LookupRequestBody {
   urls: string[];

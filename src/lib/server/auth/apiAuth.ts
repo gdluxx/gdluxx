@@ -9,7 +9,7 @@
  */
 
 import { auth } from './better-auth';
-import { logger } from '$lib/shared/logger';
+import { serverLogger as logger } from '$lib/server/logger';
 
 export interface AuthResult {
   success: boolean;

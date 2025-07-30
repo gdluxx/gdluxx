@@ -9,7 +9,7 @@
  */
 
 import type { RequestHandler } from './$types';
-import { logger } from '$lib/shared/logger';
+import { serverLogger as logger } from '$lib/server/logger';
 import {
   createApiKey,
   listApiKeys,

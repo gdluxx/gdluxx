@@ -11,7 +11,7 @@
 import { mkdir, chmod, stat, rename, unlink, writeFile } from 'fs/promises';
 import { exec } from 'node:child_process';
 import { promisify } from 'node:util';
-import { logger } from '$lib/shared/logger';
+import { serverLogger as logger } from '$lib/server/logger';
 import { PATHS, GITHUB } from '$lib/server/constants';
 import { createSettingsManager } from '$lib/server/settingsManager';
 

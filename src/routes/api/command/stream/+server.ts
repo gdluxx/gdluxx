@@ -11,7 +11,7 @@
 import fs from 'node:fs';
 import type { ReadableStreamDefaultController } from 'node:stream/web';
 import type { IPty } from '@homebridge/node-pty-prebuilt-multiarch';
-import { logger } from '$lib/shared/logger';
+import { serverLogger as logger } from '$lib/server/logger';
 import { PATHS, TERMINAL } from '$lib/server/constants';
 import { validateInput } from '$lib/server/validation/validation-utils';
 import { commandStreamSchema } from '$lib/server/validation/command-validation';

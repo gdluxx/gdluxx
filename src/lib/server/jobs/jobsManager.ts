@@ -12,6 +12,7 @@ import path from 'path';
 import Database from 'better-sqlite3';
 import { PATHS } from '$lib/server/constants';
 import type { JobOutput } from '$lib/server/jobs/jobManager';
+import { serverLogger } from '$lib/server/logger';
 
 const dbPath = path.join(PATHS.DATA_DIR, 'gdluxx.db');
 const db = new Database(dbPath);
@@ -77,9 +78,10 @@ export async function readAllJobs(): Promise<DatabaseJob[]> {
     return jobRows.map(job => {
       const validStatuses = ['running', 'success', 'no_action', 'error'] as const;
       if (!validStatuses.includes(job.status as any)) {
-        console.error(
-          `Invalid job status found: "${job.status}" for job ${job.id}. Defaulting to 'error'.`
-        );
+        serverLogger.error('Invalid job status found, defaulting to error', {
+          invalidStatus: job.status,
+          jobId: job.id,
+        });
         job.status = 'error';
       }
 
@@ -96,8 +98,7 @@ export async function readAllJobs(): Promise<DatabaseJob[]> {
       };
     });
   } catch (error) {
-    // eslint-disable-next-line no-console
-    console.error('Error reading jobs from database:', error);
+    serverLogger.error('Error reading jobs from database:', error);
     return [];
   }
 }
@@ -124,8 +125,7 @@ export async function createJob(job: Omit<DatabaseJob, 'outputs'>): Promise<void
       now
     );
   } catch (error) {
-    // eslint-disable-next-line no-console
-    console.error('Error creating job in database:', error);
+    serverLogger.error('Error creating job in database:', error);
     throw new Error('Failed to create job.');
   }
 }
@@ -178,8 +178,7 @@ export async function updateJob(
 
     stmt.run(...values);
   } catch (error) {
-    // eslint-disable-next-line no-console
-    console.error('Error updating job in database:', error);
+    serverLogger.error('Error updating job in database:', error);
     throw new Error('Failed to update job.');
   }
 }
@@ -193,8 +192,7 @@ export async function addJobOutput(jobId: string, output: JobOutput): Promise<vo
 
     stmt.run(jobId, output.type, output.data, output.timestamp);
   } catch (error) {
-    // eslint-disable-next-line no-console
-    console.error('Error adding job output to database:', error);
+    serverLogger.error('Error adding job output to database:', error);
     throw new Error('Failed to add job output.');
   }
 }
@@ -206,8 +204,7 @@ export async function deleteJob(jobId: string): Promise<boolean> {
     const result = stmt.run(jobId);
     return result.changes > 0;
   } catch (error) {
-    // eslint-disable-next-line no-console
-    console.error('Error deleting job from database:', error);
+    serverLogger.error('Error deleting job from database:', error);
     throw new Error('Failed to delete job.');
   }
 }

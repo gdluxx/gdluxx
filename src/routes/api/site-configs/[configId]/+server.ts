@@ -16,7 +16,7 @@ import {
   siteConfigUpdateSchema,
   siteConfigIdSchema,
 } from '$lib/server/validation/site-config-validation';
-import { logger } from '$lib/shared/logger';
+import { serverLogger as logger } from '$lib/server/logger';
 
 export const GET: RequestHandler = async ({ params }) => {
   try {

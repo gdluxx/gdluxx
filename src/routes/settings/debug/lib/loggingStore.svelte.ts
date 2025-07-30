@@ -10,7 +10,7 @@
 
 import { createSettingsStore, type StoreActionResult } from '$lib/stores/settingsStore';
 import { toastStore } from '$lib/stores/toast';
-import { logger } from '$lib/shared/logger';
+import { clientLogger as logger } from '$lib/client/logger';
 
 export interface LoggingSettings {
   enabled: boolean;
@@ -35,7 +35,7 @@ function createLoggingStore() {
       if (result.success) {
         const data = baseStore.getData();
         logger.info(`[Store TRACE] Client store received from API: ${JSON.stringify(data)}`);
-        await logger.setConfig({ enabled: data.enabled });
+        logger.updateConfig({ enabled: data.enabled });
       } else {
         toastStore.error('Logging Settings', `Failed to load: ${result.message}`);
       }
@@ -49,7 +49,7 @@ function createLoggingStore() {
 
       if (result.success) {
         const data = baseStore.getData();
-        await logger.setConfig({ enabled: data.enabled });
+        logger.updateConfig({ enabled: data.enabled });
         toastStore.success('Logging Settings', `Logging ${data.enabled ? 'enabled' : 'disabled'}.`);
       } else {
         toastStore.error('Logging Settings', `Failed to update: ${result.message}`);

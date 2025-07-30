@@ -10,7 +10,7 @@
 
 import { readFile, writeFile } from 'fs/promises';
 import { join, dirname } from 'path';
-import { logger } from '$lib/shared/logger';
+import { serverLogger as logger } from '$lib/server/logger';
 import { ensureDir } from '$lib/utils/fs';
 
 export const DATA_PATH = process.env.FILE_STORAGE_PATH ?? './data';

@@ -16,7 +16,7 @@
     type VersionStoreState,
   } from '../../../routes/settings/version/lib';
   import { toastStore } from '$lib/stores/toast';
-  import { logger } from '$lib/shared/logger';
+  import { clientLogger as logger } from '$lib/client/logger';
   import { Button, Info } from '$lib/components/ui';
 
   onMount(async () => {

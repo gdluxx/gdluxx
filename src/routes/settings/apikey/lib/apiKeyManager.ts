@@ -9,7 +9,7 @@
  */
 
 import { auth } from '$lib/server/auth/better-auth';
-import { logger } from '$lib/shared/logger';
+import { serverLogger as logger } from '$lib/server/logger';
 import type { ApiKey } from './types';
 import type BetterSqlite3 from 'better-sqlite3';
 import type { RunResult, Statement } from 'better-sqlite3';
