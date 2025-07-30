@@ -116,10 +116,10 @@
     >
       Site Pattern
     </label>
-    <input 
-      list="supportedSites" 
-      id="site_pattern" 
-      name="site_pattern" 
+    <input
+      list="supportedSites"
+      id="site_pattern"
+      name="site_pattern"
       bind:value={formData.site_pattern}
       placeholder="Type site name, or enter pattern like *.youtube.com, twitter.com, or *"
       class="{inputClasses} {errors.site_pattern ? 'border-red-500' : ''}"
@@ -135,27 +135,25 @@
     {/if}
 
     <div class="mt-2 mr-1.5 flex justify-end">
-    <div class="relative inline-block group">
-      <span
-        class="rounded-sm text-sm bg-primary-200 dark:bg-primary-600 text-secondary-900 dark:text-secondary-100
+      <div class="relative inline-block group">
+        <span
+          class="rounded-sm text-sm bg-primary-200 dark:bg-primary-600 text-secondary-900 dark:text-secondary-100
           px-3 py-1 cursor-default transition-colors"
-      >
-    More Info
-  </span>
-      <div
-        class="absolute right-full top-1/2 transform -translate-y-1/2 mr-2 w-64 p-4 bg-accent-200 dark:bg-accent-900
+        >
+          More Info
+        </span>
+        <div
+          class="absolute right-full top-1/2 transform -translate-y-1/2 mr-2 w-64 p-4 bg-accent-200 dark:bg-accent-900
           rounded shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all"
-      >
-        <p class="cursor-default text-sm text-secondary-800 dark:text-secondary-200 mt-1">
-          Select from <b>{supportedSites.length}</b> supported sites or enter custom pattern
-          <br>- * for all sites
-          <br>- *.domain.com
-        </p>
+        >
+          <p class="cursor-default text-sm text-secondary-800 dark:text-secondary-200 mt-1">
+            Select from <b>{supportedSites.length}</b> supported sites or enter custom pattern
+            <br />- * for all sites
+            <br />- *.domain.com
+          </p>
+        </div>
       </div>
     </div>
-    </div>
-
-
   </div>
 
   <div>
@@ -180,28 +178,35 @@
   <!-- Enable rule -->
   <div class="space-y-4">
     <label for="enabled">
-    <div
-      class="flex items-center justify-between p-3 bg-secondary-50 dark:bg-secondary-800 rounded-lg"
-    >
-      <span class="font-medium text-secondary-900 dark:text-secondary-100">
-        Rule {formData.enabled ? 'Enabled' : 'Disabled'}
-      </span>
-      <div class="relative inline-block w-[26px] h-4 ml-4">
-        <input id="enabled" type="checkbox" bind:checked={formData.enabled} class="sr-only peer" />
-        <span
-          class="block w-full h-full bg-accent-100 peer-checked:bg-accent-900 rounded-full
+      <div
+        class="flex items-center justify-between p-3 bg-secondary-50 dark:bg-secondary-800 rounded-lg"
+      >
+        <span class="font-medium text-secondary-900 dark:text-secondary-100">
+          Rule {formData.enabled ? 'Enabled' : 'Disabled'}
+        </span>
+        <div class="relative inline-block w-[26px] h-4 ml-4">
+          <input
+            id="enabled"
+            type="checkbox"
+            bind:checked={formData.enabled}
+            class="sr-only peer"
+          />
+          <span
+            class="block w-full h-full bg-accent-100 peer-checked:bg-accent-900 rounded-full
           cursor-pointer transition-colors duration-300 relative after:content-[''] after:absolute
           after:top-0.5 after:left-0.5 after:w-3 after:h-3 after:bg-white after:rounded-full
           after:shadow-md after:transition-transform after:duration-300 peer-checked:after:translate-x-[11px]"
-        ></span>
+          ></span>
+        </div>
       </div>
-    </div>
     </label>
   </div>
 
   <!-- CLI Options Selection -->
   <div>
-    <h3 class="cursor-default text-lg font-medium text-secondary-900 dark:text-secondary-100 mb-4">CLI Options</h3>
+    <h3 class="cursor-default text-lg font-medium text-secondary-900 dark:text-secondary-100 mb-4">
+      CLI Options
+    </h3>
     <div
       class="max-h-96 overflow-y-auto border border-secondary-300 dark:border-secondary-400 rounded p-4 bg-secondary-50 dark:bg-secondary-800"
     >

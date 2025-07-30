@@ -54,16 +54,22 @@
         }
 
         configs = [...configs];
-        toastStore.success('Success', editingConfig
-          ? 'Configuration updated successfully'
-          : 'Configuration created successfully');
+        toastStore.success(
+          'Success',
+          editingConfig
+            ? 'Configuration updated successfully'
+            : 'Configuration created successfully'
+        );
         closeModal();
       } else {
         const errorResult = await response.json();
         toastStore.error('Save Failed', errorResult.error ?? 'Failed to save configuration');
       }
     } catch (err) {
-      toastStore.error('Save Failed', err instanceof Error ? err.message : 'An unexpected error occurred');
+      toastStore.error(
+        'Save Failed',
+        err instanceof Error ? err.message : 'An unexpected error occurred'
+      );
     }
   }
 
@@ -85,7 +91,10 @@
         toastStore.error('Delete Failed', errorResult.error ?? 'Failed to delete configuration');
       }
     } catch (err) {
-      toastStore.error('Delete Failed', err instanceof Error ? err.message : 'An unexpected error occurred');
+      toastStore.error(
+        'Delete Failed',
+        err instanceof Error ? err.message : 'An unexpected error occurred'
+      );
     }
   }
 
@@ -101,7 +110,10 @@
         toastStore.error('Refresh Failed', errorResult.error ?? 'Failed to refresh sites');
       }
     } catch (err) {
-      toastStore.error('Refresh Failed', err instanceof Error ? err.message : 'Failed to refresh sites');
+      toastStore.error(
+        'Refresh Failed',
+        err instanceof Error ? err.message : 'Failed to refresh sites'
+      );
     } finally {
       isRefreshingSites = false;
     }
@@ -161,14 +173,11 @@
     <Icon iconName="site-rules" size={32} />
   {/snippet}
 
-
   {#if configs.length === 0}
-    <Info
-      variant="info"
-      class="mb-4"
-    >
-      Use the 'Refresh Sites' button to download the latest list of sites supported by <i>gallery-dl</i>.
-      Or, you can custom configure the rules as you see fit.
+    <Info variant="info" class="mb-4">
+      Use the 'Refresh Sites' button to download the latest list of sites supported by <i
+        >gallery-dl</i
+      >. Or, you can custom configure the rules as you see fit.
     </Info>
   {/if}
 
@@ -189,9 +198,7 @@
         <div
           class="bg-white dark:bg-secondary-800 border border-secondary-200 dark:border-secondary-700 rounded-lg p-4"
         >
-          <h3 class="text-lg font-semibold text-secondary-900 dark:text-secondary-100">
-            Rules
-          </h3>
+          <h3 class="text-lg font-semibold text-secondary-900 dark:text-secondary-100">Rules</h3>
           <p class="text-3xl font-bold text-primary-600 dark:text-primary-400">
             {configs.length}
           </p>
@@ -228,12 +235,7 @@
                 Refresh Sites
               {/if}
             </Button>
-            <Button
-              onclick={openAddModal}
-              disabled={isRefreshingSites}
-              variant="primary"
-              size="sm"
-            >
+            <Button onclick={openAddModal} disabled={isRefreshingSites} variant="primary" size="sm">
               <Icon iconName="plus" size={16} class="mr-2" />
               Add Rule
             </Button>
@@ -314,11 +316,7 @@
           </div>
           <!-- Buttons -->
           <div class="flex gap-2">
-            <Button
-              onclick={() => openEditModal(config)}
-              variant="outline-primary"
-              size="sm"
-            >
+            <Button onclick={() => openEditModal(config)} variant="outline-primary" size="sm">
               <Icon iconName="edit" size={20} class="mr-1" />
               Edit
             </Button>
@@ -342,9 +340,7 @@
             class="mx-auto mb-4 text-secondary-400 dark:text-secondary-500"
           />
           <p class="text-lg font-medium">No site rules yet</p>
-          <p class="text-sm">
-            Add your first rule to get started with site-specific CLI options.
-          </p>
+          <p class="text-sm">Add your first rule to get started with site-specific CLI options.</p>
           <Button onclick={openAddModal} variant="primary" class="mt-4">
             <Icon iconName="plus" size={16} class="mr-2" />
             Add Rule

@@ -36,10 +36,9 @@
   zero-data-collection policy.
 - **API key authentication**: Extension uses locally-generated API keys to
   communicate with your self-hosted instance.
-- **Limited permissions**: The extension can read all URLs of sites you
-  visit while active, it does nothing with the URL unless you instruct it to. At
-  which time the URL is sent to YOUR self-hosted gdluxx instance and nowhere
-  else.
+- **Limited permissions**: The extension can read all URLs of sites you visit
+  while active, it does nothing with the URL unless you instruct it to. At which
+  time the URL is sent to YOUR self-hosted gdluxx instance and nowhere else.
 
 ### Data Location
 

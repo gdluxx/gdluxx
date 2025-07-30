@@ -199,10 +199,11 @@
 
     // First add site config options
     for (const config of siteConfigs) {
-      // Handle both Map and plain object formats (JSON deserializes Maps as objects)
-      const optionsEntries = config.options instanceof Map 
-        ? Array.from(config.options.entries())
-        : Object.entries(config.options);
+      // Handle both Map and plain ob
+      const optionsEntries =
+        config.options instanceof Map
+          ? Array.from(config.options.entries())
+          : Object.entries(config.options);
 
       for (const [optionId, value] of optionsEntries) {
         selectedOptions.set(optionId, {
@@ -311,9 +312,10 @@
     // Find the original site config value from siteConfigData
     for (const config of siteConfigData) {
       // Handle both Map and plain object formats (JSON deserializes Maps as objects)
-      const optionsEntries = config.options instanceof Map 
-        ? Array.from(config.options.entries())
-        : Object.entries(config.options);
+      const optionsEntries =
+        config.options instanceof Map
+          ? Array.from(config.options.entries())
+          : Object.entries(config.options);
 
       for (const [siteOptionId, value] of optionsEntries) {
         if (siteOptionId === optionId) {
@@ -459,7 +461,9 @@
               <span
                 class="option-count px-2 py-1 bg-blue-100 dark:bg-blue-800 text-blue-700 dark:text-blue-200 rounded-full text-xs font-medium"
               >
-                {config.options instanceof Map ? config.options.size : Object.keys(config.options).length} options
+                {config.options instanceof Map
+                  ? config.options.size
+                  : Object.keys(config.options).length} options
               </span>
             </div>
           {/each}

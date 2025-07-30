@@ -21,7 +21,13 @@
     onCancel: () => void;
   }
 
-  const { show = false, options, detectedPatterns, onSaved, onCancel }: SaveSiteRuleModalProps = $props();
+  const {
+    show = false,
+    options,
+    detectedPatterns,
+    onSaved,
+    onCancel,
+  }: SaveSiteRuleModalProps = $props();
 
   let selectedPattern = $state(detectedPatterns[0] ?? '');
   let displayName = $state('');
@@ -108,7 +114,7 @@
       <div
         class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity dark:bg-gray-900 dark:bg-opacity-75"
         onclick={onCancel}
-        onkeydown={(e) => e.key === 'Enter' && onCancel()}
+        onkeydown={e => e.key === 'Enter' && onCancel()}
         role="button"
         tabindex="-1"
         aria-label="Close modal"
@@ -126,21 +132,38 @@
             aria-label="Close"
           >
             <span class="sr-only">Close</span>
-            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            <svg
+              class="h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              aria-hidden="true"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </Button>
         </div>
 
         <div class="sm:flex sm:items-start">
           <div class="mt-3 w-full text-center sm:ml-0 sm:mt-0 sm:text-left">
-            <h3 class="text-lg font-medium leading-6 text-gray-900 dark:text-gray-100" id="modal-title">
+            <h3
+              class="text-lg font-medium leading-6 text-gray-900 dark:text-gray-100"
+              id="modal-title"
+            >
               💾 Save Options as Site Rule
             </h3>
-            
+
             <div class="mt-4 space-y-4" id="modal-description">
               <div>
-                <label for="site-pattern" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label
+                  for="site-pattern"
+                  class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >
                   Site Pattern:
                 </label>
                 <select
@@ -156,7 +179,10 @@
               </div>
 
               <div>
-                <label for="rule-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label
+                  for="rule-name"
+                  class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >
                   Rule Name:
                 </label>
                 <input
@@ -170,7 +196,9 @@
               </div>
 
               {#if getUserOptions().length > 0}
-                <div class="options-preview bg-gray-50 dark:bg-gray-700 rounded-sm p-3 border border-gray-200 dark:border-gray-600">
+                <div
+                  class="options-preview bg-gray-50 dark:bg-gray-700 rounded-sm p-3 border border-gray-200 dark:border-gray-600"
+                >
                   <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Options to save ({getUserOptions().length}):
                   </h4>
@@ -189,7 +217,9 @@
               {/if}
 
               {#if error}
-                <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-sm p-3">
+                <div
+                  class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-sm p-3"
+                >
                   <div class="text-sm text-red-600 dark:text-red-400">
                     {error}
                   </div>
@@ -202,7 +232,10 @@
         <div class="mt-6 flex gap-3 sm:flex-row-reverse">
           <Button
             onclick={handleSave}
-            disabled={isSaving || !selectedPattern || !displayName.trim() || getUserOptions().length === 0}
+            disabled={isSaving ||
+              !selectedPattern ||
+              !displayName.trim() ||
+              getUserOptions().length === 0}
             variant="primary"
             class="w-full sm:w-auto"
           >
