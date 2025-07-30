@@ -13,6 +13,7 @@
   import { SiteConfigForm } from '$lib/components/settings';
   import { Icon } from '$lib/components';
   import { Info } from '$lib/components/ui';
+  import { toastStore } from '$lib/stores/toast.js';
   import type { PageData } from './$types';
   import type { SiteConfig } from '$lib/server/siteConfigManager';
 
@@ -24,25 +25,13 @@
   let showAddModal = $state(false);
   let editingConfig = $state<SiteConfig | null>(null);
   let isRefreshingSites = $state(false);
-  let error = $state<string | null>(null);
-  let success = $state<string | null>(null);
 
   let sortMode = $state<'alphabetical' | 'cli-options' | 'none'>('none');
   let isAlphabeticalAscending = $state(true);
   let isCLIOptionsAscending = $state(false); // Start with descending (highest first)
 
-  $effect(() => {
-    if (error || success) {
-      setTimeout(() => {
-        error = null;
-        success = null;
-      }, 5000);
-    }
-  });
-
   async function handleSaveConfig(configData: Partial<SiteConfig>) {
     try {
-      error = null;
       const method = editingConfig ? 'PUT' : 'POST';
       const url = editingConfig ? `/api/site-configs/${editingConfig.id}` : '/api/site-configs';
 
@@ -65,16 +54,16 @@
         }
 
         configs = [...configs];
-        success = editingConfig
+        toastStore.success('Success', editingConfig
           ? 'Configuration updated successfully'
-          : 'Configuration created successfully';
+          : 'Configuration created successfully');
         closeModal();
       } else {
         const errorResult = await response.json();
-        error = errorResult.error || 'Failed to save configuration';
+        toastStore.error('Save Failed', errorResult.error || 'Failed to save configuration');
       }
     } catch (err) {
-      error = err instanceof Error ? err.message : 'An unexpected error occurred';
+      toastStore.error('Save Failed', err instanceof Error ? err.message : 'An unexpected error occurred');
     }
   }
 
@@ -84,37 +73,35 @@
     }
 
     try {
-      error = null;
       const response = await fetch(`/api/site-configs/${configId}`, {
         method: 'DELETE',
       });
 
       if (response.ok) {
         configs = configs.filter(c => c.id !== configId);
-        success = 'Configuration deleted successfully';
+        toastStore.success('Success', 'Configuration deleted successfully');
       } else {
         const errorResult = await response.json();
-        error = errorResult.error || 'Failed to delete configuration';
+        toastStore.error('Delete Failed', errorResult.error || 'Failed to delete configuration');
       }
     } catch (err) {
-      error = err instanceof Error ? err.message : 'An unexpected error occurred';
+      toastStore.error('Delete Failed', err instanceof Error ? err.message : 'An unexpected error occurred');
     }
   }
 
   async function refreshSupportedSites() {
     isRefreshingSites = true;
     try {
-      error = null;
       const response = await fetch('/api/supported-sites', { method: 'POST' });
       if (response.ok) {
         // Reload the page
         window.location.reload();
       } else {
         const errorResult = await response.json();
-        error = errorResult.error || 'Failed to refresh sites';
+        toastStore.error('Refresh Failed', errorResult.error || 'Failed to refresh sites');
       }
     } catch (err) {
-      error = err instanceof Error ? err.message : 'Failed to refresh sites';
+      toastStore.error('Refresh Failed', err instanceof Error ? err.message : 'Failed to refresh sites');
     } finally {
       isRefreshingSites = false;
     }
@@ -172,28 +159,6 @@
     <Icon iconName="site-rules" size={32} />
   {/snippet}
 
-  <!-- Info messages -->
-  {#if error}
-    <div
-      class="mb-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded"
-    >
-      <div class="flex items-center">
-        <Icon iconName="close" size={20} class="mr-2" />
-        {error}
-      </div>
-    </div>
-  {/if}
-
-  {#if success}
-    <div
-      class="mb-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-300 px-4 py-3 rounded"
-    >
-      <div class="flex items-center">
-        <Icon iconName="circle" size={20} class="mr-2" />
-        {success}
-      </div>
-    </div>
-  {/if}
 
   {#if configs.length === 0}
     <Info
