@@ -12,6 +12,7 @@
   import { PageLayout, Button, Modal } from '$lib/components/ui';
   import { SiteConfigForm } from '$lib/components/settings';
   import { Icon } from '$lib/components';
+  import { Info } from '$lib/components/ui';
   import type { PageData } from './$types';
   import type { SiteConfig } from '$lib/server/siteConfigManager';
 
@@ -174,7 +175,7 @@
   <!-- Info messages -->
   {#if error}
     <div
-      class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded"
+      class="mb-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded"
     >
       <div class="flex items-center">
         <Icon iconName="close" size={20} class="mr-2" />
@@ -185,13 +186,23 @@
 
   {#if success}
     <div
-      class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-300 px-4 py-3 rounded"
+      class="mb-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-300 px-4 py-3 rounded"
     >
       <div class="flex items-center">
         <Icon iconName="circle" size={20} class="mr-2" />
         {success}
       </div>
     </div>
+  {/if}
+
+  {#if configs.length === 0}
+    <Info
+      variant="info"
+      class="mb-4"
+    >
+      Use the 'Refresh Sites' button to download the latest list of sites supported by <i>gallery-dl</i>.
+      Or, you can custom configure the rules as you see fit.
+    </Info>
   {/if}
 
   <div
@@ -250,7 +261,12 @@
                 Refresh Sites
               {/if}
             </Button>
-            <Button onclick={openAddModal} variant="primary" size="sm">
+            <Button
+              onclick={openAddModal}
+              disabled={isRefreshingSites}
+              variant="primary"
+              size="sm"
+            >
               <Icon iconName="plus" size={16} class="mr-2" />
               Add Rule
             </Button>
@@ -259,6 +275,7 @@
           <div class="flex items-center gap-3">
             <Button
               onclick={sortByAlpha}
+              disabled={supportedSites.length === 0}
               aria-label="Sort alphabetically"
               variant={sortMode === 'alphabetical' ? 'primary' : 'outline-primary'}
               size="sm"
@@ -275,6 +292,7 @@
             </Button>
             <Button
               onclick={sortByCLIOptions}
+              disabled={supportedSites.length === 0}
               aria-label="Sort by CLI options count"
               variant={sortMode === 'cli-options' ? 'primary' : 'outline-primary'}
               size="sm"
@@ -329,15 +347,20 @@
           </div>
           <!-- Buttons -->
           <div class="flex gap-2">
-            <Button onclick={() => openEditModal(config)} variant="outline-primary">
-              <Icon iconName="settings" size={16} class="mr-1" />
+            <Button
+              onclick={() => openEditModal(config)}
+              variant="outline-primary"
+              size="sm"
+            >
+              <Icon iconName="edit" size={20} class="mr-1" />
               Edit
             </Button>
             <Button
               onclick={() => config.id && handleDeleteConfig(config.id)}
               variant="outline-danger"
+              size="sm"
             >
-              <Icon iconName="delete" size={16} class="mr-1" />
+              <Icon iconName="delete" size={20} class="mr-1" />
               Delete
             </Button>
           </div>
@@ -345,19 +368,19 @@
       {/each}
 
       {#if configs.length === 0}
-        <div class="text-center py-12 text-secondary-500 dark:text-secondary-400">
+        <div class="cursor-default text-center py-12 text-secondary-500 dark:text-secondary-400">
           <Icon
-            iconName="settings"
+            iconName="site-rules"
             size={48}
             class="mx-auto mb-4 text-secondary-400 dark:text-secondary-500"
           />
-          <p class="text-lg font-medium">No site configurations yet</p>
+          <p class="text-lg font-medium">No site rules yet</p>
           <p class="text-sm">
-            Add your first configuration to get started with site-specific CLI options.
+            Add your first rule to get started with site-specific CLI options.
           </p>
           <Button onclick={openAddModal} variant="primary" class="mt-4">
             <Icon iconName="plus" size={16} class="mr-2" />
-            Add Configuration
+            Add Rule
           </Button>
         </div>
       {/if}
