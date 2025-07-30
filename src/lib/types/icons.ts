@@ -47,7 +47,8 @@ export type IconName =
   | 'num-asc'
   | 'num-desc'
   | 'num-var'
-  | 'site-rules';
+  | 'site-rules'
+  | 'edit';
 
 export interface IconConfig {
   name: IconName;
