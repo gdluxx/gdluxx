@@ -12,7 +12,7 @@
   import { PageLayout } from '$lib/components/ui';
   import { Button } from '$lib/components/ui';
   import { Icon } from '$lib/components';
-  import { VersionIcon, DebugIcon, KeyIcon } from '$lib/components/icons';
+  import { VersionIcon, LogIcon, KeyIcon } from '$lib/components/icons';
   import type { IconName } from '$lib/types/icons';
 
   const settingsPages = [
@@ -38,11 +38,11 @@
       href: '/settings/apikey',
     },
     {
-      name: 'Debug',
-      title: 'Debug Manager',
+      name: 'Logging',
+      title: 'Logging Manager',
       description: 'Manage your log settings',
-      icon: DebugIcon,
-      href: '/settings/debug',
+      icon: LogIcon,
+      href: '/settings/logging',
     },
   ];
 </script>

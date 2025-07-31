@@ -34,7 +34,7 @@
     enabled: config?.enabled !== false,
   });
 
-  let selectedSiteFromList = $state('');
+  const selectedSiteFromList = $state('');
   let isSubmitting = $state(false);
   let errors = $state<Record<string, string>>({});
 
@@ -122,11 +122,11 @@
       name="site_pattern"
       bind:value={formData.site_pattern}
       placeholder="Type site name, or enter pattern like *.youtube.com, twitter.com, or *"
-      class="{inputClasses} {errors.site_pattern ? 'border-red-500' : ''}"
+      class="{inputClasses}" class:border-red-500={errors.site_pattern}
       autocomplete="off"
     />
     <datalist id="supportedSites">
-      {#each supportedSites as site}
+      {#each supportedSites as site (site.url_pattern)}
         <option value={site.url_pattern}>{site.name}</option>
       {/each}
     </datalist>
@@ -210,7 +210,7 @@
     <div
       class="max-h-96 overflow-y-auto border border-secondary-300 dark:border-secondary-400 rounded p-4 bg-secondary-50 dark:bg-secondary-800"
     >
-      {#each Object.entries(typedOptionsData) as [categoryKey, category]}
+      {#each Object.entries(typedOptionsData) as [_categoryKey, category] (_categoryKey)}
         <details class="mb-4">
           <summary
             class="font-medium cursor-pointer text-secondary-800 dark:text-secondary-200 hover:text-primary-600 dark:hover:text-primary-400"
@@ -218,7 +218,7 @@
             {category.title}
           </summary>
           <div class="mt-2 space-y-2">
-            {#each category.options as option}
+            {#each category.options as option (option.id)}
               <div class="flex items-start gap-2 p-2 bg-white dark:bg-secondary-700 rounded">
                 <!-- slider -->
                 <div class="relative inline-block w-[26px] h-4">
@@ -258,7 +258,7 @@
                     {#if option.type === 'string'}
                       <input
                         type="text"
-                        value={formData.cli_options.get(option.id) || ''}
+                        value={formData.cli_options.get(option.id) ?? ''}
                         oninput={e => handleOptionInputChange(e, option.id, 'string')}
                         placeholder="Enter value..."
                         class="{inputClasses} px-2 py-1 text-sm w-full"
@@ -266,7 +266,7 @@
                     {:else if option.type === 'number'}
                       <input
                         type="number"
-                        value={formData.cli_options.get(option.id) || ''}
+                        value={formData.cli_options.get(option.id) ?? ''}
                         oninput={e => handleOptionInputChange(e, option.id, 'number')}
                         placeholder="Enter number..."
                         class="{inputClasses} px-2 py-1 text-sm w-full"
@@ -274,7 +274,7 @@
                     {:else if option.type === 'range'}
                       <input
                         type="text"
-                        value={formData.cli_options.get(option.id) || ''}
+                        value={formData.cli_options.get(option.id) ?? ''}
                         oninput={e => handleOptionInputChange(e, option.id, 'string')}
                         placeholder={option.placeholder}
                         class="{inputClasses} px-2 py-1 text-sm w-full"

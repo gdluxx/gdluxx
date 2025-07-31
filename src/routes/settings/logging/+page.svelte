@@ -13,7 +13,6 @@
   import type { ServerLoggingConfig } from '$lib/server/loggingManager';
   import type { ClientLogConfig } from '$lib/client/config/logger-config';
   import { Button, Info } from '$lib/components/ui';
-  import { loggingStore } from '../debug/lib';
 
   let serverConfig = $state({
     enabled: true,
@@ -371,3 +370,4 @@
     </div>
   {/if}
 </div>
+

@@ -8,7 +8,7 @@
  * as published by the Free Software Foundation.
  */
 
-export { default as DebugIcon } from './DebugIcon.svelte';
+export { default as LogIcon } from './LogIcon.svelte';
 export { default as InfoIcon } from './InfoIcon.svelte';
 export { default as KeyIcon } from './KeyIcon.svelte';
 export { default as RunIcon } from './RunIcon.svelte';

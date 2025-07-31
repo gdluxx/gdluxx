@@ -21,7 +21,7 @@
 
   let theme = $state<'light' | 'dark'>('light');
   let _isSubmitting = $state(false);
-  let jsonContent = $state('{}');
+  let jsonContent = $state(data.success ? data.content : '{}');
 
   // React to data changes from invalidation
   const loadMessage = $derived(data.message ?? '');

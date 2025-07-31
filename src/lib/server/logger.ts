@@ -10,8 +10,8 @@
 
 import winston from 'winston';
 import DailyRotateFile from 'winston-daily-rotate-file';
-import type { ServerLogConfig } from './config/logger-config.js';
-import { DEFAULT_SERVER_CONFIG } from './config/logger-config.js';
+import type { ServerLoggingConfig } from './loggingManager';
+import { DEFAULT_SERVER_LOGGING_CONFIG, readServerLoggingConfig } from './loggingManager';
 
 // Patterns to redact
 const REDACT_PATTERNS = [
@@ -53,26 +53,17 @@ function sanitizeArgs(args: unknown[]): unknown[] {
 
 class ServerLogger {
   private winston: winston.Logger;
-  private config: ServerLogConfig;
+  private config: ServerLoggingConfig;
 
   constructor() {
-    this.config = DEFAULT_SERVER_CONFIG;
+    this.config = DEFAULT_SERVER_LOGGING_CONFIG;
     this.winston = this.createWinstonLogger();
     this.loadConfigAsync();
   }
 
   private async loadConfigAsync(): Promise<void> {
     try {
-      // existing logging config from the debug page
-      const { readLoggingConfig } = await import('./loggingManager.js');
-      const dbConfig = await readLoggingConfig();
-      this.config = {
-        ...DEFAULT_SERVER_CONFIG,
-        enabled: dbConfig.enabled,
-        level:
-          (dbConfig.level?.toLowerCase() as ServerLogConfig['level']) ||
-          DEFAULT_SERVER_CONFIG.level,
-      };
+      this.config = await readServerLoggingConfig();
       this.winston = this.createWinstonLogger();
     } catch (error) {
       // eslint-disable-next-line no-console
@@ -84,7 +75,7 @@ class ServerLogger {
     const transports: winston.transport[] = [];
 
     // Console transport
-    if (this.config.outputs.console) {
+    if (this.config.consoleEnabled) {
       transports.push(
         new winston.transports.Console({
           format:
@@ -103,13 +94,13 @@ class ServerLogger {
     }
 
     // File transport
-    if (this.config.outputs.file.enabled) {
+    if (this.config.fileEnabled) {
       transports.push(
         new DailyRotateFile({
-          filename: `${this.config.outputs.file.directory}/gdluxx-%DATE%.log`,
+          filename: `${this.config.fileDirectory}/gdluxx-%DATE%.log`,
           datePattern: 'YYYY-MM-DD',
-          maxSize: this.config.outputs.file.maxSize,
-          maxFiles: this.config.outputs.file.maxFiles,
+          maxSize: this.config.fileMaxSize,
+          maxFiles: this.config.fileMaxFiles,
           format: winston.format.combine(winston.format.timestamp(), winston.format.json()),
         })
       );
@@ -156,7 +147,7 @@ class ServerLogger {
 
   // Performance log utilities
   logSlowOperation(operation: string, duration: number, threshold?: number): void {
-    const actualThreshold = threshold || this.config.performance.slowQueryThreshold;
+    const actualThreshold = threshold || this.config.slowQueryThreshold;
     if (duration > actualThreshold) {
       this.warn(`Slow operation detected: ${operation} took ${duration}ms`);
     }
@@ -176,13 +167,13 @@ class ServerLogger {
   }
 
   // Config management
-  async updateConfig(newConfig: Partial<ServerLogConfig>): Promise<void> {
+  async updateConfig(newConfig: Partial<ServerLoggingConfig>): Promise<void> {
     this.config = { ...this.config, ...newConfig };
     this.winston = this.createWinstonLogger();
     this.info('Server logger configuration updated', { config: this.config });
   }
 
-  getConfig(): ServerLogConfig {
+  getConfig(): ServerLoggingConfig {
     return { ...this.config };
   }
 }

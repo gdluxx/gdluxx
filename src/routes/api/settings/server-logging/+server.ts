@@ -33,25 +33,7 @@ export const POST: RequestHandler = async ({ request }) => {
 
     await writeServerLoggingConfig(config);
 
-    await serverLogger.updateConfig({
-      enabled: config.enabled,
-      level: config.level,
-      format: config.format,
-      outputs: {
-        console: config.consoleEnabled,
-        file: {
-          enabled: config.fileEnabled,
-          directory: config.fileDirectory,
-          maxSize: config.fileMaxSize,
-          maxFiles: config.fileMaxFiles,
-        },
-        database: false,
-      },
-      performance: {
-        logSlowQueries: config.performanceLogging,
-        slowQueryThreshold: config.slowQueryThreshold,
-      },
-    });
+    await serverLogger.updateConfig(config);
 
     serverLogger.info('Server logging configuration updated', { config });
     return json({ success: true });

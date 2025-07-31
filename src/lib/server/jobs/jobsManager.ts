@@ -77,7 +77,7 @@ export async function readAllJobs(): Promise<DatabaseJob[]> {
     // Combine jobs with their outputs
     return jobRows.map(job => {
       const validStatuses = ['running', 'success', 'no_action', 'error'] as const;
-      if (!validStatuses.includes(job.status as any)) {
+      if (!validStatuses.includes(job.status as (typeof validStatuses)[number])) {
         serverLogger.error('Invalid job status found, defaulting to error', {
           invalidStatus: job.status,
           jobId: job.id,
