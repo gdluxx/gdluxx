@@ -9,6 +9,7 @@
  */
 
 export { default as ApiKeyManager } from './ApiKeyManager.svelte';
+export { default as LogSettings } from './LogSettings.svelte';
 export { default as SiteConfigForm } from './SiteConfigForm.svelte';
 export { default as UserManager } from './UserManager.svelte';
 export { default as VersionManager } from './VersionManager.svelte';
