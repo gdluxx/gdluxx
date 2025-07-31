@@ -137,12 +137,13 @@
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div class="space-y-4">
-          <label class="flex items-center space-x-3">
+          <label for="server-enabled" class="flex items-center space-x-3">
             <div class="relative">
               <input
+                id="server-enabled"
                 type="checkbox"
                 bind:checked={serverConfig.enabled}
-                name="Enable Debugging"
+                name="server-enabled"
                 class="peer sr-only"
               />
               <div
@@ -158,10 +159,13 @@
           </label>
 
           <div>
-            <label class="block text-sm font-medium dark:text-gray-700 text-gray-300 mb-1"
+            <label
+              for="server-log-level"
+              class="block text-sm font-medium dark:text-gray-700 text-gray-300 mb-1"
               >Log Level</label
             >
             <select
+              id="server-log-level"
               bind:value={serverConfig.level}
               class="w-full px-3 py-2 text-sm border dark:border-gray-300 border-gray-600 rounded-md bg-white dark:bg-gray-700 dark:text-gray-900 text-gray-100"
             >
@@ -173,24 +177,27 @@
           </div>
 
           <div>
-            <label class="block text-sm font-medium dark:text-gray-700 text-gray-300 mb-1"
-              >Format</label
+            <label
+              for="server-format"
+              class="block text-sm font-medium dark:text-gray-700 text-gray-300 mb-1">Format</label
             >
             <select
+              id="server-format"
               bind:value={serverConfig.format}
-              class="w-full px-3 py-2 border dark:border-gray-300 border-gray-600 rounded-md bg-white dark:bg-gray-700 dark:text-gray-900 text-gray-100"
+              class="w-full px-3 py-2 text-sm border dark:border-gray-300 border-gray-600 rounded-md bg-white dark:bg-gray-700 dark:text-gray-900 text-gray-100"
             >
               <option value="simple">Simple</option>
               <option value="json">JSON</option>
             </select>
           </div>
 
-          <label class="flex items-center space-x-3">
+          <label for="server-console-enabled" class="flex items-center space-x-3">
             <div class="relative">
               <input
+                id="server-console-enabled"
                 type="checkbox"
                 bind:checked={serverConfig.consoleEnabled}
-                name="Enable Debugging"
+                name="server-console-enabled"
                 class="peer sr-only"
               />
 
@@ -207,12 +214,13 @@
         </div>
 
         <div class="space-y-4">
-          <label class="flex items-center space-x-3">
+          <label for="server-file-enabled" class="flex items-center space-x-3">
             <div class="relative">
               <input
+                id="server-file-enabled"
                 type="checkbox"
                 bind:checked={serverConfig.fileEnabled}
-                name="Enable Debugging"
+                name="server-file-enabled"
                 class="peer sr-only"
               />
               <div
@@ -227,10 +235,13 @@
 
           {#if serverConfig.fileEnabled}
             <div>
-              <label class="block text-sm font-medium dark:text-gray-700 text-gray-300 mb-1"
+              <label
+                for="server-file-directory"
+                class="block text-sm font-medium dark:text-gray-700 text-gray-300 mb-1"
                 >Log Directory</label
               >
               <input
+                id="server-file-directory"
                 type="text"
                 bind:value={serverConfig.fileDirectory}
                 class="w-full px-3 py-2 border dark:border-gray-300 border-gray-600 rounded-md bg-white dark:bg-gray-700 dark:text-gray-900 text-gray-100"
@@ -238,10 +249,13 @@
             </div>
 
             <div>
-              <label class="block text-sm font-medium dark:text-gray-700 text-gray-300 mb-1"
+              <label
+                for="server-file-max-size"
+                class="block text-sm font-medium dark:text-gray-700 text-gray-300 mb-1"
                 >Max File Size</label
               >
               <input
+                id="server-file-max-size"
                 type="text"
                 bind:value={serverConfig.fileMaxSize}
                 placeholder="10m"
@@ -250,10 +264,13 @@
             </div>
 
             <div>
-              <label class="block text-sm font-medium dark:text-gray-700 text-gray-300 mb-1"
+              <label
+                for="server-file-max-files"
+                class="block text-sm font-medium dark:text-gray-700 text-gray-300 mb-1"
                 >Max Files to Keep</label
               >
               <input
+                id="server-file-max-files"
                 type="text"
                 bind:value={serverConfig.fileMaxFiles}
                 placeholder="7d"
@@ -262,12 +279,13 @@
             </div>
           {/if}
 
-          <label class="flex items-center space-x-3">
+          <label for="server-performance-logging" class="flex items-center space-x-3">
             <div class="relative">
               <input
+                id="server-performance-logging"
                 type="checkbox"
                 bind:checked={serverConfig.performanceLogging}
-                name="Enable Debugging"
+                name="server-performance-logging"
                 class="peer sr-only"
               />
 
@@ -286,10 +304,13 @@
 
           {#if serverConfig.performanceLogging}
             <div>
-              <label class="block text-sm font-medium dark:text-gray-700 text-gray-300 mb-1"
+              <label
+                for="server-slow-query-threshold"
+                class="block text-sm font-medium dark:text-gray-700 text-gray-300 mb-1"
                 >Slow Query Threshold (ms)</label
               >
               <input
+                id="server-slow-query-threshold"
                 type="number"
                 bind:value={serverConfig.slowQueryThreshold}
                 min="0"
@@ -314,12 +335,13 @@
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div class="space-y-4">
-          <label class="flex items-center space-x-3">
+          <label for="client-enabled" class="flex items-center space-x-3">
             <div class="relative">
               <input
+                id="client-enabled"
                 type="checkbox"
                 bind:checked={clientConfig.enabled}
-                name="Enable Debugging"
+                name="client-enabled"
                 class="peer sr-only"
               />
 
@@ -337,12 +359,15 @@
           </label>
 
           <div>
-            <label class="block text-sm font-medium dark:text-gray-700 text-gray-300 mb-1"
+            <label
+              for="client-log-level"
+              class="block text-sm font-medium dark:text-gray-700 text-gray-300 mb-1"
               >Log Level</label
             >
             <select
+              id="client-log-level"
               bind:value={clientConfig.level}
-              class="w-full px-3 py-2 border dark:border-gray-300 border-gray-600 rounded-md bg-white dark:bg-gray-700 dark:text-gray-900 text-gray-100"
+              class="w-full px-3 py-2 text-sm border dark:border-gray-300 border-gray-600 rounded-md bg-white dark:bg-gray-700 dark:text-gray-900 text-gray-100"
             >
               <option value="debug">Debug</option>
               <option value="info">Info</option>
@@ -351,12 +376,13 @@
             </select>
           </div>
 
-          <label class="flex items-center space-x-3">
+          <label for="client-send-to-server" class="flex items-center space-x-3">
             <div class="relative">
               <input
+                id="client-send-to-server"
                 type="checkbox"
                 bind:checked={clientConfig.sendToServer}
-                name="Enable Debugging"
+                name="client-send-to-server"
                 class="peer sr-only"
               />
 
@@ -373,12 +399,13 @@
             >
           </label>
 
-          <label class="flex items-center space-x-3">
+          <label for="client-include-url" class="flex items-center space-x-3">
             <div class="relative">
               <input
+                id="client-include-url"
                 type="checkbox"
                 bind:checked={clientConfig.includeUrl}
-                name="Enable Debugging"
+                name="client-include-url"
                 class="peer sr-only"
               />
 
@@ -399,23 +426,29 @@
         <div class="space-y-4">
           {#if clientConfig.sendToServer}
             <div>
-              <label class="block text-sm font-medium dark:text-gray-700 text-gray-300 mb-1"
+              <label
+                for="client-buffer-size"
+                class="block text-sm font-medium dark:text-gray-700 text-gray-300 mb-1"
                 >Buffer Size</label
               >
               <input
+                id="client-buffer-size"
                 type="number"
                 bind:value={clientConfig.bufferSize}
                 min="1"
                 max="1000"
-                class="w-full px-3 py-2 border dark:border-gray-300 border-gray-600 rounded-md bg-white dark:bg-gray-700 dark:text-gray-900 text-gray-100"
+                class="w-full px-3 py-2 text-sm border dark:border-gray-300 border-gray-600 rounded-md bg-white dark:bg-gray-700 dark:text-gray-900 text-gray-100"
               />
             </div>
 
             <div>
-              <label class="block text-sm font-medium dark:text-gray-700 text-gray-300 mb-1"
+              <label
+                for="client-batch-interval"
+                class="block text-sm font-medium dark:text-gray-700 text-gray-300 mb-1"
                 >Batch Interval (ms)</label
               >
               <input
+                id="client-batch-interval"
                 type="number"
                 bind:value={clientConfig.batchInterval}
                 min="1000"
@@ -424,8 +457,9 @@
               />
             </div>
 
-            <label class="flex items-center space-x-3">
+            <label for="client-include-user-agent" class="flex items-center space-x-3">
               <input
+                id="client-include-user-agent"
                 type="checkbox"
                 bind:checked={clientConfig.includeUserAgent}
                 class="h-4 w-4 text-green-600 rounded border-gray-300 focus:ring-green-500"
