@@ -19,7 +19,7 @@
 
   interface Props {
     config?: SiteConfig | null;
-    supportedSites?: Array<{ name: string; url_pattern: string }>;
+    supportedSites?: Array<{ name: string; url: string }>;
     onSave: (config: Partial<SiteConfig>) => Promise<void>;
     onCancel: () => void;
   }
@@ -41,9 +41,9 @@
   // Watch for site selection from dropdown
   $effect(() => {
     if (selectedSiteFromList) {
-      const site = supportedSites.find(s => s.url_pattern === selectedSiteFromList);
+      const site = supportedSites.find(s => s.url === selectedSiteFromList);
       if (site) {
-        formData.site_pattern = site.url_pattern;
+        formData.site_pattern = site.url;
         formData.display_name = site.name;
       }
     }
@@ -122,12 +122,13 @@
       name="site_pattern"
       bind:value={formData.site_pattern}
       placeholder="Type site name, or enter pattern like *.youtube.com, twitter.com, or *"
-      class="{inputClasses}" class:border-red-500={errors.site_pattern}
+      class={inputClasses}
+      class:border-red-500={errors.site_pattern}
       autocomplete="off"
     />
     <datalist id="supportedSites">
-      {#each supportedSites as site (site.url_pattern)}
-        <option value={site.url_pattern}>{site.name}</option>
+      {#each supportedSites as site (site.url)}
+        <option value={site.url}>{site.name} - {site.url}</option>
       {/each}
     </datalist>
     {#if errors.site_pattern}
