@@ -10,6 +10,7 @@
 
 import type { ClientLogConfig } from '$lib/client/config/logger-config';
 import { DEFAULT_CLIENT_CONFIG } from '$lib/client/config/logger-config';
+import { browser } from '$app/environment';
 
 interface LogEntry {
   timestamp: string;
@@ -38,6 +39,10 @@ class ClientLogger {
   }
 
   private loadConfig(): ClientLogConfig {
+    if (!browser) {
+      return { ...DEFAULT_CLIENT_CONFIG };
+    }
+
     try {
       const stored = localStorage.getItem('client-logging-config');
       if (stored) {
@@ -52,6 +57,10 @@ class ClientLogger {
   }
 
   private saveConfig(): void {
+    if (!browser) {
+      return;
+    }
+
     try {
       localStorage.setItem('client-logging-config', JSON.stringify(this.config));
     } catch (error) {
@@ -75,12 +84,14 @@ class ClientLogger {
       args,
     };
 
-    if (this.config.includeUrl) {
-      entry.url = window.location.href;
-    }
+    if (browser) {
+      if (this.config.includeUrl) {
+        entry.url = window.location.href;
+      }
 
-    if (this.config.includeUserAgent) {
-      entry.userAgent = navigator.userAgent;
+      if (this.config.includeUserAgent) {
+        entry.userAgent = navigator.userAgent;
+      }
     }
 
     return entry;
@@ -102,7 +113,7 @@ class ClientLogger {
       clearInterval(this.batchTimer);
     }
 
-    if (this.config.sendToServer) {
+    if (browser && this.config.sendToServer) {
       this.batchTimer = window.setInterval(() => {
         this.flushBuffer();
       }, this.config.batchInterval);
@@ -183,7 +194,7 @@ class ClientLogger {
     this.error(`UI Error in ${component}: ${error.message}`, {
       component,
       stack: error.stack,
-      url: window.location.href,
+      url: browser ? window.location.href : undefined,
     });
   }
 
@@ -217,7 +228,7 @@ class ClientLogger {
 
 export const clientLogger = new ClientLogger();
 
-if (typeof window !== 'undefined') {
+if (browser) {
   window.addEventListener('beforeunload', () => {
     clientLogger.destroy();
   });
