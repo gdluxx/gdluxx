@@ -14,6 +14,7 @@
   import type { ServerLoggingConfig } from '$lib/server/loggingManager';
   import type { ClientLogConfig } from '$lib/client/config/logger-config';
   import { Button, Info } from '$lib/components/ui';
+  import { Icon } from '$lib/components';
 
   let serverConfig = $state({
     enabled: true,
@@ -153,17 +154,54 @@
                 class="absolute left-1 top-1 h-3 w-3 rounded-full bg-white transition-transform peer-checked:translate-x-5 peer-disabled:opacity-70 shadow-sm"
               ></div>
             </div>
-            <span class="text-sm font-medium dark:text-gray-700 text-gray-300"
-              >Enable Server Logging</span
-            >
+            <span class="text-sm font-medium dark:text-gray-700 text-gray-300">
+              Enable Server Logging
+            </span>
+            <!-- begin tooltip -->
+            <div class="relative inline-block group">
+              <Icon iconName="question" size={18} class="text-primary-900" />
+
+              <div
+                class="absolute right-full top-1/2 transform -translate-y-1/2 mr-2 w-64 p-4
+                  bg-accent-50 dark:bg-accent-900 rounded shadow-lg opacity-0 invisible
+                  group-hover:opacity-100 group-hover:visible transition-all border border-accent-500"
+              >
+                <p class="cursor-default text-sm text-secondary-800 dark:text-secondary-200 mt-1">
+                  Select from supported sites or enter custom pattern
+                  <br />- * for all sites
+                  <br />- *.domain.com
+                </p>
+              </div>
+            </div>
+            <!-- end tooltip -->
           </label>
 
           <div>
-            <label
-              for="server-log-level"
-              class="block text-sm font-medium dark:text-gray-700 text-gray-300 mb-1"
-              >Log Level</label
-            >
+            <div class="flex flex-row gap-2 items-center">
+              <label
+                for="server-log-level"
+                class="block text-sm font-medium dark:text-gray-700 text-gray-300 mb-1"
+              >
+                Log Level
+              </label>
+              <!-- begin tooltip -->
+              <div class="relative inline-block group">
+                <Icon iconName="question" size={18} class="text-primary-900" />
+
+                <div
+                  class="absolute right-full top-1/2 transform -translate-y-1/2 mr-2 w-64 p-4
+                  bg-accent-50 dark:bg-accent-900 rounded shadow-lg opacity-0 invisible
+                  group-hover:opacity-100 group-hover:visible transition-all border border-accent-500"
+                >
+                  <p class="cursor-default text-sm text-secondary-800 dark:text-secondary-200 mt-1">
+                    Select from supported sites or enter custom pattern
+                    <br />- * for all sites
+                    <br />- *.domain.com
+                  </p>
+                </div>
+              </div>
+            </div>
+            <!-- end tooltip -->
             <select
               id="server-log-level"
               bind:value={serverConfig.level}
@@ -177,10 +215,31 @@
           </div>
 
           <div>
-            <label
-              for="server-format"
-              class="block text-sm font-medium dark:text-gray-700 text-gray-300 mb-1">Format</label
-            >
+            <div class="flex flex-row gap-2 items-center">
+              <label
+                for="server-format"
+                class="block text-sm font-medium dark:text-gray-700 text-gray-300 mb-1"
+              >
+                Format
+              </label>
+              <!-- begin tooltip -->
+              <div class="relative inline-block group">
+                <Icon iconName="question" size={18} class="text-primary-900" />
+
+                <div
+                  class="absolute right-full top-1/2 transform -translate-y-1/2 mr-2 w-64 p-4
+                  bg-accent-50 dark:bg-accent-900 rounded shadow-lg opacity-0 invisible
+                  group-hover:opacity-100 group-hover:visible transition-all border border-accent-500"
+                >
+                  <p class="cursor-default text-sm text-secondary-800 dark:text-secondary-200 mt-1">
+                    Select from supported sites or enter custom pattern
+                    <br />- * for all sites
+                    <br />- *.domain.com
+                  </p>
+                </div>
+              </div>
+            </div>
+            <!-- end tooltip -->
             <select
               id="server-format"
               bind:value={serverConfig.format}
@@ -209,7 +268,26 @@
                 class="absolute left-1 top-1 h-3 w-3 rounded-full bg-white transition-transform peer-checked:translate-x-5 peer-disabled:opacity-70 shadow-sm"
               ></div>
             </div>
-            <span class="text-sm font-medium dark:text-gray-700 text-gray-300">Console Output</span>
+            <span class="text-sm font-medium dark:text-gray-700 text-gray-300">
+              Console Output
+            </span>
+            <!-- begin tooltip -->
+            <div class="relative inline-block group">
+              <Icon iconName="question" size={18} class="text-primary-900" />
+
+              <div
+                class="absolute right-full top-1/2 transform -translate-y-1/2 mr-2 w-64 p-4
+                  bg-accent-50 dark:bg-accent-900 rounded shadow-lg opacity-0 invisible
+                  group-hover:opacity-100 group-hover:visible transition-all border border-accent-500"
+              >
+                <p class="cursor-default text-sm text-secondary-800 dark:text-secondary-200 mt-1">
+                  Select from supported sites or enter custom pattern
+                  <br />- * for all sites
+                  <br />- *.domain.com
+                </p>
+              </div>
+            </div>
+            <!-- end tooltip -->
           </label>
         </div>
 
@@ -314,7 +392,7 @@
                 type="number"
                 bind:value={serverConfig.slowQueryThreshold}
                 min="0"
-                class="w-full px-3 py-2 border dark:border-gray-300 border-gray-600 rounded-md bg-white dark:bg-gray-700 dark:text-gray-900 text-gray-100"
+                class="text-sm w-full px-3 py-2 border dark:border-gray-300 border-gray-600 rounded-md bg-white dark:bg-gray-700 dark:text-gray-900 text-gray-100"
               />
             </div>
           {/if}
