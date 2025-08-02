@@ -13,7 +13,7 @@
   import { clientLogger } from '$lib/client/logger';
   import type { ServerLoggingConfig } from '$lib/server/loggingManager';
   import type { ClientLogConfig } from '$lib/client/config/logger-config';
-  import { Button, Info } from '$lib/components/ui';
+  import { Button, Info, Tooltip } from '$lib/components/ui';
   import { Icon } from '$lib/components';
 
   let serverConfig = $state({
@@ -124,7 +124,9 @@
       class="bg-primary-50 p-4 dark:border-primary-400 rounded-sm border border-primary-600 dark:bg-primary-800"
     >
       <div class="flex items-center justify-between mb-4">
-        <h2 class="text-xl font-semibold dark:text-gray-900 text-gray-100">Server Logging</h2>
+        <h2 class="cursor-default text-xl font-semibold dark:text-gray-900 text-gray-100">
+          Server Logging
+        </h2>
         <Button
           onclick={updateServerConfig}
           disabled={loading}
@@ -157,23 +159,9 @@
             <span class="text-sm font-medium dark:text-gray-700 text-gray-300">
               Enable Server Logging
             </span>
-            <!-- begin tooltip -->
-            <div class="relative inline-block group">
-              <Icon iconName="question" size={18} class="text-primary-900" />
-
-              <div
-                class="absolute right-full top-1/2 transform -translate-y-1/2 mr-2 w-64 p-4
-                  bg-accent-50 dark:bg-accent-900 rounded shadow-lg opacity-0 invisible
-                  group-hover:opacity-100 group-hover:visible transition-all border border-accent-500"
-              >
-                <p class="cursor-default text-sm text-secondary-800 dark:text-secondary-200 mt-1">
-                  Select from supported sites or enter custom pattern
-                  <br />- * for all sites
-                  <br />- *.domain.com
-                </p>
-              </div>
-            </div>
-            <!-- end tooltip -->
+            <Tooltip content="">
+              <Icon iconName="question" size={20} class="text-secondary-800" />
+            </Tooltip>
           </label>
 
           <div>
@@ -183,25 +171,11 @@
                 class="block text-sm font-medium dark:text-gray-700 text-gray-300 mb-1"
               >
                 Log Level
+                <Tooltip content="">
+                  <Icon iconName="question" size={20} class="text-secondary-800" />
+                </Tooltip>
               </label>
-              <!-- begin tooltip -->
-              <div class="relative inline-block group">
-                <Icon iconName="question" size={18} class="text-primary-900" />
-
-                <div
-                  class="absolute right-full top-1/2 transform -translate-y-1/2 mr-2 w-64 p-4
-                  bg-accent-50 dark:bg-accent-900 rounded shadow-lg opacity-0 invisible
-                  group-hover:opacity-100 group-hover:visible transition-all border border-accent-500"
-                >
-                  <p class="cursor-default text-sm text-secondary-800 dark:text-secondary-200 mt-1">
-                    Select from supported sites or enter custom pattern
-                    <br />- * for all sites
-                    <br />- *.domain.com
-                  </p>
-                </div>
-              </div>
             </div>
-            <!-- end tooltip -->
             <select
               id="server-log-level"
               bind:value={serverConfig.level}
@@ -220,26 +194,12 @@
                 for="server-format"
                 class="block text-sm font-medium dark:text-gray-700 text-gray-300 mb-1"
               >
-                Format
+                Log Format
+                <Tooltip content="">
+                  <Icon iconName="question" size={20} class="text-secondary-800" />
+                </Tooltip>
               </label>
-              <!-- begin tooltip -->
-              <div class="relative inline-block group">
-                <Icon iconName="question" size={18} class="text-primary-900" />
-
-                <div
-                  class="absolute right-full top-1/2 transform -translate-y-1/2 mr-2 w-64 p-4
-                  bg-accent-50 dark:bg-accent-900 rounded shadow-lg opacity-0 invisible
-                  group-hover:opacity-100 group-hover:visible transition-all border border-accent-500"
-                >
-                  <p class="cursor-default text-sm text-secondary-800 dark:text-secondary-200 mt-1">
-                    Select from supported sites or enter custom pattern
-                    <br />- * for all sites
-                    <br />- *.domain.com
-                  </p>
-                </div>
-              </div>
             </div>
-            <!-- end tooltip -->
             <select
               id="server-format"
               bind:value={serverConfig.format}
@@ -259,11 +219,9 @@
                 name="server-console-enabled"
                 class="peer sr-only"
               />
-
               <div
                 class="h-5 w-10 rounded-full bg-secondary-600 transition-colors peer-checked:bg-primary-400 peer-disabled:opacity-50 dark:bg-secondary-300 dark:peer-checked:bg-primary-600"
               ></div>
-
               <div
                 class="absolute left-1 top-1 h-3 w-3 rounded-full bg-white transition-transform peer-checked:translate-x-5 peer-disabled:opacity-70 shadow-sm"
               ></div>
@@ -271,23 +229,9 @@
             <span class="text-sm font-medium dark:text-gray-700 text-gray-300">
               Console Output
             </span>
-            <!-- begin tooltip -->
-            <div class="relative inline-block group">
-              <Icon iconName="question" size={18} class="text-primary-900" />
-
-              <div
-                class="absolute right-full top-1/2 transform -translate-y-1/2 mr-2 w-64 p-4
-                  bg-accent-50 dark:bg-accent-900 rounded shadow-lg opacity-0 invisible
-                  group-hover:opacity-100 group-hover:visible transition-all border border-accent-500"
-              >
-                <p class="cursor-default text-sm text-secondary-800 dark:text-secondary-200 mt-1">
-                  Select from supported sites or enter custom pattern
-                  <br />- * for all sites
-                  <br />- *.domain.com
-                </p>
-              </div>
-            </div>
-            <!-- end tooltip -->
+            <Tooltip content="">
+              <Icon iconName="question" size={20} class="text-secondary-800" />
+            </Tooltip>
           </label>
         </div>
 
@@ -308,7 +252,10 @@
                 class="absolute left-1 top-1 h-3 w-3 rounded-full bg-white transition-transform peer-checked:translate-x-5 peer-disabled:opacity-70 shadow-sm"
               ></div>
             </div>
-            <span class="text-sm font-medium dark:text-gray-700 text-gray-300">File Output</span>
+            <span class="text-sm font-medium dark:text-gray-700 text-gray-300"> File Output </span>
+            <Tooltip content="">
+              <Icon iconName="question" size={20} class="text-secondary-800" />
+            </Tooltip>
           </label>
 
           {#if serverConfig.fileEnabled}
@@ -316,8 +263,12 @@
               <label
                 for="server-file-directory"
                 class="block text-sm font-medium dark:text-gray-700 text-gray-300 mb-1"
-                >Log Directory</label
               >
+                Log Directory
+                <Tooltip content="">
+                  <Icon iconName="question" size={20} class="text-secondary-800" />
+                </Tooltip>
+              </label>
               <input
                 id="server-file-directory"
                 type="text"
@@ -330,8 +281,12 @@
               <label
                 for="server-file-max-size"
                 class="block text-sm font-medium dark:text-gray-700 text-gray-300 mb-1"
-                >Max File Size</label
               >
+                Max File Size
+                <Tooltip content="">
+                  <Icon iconName="question" size={20} class="text-secondary-800" />
+                </Tooltip>
+              </label>
               <input
                 id="server-file-max-size"
                 type="text"
@@ -345,8 +300,12 @@
               <label
                 for="server-file-max-files"
                 class="block text-sm font-medium dark:text-gray-700 text-gray-300 mb-1"
-                >Max Files to Keep</label
               >
+                Max Files to Keep
+                <Tooltip content="">
+                  <Icon iconName="question" size={20} class="text-secondary-800" />
+                </Tooltip>
+              </label>
               <input
                 id="server-file-max-files"
                 type="text"
@@ -366,18 +325,19 @@
                 name="server-performance-logging"
                 class="peer sr-only"
               />
-
               <div
                 class="h-5 w-10 rounded-full bg-secondary-600 transition-colors peer-checked:bg-primary-400 peer-disabled:opacity-50 dark:bg-secondary-300 dark:peer-checked:bg-primary-600"
               ></div>
-
               <div
                 class="absolute left-1 top-1 h-3 w-3 rounded-full bg-white transition-transform peer-checked:translate-x-5 peer-disabled:opacity-70 shadow-sm"
               ></div>
             </div>
-            <span class="text-sm font-medium dark:text-gray-700 text-gray-300"
-              >Performance Logging</span
-            >
+            <span class="text-sm font-medium dark:text-gray-700 text-gray-300">
+              Performance Logging
+            </span>
+            <Tooltip content="">
+              <Icon iconName="question" size={20} class="text-secondary-800" />
+            </Tooltip>
           </label>
 
           {#if serverConfig.performanceLogging}
@@ -385,8 +345,12 @@
               <label
                 for="server-slow-query-threshold"
                 class="block text-sm font-medium dark:text-gray-700 text-gray-300 mb-1"
-                >Slow Query Threshold (ms)</label
               >
+                Slow Query Threshold (ms)
+                <Tooltip content="">
+                  <Icon iconName="question" size={20} class="text-secondary-800" />
+                </Tooltip>
+              </label>
               <input
                 id="server-slow-query-threshold"
                 type="number"
@@ -405,7 +369,9 @@
       class="bg-primary-50 p-4 dark:border-primary-400 rounded-sm border border-primary-600 dark:bg-primary-800"
     >
       <div class="flex items-center justify-between mb-4">
-        <h2 class="text-xl font-semibold dark:text-gray-900 text-gray-100">Client Logging</h2>
+        <h2 class="cursor-default text-xl font-semibold dark:text-gray-900 text-gray-100">
+          Client Logging
+        </h2>
         <Button onclick={updateClientConfig} variant="primary" size="sm" class="">
           Update Client Config
         </Button>
@@ -422,18 +388,19 @@
                 name="client-enabled"
                 class="peer sr-only"
               />
-
               <div
                 class="h-5 w-10 rounded-full bg-secondary-600 transition-colors peer-checked:bg-primary-400 peer-disabled:opacity-50 dark:bg-secondary-300 dark:peer-checked:bg-primary-600"
               ></div>
-
               <div
                 class="absolute left-1 top-1 h-3 w-3 rounded-full bg-white transition-transform peer-checked:translate-x-5 peer-disabled:opacity-70 shadow-sm"
               ></div>
             </div>
-            <span class="text-sm font-medium dark:text-gray-700 text-gray-300"
-              >Enable Client Logging</span
-            >
+            <span class="text-sm font-medium dark:text-gray-700 text-gray-300">
+              Enable Client Logging
+            </span>
+            <Tooltip content="">
+              <Icon iconName="question" size={20} class="text-secondary-800" />
+            </Tooltip>
           </label>
 
           <div>
@@ -463,18 +430,19 @@
                 name="client-send-to-server"
                 class="peer sr-only"
               />
-
               <div
                 class="h-5 w-10 rounded-full bg-secondary-600 transition-colors peer-checked:bg-primary-400 peer-disabled:opacity-50 dark:bg-secondary-300 dark:peer-checked:bg-primary-600"
               ></div>
-
               <div
                 class="absolute left-1 top-1 h-3 w-3 rounded-full bg-white transition-transform peer-checked:translate-x-5 peer-disabled:opacity-70 shadow-sm"
               ></div>
             </div>
-            <span class="text-sm font-medium dark:text-gray-700 text-gray-300"
-              >Send Logs to Server</span
-            >
+            <span class="text-sm font-medium dark:text-gray-700 text-gray-300">
+              Send Logs to Server
+            </span>
+            <Tooltip content="">
+              <Icon iconName="question" size={20} class="text-secondary-800" />
+            </Tooltip>
           </label>
 
           <label for="client-include-url" class="flex items-center space-x-3">
@@ -486,18 +454,19 @@
                 name="client-include-url"
                 class="peer sr-only"
               />
-
               <div
                 class="h-5 w-10 rounded-full bg-secondary-600 transition-colors peer-checked:bg-primary-400 peer-disabled:opacity-50 dark:bg-secondary-300 dark:peer-checked:bg-primary-600"
               ></div>
-
               <div
                 class="absolute left-1 top-1 h-3 w-3 rounded-full bg-white transition-transform peer-checked:translate-x-5 peer-disabled:opacity-70 shadow-sm"
               ></div>
             </div>
-            <span class="text-sm font-medium dark:text-gray-700 text-gray-300"
-              >Include URL in Logs</span
-            >
+            <span class="text-sm font-medium dark:text-gray-700 text-gray-300">
+              Include URL in Logs
+            </span>
+            <Tooltip content="">
+              <Icon iconName="question" size={20} class="text-secondary-800" />
+            </Tooltip>
           </label>
         </div>
 
@@ -507,8 +476,12 @@
               <label
                 for="client-buffer-size"
                 class="block text-sm font-medium dark:text-gray-700 text-gray-300 mb-1"
-                >Buffer Size</label
               >
+                Buffer Size
+                <Tooltip content="">
+                  <Icon iconName="question" size={20} class="text-secondary-800" />
+                </Tooltip>
+              </label>
               <input
                 id="client-buffer-size"
                 type="number"
@@ -523,8 +496,12 @@
               <label
                 for="client-batch-interval"
                 class="block text-sm font-medium dark:text-gray-700 text-gray-300 mb-1"
-                >Batch Interval (ms)</label
               >
+                Batch Interval (ms)
+                <Tooltip content="">
+                  <Icon iconName="question" size={20} class="text-secondary-800" />
+                </Tooltip>
+              </label>
               <input
                 id="client-batch-interval"
                 type="number"
@@ -536,15 +513,27 @@
             </div>
 
             <label for="client-include-user-agent" class="flex items-center space-x-3">
-              <input
-                id="client-include-user-agent"
-                type="checkbox"
-                bind:checked={clientConfig.includeUserAgent}
-                class="h-4 w-4 text-green-600 rounded border-gray-300 focus:ring-green-500"
-              />
-              <span class="text-sm font-medium dark:text-gray-700 text-gray-300"
-                >Include User Agent</span
-              >
+              <div class="relative">
+                <input
+                  id="client-include-user-agent"
+                  type="checkbox"
+                  bind:checked={clientConfig.includeUserAgent}
+                  name="client-include-user-agent"
+                  class="peer sr-only"
+                />
+                <div
+                  class="h-5 w-10 rounded-full bg-secondary-600 transition-colors peer-checked:bg-primary-400 peer-disabled:opacity-50 dark:bg-secondary-300 dark:peer-checked:bg-primary-600"
+                ></div>
+                <div
+                  class="absolute left-1 top-1 h-3 w-3 rounded-full bg-white transition-transform peer-checked:translate-x-5 peer-disabled:opacity-70 shadow-sm"
+                ></div>
+              </div>
+              <span class="text-sm font-medium dark:text-gray-700 text-gray-300">
+                Include User Agent
+              </span>
+              <Tooltip content="">
+                <Icon iconName="question" size={20} class="text-secondary-800" />
+              </Tooltip>
             </label>
           {/if}
         </div>
