@@ -13,7 +13,8 @@
   import { clientLogger } from '$lib/client/logger';
   import type { ServerLoggingConfig } from '$lib/server/loggingManager';
   import type { ClientLogConfig } from '$lib/client/config/logger-config';
-  import { Button, Info, Tooltip } from '$lib/components/ui';
+  import { Button, Tooltip } from '$lib/components/ui';
+  import { toastStore } from '$lib/stores/toast';
   import { Icon } from '$lib/components';
 
   let serverConfig = $state({
@@ -40,7 +41,6 @@
   } as ClientLogConfig);
 
   let loading = $state(false);
-  let message = $state('');
 
   onMount(async () => {
     await loadConfigurations();
@@ -57,7 +57,7 @@
 
       clientConfig = clientLogger.getConfig();
     } catch (error) {
-      message = 'Failed to load logging configurations';
+      toastStore.error('Configuration Load Failed', 'Failed to load logging configurations');
       clientLogger.error('Failed to load logging configurations:', error);
     } finally {
       loading = false;
@@ -67,7 +67,6 @@
   async function updateServerConfig() {
     try {
       loading = true;
-      message = '';
 
       const response = await fetch('/api/settings/server-logging', {
         method: 'POST',
@@ -76,14 +75,20 @@
       });
 
       if (response.ok) {
-        message = 'Server logging configuration updated successfully';
+        toastStore.success('Server Configuration', 'Logging configuration updated successfully');
         clientLogger.info('Server logging configuration updated');
       } else {
         const errorData = await response.json();
-        message = errorData.error ?? 'Failed to update server logging configuration';
+        toastStore.error(
+          'Server Configuration Failed',
+          errorData.error ?? 'Failed to update server logging configuration'
+        );
       }
     } catch (error) {
-      message = 'Failed to update server logging configuration';
+      toastStore.error(
+        'Server Configuration Failed',
+        'Failed to update server logging configuration'
+      );
       clientLogger.error('Failed to update server logging configuration:', error);
     } finally {
       loading = false;
@@ -93,10 +98,13 @@
   function updateClientConfig() {
     try {
       clientLogger.updateConfig(clientConfig);
-      message = 'Client logging configuration updated successfully';
+      toastStore.success('Client Configuration', 'Logging configuration updated successfully');
       clientLogger.info('Client logging configuration updated');
     } catch (error) {
-      message = 'Failed to update client logging configuration';
+      toastStore.error(
+        'Client Configuration Failed',
+        'Failed to update client logging configuration'
+      );
       clientLogger.error('Failed to update client logging configuration:', error);
     }
   }
@@ -140,12 +148,6 @@
 </svelte:head>
 
 <div class="container mx-auto max-w-4xl p-6 space-y-8">
-  {#if message}
-    <Info variant={`${message.includes('success') ? 'success' : 'warning'}`} dismissible={true}>
-      {message}
-    </Info>
-  {/if}
-
   {#if loading}
     <div class="text-center py-8">
       <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
