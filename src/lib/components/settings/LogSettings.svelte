@@ -192,7 +192,11 @@
             <span class="text-sm font-medium dark:text-gray-700 text-gray-300">
               Enable Server Logging
             </span>
-            <Tooltip content={tooltipVars.server.enable}>
+            <Tooltip
+              maxWidth="32rem"
+              class="!whitespace-normal !min-w-80"
+              content={tooltipVars.server.enable}
+            >
               <Icon iconName="question" size={20} class="text-secondary-800" />
             </Tooltip>
           </label>
@@ -204,7 +208,11 @@
                 class="block text-sm font-medium dark:text-gray-700 text-gray-300 mb-1"
               >
                 Log Level
-                <Tooltip content={tooltipVars.server.level}>
+                <Tooltip
+                  maxWidth="32rem"
+                  class="!whitespace-normal !min-w-80"
+                  content={tooltipVars.server.level}
+                >
                   <Icon iconName="question" size={20} class="text-secondary-800" />
                 </Tooltip>
               </label>
@@ -228,7 +236,11 @@
                 class="block text-sm font-medium dark:text-gray-700 text-gray-300 mb-1"
               >
                 Log Format
-                <Tooltip content={tooltipVars.server.format}>
+                <Tooltip
+                  maxWidth="32rem"
+                  class="!whitespace-normal !min-w-80"
+                  content={tooltipVars.server.format}
+                >
                   <Icon iconName="question" size={20} class="text-secondary-800" />
                 </Tooltip>
               </label>
@@ -262,7 +274,7 @@
             <span class="text-sm font-medium dark:text-gray-700 text-gray-300">
               Console Output
             </span>
-            <Tooltip content={tooltipVars.server.console}>
+            <Tooltip maxWidth="" content={tooltipVars.server.console}>
               <Icon iconName="question" size={20} class="text-secondary-800" />
             </Tooltip>
           </label>
@@ -286,7 +298,7 @@
               ></div>
             </div>
             <span class="text-sm font-medium dark:text-gray-700 text-gray-300"> File Output </span>
-            <Tooltip content={tooltipVars.server.file}>
+            <Tooltip maxWidth="" content={tooltipVars.server.file}>
               <Icon iconName="question" size={20} class="text-secondary-800" />
             </Tooltip>
           </label>
@@ -298,7 +310,7 @@
                 class="block text-sm font-medium dark:text-gray-700 text-gray-300 mb-1"
               >
                 Log Directory
-                <Tooltip content={tooltipVars.server.directory}>
+                <Tooltip maxWidth="" content={tooltipVars.server.directory}>
                   <Icon iconName="question" size={20} class="text-secondary-800" />
                 </Tooltip>
               </label>
@@ -306,7 +318,7 @@
                 id="server-file-directory"
                 type="text"
                 bind:value={serverConfig.fileDirectory}
-                class="w-full px-3 py-2 border dark:border-gray-300 border-gray-600 rounded-md bg-white dark:bg-gray-700 dark:text-gray-900 text-gray-100"
+                class="text-sm w-full px-3 py-2 border dark:border-gray-300 border-gray-600 rounded-md bg-white dark:bg-gray-700 dark:text-gray-900 text-gray-100"
               />
             </div>
 
@@ -316,7 +328,11 @@
                 class="block text-sm font-medium dark:text-gray-700 text-gray-300 mb-1"
               >
                 Max File Size
-                <Tooltip content={tooltipVars.server.fileSize}>
+                <Tooltip
+                  maxWidth="32rem"
+                  class="!whitespace-normal !min-w-80"
+                  content={tooltipVars.server.fileSize}
+                >
                   <Icon iconName="question" size={20} class="text-secondary-800" />
                 </Tooltip>
               </label>
@@ -325,7 +341,7 @@
                 type="text"
                 bind:value={serverConfig.fileMaxSize}
                 placeholder="10m"
-                class="w-full px-3 py-2 border dark:border-gray-300 border-gray-600 rounded-md bg-white dark:bg-gray-700 dark:text-gray-900 text-gray-100"
+                class="text-sm w-full px-3 py-2 border dark:border-gray-300 border-gray-600 rounded-md bg-white dark:bg-gray-700 dark:text-gray-900 text-gray-100"
               />
             </div>
 
@@ -335,7 +351,11 @@
                 class="block text-sm font-medium dark:text-gray-700 text-gray-300 mb-1"
               >
                 Max Files to Keep
-                <Tooltip content={tooltipVars.server.fileRetention}>
+                <Tooltip
+                  maxWidth="32rem"
+                  class="!whitespace-normal !min-w-80"
+                  content={tooltipVars.server.fileRetention}
+                >
                   <Icon iconName="question" size={20} class="text-secondary-800" />
                 </Tooltip>
               </label>
@@ -344,7 +364,7 @@
                 type="text"
                 bind:value={serverConfig.fileMaxFiles}
                 placeholder="7d"
-                class="w-full px-3 py-2 border dark:border-gray-300 border-gray-600 rounded-md bg-white dark:bg-gray-700 dark:text-gray-900 text-gray-100"
+                class="text-sm w-full px-3 py-2 border dark:border-gray-300 border-gray-600 rounded-md bg-white dark:bg-gray-700 dark:text-gray-900 text-gray-100"
               />
             </div>
           {/if}
@@ -368,7 +388,11 @@
             <span class="text-sm font-medium dark:text-gray-700 text-gray-300">
               Performance Logging
             </span>
-            <Tooltip content={tooltipVars.server.performance}>
+            <Tooltip
+              maxWidth="32rem"
+              class="!whitespace-normal !min-w-80"
+              content={tooltipVars.server.performance}
+            >
               <Icon iconName="question" size={20} class="text-secondary-800" />
             </Tooltip>
           </label>
@@ -380,7 +404,11 @@
                 class="block text-sm font-medium dark:text-gray-700 text-gray-300 mb-1"
               >
                 Slow Query Threshold (ms)
-                <Tooltip content={tooltipVars.server.queryThreshold}>
+                <Tooltip
+                  maxWidth="32rem"
+                  class="!whitespace-normal !min-w-80"
+                  content={tooltipVars.server.queryThreshold}
+                >
                   <Icon iconName="question" size={20} class="text-secondary-800" />
                 </Tooltip>
               </label>
@@ -431,7 +459,7 @@
             <span class="text-sm font-medium dark:text-gray-700 text-gray-300">
               Enable Client Logging
             </span>
-            <Tooltip content={tooltipVars.client.enable}>
+            <Tooltip maxWidth="" content={tooltipVars.client.enable}>
               <Icon iconName="question" size={20} class="text-secondary-800" />
             </Tooltip>
           </label>
@@ -473,7 +501,11 @@
             <span class="text-sm font-medium dark:text-gray-700 text-gray-300">
               Send Logs to Server
             </span>
-            <Tooltip content={tooltipVars.client.sendToServer}>
+            <Tooltip
+              maxWidth="32rem"
+              class="!whitespace-normal !min-w-80"
+              content={tooltipVars.client.sendToServer}
+            >
               <Icon iconName="question" size={20} class="text-secondary-800" />
             </Tooltip>
           </label>
@@ -497,7 +529,11 @@
             <span class="text-sm font-medium dark:text-gray-700 text-gray-300">
               Include URL in Logs
             </span>
-            <Tooltip content={tooltipVars.client.includeUrl}>
+            <Tooltip
+              maxWidth="32rem"
+              class="!whitespace-normal !min-w-80"
+              content={tooltipVars.client.includeUrl}
+            >
               <Icon iconName="question" size={20} class="text-secondary-800" />
             </Tooltip>
           </label>
@@ -511,7 +547,11 @@
                 class="block text-sm font-medium dark:text-gray-700 text-gray-300 mb-1"
               >
                 Buffer Size
-                <Tooltip content={tooltipVars.client.bufferSize}>
+                <Tooltip
+                  maxWidth="32rem"
+                  class="!whitespace-normal !min-w-80"
+                  content={tooltipVars.client.bufferSize}
+                >
                   <Icon iconName="question" size={20} class="text-secondary-800" />
                 </Tooltip>
               </label>
@@ -521,7 +561,7 @@
                 bind:value={clientConfig.bufferSize}
                 min="1"
                 max="1000"
-                class="w-full px-3 py-2 text-sm border dark:border-gray-300 border-gray-600 rounded-md bg-white dark:bg-gray-700 dark:text-gray-900 text-gray-100"
+                class="text-sm w-full px-3 py-2 text-sm border dark:border-gray-300 border-gray-600 rounded-md bg-white dark:bg-gray-700 dark:text-gray-900 text-gray-100"
               />
             </div>
 
@@ -531,7 +571,11 @@
                 class="block text-sm font-medium dark:text-gray-700 text-gray-300 mb-1"
               >
                 Batch Interval (ms)
-                <Tooltip content={tooltipVars.client.batchInterval}>
+                <Tooltip
+                  maxWidth="32rem"
+                  class="!whitespace-normal !min-w-80"
+                  content={tooltipVars.client.batchInterval}
+                >
                   <Icon iconName="question" size={20} class="text-secondary-800" />
                 </Tooltip>
               </label>
@@ -541,7 +585,7 @@
                 bind:value={clientConfig.batchInterval}
                 min="1000"
                 max="60000"
-                class="w-full px-3 py-2 border dark:border-gray-300 border-gray-600 rounded-md bg-white dark:bg-gray-700 dark:text-gray-900 text-gray-100"
+                class="text-sm w-full px-3 py-2 border dark:border-gray-300 border-gray-600 rounded-md bg-white dark:bg-gray-700 dark:text-gray-900 text-gray-100"
               />
             </div>
 
@@ -564,7 +608,11 @@
               <span class="text-sm font-medium dark:text-gray-700 text-gray-300">
                 Include User Agent
               </span>
-              <Tooltip content={tooltipVars.client.userAgent}>
+              <Tooltip
+                maxWidth="32rem"
+                class="!whitespace-normal !min-w-80"
+                content={tooltipVars.client.userAgent}
+              >
                 <Icon iconName="question" size={20} class="text-secondary-800" />
               </Tooltip>
             </label>
