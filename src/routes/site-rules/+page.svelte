@@ -9,7 +9,7 @@
   -->
 
 <script lang="ts">
-  import { PageLayout, Button, Modal } from '$lib/components/ui';
+  import { PageLayout, Button, Modal, ConfirmModal } from '$lib/components/ui';
   import { SiteConfigForm } from '$lib/components/settings';
   import { Icon } from '$lib/components';
   import { Info } from '$lib/components/ui';
@@ -25,6 +25,8 @@
   let showAddModal = $state(false);
   let editingConfig = $state<SiteConfig | null>(null);
   let isRefreshingSites = $state(false);
+  let showDeleteConfirm = $state(false);
+  let configToDelete = $state<SiteConfig | null>(null);
 
   let sortMode = $state<'alphabetical' | 'cli-options' | 'none'>('none');
   let isAlphabeticalAscending = $state(true);
@@ -73,18 +75,23 @@
     }
   }
 
-  async function handleDeleteConfig(configId: number) {
-    if (!confirm('Are you sure you want to delete this configuration?')) {
+  function openDeleteConfirm(config: SiteConfig) {
+    configToDelete = config;
+    showDeleteConfirm = true;
+  }
+
+  async function confirmDelete() {
+    if (!configToDelete?.id) {
       return;
     }
 
     try {
-      const response = await fetch(`/api/site-configs/${configId}`, {
+      const response = await fetch(`/api/site-configs/${configToDelete.id}`, {
         method: 'DELETE',
       });
 
       if (response.ok) {
-        configs = configs.filter(c => c.id !== configId);
+        configs = configs.filter(c => c.id !== configToDelete?.id);
         toastStore.success('Success', 'Configuration deleted successfully');
       } else {
         const errorResult = await response.json();
@@ -95,7 +102,14 @@
         'Delete Failed',
         err instanceof Error ? err.message : 'An unexpected error occurred'
       );
+    } finally {
+      cancelDelete();
     }
+  }
+
+  function cancelDelete() {
+    showDeleteConfirm = false;
+    configToDelete = null;
   }
 
   async function refreshSupportedSites() {
@@ -320,11 +334,7 @@
               <Icon iconName="edit" size={20} class="mr-1" />
               Edit
             </Button>
-            <Button
-              onclick={() => config.id && handleDeleteConfig(config.id)}
-              variant="outline-danger"
-              size="sm"
-            >
+            <Button onclick={() => openDeleteConfirm(config)} variant="outline-danger" size="sm">
               <Icon iconName="delete" size={20} class="mr-1" />
               Delete
             </Button>
@@ -350,7 +360,7 @@
     </ul>
   </div>
 
-  <!-- Modal -->
+  <!-- Add/Edit Modal -->
   <Modal show={showAddModal} onClose={closeModal} size="xl">
     <div class="p-6">
       <h2 class="cursor-default text-xl font-bold text-secondary-900 dark:text-secondary-100 mb-4">
@@ -364,4 +374,29 @@
       />
     </div>
   </Modal>
+
+  <!-- Delete modal -->
+  <ConfirmModal
+    show={showDeleteConfirm}
+    title="Delete Site Rule?"
+    confirmText="Delete"
+    cancelText="Cancel"
+    confirmVariant="danger"
+    onConfirm={confirmDelete}
+    onCancel={cancelDelete}
+  >
+    {#if configToDelete}
+      <p class="text-secondary-700 dark:text-secondary-300 leading-relaxed mb-4">
+        Are you sure you want to delete the site rule for
+        <strong>{configToDelete.display_name}</strong>?
+      </p>
+      <p class="text-sm text-secondary-600 dark:text-secondary-400 mb-4">
+        Pattern:
+        <code class="bg-secondary-100 dark:bg-secondary-700 px-1 rounded">
+          {configToDelete.site_pattern}
+        </code>
+      </p>
+      <Info variant="warning">This action cannot be undone.</Info>
+    {/if}
+  </ConfirmModal>
 </PageLayout>
