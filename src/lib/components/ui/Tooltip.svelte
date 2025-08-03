@@ -64,8 +64,8 @@
   let isVisible = $state(false);
   let triggerElement = $state<HTMLElement>();
   let tooltipElement = $state<HTMLElement>();
-  let showTimeout = $state<number>();
-  let hideTimeout = $state<number>();
+  let showTimeout = $state<ReturnType<typeof setTimeout>>();
+  let hideTimeout = $state<ReturnType<typeof setTimeout>>();
 
   const tooltipId = $state(`tooltip-${Math.random().toString(36).substr(2, 9)}`);
 
