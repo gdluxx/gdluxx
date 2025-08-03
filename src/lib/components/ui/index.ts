@@ -15,5 +15,6 @@ export { default as CopyTooltip } from './CopyTooltip.svelte';
 export { default as Info } from './Info.svelte';
 export { default as Modal } from './Modal.svelte';
 export { default as PageLayout } from './PageLayout.svelte';
+export { default as Toggle } from './Toggle.svelte';
 export { default as Tooltip } from './Tooltip.svelte';
 export { default as UploadModal } from './UploadModal.svelte';
