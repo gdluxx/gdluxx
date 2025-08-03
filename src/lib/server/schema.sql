@@ -107,19 +107,6 @@ CREATE TABLE IF NOT EXISTS job_outputs (
     FOREIGN KEY (jobId) REFERENCES jobs(id) ON DELETE CASCADE
 );
 
-/* API KEY */
-CREATE TABLE IF NOT EXISTS apiKey (
-    id TEXT PRIMARY KEY,
-    name TEXT NOT NULL,
-    hashedKey TEXT UNIQUE NOT NULL,
-    userId TEXT NOT NULL,
-    expiresAt INTEGER,
-    metadata TEXT,
-    permissions TEXT,
-    createdAt INTEGER NOT NULL,
-    updatedAt INTEGER NOT NULL,
-    FOREIGN KEY (userId) REFERENCES user(id) ON DELETE CASCADE
-);
 
 /* SITE_CONFIGS */
 CREATE TABLE IF NOT EXISTS site_configs (
@@ -167,7 +154,6 @@ CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs(status);
 CREATE INDEX IF NOT EXISTS idx_jobs_startTime ON jobs(startTime);
 CREATE INDEX IF NOT EXISTS idx_job_outputs_jobId ON job_outputs(jobId);
 CREATE INDEX IF NOT EXISTS idx_job_outputs_timestamp ON job_outputs(timestamp);
-CREATE INDEX IF NOT EXISTS idx_apiKey_userId ON apiKey(userId);
 CREATE INDEX IF NOT EXISTS idx_site_configs_pattern ON site_configs(site_pattern);
 CREATE INDEX IF NOT EXISTS idx_supported_sites_pattern ON supported_sites(url_pattern);
 CREATE INDEX IF NOT EXISTS idx_supported_sites_category ON supported_sites(category);
