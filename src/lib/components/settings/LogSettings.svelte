@@ -13,7 +13,7 @@
   import { clientLogger } from '$lib/client/logger';
   import type { ServerLoggingConfig } from '$lib/server/loggingManager';
   import type { ClientLogConfig } from '$lib/client/config/logger-config';
-  import { Button, Tooltip } from '$lib/components/ui';
+  import { Button, Toggle, Tooltip } from '$lib/components/ui';
   import { toastStore } from '$lib/stores/toast';
   import { Icon } from '$lib/components';
 
@@ -175,33 +175,12 @@
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div class="space-y-4">
-          <label for="server-enabled" class="flex items-center space-x-3">
-            <div class="relative">
-              <input
-                id="server-enabled"
-                type="checkbox"
-                bind:checked={serverConfig.enabled}
-                name="server-enabled"
-                class="peer sr-only"
-              />
-              <div
-                class="h-5 w-10 rounded-full bg-secondary-600 transition-colors peer-checked:bg-primary-400 peer-disabled:opacity-50 dark:bg-secondary-300 dark:peer-checked:bg-primary-600"
-              ></div>
-              <div
-                class="absolute left-1 top-1 h-3 w-3 rounded-full bg-white transition-transform peer-checked:translate-x-5 peer-disabled:opacity-70 shadow-sm"
-              ></div>
-            </div>
-            <span class="text-sm font-medium dark:text-gray-700 text-gray-300">
-              Enable Server Logging
-            </span>
-            <Tooltip
-              maxWidth="32rem"
-              class="!whitespace-normal !min-w-80"
-              content={tooltipVars.server.enable}
-            >
-              <Icon iconName="question" size={20} class="text-secondary-800" />
-            </Tooltip>
-          </label>
+          <Toggle
+            bind:checked={serverConfig.enabled}
+            label="Enable Server Logging"
+            tooltipContent={tooltipVars.server.enable}
+            variant="primary"
+          />
 
           <div>
             <div class="flex flex-row gap-2 items-center">
@@ -257,53 +236,21 @@
             </select>
           </div>
 
-          <label for="server-console-enabled" class="flex items-center space-x-3">
-            <div class="relative">
-              <input
-                id="server-console-enabled"
-                type="checkbox"
-                bind:checked={serverConfig.consoleEnabled}
-                name="server-console-enabled"
-                class="peer sr-only"
-              />
-              <div
-                class="h-5 w-10 rounded-full bg-secondary-600 transition-colors peer-checked:bg-primary-400 peer-disabled:opacity-50 dark:bg-secondary-300 dark:peer-checked:bg-primary-600"
-              ></div>
-              <div
-                class="absolute left-1 top-1 h-3 w-3 rounded-full bg-white transition-transform peer-checked:translate-x-5 peer-disabled:opacity-70 shadow-sm"
-              ></div>
-            </div>
-            <span class="text-sm font-medium dark:text-gray-700 text-gray-300">
-              Console Output
-            </span>
-            <Tooltip maxWidth="" content={tooltipVars.server.console}>
-              <Icon iconName="question" size={20} class="text-secondary-800" />
-            </Tooltip>
-          </label>
+          <Toggle
+            bind:checked={serverConfig.consoleEnabled}
+            label="Console Output"
+            tooltipContent={tooltipVars.server.console}
+            variant="primary"
+          />
         </div>
 
         <div class="space-y-4">
-          <label for="server-file-enabled" class="flex items-center space-x-3">
-            <div class="relative">
-              <input
-                id="server-file-enabled"
-                type="checkbox"
-                bind:checked={serverConfig.fileEnabled}
-                name="server-file-enabled"
-                class="peer sr-only"
-              />
-              <div
-                class="h-5 w-10 rounded-full bg-secondary-600 transition-colors peer-checked:bg-primary-400 peer-disabled:opacity-50 dark:bg-secondary-300 dark:peer-checked:bg-primary-600"
-              ></div>
-              <div
-                class="absolute left-1 top-1 h-3 w-3 rounded-full bg-white transition-transform peer-checked:translate-x-5 peer-disabled:opacity-70 shadow-sm"
-              ></div>
-            </div>
-            <span class="text-sm font-medium dark:text-gray-700 text-gray-300"> File Output </span>
-            <Tooltip maxWidth="" content={tooltipVars.server.file}>
-              <Icon iconName="question" size={20} class="text-secondary-800" />
-            </Tooltip>
-          </label>
+          <Toggle
+            bind:checked={serverConfig.fileEnabled}
+            label="File Output"
+            tooltipContent={tooltipVars.server.file}
+            variant="primary"
+          />
 
           {#if serverConfig.fileEnabled}
             <div>
@@ -371,33 +318,12 @@
             </div>
           {/if}
 
-          <label for="server-performance-logging" class="flex items-center space-x-3">
-            <div class="relative">
-              <input
-                id="server-performance-logging"
-                type="checkbox"
-                bind:checked={serverConfig.performanceLogging}
-                name="server-performance-logging"
-                class="peer sr-only"
-              />
-              <div
-                class="h-5 w-10 rounded-full bg-secondary-600 transition-colors peer-checked:bg-primary-400 peer-disabled:opacity-50 dark:bg-secondary-300 dark:peer-checked:bg-primary-600"
-              ></div>
-              <div
-                class="absolute left-1 top-1 h-3 w-3 rounded-full bg-white transition-transform peer-checked:translate-x-5 peer-disabled:opacity-70 shadow-sm"
-              ></div>
-            </div>
-            <span class="text-sm font-medium dark:text-gray-700 text-gray-300">
-              Performance Logging
-            </span>
-            <Tooltip
-              maxWidth="32rem"
-              class="!whitespace-normal !min-w-80"
-              content={tooltipVars.server.performance}
-            >
-              <Icon iconName="question" size={20} class="text-secondary-800" />
-            </Tooltip>
-          </label>
+          <Toggle
+            bind:checked={serverConfig.performanceLogging}
+            label="Performance Logging"
+            tooltipContent={tooltipVars.server.performance}
+            variant="primary"
+          />
 
           {#if serverConfig.performanceLogging}
             <div>
@@ -442,29 +368,12 @@
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div class="space-y-4">
-          <label for="client-enabled" class="flex items-center space-x-3">
-            <div class="relative">
-              <input
-                id="client-enabled"
-                type="checkbox"
-                bind:checked={clientConfig.enabled}
-                name="client-enabled"
-                class="peer sr-only"
-              />
-              <div
-                class="h-5 w-10 rounded-full bg-secondary-600 transition-colors peer-checked:bg-primary-400 peer-disabled:opacity-50 dark:bg-secondary-300 dark:peer-checked:bg-primary-600"
-              ></div>
-              <div
-                class="absolute left-1 top-1 h-3 w-3 rounded-full bg-white transition-transform peer-checked:translate-x-5 peer-disabled:opacity-70 shadow-sm"
-              ></div>
-            </div>
-            <span class="text-sm font-medium dark:text-gray-700 text-gray-300">
-              Enable Client Logging
-            </span>
-            <Tooltip maxWidth="" content={tooltipVars.client.enable}>
-              <Icon iconName="question" size={20} class="text-secondary-800" />
-            </Tooltip>
-          </label>
+          <Toggle
+            bind:checked={clientConfig.enabled}
+            label="Enable Client Logging"
+            tooltipContent={tooltipVars.client.enable}
+            variant="primary"
+          />
 
           <div>
             <label
@@ -484,61 +393,19 @@
             </select>
           </div>
 
-          <label for="client-send-to-server" class="flex items-center space-x-3">
-            <div class="relative">
-              <input
-                id="client-send-to-server"
-                type="checkbox"
-                bind:checked={clientConfig.sendToServer}
-                name="client-send-to-server"
-                class="peer sr-only"
-              />
-              <div
-                class="h-5 w-10 rounded-full bg-secondary-600 transition-colors peer-checked:bg-primary-400 peer-disabled:opacity-50 dark:bg-secondary-300 dark:peer-checked:bg-primary-600"
-              ></div>
-              <div
-                class="absolute left-1 top-1 h-3 w-3 rounded-full bg-white transition-transform peer-checked:translate-x-5 peer-disabled:opacity-70 shadow-sm"
-              ></div>
-            </div>
-            <span class="text-sm font-medium dark:text-gray-700 text-gray-300">
-              Send Logs to Server
-            </span>
-            <Tooltip
-              maxWidth="32rem"
-              class="!whitespace-normal !min-w-80"
-              content={tooltipVars.client.sendToServer}
-            >
-              <Icon iconName="question" size={20} class="text-secondary-800" />
-            </Tooltip>
-          </label>
+          <Toggle
+            bind:checked={clientConfig.sendToServer}
+            label="Send Logs to Server"
+            tooltipContent={tooltipVars.client.sendToServer}
+            variant="primary"
+          />
 
-          <label for="client-include-url" class="flex items-center space-x-3">
-            <div class="relative">
-              <input
-                id="client-include-url"
-                type="checkbox"
-                bind:checked={clientConfig.includeUrl}
-                name="client-include-url"
-                class="peer sr-only"
-              />
-              <div
-                class="h-5 w-10 rounded-full bg-secondary-600 transition-colors peer-checked:bg-primary-400 peer-disabled:opacity-50 dark:bg-secondary-300 dark:peer-checked:bg-primary-600"
-              ></div>
-              <div
-                class="absolute left-1 top-1 h-3 w-3 rounded-full bg-white transition-transform peer-checked:translate-x-5 peer-disabled:opacity-70 shadow-sm"
-              ></div>
-            </div>
-            <span class="text-sm font-medium dark:text-gray-700 text-gray-300">
-              Include URL in Logs
-            </span>
-            <Tooltip
-              maxWidth="32rem"
-              class="!whitespace-normal !min-w-80"
-              content={tooltipVars.client.includeUrl}
-            >
-              <Icon iconName="question" size={20} class="text-secondary-800" />
-            </Tooltip>
-          </label>
+          <Toggle
+            bind:checked={clientConfig.includeUrl}
+            label="Include URL in Logs"
+            tooltipContent={tooltipVars.client.includeUrl}
+            variant="primary"
+          />
         </div>
 
         <div class="space-y-4">
@@ -591,33 +458,12 @@
               />
             </div>
 
-            <label for="client-include-user-agent" class="flex items-center space-x-3">
-              <div class="relative">
-                <input
-                  id="client-include-user-agent"
-                  type="checkbox"
-                  bind:checked={clientConfig.includeUserAgent}
-                  name="client-include-user-agent"
-                  class="peer sr-only"
-                />
-                <div
-                  class="h-5 w-10 rounded-full bg-secondary-600 transition-colors peer-checked:bg-primary-400 peer-disabled:opacity-50 dark:bg-secondary-300 dark:peer-checked:bg-primary-600"
-                ></div>
-                <div
-                  class="absolute left-1 top-1 h-3 w-3 rounded-full bg-white transition-transform peer-checked:translate-x-5 peer-disabled:opacity-70 shadow-sm"
-                ></div>
-              </div>
-              <span class="text-sm font-medium dark:text-gray-700 text-gray-300">
-                Include User Agent
-              </span>
-              <Tooltip
-                maxWidth="32rem"
-                class="!whitespace-normal !min-w-80"
-                content={tooltipVars.client.userAgent}
-              >
-                <Icon iconName="question" size={20} class="text-secondary-800" />
-              </Tooltip>
-            </label>
+            <Toggle
+              bind:checked={clientConfig.includeUserAgent}
+              label="Include User Agent"
+              tooltipContent={tooltipVars.client.userAgent}
+              variant="primary"
+            />
           {/if}
         </div>
       </div>
