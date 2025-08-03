@@ -80,16 +80,27 @@ export class SiteDataFetcher {
     const sites: SiteTableRow[] = [];
 
     const tableRowRegex =
-      /<tr>\s*<td>([^<]+)<\/td>\s*<td>([^<]+)<\/td>\s*<td>([^<]*)<\/td>\s*<td>([^<]*)<\/td>\s*<\/tr>/g;
+      /<tr>\s*<td>(.*?)<\/td>\s*<td>(.*?)<\/td>\s*<td>(.*?)<\/td>\s*<td>(.*?)<\/td>\s*<\/tr>/g;
 
     let match;
 
     while ((match = tableRowRegex.exec(markdown)) !== null) {
+      if (match[0].includes('colspan')) {
+        continue;
+      }
+
       const [, site, url, capabilities, authentication] = match;
 
+      const cleanedSite = this.cleanHtmlText(site);
+      const cleanedUrl = this.extractUrl(this.cleanHtmlText(url));
+
+      if (!cleanedSite.trim() || !cleanedUrl.trim()) {
+        continue;
+      }
+
       sites.push({
-        site: this.cleanHtmlText(site),
-        url: this.extractUrl(this.cleanHtmlText(url)),
+        site: cleanedSite,
+        url: cleanedUrl,
         capabilities: this.cleanHtmlText(capabilities),
         authentication: this.cleanHtmlText(authentication),
       });
