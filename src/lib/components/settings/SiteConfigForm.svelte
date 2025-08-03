@@ -9,7 +9,7 @@
   -->
 
 <script lang="ts">
-  import { Button } from '$lib/components/ui';
+  import { Button, Tooltip } from '$lib/components/ui';
   import { Icon } from '$lib/components';
   import optionsData from '$lib/assets/options.json';
   import type { Option, OptionsData } from '$lib/types/options';
@@ -136,24 +136,24 @@
     {/if}
 
     <div class="mt-2 mr-1.5 flex justify-end">
-      <div class="relative inline-block group">
-        <span
-          class="rounded-sm text-sm bg-primary-200 dark:bg-primary-600 text-secondary-900 dark:text-secondary-100
-          px-3 py-1 cursor-default transition-colors"
-        >
-          More Info
-        </span>
-        <div
-          class="absolute right-full top-1/2 transform -translate-y-1/2 mr-2 w-64 p-4 bg-accent-200 dark:bg-accent-900
-          rounded shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all"
-        >
-          <p class="cursor-default text-sm text-secondary-800 dark:text-secondary-200 mt-1">
-            Select from <b>{supportedSites.length}</b> supported sites or enter custom pattern
-            <br />- * for all sites
-            <br />- *.domain.com
-          </p>
-        </div>
-      </div>
+      <Tooltip
+        placement="left"
+        maxWidth="32rem"
+        class="!whitespace-normal !min-w-80"
+      >
+        {#snippet tooltipContent()}
+          <div class="space-y-2">
+            <div class="text-sm opacity-90">
+              <p class="cursor-default text-sm text-secondary-800 dark:text-secondary-200 mt-1">
+                Select from <b>{supportedSites.length}</b> supported sites or enter custom pattern
+                <br />- * for all sites
+                <br />- *.domain.com
+              </p>
+            </div>
+          </div>
+        {/snippet}
+        <Icon iconName="question" size={20} class="text-secondary-800" />
+      </Tooltip>
     </div>
   </div>
 
