@@ -34,16 +34,20 @@
     enabled: config?.enabled !== false,
   });
 
-  const selectedSiteFromList = $state('');
   let isSubmitting = $state(false);
   let errors = $state<Record<string, string>>({});
 
   // Watch for site selection from dropdown
   $effect(() => {
-    if (selectedSiteFromList) {
-      const site = supportedSites.find(s => s.url === selectedSiteFromList);
-      if (site) {
-        formData.site_pattern = site.url;
+    const site = supportedSites.find(s => s.url === formData.site_pattern);
+    if (site) {
+      try {
+        const url = new URL(site.url);
+        if (formData.site_pattern !== url.hostname) {
+          formData.site_pattern = url.hostname;
+        }
+        formData.display_name = site.name;
+      } catch {
         formData.display_name = site.name;
       }
     }
@@ -136,11 +140,7 @@
     {/if}
 
     <div class="mt-2 mr-1.5 flex justify-end">
-      <Tooltip
-        placement="left"
-        maxWidth="32rem"
-        class="!whitespace-normal !min-w-80"
-      >
+      <Tooltip placement="left" maxWidth="32rem" class="!whitespace-normal !min-w-80">
         {#snippet tooltipContent()}
           <div class="space-y-2">
             <div class="text-sm opacity-90">
