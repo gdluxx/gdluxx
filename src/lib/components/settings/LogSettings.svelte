@@ -100,6 +100,39 @@
       clientLogger.error('Failed to update client logging configuration:', error);
     }
   }
+
+  interface TooltipVars {
+    server: Record<string, string>;
+    client: Record<string, string>;
+  }
+
+  const tooltipVars: TooltipVars = {
+    server: {
+      enable: 'Enable/Disable server side logging',
+      level: 'Minimum severity level for logs to be recorded',
+      format: 'Simple for human-readable or JSON for structured formatting',
+      console: 'Output server logs to console',
+      file: 'Write server logs to files',
+      directory: 'Server log file location',
+      fileSize: 'Maximum size per log file ("10m" for 10 megabytes)',
+      fileRetention: 'Log file retention policy ("7d" for 7 days)',
+      performance: 'Enable detailed performance logging including database query timing',
+      queryThreshold:
+        'Minimum execution time in milliseconds for db queries to be logged as "slow" when performance logging is enabled',
+    },
+    client: {
+      enable: 'Enable/disable client logging',
+      level: 'Minimum severity level for logs',
+      sendToServer:
+        'Send batched client logs to the server via HTTP requests to centralize logging',
+      includeUrl: 'Adds current page URL to each log entry for precise debugging',
+      bufferSize:
+        'Maximum number of log entries to keep in browser memory before sending to server (1-1000 entries)',
+      batchInterval:
+        'Frequency buffered client logs are sent to the server in milliseconds (1000-60000ms)',
+      userAgent: 'Add browser information to log entries',
+    },
+  };
 </script>
 
 <svelte:head>
@@ -159,7 +192,7 @@
             <span class="text-sm font-medium dark:text-gray-700 text-gray-300">
               Enable Server Logging
             </span>
-            <Tooltip content="">
+            <Tooltip content={tooltipVars.server.enable}>
               <Icon iconName="question" size={20} class="text-secondary-800" />
             </Tooltip>
           </label>
@@ -171,7 +204,7 @@
                 class="block text-sm font-medium dark:text-gray-700 text-gray-300 mb-1"
               >
                 Log Level
-                <Tooltip content="">
+                <Tooltip content={tooltipVars.server.level}>
                   <Icon iconName="question" size={20} class="text-secondary-800" />
                 </Tooltip>
               </label>
@@ -195,7 +228,7 @@
                 class="block text-sm font-medium dark:text-gray-700 text-gray-300 mb-1"
               >
                 Log Format
-                <Tooltip content="">
+                <Tooltip content={tooltipVars.server.format}>
                   <Icon iconName="question" size={20} class="text-secondary-800" />
                 </Tooltip>
               </label>
@@ -229,7 +262,7 @@
             <span class="text-sm font-medium dark:text-gray-700 text-gray-300">
               Console Output
             </span>
-            <Tooltip content="">
+            <Tooltip content={tooltipVars.server.console}>
               <Icon iconName="question" size={20} class="text-secondary-800" />
             </Tooltip>
           </label>
@@ -253,7 +286,7 @@
               ></div>
             </div>
             <span class="text-sm font-medium dark:text-gray-700 text-gray-300"> File Output </span>
-            <Tooltip content="">
+            <Tooltip content={tooltipVars.server.file}>
               <Icon iconName="question" size={20} class="text-secondary-800" />
             </Tooltip>
           </label>
@@ -265,7 +298,7 @@
                 class="block text-sm font-medium dark:text-gray-700 text-gray-300 mb-1"
               >
                 Log Directory
-                <Tooltip content="">
+                <Tooltip content={tooltipVars.server.directory}>
                   <Icon iconName="question" size={20} class="text-secondary-800" />
                 </Tooltip>
               </label>
@@ -283,7 +316,7 @@
                 class="block text-sm font-medium dark:text-gray-700 text-gray-300 mb-1"
               >
                 Max File Size
-                <Tooltip content="">
+                <Tooltip content={tooltipVars.server.fileSize}>
                   <Icon iconName="question" size={20} class="text-secondary-800" />
                 </Tooltip>
               </label>
@@ -302,7 +335,7 @@
                 class="block text-sm font-medium dark:text-gray-700 text-gray-300 mb-1"
               >
                 Max Files to Keep
-                <Tooltip content="">
+                <Tooltip content={tooltipVars.server.fileRetention}>
                   <Icon iconName="question" size={20} class="text-secondary-800" />
                 </Tooltip>
               </label>
@@ -335,7 +368,7 @@
             <span class="text-sm font-medium dark:text-gray-700 text-gray-300">
               Performance Logging
             </span>
-            <Tooltip content="">
+            <Tooltip content={tooltipVars.server.performance}>
               <Icon iconName="question" size={20} class="text-secondary-800" />
             </Tooltip>
           </label>
@@ -347,7 +380,7 @@
                 class="block text-sm font-medium dark:text-gray-700 text-gray-300 mb-1"
               >
                 Slow Query Threshold (ms)
-                <Tooltip content="">
+                <Tooltip content={tooltipVars.server.queryThreshold}>
                   <Icon iconName="question" size={20} class="text-secondary-800" />
                 </Tooltip>
               </label>
@@ -398,7 +431,7 @@
             <span class="text-sm font-medium dark:text-gray-700 text-gray-300">
               Enable Client Logging
             </span>
-            <Tooltip content="">
+            <Tooltip content={tooltipVars.client.enable}>
               <Icon iconName="question" size={20} class="text-secondary-800" />
             </Tooltip>
           </label>
@@ -440,7 +473,7 @@
             <span class="text-sm font-medium dark:text-gray-700 text-gray-300">
               Send Logs to Server
             </span>
-            <Tooltip content="">
+            <Tooltip content={tooltipVars.client.sendToServer}>
               <Icon iconName="question" size={20} class="text-secondary-800" />
             </Tooltip>
           </label>
@@ -464,7 +497,7 @@
             <span class="text-sm font-medium dark:text-gray-700 text-gray-300">
               Include URL in Logs
             </span>
-            <Tooltip content="">
+            <Tooltip content={tooltipVars.client.includeUrl}>
               <Icon iconName="question" size={20} class="text-secondary-800" />
             </Tooltip>
           </label>
@@ -478,7 +511,7 @@
                 class="block text-sm font-medium dark:text-gray-700 text-gray-300 mb-1"
               >
                 Buffer Size
-                <Tooltip content="">
+                <Tooltip content={tooltipVars.client.bufferSize}>
                   <Icon iconName="question" size={20} class="text-secondary-800" />
                 </Tooltip>
               </label>
@@ -498,7 +531,7 @@
                 class="block text-sm font-medium dark:text-gray-700 text-gray-300 mb-1"
               >
                 Batch Interval (ms)
-                <Tooltip content="">
+                <Tooltip content={tooltipVars.client.batchInterval}>
                   <Icon iconName="question" size={20} class="text-secondary-800" />
                 </Tooltip>
               </label>
@@ -531,7 +564,7 @@
               <span class="text-sm font-medium dark:text-gray-700 text-gray-300">
                 Include User Agent
               </span>
-              <Tooltip content="">
+              <Tooltip content={tooltipVars.client.userAgent}>
                 <Icon iconName="question" size={20} class="text-secondary-800" />
               </Tooltip>
             </label>
