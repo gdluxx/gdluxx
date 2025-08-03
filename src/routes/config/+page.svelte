@@ -21,6 +21,7 @@
 
   let theme = $state<'light' | 'dark'>('light');
   let _isSubmitting = $state(false);
+  // eslint-disable-next-line svelte/prefer-writable-derived
   let jsonContent = $state(data.success ? data.content : '{}');
 
   // React to data changes from invalidation

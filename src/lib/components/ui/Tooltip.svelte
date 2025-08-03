@@ -47,7 +47,7 @@
     content,
     class: className = '',
     placement = 'top',
-    offset = 8,
+    _offset = 8,
     trigger = 'hover',
     show = false,
     delay = 0,
@@ -267,7 +267,7 @@
     {@render children()}
   {/if}
 
-  {#if shouldShow && (content || tooltipContent)}
+  {#if shouldShow && (content ?? tooltipContent)}
     <div
       bind:this={tooltipElement}
       id={tooltipId}
