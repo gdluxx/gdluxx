@@ -65,7 +65,7 @@
         closeModal();
       } else {
         const errorResult = await response.json();
-        toastStore.error('Save Failed', errorResult.error ?? 'Failed to save configuration');
+        toastStore.error('Save Failed', errorResult.error ?? 'Failed to save site rule');
       }
     } catch (err) {
       toastStore.error(
@@ -95,7 +95,7 @@
         toastStore.success('Success', 'Site rule deleted successfully');
       } else {
         const errorResult = await response.json();
-        toastStore.error('Delete Failed', errorResult.error ?? 'Failed to delete configuration');
+        toastStore.error('Delete Failed', errorResult.error ?? 'Failed to delete site rule');
       }
     } catch (err) {
       toastStore.error(
