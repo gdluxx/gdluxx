@@ -63,10 +63,8 @@ export const sanitizeSiteConfigInput = (input: string): string => {
   let sanitized = input.trim();
 
   for (const char of dangerous) {
-    sanitized = sanitized.replace(
-      new RegExp(`\\${char.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'g'),
-      ''
-    );
+    const escapedChar = char.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    sanitized = sanitized.replace(new RegExp(escapedChar, 'g'), '');
   }
 
   // Remove control characters except space

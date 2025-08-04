@@ -12,6 +12,7 @@ import { readFile, writeFile } from 'fs/promises';
 import { join, dirname } from 'path';
 import { serverLogger as logger } from '$lib/server/logger';
 import { ensureDir } from '$lib/utils/fs';
+import { isRunningInDockerCached } from './environment.js';
 
 export const DATA_PATH = process.env.FILE_STORAGE_PATH ?? './data';
 export const CONFIG_FILE = 'config.json';
@@ -104,28 +105,61 @@ const keyConfigs: Record<string, KeyPathConfig> = {
   },
 };
 
+// Transforms a single path for Docker compatibility when running in container.
+// Only applies Docker path transformations when actually running in Docker.
+
+export function transformPath(originalPath: string, config?: KeyPathConfig): string {
+  // Skipif not running in Docker
+  if (!isRunningInDockerCached()) {
+    return originalPath;
+  }
+
+  // Use existing transformation logic
+  const needsTransformation = (value: string): boolean => {
+    if (!value) {
+      return false;
+    }
+
+    // Skip if already using `/app/data`
+    if (value.startsWith('/app/data')) {
+      return false;
+    }
+
+    // Only prefix paths that won't work in the container
+    return value.startsWith('/') || value.startsWith('~/') || value.startsWith('./');
+  };
+
+  if (!needsTransformation(originalPath)) {
+    return originalPath;
+  }
+
+  if (config?.customTransform) {
+    return config.customTransform(originalPath);
+  }
+
+  const replacementPath = config?.replacementPath || '/app/data';
+  const preserveFilename = config?.preserveFilename ?? false;
+
+  if (preserveFilename) {
+    // Extract filename from the original path
+    const filename = originalPath.split('/').pop() || '';
+    return filename ? `${replacementPath}/${filename}` : replacementPath;
+  } else {
+    // Use the replacement path as is for directories
+    return replacementPath;
+  }
+}
+
 // Replace config paths for Docker container compatibility.
+// Only applies transformations when running in Docker container.
 // Replaces paths with /app/data based paths since we're working with docker bind mounts
-// First, identify what needs needs transformed
 export function transformConfigPaths(jsonString: string): string {
+  // Skip transformation entirely if not running in Docker
+  if (!isRunningInDockerCached()) {
+    return jsonString;
+  }
   try {
     const config = JSON.parse(jsonString);
-
-    // Does path need modified?
-    const needsTransformation = (value: string): boolean => {
-      if (!value) {
-        return false;
-      }
-
-      // Skip if already using `/app/data`
-      // Work around for user to manipulate the paths, but still forces everything outside the container
-      if (value.startsWith('/app/data')) {
-        return false;
-      }
-
-      // Only prefix paths that won't work in the container
-      return value.startsWith('/') || value.startsWith('~/') || value.startsWith('./');
-    };
 
     // Helper to build full key path
     const buildKeyPath = (keyPath: string[]): string => {
@@ -178,25 +212,7 @@ export function transformConfigPaths(jsonString: string): string {
 
     // Now we're replacing
     const replacePathForDocker = (value: string, config: KeyPathConfig | null): string => {
-      if (!needsTransformation(value)) {
-        return value;
-      }
-
-      if (config?.customTransform) {
-        return config.customTransform(value);
-      }
-
-      const replacementPath = config?.replacementPath || '/app/data';
-      const preserveFilename = config?.preserveFilename ?? false;
-
-      if (preserveFilename) {
-        // Extract filename from the original path
-        const filename = value.split('/').pop() || '';
-        return filename ? `${replacementPath}/${filename}` : replacementPath;
-      } else {
-        // Use the replacement path as-is (for directories)
-        return replacementPath;
-      }
+      return transformPath(value, config || undefined);
     };
 
     // Recursively replace paths in the config object
@@ -290,5 +306,23 @@ export async function writeConfigFile(content: string): Promise<ConfigWriteResul
     path: CONFIG_FILE,
     transformed: wasTransformed,
     content: wasTransformed ? transformedContent : undefined,
+  };
+}
+
+// Example of loading and transforming a config file with conditional Docker path rewriting
+export async function loadAndTransformConfig(): Promise<{
+  config: unknown;
+  wasTransformed: boolean;
+}> {
+  const result = await readConfigFile();
+  const originalContent = result.content;
+
+  // Transform paths conditionally based on environment
+  const transformedContent = transformConfigPaths(originalContent);
+  const wasTransformed = originalContent !== transformedContent;
+
+  return {
+    config: JSON.parse(transformedContent),
+    wasTransformed,
   };
 }

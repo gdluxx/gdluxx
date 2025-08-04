@@ -12,6 +12,7 @@ import { getCurrentTimestamp } from './settingsManager.js';
 import Database from 'better-sqlite3';
 import { PATHS } from './constants.js';
 import path from 'path';
+import { transformPath } from './config-utils.js';
 
 const dbPath = path.join(PATHS.DATA_DIR, 'gdluxx.db');
 
@@ -35,7 +36,7 @@ export const DEFAULT_SERVER_LOGGING_CONFIG: ServerLoggingConfig = {
   format: process.env.NODE_ENV === 'development' ? 'simple' : 'json',
   consoleEnabled: true,
   fileEnabled: process.env.NODE_ENV === 'production',
-  fileDirectory: './logs',
+  fileDirectory: transformPath('./logs'),
   fileMaxSize: '10m',
   fileMaxFiles: '7d',
   performanceLogging: true,
@@ -75,7 +76,7 @@ export async function readServerLoggingConfig(): Promise<ServerLoggingConfig> {
         format: row.format as ServerLoggingConfig['format'],
         consoleEnabled: Boolean(row.consoleEnabled),
         fileEnabled: Boolean(row.fileEnabled),
-        fileDirectory: row.fileDirectory,
+        fileDirectory: transformPath(row.fileDirectory),
         fileMaxSize: row.fileMaxSize,
         fileMaxFiles: row.fileMaxFiles,
         performanceLogging: Boolean(row.performanceLogging),
@@ -127,4 +128,12 @@ export async function writeServerLoggingConfig(config: ServerLoggingConfig): Pro
     console.error('Failed to write server logging config:', error);
     throw error;
   }
+}
+
+// called when logger is initiated to ensure paths work in Docker and non-docker environments
+export function getTransformedLoggingConfig(config: ServerLoggingConfig): ServerLoggingConfig {
+  return {
+    ...config,
+    fileDirectory: transformPath(config.fileDirectory),
+  };
 }
