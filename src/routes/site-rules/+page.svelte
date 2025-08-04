@@ -59,8 +59,8 @@
         toastStore.success(
           'Success',
           editingConfig
-            ? 'Configuration updated successfully'
-            : 'Configuration created successfully'
+            ? 'Site rule updated successfully'
+            : 'Site rule created successfully'
         );
         closeModal();
       } else {
@@ -92,7 +92,7 @@
 
       if (response.ok) {
         configs = configs.filter(c => c.id !== configToDelete?.id);
-        toastStore.success('Success', 'Configuration deleted successfully');
+        toastStore.success('Success', 'Site rule deleted successfully');
       } else {
         const errorResult = await response.json();
         toastStore.error('Delete Failed', errorResult.error ?? 'Failed to delete configuration');
