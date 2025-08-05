@@ -10,6 +10,7 @@ services:
       - ./data:/app/data
     environment:
       - AUTH_SECRET=${AUTH_SECRET}
+      - ORIGIN=${ORIGIN:-http://localhost:7755}
     restart: unless-stopped
     deploy:
       restart_policy:

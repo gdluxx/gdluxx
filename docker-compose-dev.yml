@@ -13,6 +13,7 @@ services:
       # - PORT=${PORT}
       # - HOST=${HOST}
       - AUTH_SECRET=${AUTH_SECRET}
+      - ORIGIN=${ORIGIN:-http://localhost:7755}
     env_file:
       - .env
     restart: unless-stopped

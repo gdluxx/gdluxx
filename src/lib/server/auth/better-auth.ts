@@ -108,7 +108,9 @@ function isIpAddress(str: string): boolean {
   return ipv4Regex.test(schemeRemoved);
 }
 
-// Build trusted origins called at runtime
+// Build trusted origins with APP_BASE_URL support
+// NOTE: This affects Better-Auth validation only, NOT SvelteKit CSRF
+// SvelteKit CSRF uses the ORIGIN environment variable instead
 function buildTrustedOrigins(): string[] {
   const host: string | undefined = process.env.HOST;
   const port: string | undefined = process.env.PORT;
@@ -201,6 +203,7 @@ export const auth = betterAuth({
   },
   useSecureCookies: getSecurityConfig().useSecureCookies,
   trustHost: getSecurityConfig().trustHost,
+  // Better-Auth specific trusted origins
   trustedOrigins: buildTrustedOrigins(),
   plugins: [
     apiKey({
