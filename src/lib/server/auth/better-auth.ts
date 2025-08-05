@@ -112,12 +112,17 @@ function isIpAddress(str: string): boolean {
 function buildTrustedOrigins(): string[] {
   const host: string | undefined = process.env.HOST;
   const port: string | undefined = process.env.PORT;
+  const baseURL: string | undefined = process.env.APP_BASE_URL;
   const trustedOrigins: string[] = [];
 
-  // environment variables may not be available during build time
+  // If APP_BASE_URL is explicitly set
+  if (baseURL) {
+    trustedOrigins.push(baseURL);
+  }
+
+  // If env variables aren't during build time
   if (!host) {
-    // Return empty array during build to be populated at runtime
-    return [];
+    return trustedOrigins;
   }
 
   if (host.startsWith('http://') || host.startsWith('https://')) {
@@ -146,12 +151,45 @@ function buildTrustedOrigins(): string[] {
     );
   }
 
-  return trustedOrigins;
+  // Remove dups
+  const uniqueOrigins = [...new Set(trustedOrigins)];
+
+  return uniqueOrigins;
+}
+
+// Env based config
+function getSecurityConfig() {
+  const isDev = process.env.NODE_ENV === 'development';
+  const useSecureCookiesEnv = process.env.USE_SECURE_COOKIES;
+  const trustHost = process.env.AUTH_TRUST_HOST === 'true';
+
+  // Boolean conversion for USE_SECURE_COOKIES
+  let shouldUseSecureCookies: boolean;
+
+  if (useSecureCookiesEnv === 'true') {
+    shouldUseSecureCookies = true;
+  } else if (useSecureCookiesEnv === 'false') {
+    shouldUseSecureCookies = false;
+  } else {
+    // Default behavior insecure in dev, secure in prod
+    shouldUseSecureCookies = !isDev;
+  }
+
+  return {
+    useSecureCookies: shouldUseSecureCookies,
+    trustHost: trustHost || isDev,
+    cookieOptions: {
+      secure: shouldUseSecureCookies,
+      sameSite: shouldUseSecureCookies ? ('none' as const) : ('lax' as const),
+      httpOnly: true,
+    },
+  };
 }
 
 export const auth = betterAuth({
   database: db,
   secret: process.env.AUTH_SECRET || 'fallback-secret-please-set-AUTH_SECRET-in-production',
+  baseURL: process.env.APP_BASE_URL,
   emailAndPassword: {
     enabled: true,
     autoSignIn: true,
@@ -159,7 +197,10 @@ export const auth = betterAuth({
   session: {
     expiresIn: 60 * 60 * 24 * 7, // 7 days
     updateAge: 60 * 60 * 24, // 1 day
+    cookieOptions: getSecurityConfig().cookieOptions,
   },
+  useSecureCookies: getSecurityConfig().useSecureCookies,
+  trustHost: getSecurityConfig().trustHost,
   trustedOrigins: buildTrustedOrigins(),
   plugins: [
     apiKey({
