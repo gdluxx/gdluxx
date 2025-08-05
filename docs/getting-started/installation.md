@@ -48,7 +48,25 @@ Then update your compose `volumes` to: `- ~/Documents/gdluxx:/app/data`
     AUTH_SECRET=your-super-secret-auth-key-change-this
     ```
 
-5.  Create a `docker-compose.yml` file.
+5.  Configure your `ORIGIN`.
+
+    The `ORIGIN` environment variable is a **critical security setting** that tells
+    *gdluxx* what domain to expect for all requests. This helps prevent CSRF attacks.
+
+    In your `.env` file, set `ORIGIN` to the URL you will use to access the
+    application.
+
+    - **Most common:** If you're accessing the app via `http://localhost:7755`, you
+      don't need to do anything. The `docker-compose.yml` file already sets a
+      default `ORIGIN` of `http://localhost:7755`.
+    - **Network access:** If you're accessing the app from another device on your
+      network, set `ORIGIN` to your server's IP address.
+    - **Reverse proxy:** If you're using a reverse proxy with HTTPS, set `ORIGIN`
+      to your domain.
+
+    For more specifics, see the comments in the `.env.example` file.
+
+6.  Create a `docker-compose.yml` file.
 
     ```yaml
     name: gdluxx
@@ -63,6 +81,7 @@ Then update your compose `volumes` to: `- ~/Documents/gdluxx:/app/data`
           - ./data:/app/data
         environment:
           - AUTH_SECRET=${AUTH_SECRET}
+          - ORIGIN=${ORIGIN:-http://localhost:7755}
         restart: unless-stopped
         deploy:
           restart_policy:
@@ -71,7 +90,7 @@ Then update your compose `volumes` to: `- ~/Documents/gdluxx:/app/data`
             delay: 3s
     ```
 
-6.  Run `docker compose up -d`.
+7.  Run `docker compose up -d`.
 
     ```bash
     docker compose up -d
