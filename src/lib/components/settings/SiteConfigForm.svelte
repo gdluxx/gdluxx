@@ -108,7 +108,7 @@
 
   const inputClasses =
     'w-full px-3 py-2 border border-secondary-300 bg-secondary-100 dark:bg-secondary-900 text-secondary-900' +
-    ' dark:text-secondary-100 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500' +
+    ' dark:text-secondary-100 rounded-sm focus:outline-none focus:ring-2 focus:ring-primary-500' +
     ' focus:border-primary-500 dark:border-secondary-400';
 </script>
 
@@ -180,7 +180,7 @@
   <div class="space-y-4">
     <label for="enabled">
       <div
-        class="flex items-center justify-between p-3 bg-secondary-50 dark:bg-secondary-800 rounded-lg"
+        class="flex items-center justify-between p-3 bg-secondary-50 dark:bg-secondary-800 rounded-sm"
       >
         <span class="font-medium text-secondary-900 dark:text-secondary-100">
           Rule {formData.enabled ? 'Enabled' : 'Disabled'}
