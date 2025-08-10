@@ -36,6 +36,12 @@ export const navItems: NavigationItem[] = [
     href: '/config',
   },
   {
+    id: 'keyword-info',
+    label: 'Keyword Info',
+    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20"><path fill="currentColor" d="M10 6.5V2H5.5A1.5 1.5 0 0 0 4 3.5V11h5.5a1.5 1.5 0 0 1 0 3H4v2.5A1.5 1.5 0 0 0 5.5 18h9a1.5 1.5 0 0 0 1.5-1.5V8h-4.5A1.5 1.5 0 0 1 10 6.5m-4 3a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5m0 6a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5m5-9V2.25L15.75 7H11.5a.5.5 0 0 1-.5-.5M2.5 12a.5.5 0 0 0 0 1h7a.5.5 0 0 0 0-1z"/></svg>`,
+    href: '/keyword-info',
+  },
+  {
     id: 'jobs',
     label: 'Jobs',
     icon: `<svg viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" color="currentColor"><path d="M11.007 21.5H9.605c-3.585 0-5.377 0-6.491-1.135S2 17.403 2 13.75s0-5.48 1.114-6.615S6.02 6 9.605 6h3.803c3.585 0 5.378 0 6.492 1.135c.857.873 1.054 2.156 1.1 4.365V13" /><path d="M19 18.5h-3m0 3a3 3 0 1 1 0-6m3 6a3 3 0 1 0 0-6M16 6l-.1-.31c-.495-1.54-.742-2.31-1.331-2.75c-.59-.44-1.372-.44-2.938-.44h-.263c-1.565 0-2.348 0-2.937.44c-.59.44-.837 1.21-1.332 2.75L7 6" /></g></svg>`,
