@@ -54,7 +54,7 @@
   const sizeClasses: Record<ToggleSize, { track: string; thumb: string; label: string }> = {
     sm: {
       track: 'h-4 w-7',
-      thumb: 'h-2.5 w-2.5 left-0.5 peer-checked:translate-x-3',
+      thumb: 'h-2.5 w-2.5 left-0.5 top-0.75 peer-checked:translate-x-3.5',
       label: 'text-xs',
     },
     default: {
