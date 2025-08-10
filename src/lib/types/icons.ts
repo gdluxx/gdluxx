@@ -50,7 +50,8 @@ export type IconName =
   | 'site-rules'
   | 'edit'
   | 'question'
-  | 'extract';
+  | 'extract'
+  | 'save';
 
 export interface IconConfig {
   name: IconName;
