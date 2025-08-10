@@ -1,5 +1,23 @@
 # Changelog
 
+# [0.3.0](https://github.com/gdluxx/gdluxx/compare/v0.2.0...v0.3.0) (2025-08-10)
+
+
+### Bug Fixes
+
+* ClientLogger was being instantiated during SSR before localStorage was available ([d5a714b](https://github.com/gdluxx/gdluxx/commit/d5a714bbd89ea7af6cd544817af4a612481819f1))
+* duplicate key error for supported sites ([732f551](https://github.com/gdluxx/gdluxx/commit/732f551dfc1a9955647383fe50998d0101083ba2))
+* schema.sql apiKey table schema conflicting with better-auth schema ([40e387a](https://github.com/gdluxx/gdluxx/commit/40e387a6a92619395afa2488503341e5d884e5da))
+* tooltip content overrunning its background ([8a6c178](https://github.com/gdluxx/gdluxx/commit/8a6c178b988638f1420a848f687d4297b16e67d2))
+* Updated supported sites parsing, it was missing ~20 sites. also added checks for empty urls due to the way the supportedsites.md file is built ([b019a41](https://github.com/gdluxx/gdluxx/commit/b019a4169917c79d7d257dcf40d60db5bb78cc85))
+* using Site Patterns was erroring ([7362bef](https://github.com/gdluxx/gdluxx/commit/7362befc735f28df1e2ce318fb679a9f510c8f98))
+
+
+### Features
+
+* add KeywordInfo component ([64f9720](https://github.com/gdluxx/gdluxx/commit/64f9720ca7f40d0e3e1c6bd690710a8522561ae1))
+* add reusable Toggle (slider) component ([1d584ae](https://github.com/gdluxx/gdluxx/commit/1d584ae005b1cd654e2a626025ac2e7fdc57f48d))
+
 # [0.2.0](https://github.com/gdluxx/gdluxx/compare/v0.1.2...v0.2.0) (2025-07-30)
 
 
