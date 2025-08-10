@@ -98,8 +98,7 @@ class SiteConfigManager {
   async getSiteConfigsAll(): Promise<SiteConfig[]> {
     try {
       const stmt = this.db.prepare(`
-        SELECT * FROM site_configs 
-        WHERE enabled = 1 
+        SELECT * FROM site_configs
       `);
       return stmt.all().map(row => this.rowToSiteConfig(row as Record<string, unknown>));
     } catch (error) {
