@@ -9,7 +9,7 @@
   -->
 
 <script lang="ts">
-  import { PageLayout, Button, Modal, ConfirmModal } from '$lib/components/ui';
+  import { PageLayout, Button, Chip, Modal, ConfirmModal, Toggle } from '$lib/components/ui';
   import { SiteConfigForm } from '$lib/components/settings';
   import { Icon } from '$lib/components';
   import { Info } from '$lib/components/ui';
@@ -58,9 +58,7 @@
         configs = [...configs];
         toastStore.success(
           'Success',
-          editingConfig
-            ? 'Site rule updated successfully'
-            : 'Site rule created successfully'
+          editingConfig ? 'Site rule updated successfully' : 'Site rule created successfully'
         );
         closeModal();
       } else {
@@ -110,6 +108,41 @@
   function cancelDelete() {
     showDeleteConfirm = false;
     configToDelete = null;
+  }
+
+  async function handleToggleEnabled(config: SiteConfig) {
+    if (!config.id) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/site-configs/${config.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled: !config.enabled }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        const index = configs.findIndex(c => c.id === config.id);
+        if (index >= 0) {
+          configs[index] = result.data.config;
+        }
+        configs = [...configs];
+        toastStore.success(
+          'Success',
+          `Site rule ${config.enabled ? 'disabled' : 'enabled'} successfully`
+        );
+      } else {
+        const errorResult = await response.json();
+        toastStore.error('Update Failed', errorResult.error ?? 'Failed to update site rule');
+      }
+    } catch (err) {
+      toastStore.error(
+        'Update Failed',
+        err instanceof Error ? err.message : 'An unexpected error occurred'
+      );
+    }
   }
 
   async function refreshSupportedSites() {
@@ -210,7 +243,7 @@
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
         <!-- config count card -->
         <div
-          class="bg-white dark:bg-secondary-800 border border-secondary-200 dark:border-secondary-700 rounded-lg p-4"
+          class="bg-white dark:bg-secondary-800 border border-secondary-200 dark:border-secondary-700 rounded-sm p-4"
         >
           <h3 class="text-lg font-semibold text-secondary-900 dark:text-secondary-100">Rules</h3>
           <p class="text-3xl font-bold text-primary-600 dark:text-primary-400">
@@ -219,7 +252,7 @@
         </div>
         <!-- Supported sites card -->
         <div
-          class="bg-white dark:bg-secondary-800 border border-secondary-200 dark:border-secondary-700 rounded-lg p-4"
+          class="bg-white dark:bg-secondary-800 border border-secondary-200 dark:border-secondary-700 rounded-sm p-4"
         >
           <h3 class="text-lg font-semibold text-secondary-900 dark:text-secondary-100">
             Supported Sites
@@ -312,15 +345,11 @@
                 </span>
               {/if}
               {#if !config.enabled}
-                <span
-                  class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/20"
-                >
-                  Disabled
-                </span>
+                <Chip variant="warning" label="Disabled" size="sm" dismissible={false} />
               {/if}
             </div>
             <p class="text-sm text-secondary-600 dark:text-secondary-400">
-              Pattern: <code class="bg-secondary-100 dark:bg-secondary-700 px-1 rounded"
+              Pattern: <code class="bg-secondary-100 dark:bg-secondary-700 px-1 rounded-sm"
                 >{config.site_pattern}</code
               >
             </p>
@@ -329,15 +358,24 @@
             </p>
           </div>
           <!-- Buttons -->
-          <div class="flex gap-2">
-            <Button onclick={() => openEditModal(config)} variant="outline-primary" size="sm">
-              <Icon iconName="edit" size={20} class="mr-1" />
-              Edit
-            </Button>
-            <Button onclick={() => openDeleteConfirm(config)} variant="outline-danger" size="sm">
-              <Icon iconName="delete" size={20} class="mr-1" />
-              Delete
-            </Button>
+          <div class="flex items-center gap-3">
+            <!-- Enable/Disable  -->
+            <Toggle
+              variant="primary"
+              size="sm"
+              id="toggle-{config.id}"
+              checked={config.enabled}
+              onchange={() => handleToggleEnabled(config)}
+            ></Toggle>
+
+            <div class="flex gap-2">
+              <Button onclick={() => openEditModal(config)} variant="outline-primary" size="sm">
+                <Icon iconName="edit" size={20} class="mr-1" />
+              </Button>
+              <Button onclick={() => openDeleteConfirm(config)} variant="outline-danger" size="sm">
+                <Icon iconName="delete" size={20} class="mr-1" />
+              </Button>
+            </div>
           </div>
         </li>
       {/each}
@@ -362,7 +400,9 @@
 
   <!-- Add/Edit Modal -->
   <Modal show={showAddModal} onClose={closeModal} size="xl">
-    <div class="p-6">
+    <div
+      class="p-6 bg-primary-50 p-4 dark:border-primary-400 rounded-sm border border-primary-600 dark:bg-primary-800"
+    >
       <h2 class="cursor-default text-xl font-bold text-secondary-900 dark:text-secondary-100 mb-4">
         {editingConfig ? 'Edit' : 'Add'} Site Rule
       </h2>
