@@ -662,7 +662,14 @@
       <summary
         class="flex items-center justify-between p-4 cursor-pointer hover:rounded-t-sm dark:hover:bg-primary-800 transition-colors"
       >
-        <span class="font-medium text-secondary-900 dark:text-secondary-100"> Options </span>
+        <div class="flex items-center gap-1">
+          <Icon
+            iconName="options"
+            size={20}
+            class="text-secondary-600 dark:text-secondary-400"
+          />
+          <span class="font-medium text-secondary-900 dark:text-secondary-100"> Options </span>
+        </div>
         <div class="flex items-center gap-2">
           {#if selectedOptions.size > 0}
             <Chip
@@ -805,6 +812,27 @@
             <span class="text-sm font-medium text-secondary-700 dark:text-secondary-300">
               Selected Options ({selectedOptions.size})
             </span>
+
+            <!-- Legend -->
+            <div class="cursor-default flex items-center gap-4 text-xs text-secondary-600 dark:text-secondary-400">
+              <div class="flex items-center gap-1 border rounded-sm border-secondary-800 dark:border-secondary-200 px-2 py-1">
+                <Icon
+                  iconName="site-rules"
+                  size={16}
+                  class="text-primary-600 dark:text-primary-400"
+                />
+                <span>Site Rules</span>
+              </div>
+              <div class="flex items-center gap-1 border rounded-sm border-secondary-800 dark:border-secondary-200 px-2 py-1">
+                <Icon
+                  iconName="options"
+                  size={16}
+                  class="text-secondary-600 dark:text-secondary-400"
+                />
+                <span>User Selected</span>
+              </div>
+            </div>
+
             <Button
               pill
               onclick={clearAllOptions}
@@ -814,7 +842,7 @@
               Clear All
             </Button>
           </div>
-          <div class="space-y-4">
+          <div class="space-y-4 cursor-default">
             {#each [...selectedOptionsByCategory.entries()] as [categoryKey, categoryOptions] (categoryKey)}
               {#if categoryOptions.size > 0}
                 <div>
@@ -837,6 +865,21 @@
                           class:dark:bg-secondary-700={optionData.source === 'user'}
                           class:dark:border-secondary-600={optionData.source === 'user'}
                         >
+                          <!-- Source indicator icon -->
+                          {#if optionData.source === 'site-config'}
+                            <Icon
+                              iconName="site-rules"
+                              size={20}
+                              class="text-primary-600 dark:text-primary-400"
+                            />
+                          {:else}
+                            <Icon
+                              iconName="options"
+                              size={20}
+                              class="text-secondary-600 dark:text-secondary-400"
+                            />
+                          {/if}
+
                           <span class="option-name text-secondary-900 dark:text-secondary-100">
                             {option.command}
                           </span>
