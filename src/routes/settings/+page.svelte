@@ -17,6 +17,13 @@
 
   const settingsPages = [
     {
+      name: 'General',
+      title: 'General Settings',
+      description: 'Manage general application preferences',
+      icon: 'settings' as IconName,
+      href: '/settings/general',
+    },
+    {
       name: 'Version',
       title: 'Version Manager',
       description: 'Manage your gallery-dl version',

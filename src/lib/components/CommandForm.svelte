@@ -21,6 +21,7 @@
   import { Icon } from '$lib/components/index';
   import SaveSiteRuleModal from './SaveSiteRuleModal.svelte';
   import { extractUniquePatterns } from '$lib/utils/patternDetection';
+  import { toastStore } from '$lib/stores/toast';
 
   const typedOptionsData = optionsData as OptionsData;
 
@@ -36,11 +37,17 @@
     error?: string;
   }
 
+  interface Conflict {
+    optionId: string;
+    userValue: string | number | boolean;
+    siteRuleValue: string | number | boolean;
+    sitePattern: string;
+    configName?: string;
+  }
 
   let commandUrlsInput = $state('');
   let isLoading = $state(false);
   let formError = $state<string | null>(null);
-  let successMessage = $state<string | null>(null);
   let selectedOptions = $state(new Map<string, OptionWithSource>());
   let selectedOptionsByCategory = $state<Map<string, Map<string, OptionWithSource>>>(new Map());
   let siteConfigData = $state<SiteConfigData[]>([]);
@@ -48,6 +55,9 @@
   let categoryAccordionStates = $state(new Map<string, boolean>());
   let isAccordionOpen = $state(false);
   let showSaveRuleDialog = $state(false);
+  let userWarningSetting = $state(false);
+  let showConflictWarning = $state(false);
+  let detectedConflicts = $state<Conflict[]>([]);
 
   const allOptions: Option[] = Object.values(typedOptionsData).flatMap(
     category => category.options as Option[]
@@ -68,6 +78,19 @@
       if (savedUrls) {
         commandUrlsInput = savedUrls;
       }
+    }
+
+    // Fetch user warning setting
+    try {
+      const response = await fetch('/api/settings/user');
+      if (response.ok) {
+        const { data } = await response.json();
+        userWarningSetting = data.warnOnSiteRuleOverride;
+      }
+    } catch (error) {
+      logger.error('Failed to fetch user settings:', error);
+      // Set false if fetch fails
+      userWarningSetting = false;
     }
   });
 
@@ -133,6 +156,34 @@
   function getSelectedCountForCategory(categoryKey: string): number {
     const categoryMap = selectedOptionsByCategory.get(categoryKey);
     return categoryMap ? categoryMap.size : 0;
+  }
+
+  function detectConflicts(siteConfigs: SiteConfigData[]): Conflict[] {
+    const conflicts: Conflict[] = [];
+
+    // Only checking user selected options
+    const userSelectedOptions = Array.from(selectedOptions.entries()).filter(
+      ([, optionData]) => optionData.source === 'user'
+    );
+
+    for (const [optionId, userOptionData] of userSelectedOptions) {
+      for (const config of siteConfigs) {
+        if (optionId in config.options) {
+          const siteRuleValue = config.options[optionId];
+          if (userOptionData.value !== siteRuleValue) {
+            conflicts.push({
+              optionId,
+              userValue: userOptionData.value,
+              siteRuleValue,
+              sitePattern: config.matchedPattern ?? '',
+              configName: config.configName,
+            });
+          }
+        }
+      }
+    }
+
+    return conflicts;
   }
 
   function updateCategoryTracking() {
@@ -228,7 +279,6 @@
   }
 
   function handleFormResult(result: FormResult) {
-    successMessage = null;
     formError = null;
 
     const urlsToProcess = commandUrlsInput
@@ -265,11 +315,10 @@
     }
 
     if (localStartedCount > 0) {
-      successMessage = `${localStartedCount} job(s) accepted for processing.`;
+      toastStore.success('Jobs Started', `${localStartedCount} job(s) accepted for processing`);
       if (localErrorMessages.length === 0) {
         commandUrlsInput = '';
       }
-      setTimeout(() => (successMessage = null), 5000);
     }
 
     if (localStartedCount === 0 && localErrorMessages.length === 0 && urlsToProcess.length > 0) {
@@ -284,7 +333,6 @@
   function clearUrlsInput() {
     commandUrlsInput = '';
     formError = null;
-    successMessage = null;
   }
 
   function clearAllOptions() {
@@ -344,8 +392,7 @@
 
   function handleSiteRuleSaved() {
     showSaveRuleDialog = false;
-    successMessage = 'Site rule saved successfully!';
-    setTimeout(() => (successMessage = null), 5000);
+    toastStore.success('Site Rule Saved', 'Site rule saved successfully!');
   }
 
   async function handleSubmit(event: SubmitEvent) {
@@ -359,7 +406,6 @@
     }
 
     isLoading = true;
-    successMessage = null;
     formError = null;
 
     try {
@@ -370,16 +416,51 @@
         body: JSON.stringify({ urls }),
       });
 
+      let siteConfigs: SiteConfigData[] = [];
       if (siteConfigResponse.ok) {
-        const { data: siteConfigs } = await siteConfigResponse.json();
-        if (siteConfigs && siteConfigs.length > 0) {
-          siteConfigData = siteConfigs;
-          mergeSiteConfigsWithUserOptions(siteConfigs);
+        const { data } = await siteConfigResponse.json();
+        siteConfigs = data ?? [];
+      }
+
+      // 2. Check for conflicts if setting is enabled
+      if (userWarningSetting && siteConfigs.length > 0) {
+        const conflicts = detectConflicts(siteConfigs);
+        if (conflicts.length > 0) {
+          detectedConflicts = conflicts;
+          siteConfigData = siteConfigs; // Store for later use
+          showConflictWarning = true;
+          isLoading = false;
+          return; // Stop here and show the warning
         }
       }
 
-      // 2. Proceed with job submission using merged options
-      const result = await jobStore.startJob(urls, selectedOptions);
+      // 3. Proceed with submission if no conflicts or if warning disabled
+      await proceedWithJobSubmission(siteConfigs);
+    } catch (error) {
+      logger.error('Failed to start jobs:', error);
+      formError = error instanceof Error ? error.message : 'An unexpected error occurred';
+    } finally {
+      isLoading = false;
+    }
+  }
+
+  async function proceedWithJobSubmission(siteConfigs: SiteConfigData[]) {
+    isLoading = true;
+    showConflictWarning = false;
+    detectedConflicts = [];
+
+    try {
+      // Mergeing site rules with user options
+      if (siteConfigs && siteConfigs.length > 0) {
+        siteConfigData = siteConfigs;
+        mergeSiteConfigsWithUserOptions(siteConfigs);
+      }
+
+      // Submitting job
+      const result = await jobStore.startJob(
+        extractUrlsFromInput(commandUrlsInput),
+        selectedOptions
+      );
       handleFormResult(result);
     } catch (error) {
       logger.error('Failed to start jobs:', error);
@@ -387,6 +468,16 @@
     } finally {
       isLoading = false;
     }
+  }
+
+  function handleCancelWarning() {
+    showConflictWarning = false;
+    detectedConflicts = [];
+    isLoading = false;
+  }
+
+  async function handleProceedAnyway() {
+    await proceedWithJobSubmission(siteConfigData);
   }
 </script>
 
@@ -420,74 +511,58 @@
       </div>
     </div>
 
-    <!-- Site Config Summary Panel -->
+    <!-- Site Rule Panel -->
     {#if siteConfigData.length > 0}
-      <div
-        class="site-config-summary bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-sm p-4 mx-4 mb-4"
-      >
-        <h4
-          class="flex items-center gap-2 text-sm font-medium text-blue-800 dark:text-blue-200 mb-3"
-        >
-          🔧 Site Configurations Detected
-        </h4>
-        <div class="space-y-2">
-          {#each siteConfigData as config (config.url)}
-            <div
-              class="config-item flex items-center justify-between bg-white dark:bg-blue-800/30 px-3 py-2 rounded border border-blue-200 dark:border-blue-600"
-            >
-              <div class="flex flex-col">
-                <span class="font-medium text-blue-900 dark:text-blue-100 text-sm">
-                  {config.configName}
-                </span>
-                <span class="text-xs text-blue-600 dark:text-blue-300">
-                  for {config.matchedPattern}
-                </span>
-              </div>
-              <span
-                class="option-count px-2 py-1 bg-blue-100 dark:bg-blue-800 text-blue-700 dark:text-blue-200 rounded-full text-xs font-medium"
-              >
-                {Object.keys(config.options).length} options
+      <Info variant="info" title="Site Rules Detected" class="p-4 mx-4">
+        {#each siteConfigData as config (config.url)}
+          <div
+            class="config-item flex items-center justify-between bg-primary-200 dark:bg-primary-800 bg-opacity-50 px-3 py-2 rounded border dark:border-primary-200 border-primary-600"
+          >
+            <div class="flex flex-col">
+              <span class="font-medium text-primary-900 dark:text-primary-100 text-sm">
+                Rule: {config.configName}
+              </span>
+              <span class="text-xs text-primary-600 dark:text-primary-300">
+                Pattern: {config.matchedPattern}
               </span>
             </div>
-          {/each}
-        </div>
-      </div>
+            <Chip
+              label={`${Object.keys(config.options).length} options`}
+              variant="info"
+              size="sm"
+              dismissible={false}
+            >
+              {Object.keys(config.options).length} options
+            </Chip>
+          </div>
+        {/each}
+      </Info>
     {/if}
 
-    <!-- Conflict Warnings Panel -->
+    <!-- Conflict warnings panel -->
     {#if conflictWarnings.size > 0}
-      <div
-        class="conflict-warnings bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-sm p-4 mx-4 mb-4"
-      >
-        <h4 class="flex items-center gap-2 text-sm font-medium text-red-800 dark:text-red-200 mb-3">
-          ⚠️ Option Conflicts Detected
-        </h4>
-        <div class="space-y-2">
-          {#each Array.from(conflictWarnings.entries()) as [optionId, warning] (optionId)}
-            {@const option = getOptionById(optionId)}
-            {#if option}
-              <div
-                class="warning-item flex items-center justify-between bg-white dark:bg-red-800/30 px-3 py-2 rounded border border-red-200 dark:border-red-600"
-              >
-                <div class="flex flex-col flex-1 min-w-0">
-                  <span class="font-medium text-red-900 dark:text-red-100 text-sm">
-                    {option.command}
-                  </span>
-                  <span class="text-xs text-red-600 dark:text-red-300 break-words">
-                    {warning}
-                  </span>
-                </div>
-                <Button
-                  onclick={() => revertToSiteConfig(optionId)}
-                  class="ml-3 px-3 py-1 bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-800 dark:text-red-200 dark:hover:bg-red-700 text-xs font-medium rounded border border-red-300 dark:border-red-600"
-                >
-                  Revert
-                </Button>
+      <Info variant="warning" title="Conflicts Detected" class="p-4 mx-4">
+        {#each Array.from(conflictWarnings.entries()) as [optionId, warning] (optionId)}
+          {@const option = getOptionById(optionId)}
+          {#if option}
+            <div
+              class="config-item flex items-center justify-between bg-primary-200 dark:bg-primary-800 bg-opacity-50 px-3 py-2 rounded border dark:border-primary-200 border-primary-600"
+            >
+              <div class="flex flex-col">
+                <span class="font-medium text-primary-900 dark:text-primary-100 text-sm">
+                  {option.command}
+                </span>
+                <span class="text-xs text-primary-600 dark:text-primary-300">
+                  {warning}
+                </span>
               </div>
-            {/if}
-          {/each}
-        </div>
-      </div>
+              <Button variant="warning" size="sm" onclick={() => revertToSiteConfig(optionId)}>
+                Revert
+              </Button>
+            </div>
+          {/if}
+        {/each}
+      </Info>
     {/if}
 
     <!-- Save rule mdal -->
@@ -509,6 +584,45 @@
         Array.from(selectedOptions.entries()).map(([key, optionData]) => [key, optionData.value])
       )}
     />
+
+    <!-- Conflict warning Info -->
+    {#if showConflictWarning}
+      <Info variant="warning" title="Site Rule Override" class="mx-4">
+        <div class="space-y-3">
+          <p class="text-sm">Your selections will override the following automated site rules:</p>
+
+          <ul class="list-disc pl-5 space-y-1 text-sm">
+            {#each detectedConflicts as conflict (conflict.optionId)}
+              {@const option = getOptionById(conflict.optionId)}
+              {#if option}
+                <li>
+                  For <strong>{conflict.sitePattern}</strong>
+                  {#if conflict.configName}
+                    ({conflict.configName})
+                  {/if}:
+                  <br />
+                  Your
+                  <code class="bg-secondary-200 dark:bg-secondary-700 px-1 rounded text-xs"
+                    >{option.command} = {conflict.userValue}</code
+                  >
+                  will override
+                  <code class="bg-secondary-200 dark:bg-secondary-700 px-1 rounded text-xs"
+                    >{option.command} = {conflict.siteRuleValue}</code
+                  >
+                </li>
+              {/if}
+            {/each}
+          </ul>
+
+          <div class="flex gap-3 pt-2">
+            <Button onclick={handleProceedAnyway} variant="primary" size="sm">
+              Proceed Anyway
+            </Button>
+            <Button onclick={handleCancelWarning} variant="secondary" size="sm">Cancel</Button>
+          </div>
+        </div>
+      </Info>
+    {/if}
 
     <div class="flex justify-end m-4 gap-6">
       <Button
@@ -533,11 +647,6 @@
       <Info variant="warning" dismissible>{formError}</Info>
     {/if}
 
-    {#if successMessage && !formError}
-      <Info variant="success" dismissible class="m-4">
-        {successMessage}
-      </Info>
-    {/if}
     {#if $hasJsonLintErrors}
       <Info variant="warning" title="Stop!" class="m-8">
         There is at least one error in your <a href="/config" class="underline">config file</a>
@@ -615,13 +724,6 @@
                     <div
                       class="flex items-start gap-3 p-2 hover:bg-secondary-100 dark:hover:bg-secondary-700 rounded transition-colors"
                     >
-                      <!--                      <input -->
-                      <!--                        type="checkbox" -->
-                      <!--                        id="inline-option-{option.id}" -->
-                      <!--                        checked={selectedOptions.has(option.id)} -->
-                      <!--                        onchange={() => toggleOption(option)} -->
-                      <!--                        class="mt-1 h-4 w-4 rounded border-secondary-300 bg-white text-primary-600 focus:ring-2 focus:ring-primary-500 dark:border-secondary-600 dark:bg-secondary-700 dark:focus:ring-primary-400" -->
-                      <!--                      /> -->
                       <Toggle
                         id="inline-option-{option.id}"
                         checked={selectedOptions.has(option.id)}
@@ -677,7 +779,7 @@
       <div
         class="bg-secondary-50 dark:bg-primary-900 p-2 rounded-sm border border-primary-400 mt-4"
       >
-        <!-- Save as Site Rule -->
+        <!-- Optional save as Site Rule -->
         {#if canSaveAsSiteRule()}
           <div
             class="save-site-rule dark:bg-gray-50 bg-gray-800 border dark:border-gray-200 border-gray-700 rounded-sm p-4 mt-4 mx-4 mb-4"
@@ -691,11 +793,7 @@
                   Create a site rule from your selected options
                 </p>
               </div>
-              <Button
-                onclick={() => (showSaveRuleDialog = true)}
-                variant="secondary"
-                size="sm"
-              >
+              <Button onclick={() => (showSaveRuleDialog = true)} variant="secondary" size="sm">
                 <Icon iconName="save" size={20} />
               </Button>
             </div>

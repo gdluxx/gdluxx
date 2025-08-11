@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS user (
     email TEXT UNIQUE NOT NULL,
     emailVerified INTEGER DEFAULT 0,
     name TEXT,
+    warnOnSiteRuleOverride INTEGER DEFAULT 0,
     createdAt INTEGER NOT NULL,
     updatedAt INTEGER NOT NULL
 );
