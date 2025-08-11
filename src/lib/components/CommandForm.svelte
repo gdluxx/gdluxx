@@ -12,10 +12,10 @@
   import { onMount } from 'svelte';
   import { hasJsonLintErrors } from '$lib/stores/lint';
   import { clientLogger as logger } from '$lib/client/logger';
-  import { Button, Info } from '$lib/components/ui';
+  import { Button, Chip, Info, Toggle } from '$lib/components/ui';
   import optionsData from '$lib/assets/options.json';
   import type { Option, OptionsData } from '$lib/types/options';
-  import type { OptionWithSource } from '$lib/types/command-form';
+  import type { OptionWithSource, SiteConfigData } from '$lib/types/command-form';
   import { browser } from '$app/environment';
   import { jobStore } from '$lib/stores/jobs.svelte';
   import { Icon } from '$lib/components/index';
@@ -36,14 +36,6 @@
     error?: string;
   }
 
-  interface SiteConfigData {
-    url: string;
-    hostname: string;
-    hasMatch: boolean;
-    matchedPattern?: string;
-    configName?: string;
-    options: Record<string, string | number | boolean> | Map<string, string | number | boolean>;
-  }
 
   let commandUrlsInput = $state('');
   let isLoading = $state(false);
@@ -53,7 +45,7 @@
   let selectedOptionsByCategory = $state<Map<string, Map<string, OptionWithSource>>>(new Map());
   let siteConfigData = $state<SiteConfigData[]>([]);
   let conflictWarnings = $state(new Map<string, string>());
-  let activeTab = $state<string>('');
+  let categoryAccordionStates = $state(new Map<string, boolean>());
   let isAccordionOpen = $state(false);
   let showSaveRuleDialog = $state(false);
 
@@ -65,11 +57,12 @@
 
   onMount(async () => {
     await checkConfigFileForErrors();
-    // Set first category as default active tab
-    const firstCategoryKey = Object.keys(typedOptionsData)[0];
-    if (firstCategoryKey) {
-      activeTab = firstCategoryKey;
+    // Initialize category accordion states (all closed by default)
+    for (const categoryKey of Object.keys(typedOptionsData)) {
+      categoryAccordionStates.set(categoryKey, false);
     }
+    categoryAccordionStates = new Map(categoryAccordionStates);
+
     if (browser) {
       const savedUrls = localStorage.getItem('commandForm_urls');
       if (savedUrls) {
@@ -199,11 +192,7 @@
 
     // First add site config options
     for (const config of siteConfigs) {
-      // Handle both Map and plain ob
-      const optionsEntries =
-        config.options instanceof Map
-          ? Array.from(config.options.entries())
-          : Object.entries(config.options);
+      const optionsEntries = Object.entries(config.options);
 
       for (const [optionId, value] of optionsEntries) {
         selectedOptions.set(optionId, {
@@ -311,11 +300,7 @@
 
     // Find the original site config value from siteConfigData
     for (const config of siteConfigData) {
-      // Handle both Map and plain object formats (JSON deserializes Maps as objects)
-      const optionsEntries =
-        config.options instanceof Map
-          ? Array.from(config.options.entries())
-          : Object.entries(config.options);
+      const optionsEntries = Object.entries(config.options);
 
       for (const [siteOptionId, value] of optionsEntries) {
         if (siteOptionId === optionId) {
@@ -461,9 +446,7 @@
               <span
                 class="option-count px-2 py-1 bg-blue-100 dark:bg-blue-800 text-blue-700 dark:text-blue-200 rounded-full text-xs font-medium"
               >
-                {config.options instanceof Map
-                  ? config.options.size
-                  : Object.keys(config.options).length} options
+                {Object.keys(config.options).length} options
               </span>
             </div>
           {/each}
@@ -503,31 +486,6 @@
               </div>
             {/if}
           {/each}
-        </div>
-      </div>
-    {/if}
-
-    <!-- Save as Site Rule -->
-    {#if canSaveAsSiteRule()}
-      <div
-        class="save-site-rule bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-sm p-4 mx-4 mb-4"
-      >
-        <div class="flex items-center justify-between">
-          <div class="flex flex-col">
-            <h4 class="text-sm font-medium text-gray-800 dark:text-gray-200">
-              Save Current Options
-            </h4>
-            <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
-              Create a site rule from your selected options
-            </p>
-          </div>
-          <Button
-            onclick={() => (showSaveRuleDialog = true)}
-            variant="primary"
-            class="px-4 py-2 text-sm font-medium"
-          >
-            💾 Save as Site Rule
-          </Button>
         </div>
       </div>
     {/if}
@@ -593,16 +551,16 @@
       bind:open={isAccordionOpen}
     >
       <summary
-        class="flex items-center justify-between p-4 cursor-pointer hover:bg-secondary-100 dark:hover:bg-primary-800 transition-colors"
+        class="flex items-center justify-between p-4 cursor-pointer hover:rounded-t-sm dark:hover:bg-primary-800 transition-colors"
       >
-        <span class="font-medium text-secondary-900 dark:text-secondary-100">Options</span>
+        <span class="font-medium text-secondary-900 dark:text-secondary-100"> Options </span>
         <div class="flex items-center gap-2">
           {#if selectedOptions.size > 0}
-            <span
-              class="px-2 py-1 bg-primary-100 text-primary-800 dark:bg-primary-700 dark:text-primary-100 rounded-full text-sm"
-            >
-              {selectedOptions.size} selected
-            </span>
+            <Chip
+              label={`${selectedOptions.size.toString()} selected`}
+              size="sm"
+              dismissible={false}
+            />
           {/if}
           <span
             class="transform group-open:rotate-90 transition-transform text-secondary-600 dark:text-secondary-400"
@@ -614,96 +572,101 @@
       </summary>
 
       <div class="border-t border-primary-400">
-        <!-- Tabbed interface for categories -->
-        <div class="border-b border-secondary-200 dark:border-secondary-700">
-          <div class="flex overflow-x-auto pt-2 pr-2">
-            {#each categoriesArray as [categoryKey, category] (categoryKey)}
-              <button
-                type="button"
-                class="cursor-pointer px-4 py-2 whitespace-nowrap relative border-b-2 transition-colors hover:bg-secondary-100 dark:hover:bg-primary-800"
-                class:border-primary-500={activeTab === categoryKey}
-                class:text-primary-600={activeTab === categoryKey}
-                class:border-transparent={activeTab !== categoryKey}
-                class:text-secondary-600={activeTab !== categoryKey}
-                class:dark:text-primary-400={activeTab === categoryKey}
-                class:dark:text-secondary-400={activeTab !== categoryKey}
-                onclick={() => (activeTab = categoryKey)}
-              >
-                <div class="flex flex-row">
-                  {#if getSelectedCountForCategory(categoryKey) > 0}
-                    <span
-                      class="mr-1 flex items-center justify-center"
-                      class:text-primary-600={activeTab === categoryKey}
-                      class:text-secondary-600={activeTab !== categoryKey}
-                      class:dark:text-primary-400={activeTab === categoryKey}
-                      class:dark:text-secondary-400={activeTab !== categoryKey}
-                    >
-                      {getSelectedCountForCategory(categoryKey)}
-                    </span>
-                  {/if}
-                  {category.title}
-                </div>
-                <!-- {#if getSelectedCountForCategory(categoryKey) > 0} -->
-                <!--   <span -->
-                <!--     class="absolute -top-1 -right-1 w-5 h-5 bg-primary-600 text-white text-xs rounded-full flex items-center justify-center" -->
-                <!--   > -->
-                <!--     {getSelectedCountForCategory(categoryKey)} -->
-                <!--   </span> -->
-                <!-- {/if} -->
-              </button>
-            {/each}
-          </div>
-        </div>
-
-        <!-- Tab content -->
-        <div class="p-4 max-h-60 overflow-y-auto">
+        <!-- Nested accordions for categories -->
+        <div class="space-y-2 p-4">
           {#each categoriesArray as [categoryKey, category] (categoryKey)}
-            {#if activeTab === categoryKey}
-              <div class="space-y-3">
-                {#each category.options as option (option.id)}
-                  <div
-                    class="flex items-start gap-3 p-2 hover:bg-secondary-100 dark:hover:bg-primary-800 rounded transition-colors"
-                  >
-                    <input
-                      type="checkbox"
-                      id="inline-option-{option.id}"
-                      checked={selectedOptions.has(option.id)}
-                      onchange={() => toggleOption(option)}
-                      class="mt-1 h-4 w-4 rounded border-secondary-300 bg-white text-primary-600 focus:ring-2 focus:ring-primary-500 dark:border-secondary-600 dark:bg-secondary-700 dark:focus:ring-primary-400"
+            <details
+              class="group border border-secondary-300 dark:border-secondary-600 rounded-sm bg-white dark:bg-secondary-800"
+              open={categoryAccordionStates.get(categoryKey) ?? false}
+              ontoggle={e => {
+                const target = e.target as HTMLDetailsElement;
+                categoryAccordionStates.set(categoryKey, target.open);
+                categoryAccordionStates = new Map(categoryAccordionStates);
+              }}
+            >
+              <summary
+                class="flex items-center justify-between p-3 cursor-pointer hover:rounded-sm hover:bg-accent-50 dark:hover:bg-secondary-700 transition-colors"
+              >
+                <span class="font-medium text-secondary-900 dark:text-secondary-100">
+                  {category.title}
+                </span>
+                <div class="flex items-center gap-2">
+                  {#if getSelectedCountForCategory(categoryKey) > 0}
+                    <Chip
+                      label={`${getSelectedCountForCategory(categoryKey).toString()} selected`}
+                      size="sm"
+                      dismissible={false}
                     />
-                    <div class="flex-1 min-w-0">
-                      <label for="inline-option-{option.id}" class="cursor-pointer">
-                        <span class="font-medium text-secondary-900 dark:text-secondary-100 block">
-                          {option.command}
-                        </span>
-                        <span class="text-sm text-secondary-600 dark:text-secondary-400 mt-1 block">
-                          {option.description}
-                        </span>
-                      </label>
-                      {#if selectedOptions.has(option.id) && option.type !== 'boolean'}
-                        <div class="mt-2">
-                          <input
-                            type={option.type === 'number' ? 'number' : 'text'}
-                            value={selectedOptions.get(option.id)?.value ?? ''}
-                            oninput={e => {
-                              const target = e.target;
-                              if (target instanceof HTMLInputElement) {
-                                editOption(
-                                  option.id,
-                                  option.type === 'number' ? Number(target.value) : target.value
-                                );
-                              }
-                            }}
-                            placeholder={option.placeholder ?? ''}
-                            class="w-full px-2 py-1 text-sm border border-secondary-300 rounded focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:border-secondary-600 dark:bg-secondary-800 dark:text-secondary-100 dark:focus:ring-primary-400"
-                          />
-                        </div>
-                      {/if}
+                  {/if}
+                  <span
+                    class="transform group-open:rotate-90 transition-transform text-secondary-600 dark:text-secondary-400"
+                    aria-hidden="true"
+                  >
+                    <Icon iconName="chevron-right" size={20} />
+                  </span>
+                </div>
+              </summary>
+
+              <div
+                class="border-t border-secondary-200 dark:border-secondary-600 p-3 max-h-60 overflow-y-auto"
+              >
+                <div class="space-y-3">
+                  {#each category.options as option (option.id)}
+                    <div
+                      class="flex items-start gap-3 p-2 hover:bg-secondary-100 dark:hover:bg-secondary-700 rounded transition-colors"
+                    >
+                      <!--                      <input -->
+                      <!--                        type="checkbox" -->
+                      <!--                        id="inline-option-{option.id}" -->
+                      <!--                        checked={selectedOptions.has(option.id)} -->
+                      <!--                        onchange={() => toggleOption(option)} -->
+                      <!--                        class="mt-1 h-4 w-4 rounded border-secondary-300 bg-white text-primary-600 focus:ring-2 focus:ring-primary-500 dark:border-secondary-600 dark:bg-secondary-700 dark:focus:ring-primary-400" -->
+                      <!--                      /> -->
+                      <Toggle
+                        id="inline-option-{option.id}"
+                        checked={selectedOptions.has(option.id)}
+                        onchange={() => toggleOption(option)}
+                        variant="primary"
+                        size="sm"
+                      />
+                      <div class="flex-1 min-w-0">
+                        <label for="inline-option-{option.id}" class="cursor-pointer">
+                          <span
+                            class="font-medium text-secondary-900 dark:text-secondary-100 block"
+                          >
+                            {option.command}
+                          </span>
+                          <span
+                            class="text-sm text-secondary-600 dark:text-secondary-400 mt-1 block"
+                          >
+                            {option.description}
+                          </span>
+                        </label>
+                        {#if selectedOptions.has(option.id) && option.type !== 'boolean'}
+                          <div class="mt-2">
+                            <input
+                              type={option.type === 'number' ? 'number' : 'text'}
+                              value={selectedOptions.get(option.id)?.value ?? ''}
+                              oninput={e => {
+                                const target = e.target;
+                                if (target instanceof HTMLInputElement) {
+                                  editOption(
+                                    option.id,
+                                    option.type === 'number' ? Number(target.value) : target.value
+                                  );
+                                }
+                              }}
+                              placeholder={option.placeholder ?? ''}
+                              class="w-full px-2 py-1 text-sm border border-secondary-300 rounded focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:border-secondary-600 dark:bg-secondary-800 dark:text-secondary-100 dark:focus:ring-primary-400"
+                            />
+                          </div>
+                        {/if}
+                      </div>
                     </div>
-                  </div>
-                {/each}
+                  {/each}
+                </div>
               </div>
-            {/if}
+            </details>
           {/each}
         </div>
       </div>
@@ -714,13 +677,40 @@
       <div
         class="bg-secondary-50 dark:bg-primary-900 p-2 rounded-sm border border-primary-400 mt-4"
       >
+        <!-- Save as Site Rule -->
+        {#if canSaveAsSiteRule()}
+          <div
+            class="save-site-rule dark:bg-gray-50 bg-gray-800 border dark:border-gray-200 border-gray-700 rounded-sm p-4 mt-4 mx-4 mb-4"
+          >
+            <div class="flex items-center justify-between">
+              <div class="flex flex-col">
+                <h4 class="text-sm font-medium dark:text-gray-800 text-gray-200">
+                  Save Current Options
+                </h4>
+                <p class="text-xs dark:text-gray-600 text-gray-400 mt-1">
+                  Create a site rule from your selected options
+                </p>
+              </div>
+              <Button
+                onclick={() => (showSaveRuleDialog = true)}
+                variant="secondary"
+                size="sm"
+              >
+                <Icon iconName="save" size={20} />
+              </Button>
+            </div>
+          </div>
+        {/if}
+
         <div class="m-4">
           <div class="flex justify-between items-center mb-4">
             <span class="text-sm font-medium text-secondary-700 dark:text-secondary-300">
               Selected Options ({selectedOptions.size})
             </span>
             <Button
+              pill
               onclick={clearAllOptions}
+              size="sm"
               class="text-xs px-2 py-1 bg-secondary-200 text-secondary-800 hover:bg-secondary-300 dark:bg-secondary-700 dark:text-secondary-200 dark:hover:bg-secondary-600"
             >
               Clear All
@@ -753,36 +743,9 @@
                             {option.command}
                           </span>
 
-                          {#if optionData.value !== true}
+                          {#if optionData.value !== true && option.type !== 'boolean'}
                             <span class="text-secondary-600 dark:text-secondary-400">
                               = {optionData.value}
-                            </span>
-                          {/if}
-
-                          <!-- Source indicator -->
-                          {#if optionData.source === 'site-config'}
-                            <span
-                              class="source-badge site-config inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded text-xs font-medium"
-                              title="From site config: {optionData.configName}"
-                            >
-                              🔧 {optionData.sitePattern}
-                            </span>
-                          {:else}
-                            <span
-                              class="source-badge user inline-flex items-center px-2 py-1 bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 rounded text-xs font-medium"
-                              title="Manually selected"
-                            >
-                              👤
-                            </span>
-                          {/if}
-
-                          <!-- Conflict warning -->
-                          {#if conflictWarnings.has(optionId)}
-                            <span
-                              class="conflict-warning text-red-600 dark:text-red-400 text-lg"
-                              title={conflictWarnings.get(optionId)}
-                            >
-                              ⚠️
                             </span>
                           {/if}
 

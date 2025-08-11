@@ -341,7 +341,7 @@ class SiteConfigManager {
     hasMatch: boolean;
     matchedPattern?: string;
     configName?: string;
-    options: Map<string, string | number | boolean>;
+    options: Record<string, string | number | boolean>;
   }> {
     try {
       const configs = await this.getSiteConfigsAll();
@@ -353,7 +353,7 @@ class SiteConfigManager {
       if (matchingConfigs.length === 0) {
         return {
           hasMatch: false,
-          options: new Map(),
+          options: {},
         };
       }
 
@@ -364,23 +364,23 @@ class SiteConfigManager {
         pattern: selectedConfig.site_pattern,
       });
 
-      // Convert cli_options array to Map
-      const optionsMap = new Map<string, string | number | boolean>();
+      // Convert cli_options array to plain object
+      const optionsObject: Record<string, string | number | boolean> = {};
       for (const [key, value] of selectedConfig.cli_options) {
-        optionsMap.set(key, value);
+        optionsObject[key] = value;
       }
 
       return {
         hasMatch: true,
         matchedPattern: selectedConfig.site_pattern,
         configName: selectedConfig.display_name,
-        options: optionsMap,
+        options: optionsObject,
       };
     } catch (error) {
       serverLogger.error('Error getting config metadata for URL:', error);
       return {
         hasMatch: false,
-        options: new Map(),
+        options: {},
       };
     }
   }

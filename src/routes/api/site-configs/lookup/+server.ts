@@ -23,7 +23,7 @@ interface LookupResult {
   hasMatch: boolean;
   matchedPattern?: string;
   configName?: string;
-  options: Map<string, string | number | boolean>;
+  options: Record<string, string | number | boolean>;
 }
 
 export const POST: RequestHandler = async ({ request }) => {
