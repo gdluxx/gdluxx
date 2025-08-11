@@ -153,7 +153,7 @@ gdluxx will use the `data/` directory to store:
 
    - [ ] ~~Drag and drop for input files~~
    - [x] Drag and drop for config files
-   - [ ] Add `--extractor-info` and `--list-keywords` page
+   - [x] Add `--extractor-info` and `--list-keywords` page
    - [x] Allow ConfigEditor component to update paths smartly
      - log paths - /app/data/logs
      - archive paths - /app/data/archives
@@ -167,16 +167,6 @@ gdluxx will use the `data/` directory to store:
 7. Incorporate _gallery-dl_ optional dependencies
 
    - [ ] yt-dlp or youtube-dl: HLS/DASH video downloads, ytdl integration
-   - [ ] FFmpeg: Pixiv Ugoira conversion
-   - [ ] mkvmerge: Accurate Ugoira frame timecodes
-   - [ ] PySocks: SOCKS proxy support
-   - [ ] brotli or brotlicffi: Brotli compression support
-   - [ ] zstandard: Zstandard compression support
-   - [ ] PyYAML: YAML configuration file support
-   - [ ] toml: TOML configuration file support for Python<3.11
-   - [ ] SecretStorage: GNOME keyring passwords for --cookies-from-browser
-   - [ ] Psycopg: PostgreSQL archive support
-   - [ ] truststore: Native system certificate stores
 
 ## API Usage
 
