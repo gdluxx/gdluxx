@@ -167,5 +167,9 @@
     <symbol id="general-settings" viewBox="0 0 24 24">
         <path fill="none" stroke="currentColor" stroke-width="1.5" d="M2.25 2.25h7.5v7.5h-7.5zm15.489.5l4 7.25h-8zM1.75 18a4.25 4.25 0 1 0 8.5 0a4.25 4.25 0 1 0-8.5 0m11.498-3.75h9.504M13.248 18h9.504m-9.504 3.75h9.504"/>
     </symbol>
+    <!-- ion:options-sharp -->
+    <symbol id="options" viewBox="0 0 512 512">
+        <path fill="currentColor" d="M381.25 112a48 48 0 0 0-90.5 0H48v32h242.75a48 48 0 0 0 90.5 0H464v-32ZM176 208a48.09 48.09 0 0 0-45.25 32H48v32h82.75a48 48 0 0 0 90.5 0H464v-32H221.25A48.09 48.09 0 0 0 176 208m160 128a48.09 48.09 0 0 0-45.25 32H48v32h242.75a48 48 0 0 0 90.5 0H464v-32h-82.75A48.09 48.09 0 0 0 336 336"/>
+    </symbol>
 
 </svg>

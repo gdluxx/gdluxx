@@ -52,7 +52,8 @@ export type IconName =
   | 'question'
   | 'extract'
   | 'save'
-  | 'general-settings';
+  | 'general-settings'
+  | 'options';
 
 export interface IconConfig {
   name: IconName;
