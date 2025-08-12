@@ -12,7 +12,7 @@ import { getCurrentTimestamp } from './settingsManager.js';
 import Database from 'better-sqlite3';
 import { PATHS } from './constants.js';
 import path from 'path';
-import { transformPath } from './config-utils.js';
+import { transformLogPath } from './config-utils.js';
 
 const dbPath = path.join(PATHS.DATA_DIR, 'gdluxx.db');
 
@@ -36,7 +36,7 @@ export const DEFAULT_SERVER_LOGGING_CONFIG: ServerLoggingConfig = {
   format: process.env.NODE_ENV === 'development' ? 'simple' : 'json',
   consoleEnabled: true,
   fileEnabled: process.env.NODE_ENV === 'production',
-  fileDirectory: transformPath('./logs'),
+  fileDirectory: transformLogPath('./logs'),
   fileMaxSize: '10m',
   fileMaxFiles: '7d',
   performanceLogging: true,
@@ -76,7 +76,7 @@ export async function readServerLoggingConfig(): Promise<ServerLoggingConfig> {
         format: row.format as ServerLoggingConfig['format'],
         consoleEnabled: Boolean(row.consoleEnabled),
         fileEnabled: Boolean(row.fileEnabled),
-        fileDirectory: transformPath(row.fileDirectory),
+        fileDirectory: transformLogPath(row.fileDirectory),
         fileMaxSize: row.fileMaxSize,
         fileMaxFiles: row.fileMaxFiles,
         performanceLogging: Boolean(row.performanceLogging),
@@ -130,10 +130,33 @@ export async function writeServerLoggingConfig(config: ServerLoggingConfig): Pro
   }
 }
 
+// Validating log dir path
+export function validateLogDirectory(path: string): { valid: boolean; error?: string } {
+  if (!path?.trim()) {
+    return { valid: false, error: 'Path cannot be empty' };
+  }
+
+  if (path.includes('..')) {
+    return { valid: false, error: 'Path traversal not allowed' };
+  }
+
+  if (path.length > 255) {
+    return { valid: false, error: 'Path too long (max 255 characters)' };
+  }
+
+  // Extra validation for problematic characters
+  const problematicChars = /[<>:"|?*]/;
+  if (problematicChars.test(path)) {
+    return { valid: false, error: 'Path contains invalid characters' };
+  }
+
+  return { valid: true };
+}
+
 // called when logger is initiated to ensure paths work in Docker and non-docker environments
 export function getTransformedLoggingConfig(config: ServerLoggingConfig): ServerLoggingConfig {
   return {
     ...config,
-    fileDirectory: transformPath(config.fileDirectory),
+    fileDirectory: transformLogPath(config.fileDirectory),
   };
 }

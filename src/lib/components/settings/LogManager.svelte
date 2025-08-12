@@ -41,9 +41,17 @@
   } as ClientLogConfig);
 
   let loading = $state(false);
+  let isDockerEnvironment = $state(false);
+  let pathPreview = $state<{
+    path: string;
+    wasTransformed: boolean;
+    warnings: string[];
+    errors: string[];
+  } | null>(null);
 
   onMount(async () => {
     await loadConfigurations();
+    await detectDockerEnvironment();
   });
 
   async function loadConfigurations() {
@@ -65,6 +73,12 @@
   }
 
   async function updateServerConfig() {
+    const validation = validateServerConfig();
+    if (!validation.valid) {
+      toastStore.error('Validation Failed', validation.errors.join('; '));
+      return;
+    }
+
     try {
       loading = true;
 
@@ -107,6 +121,91 @@
       );
       clientLogger.error('Failed to update client logging configuration:', error);
     }
+  }
+
+  async function detectDockerEnvironment() {
+    try {
+      const response = await fetch('/api/system/docker-status');
+      if (response.ok) {
+        const result = await response.json();
+        isDockerEnvironment = result.isDocker;
+      } else {
+        clientLogger.warn('Failed to detect Docker environment');
+        isDockerEnvironment = false;
+      }
+    } catch (error) {
+      clientLogger.warn('Failed to detect Docker environment:', error);
+      isDockerEnvironment = false;
+    }
+  }
+
+  async function updatePathPreview(path: string) {
+    if (!isDockerEnvironment || !path?.trim()) {
+      pathPreview = null;
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/system/transform-path', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path, type: 'log' }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        pathPreview = {
+          path: result.transformedPath,
+          wasTransformed: result.wasTransformed,
+          warnings: result.warnings ?? [],
+          errors: result.errors ?? [],
+        };
+      } else {
+        pathPreview = null;
+      }
+    } catch (error) {
+      clientLogger.warn('Failed to get path preview:', error);
+      pathPreview = null;
+    }
+  }
+
+  // Effect to update path preview when fileDirectory changes
+  $effect(() => {
+    if (isDockerEnvironment && serverConfig.fileDirectory) {
+      updatePathPreview(serverConfig.fileDirectory);
+    } else {
+      pathPreview = null;
+    }
+  });
+
+  function validateServerConfig(): { valid: boolean; errors: string[] } {
+    const errors: string[] = [];
+
+    if (serverConfig.fileEnabled && !serverConfig.fileDirectory?.trim()) {
+      errors.push('Log directory is required when file logging is enabled');
+    }
+
+    if (serverConfig.fileDirectory?.includes('..')) {
+      errors.push('Path traversal not allowed in log directory');
+    }
+
+    if (serverConfig.fileDirectory && serverConfig.fileDirectory.length > 255) {
+      errors.push('Log directory path too long (max 255 characters)');
+    }
+
+    if (serverConfig.slowQueryThreshold < 0) {
+      errors.push('Slow query threshold must be a positive number');
+    }
+
+    // Additional validation for problematic characters
+    if (serverConfig.fileDirectory) {
+      const problematicChars = /[<>:"|?*]/;
+      if (problematicChars.test(serverConfig.fileDirectory)) {
+        errors.push('Log directory contains invalid characters');
+      }
+    }
+
+    return { valid: errors.length === 0, errors };
   }
 
   interface TooltipVars {
@@ -269,6 +368,59 @@
                 bind:value={serverConfig.fileDirectory}
                 class="text-sm w-full px-3 py-2 border dark:border-gray-300 border-gray-600 rounded-md bg-white dark:bg-gray-700 dark:text-gray-900 text-gray-100"
               />
+
+              <!-- Docker path preview -->
+              {#if isDockerEnvironment && pathPreview}
+                <div
+                  class="mt-2 p-3 bg-blue-50 dark:bg-blue-900 rounded-md text-sm border border-blue-200 dark:border-blue-700"
+                >
+                  <div class="flex items-center gap-2 mb-1">
+                    <Icon iconName="settings" size={16} class="text-blue-600 dark:text-blue-400" />
+                    <span class="text-blue-700 dark:text-blue-300 font-medium">
+                      Docker Environment Detected
+                    </span>
+                  </div>
+
+                  {#if pathPreview.wasTransformed}
+                    <div class="ml-6">
+                      <div class="text-blue-700 dark:text-blue-300">
+                        Transformed path: <code
+                          class="font-mono bg-blue-100 dark:bg-blue-800 px-1 py-0.5 rounded text-xs"
+                        >
+                          {pathPreview.path}
+                        </code>
+                      </div>
+
+                      <!-- Warnings for special transformations -->
+                      {#each pathPreview.warnings as warning, index (index)}
+                        <div class="mt-1 text-amber-700 dark:text-amber-300 flex items-start gap-1">
+                          <Icon iconName="question" size={14} class="mt-0.5 flex-shrink-0" />
+                          <span class="text-xs">{warning}</span>
+                        </div>
+                      {/each}
+
+                      <!-- Errors if any -->
+                      {#each pathPreview.errors as error, index (index)}
+                        <div class="mt-1 text-red-700 dark:text-red-300 flex items-start gap-1">
+                          <Icon iconName="close" size={14} class="mt-0.5 flex-shrink-0" />
+                          <span class="text-xs">{error}</span>
+                        </div>
+                      {/each}
+                    </div>
+                  {:else}
+                    <div class="ml-6 text-blue-600 dark:text-blue-400 text-xs">
+                      Path is already compatible with Docker environment
+                    </div>
+                  {/if}
+                </div>
+              {:else if isDockerEnvironment}
+                <div
+                  class="mt-2 p-2 bg-gray-50 dark:bg-gray-800 rounded text-xs text-gray-600 dark:text-gray-400 border"
+                >
+                  <Icon iconName="settings" size={14} class="inline mr-1" />
+                  Docker environment detected - paths will be automatically transformed
+                </div>
+              {/if}
             </div>
 
             <div>

@@ -14,6 +14,7 @@ import { serverLogger } from '$lib/server/logger';
 import {
   readServerLoggingConfig,
   writeServerLoggingConfig,
+  validateLogDirectory,
   type ServerLoggingConfig,
 } from '$lib/server/loggingManager';
 
@@ -30,6 +31,25 @@ export const GET: RequestHandler = async () => {
 export const POST: RequestHandler = async ({ request }) => {
   try {
     const config: ServerLoggingConfig = await request.json();
+
+    if (config.fileEnabled) {
+      const validation = validateLogDirectory(config.fileDirectory);
+      if (!validation.valid) {
+        return json({ error: validation.error }, { status: 400 });
+      }
+    }
+
+    if (config.slowQueryThreshold < 0) {
+      return json({ error: 'Slow query threshold must be a positive number' }, { status: 400 });
+    }
+
+    if (!['debug', 'info', 'warn', 'error'].includes(config.level)) {
+      return json({ error: 'Invalid log level' }, { status: 400 });
+    }
+
+    if (!['json', 'simple'].includes(config.format)) {
+      return json({ error: 'Invalid log format' }, { status: 400 });
+    }
 
     await writeServerLoggingConfig(config);
 

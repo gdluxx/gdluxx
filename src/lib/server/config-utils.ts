@@ -37,6 +37,7 @@ interface KeyPathConfig {
   replacementPath: string;
   preserveFilename?: boolean;
   customTransform?: (value: string) => string;
+  logConflictAvoidance?: boolean;
 }
 
 const keyConfigs: Record<string, KeyPathConfig> = {
@@ -307,6 +308,77 @@ export async function writeConfigFile(content: string): Promise<ConfigWriteResul
     transformed: wasTransformed,
     content: wasTransformed ? transformedContent : undefined,
   };
+}
+
+// Transform log directory path for Docker bind mount
+// "logs" becomes "gdluxx_logs" to avoid conflicting with gallery-dl logs
+export function transformLogPath(originalPath: string): string {
+  if (!isRunningInDockerCached()) {
+    return originalPath;
+  }
+
+  if (!originalPath) {
+    return originalPath;
+  }
+
+  const normalizedPath = originalPath.replace(/\\/g, '/').trim();
+
+  // Check if path ends with exactly logs and not substring like application_logs
+  const logsPattern = /^(.*[/])?logs$/;
+  const isLogsDirectory = logsPattern.test(normalizedPath) || normalizedPath === 'logs';
+
+  if (isLogsDirectory) {
+    return '/app/data/gdluxx_logs';
+  }
+
+  // Apply standard transformation for other non-logs paths
+  return transformPath(normalizedPath, {
+    replacementPath: '/app/data',
+    preserveFilename: false,
+  });
+}
+
+// log path transforming, error handling, with warnings
+export function transformLogPathSafe(originalPath: string): {
+  path: string;
+  wasTransformed: boolean;
+  warnings: string[];
+  errors: string[];
+} {
+  const result = {
+    path: originalPath,
+    wasTransformed: false,
+    warnings: [] as string[],
+    errors: [] as string[],
+  };
+
+  if (!originalPath?.trim()) {
+    result.errors.push('Path cannot be empty');
+    return result;
+  }
+
+  try {
+    const transformedPath = transformLogPath(originalPath);
+    result.path = transformedPath;
+    result.wasTransformed = originalPath !== transformedPath;
+
+    // These are specific warnings for Docker transformations
+    if (isRunningInDockerCached() && result.wasTransformed) {
+      const normalizedOriginal = originalPath.replace(/\\/g, '/').trim();
+      const logsPattern = /^(.*[/])?logs$/;
+      const isLogsDirectory = logsPattern.test(normalizedOriginal) || normalizedOriginal === 'logs';
+
+      if (isLogsDirectory) {
+        result.warnings.push('Path "logs" changed to "gdluxx_logs" to avoid gallery-dl conflicts');
+      } else {
+        result.warnings.push('Path transformed for Docker container compatibility');
+      }
+    }
+  } catch (error) {
+    result.errors.push(`Path transformation failed: ${(error as Error).message}`);
+  }
+
+  return result;
 }
 
 // Example of loading and transforming a config file with conditional Docker path rewriting
