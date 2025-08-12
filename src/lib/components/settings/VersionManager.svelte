@@ -58,7 +58,6 @@
   });
 
   async function handleCheckForUpdates() {
-
     toastStore.info('Update Check', 'Checking for updates...', 3000, true);
 
     const result: StoreActionResult = await versionStore.checkForUpdates();

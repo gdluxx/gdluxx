@@ -10,7 +10,7 @@
 
 <script lang="ts">
   import type { IconName } from '$lib/types/icons.js';
-  import spriteURL from '$lib/assets/sprite.svg?url'
+  import spriteURL from '$lib/assets/sprite.svg?url';
 
   interface IconProps {
     iconName: IconName;

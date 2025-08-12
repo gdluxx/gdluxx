@@ -663,11 +663,7 @@
         class="flex items-center justify-between p-4 cursor-pointer hover:rounded-t-sm dark:hover:bg-primary-800 transition-colors"
       >
         <div class="flex items-center gap-1">
-          <Icon
-            iconName="options"
-            size={20}
-            class="text-secondary-600 dark:text-secondary-400"
-          />
+          <Icon iconName="options" size={20} class="text-secondary-600 dark:text-secondary-400" />
           <span class="font-medium text-secondary-900 dark:text-secondary-100"> Options </span>
         </div>
         <div class="flex items-center gap-2">
@@ -814,8 +810,12 @@
             </span>
 
             <!-- Legend -->
-            <div class="cursor-default flex items-center gap-4 text-xs text-secondary-600 dark:text-secondary-400">
-              <div class="flex items-center gap-1 border rounded-sm border-secondary-800 dark:border-secondary-200 px-2 py-1">
+            <div
+              class="cursor-default flex items-center gap-4 text-xs text-secondary-600 dark:text-secondary-400"
+            >
+              <div
+                class="flex items-center gap-1 border rounded-sm border-secondary-800 dark:border-secondary-200 px-2 py-1"
+              >
                 <Icon
                   iconName="site-rules"
                   size={16}
@@ -823,7 +823,9 @@
                 />
                 <span>Site Rules</span>
               </div>
-              <div class="flex items-center gap-1 border rounded-sm border-secondary-800 dark:border-secondary-200 px-2 py-1">
+              <div
+                class="flex items-center gap-1 border rounded-sm border-secondary-800 dark:border-secondary-200 px-2 py-1"
+              >
                 <Icon
                   iconName="options"
                   size={16}
