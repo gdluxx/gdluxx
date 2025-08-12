@@ -1,0 +1,88 @@
+name: Release Extension
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.BOT_GH_TOKEN }}
+
+      - name: Setup
+        uses: pnpm/action-setup@v4
+        with:
+          version: latest
+          run_install: |
+            - args: [--frozen-lockfile]
+
+      - name: Run build checks
+        run: |
+          pnpm compile
+          pnpm lint
+
+      - name: Import GPG key
+        uses: crazy-max/ghaction-import-gpg@v6
+        with:
+          gpg_private_key: ${{ secrets.BOT_GPG_PRIVATE_KEY }}
+          git_user_signingkey: true
+          git_commit_gpgsign: true
+
+      - name: Setup Git
+        run: |
+          git config user.name "gdluxx-bot"
+          git config user.email "218500807+gdluxx-bot@users.noreply.github.com"
+
+      - name: Determine release type
+        id: release-type
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "type=${{ github.event.inputs.release-type }}" >> $GITHUB_OUTPUT
+          else
+            echo "type=patch" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run release-it
+        env:
+          GITHUB_TOKEN: ${{ secrets.BOT_GH_TOKEN }}
+        run: pnpm release-it ${{ steps.release-type.outputs.type }} --ci
+
+      - name: Get release version
+        id: release-version
+        run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+
+      - name: Build Chrome extension
+        run: pnpm build:chrome
+
+      - name: Build Firefox extension
+        run: pnpm build:firefox
+
+      - name: Create Chrome zip
+        run: pnpm zip:chrome
+
+      - name: Create Firefox zip
+        run: pnpm zip:firefox
+
+      - name: Upload Chrome zip to release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.release-version.outputs.version }}
+          files: .output/gdluxx-extension-${{ steps.release-version.outputs.version }}-chrome.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.BOT_GH_TOKEN }}
+
+      - name: Upload Firefox zip to release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.release-version.outputs.version }}
+          files: .output/gdluxx-extension-${{ steps.release-version.outputs.version }}-firefox.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.BOT_GH_TOKEN }}

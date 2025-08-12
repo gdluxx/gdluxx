@@ -1,0 +1,237 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-primary-50: #f8f9fb;
+  --color-primary-100: #f1f3f7;
+  --color-primary-200: #e2e7ef;
+  --color-primary-300: #d1d9e3;
+  --color-primary-400: #a8b8d1;
+  --color-primary-500: #7a8eb8;
+  --color-primary-600: #5d72a0;
+  --color-primary-700: #4a5d85;
+  --color-primary-800: #3a4b6b;
+  --color-primary-900: #2d3a52;
+  --color-primary-950: #1e2638;
+
+  --color-secondary-50: #f9f9fa;
+  --color-secondary-100: #f3f4f5;
+  --color-secondary-200: #e5e7ea;
+  --color-secondary-300: #d3d6db;
+  --color-secondary-400: #b0b6bf;
+  --color-secondary-500: #8b93a0;
+  --color-secondary-600: #6b7685;
+  --color-secondary-700: #555d6b;
+  --color-secondary-800: #424952;
+  --color-secondary-900: #32373e;
+  --color-secondary-950: #21252b;
+
+  --color-accent-50: #f7f8fb;
+  --color-accent-100: #eff2f6;
+  --color-accent-200: #dde4ed;
+  --color-accent-300: #c8d3e0;
+  --color-accent-400: #a3b5cc;
+  --color-accent-500: #7d92b3;
+  --color-accent-600: #637699;
+  --color-accent-700: #526180;
+  --color-accent-800: #434f66;
+  --color-accent-900: #363f4d;
+  --color-accent-950: #252b35;
+
+  --color-white: #ffffff;
+  --color-black: #1a1d23;
+
+  --color-success-100: #f0f9f4;
+  --color-success-250: #daf0e3;
+  --color-success-500: #4a9d5f;
+  --color-success-750: #356e47;
+  --color-success-900: #1e4a29;
+
+  --color-warning-100: #fefaf0;
+  --color-warning-250: #f8ecd0;
+  --color-warning-500: #d69e2e;
+  --color-warning-750: #a26f1e;
+  --color-warning-900: #4a3a1a;
+
+  --color-error-100: #fef2f2;
+  --color-error-250: #fbdada;
+  --color-error-500: #dc5a5a;
+  --color-error-750: #8a3e3e;
+  --color-error-900: #4a1d1d;
+
+  --color-info-100: #f0f6ff;
+  --color-info-250: #dae7f8;
+  --color-info-500: #5a8dc7;
+  --color-info-750: #3e6299;
+  --color-info-900: #1d2e4a;
+
+  --font-family-sans:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg:
+    0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+}
+
+@media (prefers-color-scheme: dark) {
+  @theme {
+    --color-primary-50: #1e2638;
+    --color-primary-100: #2d3a52;
+    --color-primary-200: #3a4b6b;
+    --color-primary-300: #4a5d85;
+    --color-primary-400: #5d72a0;
+    --color-primary-500: #7a8eb8;
+    --color-primary-600: #a8b8d1;
+    --color-primary-700: #d1d9e3;
+    --color-primary-800: #e2e7ef;
+    --color-primary-900: #f1f3f7;
+    --color-primary-950: #f8f9fb;
+
+    --color-secondary-50: #21252b;
+    --color-secondary-100: #32373e;
+    --color-secondary-200: #424952;
+    --color-secondary-300: #555d6b;
+    --color-secondary-400: #6b7685;
+    --color-secondary-500: #8b93a0;
+    --color-secondary-600: #b0b6bf;
+    --color-secondary-700: #d3d6db;
+    --color-secondary-800: #e5e7ea;
+    --color-secondary-900: #f3f4f5;
+    --color-secondary-950: #f9f9fa;
+
+    --color-accent-50: #252b35;
+    --color-accent-100: #363f4d;
+    --color-accent-200: #434f66;
+    --color-accent-300: #526180;
+    --color-accent-400: #637699;
+    --color-accent-500: #7d92b3;
+    --color-accent-600: #a3b5cc;
+    --color-accent-700: #c8d3e0;
+    --color-accent-800: #dde4ed;
+    --color-accent-900: #eff2f6;
+    --color-accent-950: #f7f8fb;
+
+    --color-white: #1a1d23;
+    --color-black: #ffffff;
+  }
+}
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    transition:
+      background-color 0.3s ease-in-out,
+      border-color 0.3s ease-in-out,
+      color 0.3s ease-in-out,
+      fill 0.3s ease-in-out,
+      stroke 0.3s ease-in-out,
+      opacity 0.3s ease-in-out,
+      box-shadow 0.3s ease-in-out,
+      transform 0.3s ease-in-out;
+  }
+
+  body {
+    font-family: var(--font-family-sans);
+    color: var(--color-primary-800);
+    background-color: var(--color-white);
+  }
+
+  input[type='search']::-webkit-search-cancel-button {
+    display: none;
+  }
+
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    outline: 2px solid var(--color-primary-500);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  .extension-popup {
+    min-width: 350px;
+    max-width: 400px;
+    min-height: 300px;
+  }
+
+  .extension-button {
+    @apply rounded-md px-3 py-2 text-sm font-medium transition-colors duration-200;
+  }
+
+  .extension-button-primary {
+    @apply bg-primary-500 hover:bg-primary-600 focus:ring-primary-200 text-white focus:ring-2;
+  }
+
+  .extension-button-secondary {
+    @apply bg-secondary-200 text-secondary-700 hover:bg-secondary-300 focus:ring-secondary-200 focus:ring-2;
+  }
+
+  .extension-input {
+    @apply border-secondary-300 focus:ring-primary-200 focus:border-primary-500 placeholder:text-secondary-500 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:outline-none;
+  }
+
+  .extension-status-success {
+    @apply bg-success-100 text-success-900 border-success-250 rounded-md border px-3 py-2 text-sm;
+  }
+
+  .extension-status-error {
+    @apply bg-error-100 text-error-900 border-error-250 rounded-md border px-3 py-2 text-sm;
+  }
+
+  .extension-card {
+    @apply bg-primary-50 border-primary-200 rounded-lg border p-4;
+  }
+
+  .extension-text-muted {
+    @apply text-secondary-600 text-sm;
+  }
+
+  .extension-divider {
+    @apply border-secondary-200 my-4 border-t;
+  }
+}
+
+@layer utilities {
+  .scroll-none {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .scroll-none::-webkit-scrollbar {
+    display: none;
+  }
+
+  .text-crisp {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  .tab-button {
+    color: var(--color-secondary-600);
+    background-color: transparent;
+  }
+
+  .tab-button.tab-active {
+    color: var(--color-primary-800);
+    background-color: var(--color-primary-200);
+  }
+
+  .tab-button:hover:not(.tab-active) {
+    background-color: var(--color-primary-100);
+  }
+
+  .tab-content {
+    display: none;
+  }
+
+  .tab-content.tab-active {
+    display: block;
+  }
+}
