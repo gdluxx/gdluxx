@@ -1,8 +1,9 @@
 {
   "git": {
-    "commitMessage": "chore: release v${version}",
+    "commitMessage": "chore(extension): release v${version}",
     "tagName": "extension-v${version}",
-    "pushArgs": ["--follow-tags"]
+    "pushArgs": ["--follow-tags"],
+    "tagMatch": "extension-v*"
   },
   "npm": {
     "publish": false
