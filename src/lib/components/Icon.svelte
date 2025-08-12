@@ -10,7 +10,7 @@
 
 <script lang="ts">
   import type { IconName } from '$lib/types/icons.js';
-  import { base } from '$app/paths';
+  import spriteURL from '$lib/assets/sprite.svg?url'
 
   interface IconProps {
     iconName: IconName;
@@ -28,7 +28,7 @@
     class: className = '',
   }: IconProps = $props();
 
-  const spritePath = $state(`${base}/sprite.svg`);
+  const spritePath = $state(spriteURL);
 
   // Special handling for loading icon
   // Animation wasn't working otherwise

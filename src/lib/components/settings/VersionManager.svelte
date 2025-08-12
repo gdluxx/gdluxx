@@ -58,31 +58,10 @@
   });
 
   async function handleCheckForUpdates() {
-    const startTime = Date.now();
-    const minWaitTime = 3000;
 
-    const spinnerHtml = `
-			<div class="flex items-center gap-2">
-				<div class="h-4 w-4 bg-current animate-spin"
-				 style="mask: url('/icons/loading-two-tone-loop.svg') no-repeat center; mask-size: contain;"
-        >
-        </div>
-				<span>Checking for updates...</span>
-			</div>
-		`;
-
-    const checkingToastId = toastStore.info('Update Check', spinnerHtml, 15000, true);
+    toastStore.info('Update Check', 'Checking for updates...', 3000, true);
 
     const result: StoreActionResult = await versionStore.checkForUpdates();
-
-    const elapsedTime = Date.now() - startTime;
-    const remainingWaitTime = Math.max(0, minWaitTime - elapsedTime);
-
-    if (remainingWaitTime > 0) {
-      await new Promise(resolve => setTimeout(resolve, remainingWaitTime));
-    }
-
-    toastStore.removeToast(checkingToastId);
 
     if (result.message) {
       if (result.success) {
