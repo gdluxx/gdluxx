@@ -19,7 +19,7 @@
   import { browser } from '$app/environment';
   import { jobStore } from '$lib/stores/jobs.svelte';
   import { Icon } from '$lib/components/index';
-  import SaveSiteRuleModal from './SaveSiteRuleModal.svelte';
+  import SiteRuleModal from '$lib/components/site-rules';
   import { extractUniquePatterns } from '$lib/utils/patternDetection';
   import { toastStore } from '$lib/stores/toast';
 
@@ -567,7 +567,7 @@
 
     <!-- Save rule mdal -->
     {#if showSaveRuleDialog}
-      <SaveSiteRuleModal
+      <SiteRuleModal
         show={showSaveRuleDialog}
         options={getUserSelectedOptions()}
         detectedPatterns={extractUniquePatterns(extractUrlsFromInput(commandUrlsInput))}

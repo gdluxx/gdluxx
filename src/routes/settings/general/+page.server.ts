@@ -9,7 +9,7 @@
  */
 
 import type { PageServerLoad } from './$types';
-import { userSettingsManager } from '$lib/server/userSettingsManager';
+import { userSettingsManager, type UserSettings } from '$lib/server/userSettingsManager';
 
 export const load: PageServerLoad = async ({ locals }) => {
   const user = locals.user;
@@ -18,7 +18,7 @@ export const load: PageServerLoad = async ({ locals }) => {
     throw new Error('User not authenticated');
   }
 
-  const userSettings = userSettingsManager.getUserSettings(user.id);
+  const userSettings: UserSettings = userSettingsManager.getUserSettings(user.id);
 
   return {
     userSettings,

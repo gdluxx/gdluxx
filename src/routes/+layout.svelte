@@ -10,14 +10,9 @@
 
 <script lang="ts">
   import '../app.css';
-  import {
-    Icon,
-    JobOutputModal,
-    JobsIndicator,
-    Sidebar,
-    ThemeToggle,
-    ToastContainer,
-  } from '$lib/components';
+  import { Icon, Sidebar, ThemeToggle } from '$lib/components';
+  import { ToastContainer } from '$lib/components/toast';
+  import { JobsIndicator, JobOutputModal } from '$lib/components/jobs';
   import { onMount } from 'svelte';
   import { jobStore } from '$lib/stores/jobs.svelte';
   import icon from '$lib/assets/gdl-ico.png';

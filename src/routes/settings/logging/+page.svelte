@@ -9,7 +9,7 @@
 -->
 
 <script lang="ts">
-  import { LogSettings } from '$lib/components/settings';
+  import { LogManager } from '$lib/components/settings';
   import { Icon } from '$lib/components';
   import { PageLayout } from '$lib/components/ui';
 </script>
@@ -19,5 +19,5 @@
     <Icon iconName="log" size={32} ariaLabel="logIcon" />
   {/snippet}
 
-  <LogSettings />
+  <LogManager />
 </PageLayout>

@@ -10,7 +10,7 @@
 
 <script lang="ts">
   import { Button, Tooltip } from '$lib/components/ui';
-  import { Icon } from '$lib/components';
+  import { Icon } from '$lib/components/index';
   import optionsData from '$lib/assets/options.json';
   import type { Option, OptionsData } from '$lib/types/options';
   import type { SiteConfig } from '$lib/server/siteConfigManager';

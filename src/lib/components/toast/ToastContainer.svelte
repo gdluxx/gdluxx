@@ -11,7 +11,7 @@
 <script lang="ts">
   import { toastStore } from '$lib/stores/toast.js';
   import { jobStore } from '$lib/stores/jobs.svelte';
-  import { Toast } from '$lib/components';
+  import { Toast } from '$lib/components/toast';
 
   const hasJobButton = $derived(jobStore.jobCount > 0);
 </script>

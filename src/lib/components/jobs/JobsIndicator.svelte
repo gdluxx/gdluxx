@@ -9,8 +9,8 @@
   -->
 
 <script lang="ts">
-  import { jobStore } from '$lib/stores/jobs.svelte';
-  import { Icon } from '$lib/components/index';
+  import { jobStore } from '$lib/stores/jobs.svelte.js';
+  import { Icon } from '$lib/components';
 
   const jobCount = $derived(jobStore.jobCount);
   const runningJobCount = $derived(jobStore.runningJobCount);

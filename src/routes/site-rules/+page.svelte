@@ -10,8 +10,8 @@
 
 <script lang="ts">
   import { PageLayout, Button, Chip, Modal, ConfirmModal, Toggle } from '$lib/components/ui';
-  import { SiteConfigForm } from '$lib/components/settings';
   import { Icon } from '$lib/components';
+  import { SiteRules } from '$lib/components/site-rules';
   import { Info } from '$lib/components/ui';
   import { toastStore } from '$lib/stores/toast.js';
   import type { PageData } from './$types';
@@ -401,12 +401,12 @@
   <!-- Add/Edit Modal -->
   <Modal show={showAddModal} onClose={closeModal} size="xl">
     <div
-      class="p-6 bg-primary-50 p-4 dark:border-primary-400 rounded-sm border border-primary-600 dark:bg-primary-800"
+      class="p-6 bg-primary-50 dark:border-primary-400 rounded-sm border border-primary-600 dark:bg-primary-800"
     >
       <h2 class="cursor-default text-xl font-bold text-secondary-900 dark:text-secondary-100 mb-4">
         {editingConfig ? 'Edit' : 'Add'} Site Rule
       </h2>
-      <SiteConfigForm
+      <SiteRules
         config={editingConfig}
         {supportedSites}
         onSave={handleSaveConfig}

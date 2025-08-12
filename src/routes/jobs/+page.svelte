@@ -9,7 +9,8 @@
   -->
 
 <script lang="ts">
-  import { Icon, JobsList } from '$lib/components';
+  import { Icon } from '$lib/components';
+  import { JobsList } from '$lib/components/jobs';
   import { PageLayout } from '$lib/components/ui';
 
   const { data } = $props();
