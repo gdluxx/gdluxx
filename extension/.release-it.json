@@ -1,7 +1,7 @@
 {
   "git": {
     "commitMessage": "chore: release v${version}",
-    "tagName": "v${version}",
+    "tagName": "extension-v${version}",
     "pushArgs": ["--follow-tags"]
   },
   "npm": {
@@ -9,7 +9,7 @@
   },
   "github": {
     "release": true,
-    "releaseName": "v${version}"
+    "releaseName": "Extension v${version}"
   },
   "plugins": {
     "@release-it/conventional-changelog": {
