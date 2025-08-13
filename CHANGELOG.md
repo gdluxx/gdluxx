@@ -1,5 +1,24 @@
 # Changelog
 
+# [0.4.0](https://github.com/gdluxx/gdluxx/compare/v0.3.0...v0.4.0) (2025-08-13)
+
+
+### Bug Fixes
+
+* `baseApiUrl` check was duplicated for https ([856ee31](https://github.com/gdluxx/gdluxx/commit/856ee31dec415295becc6210bc71da3b2d452b73))
+* adjust baseApiUrl checking ([49606fb](https://github.com/gdluxx/gdluxx/commit/49606fb6c75e7d2e7679554d8aba45d3dad3860c))
+* Site Rules weren't displaying if marked as disabled. ([fa209ee](https://github.com/gdluxx/gdluxx/commit/fa209eef3a39fff23acf36f19757d6671506124c))
+* top positioning was missing from the sm variant of Toggle component ([67eaab4](https://github.com/gdluxx/gdluxx/commit/67eaab4b31aaeb6584ef9d35498bce9a192342e4))
+* use plain objects instead of Maps ([101f330](https://github.com/gdluxx/gdluxx/commit/101f33067f21100d9b6135f690b90d848bf85655))
+
+
+### Features
+
+* add ability to enable/disable site rules from rule list ([daca59f](https://github.com/gdluxx/gdluxx/commit/daca59f3a9a78c6cef502083e41e4b8d4c9af131))
+* add context menu to allow sending a single image link to the gdluxx API endpoint ([967194e](https://github.com/gdluxx/gdluxx/commit/967194e43f8826e4a10e2c9bda5329ecaeff7117))
+* add optional warning when manual options conflict with site rules ([02295c3](https://github.com/gdluxx/gdluxx/commit/02295c337ffc96ef47d88ea36a68b621ba909a8d))
+* expand Docker path rewriting to include log file directory ([9cd9817](https://github.com/gdluxx/gdluxx/commit/9cd9817be836379cf7cce4a07b74b4ab8572092c))
+
 # [0.3.0](https://github.com/gdluxx/gdluxx/compare/v0.2.0...v0.3.0) (2025-08-10)
 
 
