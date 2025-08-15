@@ -248,9 +248,9 @@ The extension remembers your settings, so you only need to configure it once.
 
 6. Extension
 
-   - [ ] Send multiple tabs
+   - [ ] ~~Send multiple tabs~~
    - [ ] Add check `is URL supported?`
-   - [ ] Add context menu for individual images
+   - [x] Add context menu for individual images
 
 7. Considerations
 
