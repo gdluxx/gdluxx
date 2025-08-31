@@ -120,7 +120,7 @@
 </script>
 
 <nav
-  class="flex h-full flex-col bg-secondary-100 dark:bg-secondary-900 border-r border-secondary-300 dark:border-secondary-700 transition-all duration-300 overflow-x-hidden {collapsed &&
+  class="flex h-full flex-col bg-surface border-r-strong transition-all duration-300 overflow-x-hidden {collapsed &&
   !isMobile
     ? 'w-16'
     : 'w-54'}"
@@ -128,11 +128,11 @@
 >
   <!-- Desktop header only -->
   {#if !isMobile}
-    <div class="p-2 border-b border-secondary-200 dark:border-secondary-800">
+    <div class="p-2 border-b-strong">
       <button
         onclick={handleSidebarClick}
         onkeydown={handleSidebarKeydown}
-        class="cursor-pointer w-full flex items-center gap-3 pl-3 py-2 rounded-sm text-secondary-800 dark:text-secondary-200 hover:bg-secondary-200 dark:hover:bg-accent-800 focus:bg-secondary-200 dark:focus:bg-accent-800 focus:outline-hidden focus:ring-2 focus:ring-primary-500 transition-colors"
+        class="cursor-pointer w-full flex items-center gap-3 pl-3 py-2 rounded-sm text-muted-foreground hover:bg-surface-hover focus:bg-surface-active focus:outline-hidden focus:border-focus transition-colors"
         aria-label={collapsed ? 'Expand sidebar navigation' : 'Collapse sidebar navigation'}
         aria-expanded={!collapsed}
         aria-controls="nav-items-list"
@@ -166,9 +166,9 @@
           <button
             onclick={() => handleItemClick(item)}
             onkeydown={e => handleKeydown(e, item)}
-            class="cursor-pointer w-full flex items-center gap-3 px-3 py-2 rounded-sm text-secondary-800 dark:text-secondary-200 hover:bg-secondary-200 dark:hover:bg-primary-800 focus:bg-secondary-200 dark:focus:bg-primary-800 focus:outline-hidden focus:ring-2 focus:ring-primary-500 transition-colors {activeItemId ===
+            class="cursor-pointer w-full flex items-center gap-3 px-3 py-2 rounded-sm text-foreground hover:bg-surface-hover focus:bg-surface-hover focus:outline-hidden focus:ring-2 focus:ring-primary/20 transition-colors {activeItemId ===
             item.id
-              ? 'bg-secondary-200 dark:bg-primary-800 text-secondary-800 dark:text-secondary-200'
+              ? 'bg-surface-selected text-foreground'
               : ''}"
             aria-expanded={item.children ? isItemExpanded(item.id) : undefined}
             aria-current={activeItemId === item.id ? 'page' : undefined}
@@ -211,9 +211,9 @@
                   <button
                     onclick={() => handleItemClick(child)}
                     onkeydown={e => handleKeydown(e, child)}
-                    class="cursor-pointer w-full flex items-center gap-3 px-3 py-2 rounded-sm text-sm text-secondary-800 dark:text-secondary-200 hover:bg-secondary-200 dark:hover:bg-primary-800 focus:bg-secondary-200 dark:focus:bg-primary-800 focus:outline-hidden focus:ring-2 focus:ring-secondary-500 transition-colors {activeItemId ===
+                    class="cursor-pointer w-full flex items-center gap-3 px-3 py-2 rounded-sm text-sm text-muted-foreground hover:bg-surface-hover focus:bg-surface-hover focus:outline-hidden focus:ring-2 focus:ring-primary/20 transition-colors {activeItemId ===
                     child.id
-                      ? 'bg-secondary-200 dark:bg-secondary-800 text-secondary-800 dark:text-secondary-200'
+                      ? 'bg-surface-selected text-foreground'
                       : ''}"
                     aria-current={activeItemId === child.id ? 'page' : undefined}
                     tabindex="0"
@@ -236,15 +236,15 @@
   </div>
 
   {#if user}
-    <div class="border-t border-secondary-200 dark:border-secondary-800 p-4">
+    <div class="border-t-strong p-4">
       {#if !collapsed || isMobile}
         <div class="flex flex-row items-center">
           <div
-            class="cursor-default w-full flex items-center gap-3 px-3 py-2 rounded-lg text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-800 transition-colors"
+            class="cursor-default w-full flex items-center gap-3 px-3 py-2 rounded-lg text-muted-foreground hover:bg-surface-hover transition-colors"
           >
             <!-- Avatar -->
             <div
-              class="size-8 rounded-full bg-primary-200 dark:bg-primary-800 flex items-center justify-center text-primary-700 dark:text-primary-300 font-semibold text-sm"
+              class="size-8 rounded-full bg-surface-selected flex items-center justify-center text-primary font-semibold text-sm"
             >
               {user.name[0].toUpperCase()}
             </div>
@@ -261,7 +261,7 @@
               onclick={() => {
                 handleLogout();
               }}
-              class="cursor-pointer ml-2 p-1.5 rounded-sm text-secondary-600 dark:text-secondary-400 hover:bg-secondary-200 dark:hover:bg-secondary-800 focus:outline-hidden focus:ring-2 focus:ring-primary-500"
+              class="cursor-pointer ml-2 p-1.5 rounded-sm text-muted-foreground hover:bg-surface-hover focus:outline-hidden focus:ring-2 focus:ring-primary/20"
               title="Sign out"
               aria-label="Sign out"
             >
@@ -272,7 +272,7 @@
       {:else}
         <div class="flex justify-center py-4 flex-col items-center gap-2">
           <div
-            class="size-8 rounded-full bg-primary-200 dark:bg-primary-800 flex items-center justify-center text-primary-700 dark:text-primary-300 font-semibold text-sm"
+            class="size-8 rounded-full bg-surface-selected flex items-center justify-center text-primary font-semibold text-sm"
           >
             {user.name[0].toUpperCase()}
           </div>
@@ -280,7 +280,7 @@
             onclick={() => {
               handleLogout();
             }}
-            class="cursor-pointer ml-2 p-1.5 rounded-sm text-secondary-600 dark:text-secondary-400 hover:bg-secondary-200 dark:hover:bg-secondary-800 focus:outline-hidden focus:ring-2 focus:ring-primary-500"
+            class="cursor-pointer ml-2 p-1.5 rounded-sm text-muted-foreground hover:bg-surface-hover focus:outline-hidden focus:ring-2 focus:ring-primary/20"
             title="Sign out"
             aria-label="Sign out"
           >

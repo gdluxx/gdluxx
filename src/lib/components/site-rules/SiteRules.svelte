@@ -9,7 +9,7 @@
   -->
 
 <script lang="ts">
-  import { Button, Tooltip } from '$lib/components/ui';
+  import { Button, Chip, Toggle, Tooltip } from '$lib/components/ui';
   import { Icon } from '$lib/components/index';
   import optionsData from '$lib/assets/options.json';
   import type { Option, OptionsData } from '$lib/types/options';
@@ -105,18 +105,13 @@
       isSubmitting = false;
     }
   }
-
-  const inputClasses =
-    'w-full px-3 py-2 border border-secondary-300 bg-secondary-100 dark:bg-secondary-900 text-secondary-900' +
-    ' dark:text-secondary-100 rounded-sm focus:outline-none focus:ring-2 focus:ring-primary-500' +
-    ' focus:border-primary-500 dark:border-secondary-400';
 </script>
 
 <form onsubmit={handleSubmit} class="space-y-6">
   <div>
     <label
       for="site_pattern"
-      class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2"
+      class="block text-sm font-medium text-foreground mb-2"
     >
       Site Pattern
     </label>
@@ -126,8 +121,9 @@
       name="site_pattern"
       bind:value={formData.site_pattern}
       placeholder="Type site name, or enter pattern like *.youtube.com, twitter.com, or *"
-      class={inputClasses}
-      class:border-red-500={errors.site_pattern}
+      class="form-input"
+      class:border-error={errors.site_pattern}
+      class:bg-input-invalid={errors.site_pattern}
       autocomplete="off"
     />
     <datalist id="supportedSites">
@@ -136,23 +132,23 @@
       {/each}
     </datalist>
     {#if errors.site_pattern}
-      <p class="text-red-500 text-sm mt-1">{errors.site_pattern}</p>
+      <p class="text-error text-sm mt-1">{errors.site_pattern}</p>
     {/if}
 
     <div class="mt-2 mr-1.5 flex justify-end">
-      <Tooltip placement="left" maxWidth="32rem" class="!whitespace-normal !min-w-80">
+      <Tooltip placement="left" maxWidth="32rem" class="!whitespace-normal !min-w-80 bg-surface-elevated">
         {#snippet tooltipContent()}
           <div class="space-y-2">
             <div class="text-sm opacity-90">
-              <p class="cursor-default text-sm text-secondary-800 dark:text-secondary-200 mt-1">
-                Select from <b>{supportedSites.length}</b> supported sites or enter custom pattern
+              <p class="cursor-default text-sm text-muted-foreground mt-1">
+                Select from <b class="text-primary">{supportedSites.length}</b> supported sites or enter custom pattern
                 <br />- * for all sites
                 <br />- *.domain.com
               </p>
             </div>
           </div>
         {/snippet}
-        <Icon iconName="question" size={20} class="text-secondary-800" />
+        <Icon iconName="question" size={20} class="text-primary" />
       </Tooltip>
     </div>
   </div>
@@ -160,7 +156,7 @@
   <div>
     <label
       for="display_name"
-      class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2"
+      class="block text-sm font-medium text-foreground mb-2"
     >
       Display Name
     </label>
@@ -169,35 +165,29 @@
       type="text"
       bind:value={formData.display_name}
       placeholder="YouTube, Twitter, etc."
-      class="{inputClasses} {errors.display_name ? 'border-red-300 dark:border-red-700' : ''}"
+      class="form-input {errors.display_name ? 'border-red-300 dark:border-red-700' : ''}"
     />
     {#if errors.display_name}
-      <p class="text-red-500 text-sm mt-1">{errors.display_name}</p>
+      <p class="text-error text-sm mt-1">{errors.display_name}</p>
     {/if}
   </div>
 
   <!-- Enable rule -->
   <div class="space-y-4">
-    <label for="enabled">
+    <label for="enabled" class="cursor-pointer">
       <div
-        class="flex items-center justify-between p-3 bg-secondary-50 dark:bg-secondary-800 rounded-sm"
+        class="flex items-center justify-between p-3 bg-primary/25 rounded-sm"
       >
-        <span class="font-medium text-secondary-900 dark:text-secondary-100">
+        <span class="font-medium text-foreground">
           Rule {formData.enabled ? 'Enabled' : 'Disabled'}
         </span>
         <div class="relative inline-block w-[26px] h-4 ml-4">
-          <input
+          <Toggle
             id="enabled"
-            type="checkbox"
             bind:checked={formData.enabled}
-            class="sr-only peer"
+            size="sm"
+            variant="primary"
           />
-          <span
-            class="block w-full h-full bg-accent-100 peer-checked:bg-accent-900 rounded-full
-          cursor-pointer transition-colors duration-300 relative after:content-[''] after:absolute
-          after:top-0.5 after:left-0.5 after:w-3 after:h-3 after:bg-white after:rounded-full
-          after:shadow-md after:transition-transform after:duration-300 peer-checked:after:translate-x-[11px]"
-          ></span>
         </div>
       </div>
     </label>
@@ -205,49 +195,42 @@
 
   <!-- CLI Options Selection -->
   <div>
-    <h3 class="cursor-default text-lg font-medium text-secondary-900 dark:text-secondary-100 mb-4">
+    <h3 class="cursor-default text-lg font-medium text-foreground mb-4">
       CLI Options
     </h3>
     <div
-      class="max-h-96 overflow-y-auto border border-secondary-300 dark:border-secondary-400 rounded p-4 bg-secondary-50 dark:bg-secondary-800"
+      class="max-h-96 overflow-y-auto border rounded p-4 bg-surface"
     >
       {#each Object.entries(typedOptionsData) as [_categoryKey, category] (_categoryKey)}
         <details class="mb-4">
           <summary
-            class="font-medium cursor-pointer text-secondary-800 dark:text-secondary-200 hover:text-primary-600 dark:hover:text-primary-400"
+            class="font-medium cursor-pointer text-foreground hover:text-primary"
           >
             {category.title}
           </summary>
           <div class="mt-2 space-y-2">
             {#each category.options as option (option.id)}
-              <div class="flex items-start gap-2 p-2 bg-white dark:bg-secondary-700 rounded">
+              <div class="flex items-start gap-2 p-2 bg-surface-elevated rounded">
                 <!-- slider -->
                 <div class="relative inline-block w-[26px] h-4">
-                  <input
+                  <Toggle
                     id="option-{option.id}"
-                    type="checkbox"
                     checked={formData.cli_options.has(option.id)}
                     onchange={() => toggleOption(option)}
-                    class="sr-only peer"
+                    variant="primary"
+                    size="sm"
                   />
-                  <label
-                    for="option-{option.id}"
-                    class="block w-full h-full bg-accent-100 peer-checked:bg-accent-900 rounded-full
-                      cursor-pointer transition-colors duration-300 relative after:content-[''] after:absolute
-                      after:top-0.5 after:left-0.5 after:w-3 after:h-3 after:bg-white after:rounded-full
-                      after:shadow-md after:transition-transform after:duration-300 peer-checked:after:translate-x-[11px]"
-                  ></label>
                 </div>
 
                 <!-- Label and description -->
                 <div class="flex-1">
                   <label
                     for="option-{option.id}"
-                    class="font-medium text-secondary-900 dark:text-secondary-100 cursor-pointer"
+                    class="font-medium text-foreground cursor-pointer"
                   >
                     {option.command}
                   </label>
-                  <p class="text-sm text-secondary-600 dark:text-secondary-400">
+                  <p class="text-sm text-muted-foreground">
                     {option.description}
                   </p>
                 </div>
@@ -262,7 +245,7 @@
                         value={formData.cli_options.get(option.id) ?? ''}
                         oninput={e => handleOptionInputChange(e, option.id, 'string')}
                         placeholder="Enter value..."
-                        class="{inputClasses} px-2 py-1 text-sm w-full"
+                        class="form-input px-2 py-1 text-sm w-full"
                       />
                     {:else if option.type === 'number'}
                       <input
@@ -270,7 +253,7 @@
                         value={formData.cli_options.get(option.id) ?? ''}
                         oninput={e => handleOptionInputChange(e, option.id, 'number')}
                         placeholder="Enter number..."
-                        class="{inputClasses} px-2 py-1 text-sm w-full"
+                        class="form-input px-2 py-1 text-sm w-full"
                       />
                     {:else if option.type === 'range'}
                       <input
@@ -278,18 +261,19 @@
                         value={formData.cli_options.get(option.id) ?? ''}
                         oninput={e => handleOptionInputChange(e, option.id, 'string')}
                         placeholder={option.placeholder}
-                        class="{inputClasses} px-2 py-1 text-sm w-full"
+                        class="form-input px-2 py-1 text-sm w-full"
                       />
                     {/if}
                   {/if}
 
                   <!-- Show value for boolean options when enabled -->
                   {#if formData.cli_options.has(option.id) && option.type === 'boolean'}
-                    <span
-                      class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300"
-                    >
-                      Enabled
-                    </span>
+                    <Chip
+                      label="Enabled"
+                      dismissible={false}
+                      size="sm"
+                      variant="outline-primary"
+                    />
                   {/if}
                 </div>
               </div>
@@ -309,6 +293,6 @@
         Save Rule
       {/if}
     </Button>
-    <Button type="button" onclick={onCancel} variant="outline-secondary" size="sm">Cancel</Button>
+    <Button type="button" onclick={onCancel} variant="outline-primary" size="sm">Cancel</Button>
   </div>
 </form>

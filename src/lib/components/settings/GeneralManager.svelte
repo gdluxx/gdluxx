@@ -13,6 +13,9 @@
   import { clientLogger as logger } from '$lib/client/logger';
   import { toastStore } from '$lib/stores/toast';
   import type { UserSettings } from '$lib/server/userSettingsManager';
+  import { AVAILABLE_THEMES, type ThemeName } from '$lib/themes/themeUtils.js';
+  import { themeStore } from '$lib/themes/themeStore.js';
+  import { Icon } from '$lib/components';
 
   interface Props {
     userSettings: UserSettings;
@@ -23,6 +26,12 @@
   // eslint-disable-next-line prefer-const
   let settings = $state(userSettings);
   let isUpdating = $state(false);
+
+  let isUpdatingTheme = $state(false);
+
+  const sortedThemes = Object.values(AVAILABLE_THEMES).sort((a, b) =>
+    a.displayName.localeCompare(b.displayName)
+  );
 
   async function handleToggleChange(checked: boolean) {
     const newSetting = checked;
@@ -52,25 +61,50 @@
       isUpdating = false;
     }
   }
+
+  async function handleThemeChange(newTheme: ThemeName) {
+    const oldTheme = settings.selectedTheme;
+
+    settings.selectedTheme = newTheme;
+    isUpdatingTheme = true;
+
+    try {
+      await themeStore.setTheme(newTheme);
+
+      const response = await fetch('/api/settings/user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ selectedTheme: newTheme }),
+      });
+
+      if (response.ok) {
+        const themeConfig = AVAILABLE_THEMES[newTheme];
+        toastStore.success('Theme Updated', `Switched to ${themeConfig.displayName} theme`);
+      } else {
+        throw new Error('Failed to save theme setting');
+      }
+    } catch (error) {
+      logger.error('Failed to save theme setting:', error);
+      toastStore.error('Theme Error', 'Failed to save theme setting. Please try again.');
+      settings.selectedTheme = oldTheme;
+      await themeStore.setTheme(oldTheme);
+    } finally {
+      isUpdatingTheme = false;
+    }
+  }
 </script>
 
 <div class="space-y-6">
-  <div
-    class="bg-primary-50 dark:bg-primary-800 border border-primary-600 dark:border-primary-400 rounded-lg p-6"
-  >
-    <h3 class="text-lg font-medium text-secondary-900 dark:text-secondary-100 mb-4">
-      Command Form
-    </h3>
+  <!-- CommandForm options -->
+  <div class="content-panel">
+    <h2 class="">Command Form</h2>
 
     <div class="flex items-start justify-between">
       <div class="flex-1">
-        <label
-          for="warn-toggle"
-          class="font-medium text-secondary-800 dark:text-secondary-200 block"
-        >
+        <label for="warn-toggle" class="font-medium text-foreground block">
           Warn on Site Rule Override
         </label>
-        <p class="text-sm text-secondary-600 dark:text-secondary-400 mt-1">
+        <p class="text-sm text-muted-foreground mt-1">
           Show a confirmation when your manually selected options conflict with an automated site
           rule.
         </p>
@@ -82,8 +116,72 @@
           checked={settings.warnOnSiteRuleOverride}
           disabled={isUpdating}
           onchange={handleToggleChange}
+          variant="primary"
         />
       </div>
+    </div>
+  </div>
+
+  <!-- Theme selection -->
+  <div class="content-panel">
+    <div class="mb-6">
+      <h3 id="theme-selection-heading">
+        Theme Selection
+      </h3>
+      <p class="text-sm text-muted-foreground">
+        Choose a color theme for the application. Your selection will be saved and applied across
+        all sessions.
+      </p>
+    </div>
+
+    <div class="relative {isUpdatingTheme ? 'opacity-50 pointer-events-none' : ''}">
+      <div
+        role="radiogroup"
+        aria-labelledby="theme-selection-heading"
+        class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-3"
+      >
+        {#each sortedThemes as theme (theme.name)}
+          <button
+            type="button"
+            role="radio"
+            aria-checked={settings.selectedTheme === theme.name}
+            aria-describedby="theme-{theme.name}-description"
+            onclick={() => handleThemeChange(theme.name)}
+            disabled={isUpdatingTheme}
+            class="relative p-4 cursor-pointer rounded-sm border-2 text-left transition-all hover:shadow-md focus:ring-2 focus:ring-primary focus:ring-offset-2 {settings.selectedTheme ===
+            theme.name
+              ? 'border-primary bg-surface-selected'
+              : 'border-border bg-surface-elevated hover:border-primary/35 hover:bg-surface-hover'}"
+          >
+            {#if settings.selectedTheme === theme.name}
+              <div
+                class="absolute top-1.5 right-1.5 text-primary rounded-full w-7 h-7 font-semibold flex items-center justify-center cursor-default select-none"
+              >
+                <Icon iconName="checked" size={20} />
+              </div>
+            {/if}
+            <div class="font-medium text-foreground text-sm">{theme.displayName}</div>
+            <div id="theme-{theme.name}-description" class="text-xs text-muted-foreground mt-1">
+              {theme.description}
+            </div>
+            <span class="sr-only">
+              {settings.selectedTheme === theme.name ? 'Currently selected' : 'Not selected'}
+            </span>
+          </button>
+        {/each}
+      </div>
+      {#if isUpdatingTheme}
+        <div class="absolute inset-0 flex items-center justify-center bg-surface/50">
+          <div
+            class="flex items-center gap-2 px-3 py-2 bg-surface-elevated rounded border shadow-md"
+          >
+            <div
+              class="w-4 h-4 border-2 border-skeleton border-t-spinner rounded-full animate-spin"
+            ></div>
+            <span class="text-sm text-foreground">Updating theme...</span>
+          </div>
+        </div>
+      {/if}
     </div>
   </div>
 </div>

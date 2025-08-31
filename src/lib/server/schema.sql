@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS user (
     emailVerified INTEGER DEFAULT 0,
     name TEXT,
     warnOnSiteRuleOverride INTEGER DEFAULT 0,
+    selectedTheme TEXT DEFAULT 'indigo',
     createdAt INTEGER NOT NULL,
     updatedAt INTEGER NOT NULL
 );

@@ -122,14 +122,15 @@
       ></div>
 
       <div
-        class="relative transform overflow-hidden rounded-sm dark:bg-white bg-gray-800 px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6"
+        class="relative transform overflow-hidden border rounded-sm bg-surface-elevated px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6"
         transition:scale={{ duration: 150, start: 0.95 }}
       >
         <div class="absolute right-0 top-0 pr-4 pt-4">
           <Button
+            pill
             onclick={onCancel}
             disabled={isSaving}
-            class="rounded-sm dark:bg-white dark:text-gray-400 dark:hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 bg-gray-800 text-gray-500 hover:text-gray-400"
+            class=""
             aria-label="Close"
           >
             <span class="sr-only">Close</span>
@@ -153,7 +154,7 @@
         <div class="sm:flex sm:items-start">
           <div class="mt-3 w-full text-center sm:ml-0 sm:mt-0 sm:text-left">
             <h3
-              class="text-lg font-medium leading-6 text-gray-100 dark:text-gray-100"
+              class="text-lg font-medium leading-6 text-foreground"
               id="modal-title"
             >
               <Icon iconName="save" size={20} />
@@ -164,7 +165,7 @@
               <div>
                 <label
                   for="site-pattern"
-                  class="block text-sm font-medium dark:text-gray-100 text-gray-300 mb-1"
+                  class="block text-sm font-medium text-foreground mb-1"
                 >
                   Site Pattern:
                 </label>
@@ -172,7 +173,7 @@
                   id="site-pattern"
                   bind:value={selectedPattern}
                   disabled={isSaving}
-                  class="w-full rounded-sm border dark:border-gray-300 border-gray-600 dark:bg-white bg-gray-700 px-3 py-2 text-sm dark:text-gray-100 text-gray-100 focus:border-primary-500 focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50"
+                  class="w-full rounded-sm border bg-input px-3 py-2 text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:ring-offset-1 disabled:opacity-50"
                 >
                   {#each detectedPatterns as pattern (pattern)}
                     <option value={pattern}>{pattern}</option>
@@ -183,7 +184,7 @@
               <div>
                 <label
                   for="rule-name"
-                  class="block text-sm font-medium dark:text-gray-100 text-gray-300 mb-1"
+                  class="block text-sm font-medium text-foreground mb-1"
                 >
                   Rule Name:
                 </label>
@@ -193,36 +194,36 @@
                   bind:value={displayName}
                   disabled={isSaving}
                   placeholder="My custom rule"
-                  class="w-full rounded-sm border dark:border-gray-300 border-gray-600 dark:bg-white bg-gray-700 px-3 py-2 text-sm dark:text-gray-100 text-gray-100 dark:placeholder-gray-500 placeholder-gray-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50"
+                  class="w-full rounded-sm border bg-input px-3 py-2 text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:ring-offset-1 disabled:opacity-50"
                 />
               </div>
 
               {#if getUserOptions().length > 0}
                 <div
-                  class="options-preview dark:bg-gray-50 bg-gray-700 rounded-sm p-3 border dark:border-gray-200 border-gray-600"
+                  class="options-preview bg-primary/10 rounded-sm p-3 border"
                 >
-                  <h4 class="text-sm font-medium dark:text-gray-700 text-gray-300 mb-2">
+                  <h4 class="text-sm font-medium text-foreground mb-2">
                     Options to save ({getUserOptions().length}):
                   </h4>
                   <div class="space-y-1 max-h-32 overflow-y-auto">
                     {#each getUserOptions() as [id, value] (id)}
-                      <div class="text-xs dark:text-gray-600 text-gray-400 font-mono">
+                      <div class="text-xs  text-foreground font-mono">
                         {id}: {value}
                       </div>
                     {/each}
                   </div>
                 </div>
               {:else}
-                <div class="text-sm dark:text-gray-500 text-gray-400 italic">
+                <div class="text-sm text-foreground italic">
                   No user-selected options to save.
                 </div>
               {/if}
 
               {#if error}
                 <div
-                  class="dark:bg-red-50 bg-red-900/20 border dark:border-red-200 border-red-700 rounded-sm p-3"
+                  class="bg-error/50 -error rounded-sm p-3"
                 >
-                  <div class="text-sm dark:text-red-600 text-red-400">
+                  <div class="text-sm text-error">
                     {error}
                   </div>
                 </div>
@@ -250,7 +251,6 @@
           <Button
             onclick={onCancel}
             disabled={isSaving}
-            variant="secondary"
             class="w-full sm:w-auto"
           >
             Cancel

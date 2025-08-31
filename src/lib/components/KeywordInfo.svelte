@@ -13,7 +13,7 @@
   import { Icon } from '$lib/components';
   import { keywordInfoStore } from '$lib/stores/keyword-info.svelte';
 
-  let urlInput = $state('');
+  let urlInput = $state(keywordInfoStore.state.currentUrl || '');
 
   const _placeholderIndex = $state(0);
 
@@ -156,16 +156,16 @@
 </script>
 
 <div
-  class="bg-primary-50 p-4 dark:border-primary-400 rounded-sm border border-primary-600 dark:bg-primary-800"
+  class="content-panel"
 >
   <form class="space-y-6" onsubmit={handleExtractorInfo}>
     <!-- URL Input -->
     <div class="m-4">
       <label
         for="keywordUrlsInput"
-        class="mb-2 block px-2 text-sm font-medium text-primary-900 dark:text-primary-100"
+        class="mb-2 block px-2 text-sm font-medium text-primary"
       >
-        URL <span class="text-xs dark:text-secondary-600 text-secondary-500">
+        URL <span class="text-xs text-muted-foreground">
           (enter a supported URL -
           <a
             href="https://github.com/mikf/gallery-dl?tab=readme-ov-file#supported-sites"
@@ -192,20 +192,16 @@
               }
             }
           }}
-          class="h-10 w-full rounded-sm border dark:border-secondary-300 dark:bg-secondary-900 px-4 py-3 text-base dark:text-primary-100
-         dark:placeholder-secondary-500 transition-colors duration-200
-         dark:focus:border-primary-500 focus:ring-3 dark:focus:ring-primary-500/20 focus:outline-hidden
-         border-secondary-700 bg-secondary-100 text-primary-900
-         placeholder-secondary-500 focus:border-primary-400 focus:ring-primary-400/20 pr-10"
+          class="form-input"
         />
 
         <!-- URL validation indicator -->
         {#if urlInput.trim()}
           <div class="absolute right-3 top-1/2 transform -translate-y-1/2">
             {#if isValidUrl()}
-              <Icon iconName="circle" size={12} class="text-green-500" />
+              <Icon iconName="circle" size={12} class="text-success" />
             {:else}
-              <Icon iconName="circle" size={12} class="text-red-500" />
+              <Icon iconName="circle" size={12} class="text-error" />
             {/if}
           </div>
         {/if}
@@ -218,6 +214,7 @@
         onclick={() => keywordInfoStore.clearAllCachedData()}
         disabled={buttonsDisabled}
         size="sm"
+        variant="outline-danger"
         class="w-full sm:w-auto order-2 sm:order-1"
       >
         Clear Data
@@ -226,6 +223,7 @@
         onclick={handleListKeywords}
         disabled={buttonsDisabled}
         size="sm"
+        variant="primary"
         class="w-full sm:w-auto order-2 sm:order-1"
       >
         {#if keywordInfoStore.state.isLoading && keywordInfoStore.state.lastCommand === 'list-keywords'}
@@ -275,12 +273,12 @@
         <!-- Output display -->
         <div class="relative">
           <div class="flex justify-between items-center mb-2">
-            <span class="text-sm font-medium text-primary-900 dark:text-primary-100"> Output </span>
+            <span class="text-sm font-medium text-primary"> Output </span>
             <div class="flex gap-2">
               {#if keywordInfoStore.currentOutput()}
                 <Button
                   onclick={e => copyToClipboard(keywordInfoStore.currentOutput(), e)}
-                  variant="outline-secondary"
+                  variant="outline-primary"
                   size="sm"
                   class="flex items-center gap-1"
                 >
@@ -291,7 +289,7 @@
               {#if keywordInfoStore.hasOutput}
                 <Button
                   onclick={clearOutput}
-                  variant="outline-secondary"
+                  variant="outline-warning"
                   size="sm"
                   class="flex items-center gap-1"
                 >
@@ -303,10 +301,7 @@
           </div>
 
           <div
-            class="cursor-default mt-4 w-full rounded-sm border dark:border-secondary-300
-              dark:bg-secondary-900 px-4 py-3 text-sm dark:text-primary-100 border-secondary-700
-              bg-secondary-100 text-primary-900 whitespace-pre-wrap break-words max-h-96 overflow-auto
-              font-mono leading-relaxed"
+            class="cursor-default bg-surface text-foreground mt-4 w-full rounded-sm border px-4 py-3 text-sm whitespace-pre-wrap break-words max-h-96 overflow-auto font-mono leading-relaxed"
           >
             {#if keywordInfoStore.state.isLoading}
               <div class="flex items-center justify-center py-8">
@@ -321,7 +316,7 @@
               <!-- prettier-ignore -->
               {keywordInfoStore.currentOutput()}
             {:else}
-              <span class="text-secondary-500 dark:text-secondary-400 italic">
+              <span class="text-muted-foreground italic">
                 No output to display
               </span>
             {/if}

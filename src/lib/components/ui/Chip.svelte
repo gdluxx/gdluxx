@@ -15,13 +15,11 @@
 
   type ChipVariant =
     | 'primary'
-    | 'secondary'
     | 'success'
     | 'warning'
     | 'danger'
     | 'info'
     | 'outline-primary'
-    | 'outline-secondary'
     | 'outline-success'
     | 'outline-warning'
     | 'outline-danger'
@@ -114,130 +112,74 @@
 
   const variantClasses: Record<ChipVariant, string[]> = {
     primary: [
-      'bg-primary-100',
-      'text-primary-800',
-      'border-primary-200',
-      'hover:bg-primary-200',
-      'dark:bg-primary-900',
-      'dark:text-primary-200',
-      'dark:border-primary-800',
-      'dark:hover:bg-primary-800',
-    ],
-    secondary: [
-      'bg-secondary-100',
-      'text-secondary-800',
-      'border-secondary-200',
-      'hover:bg-secondary-200',
-      'dark:bg-secondary-900',
-      'dark:text-secondary-200',
-      'dark:border-secondary-800',
-      'dark:hover:bg-secondary-800',
+      'bg-primary',
+      'text-on-primary',
+      'border-primary',
+      'hover:bg-primary-hover',
+      'hover:border-primary',
     ],
     success: [
-      'bg-success-100',
-      'text-success-900',
-      'border-success-250',
-      'hover:bg-success-250',
-      'dark:bg-success-900',
-      'dark:text-success-100',
-      'dark:border-success-750',
-      'dark:hover:bg-success-750',
+      'bg-success',
+      'text-on-success',
+      'border-success',
+      'hover:bg-success-hover',
+      'hover:border-success',
     ],
     warning: [
-      'bg-warning-100',
-      'text-warning-900',
-      'border-warning-250',
-      'hover:bg-warning-250',
-      'dark:bg-warning-900',
-      'dark:text-warning-100',
-      'dark:border-warning-750',
-      'dark:hover:bg-warning-750',
+      'bg-surface-selected',
+      'text-warning',
+      'border-warning',
+      'hover:bg-warning/10',
+      'hover:border-warning',
     ],
     danger: [
-      'bg-error-100',
-      'text-error-900',
-      'border-error-250',
-      'hover:bg-error-250',
-      'dark:bg-error-900',
-      'dark:text-error-100',
-      'dark:border-error-750',
-      'dark:hover:bg-error-750',
+      'bg-input-invalid',
+      'text-error',
+      'border-error',
+      'hover:bg-error/10',
+      'hover:border-error',
     ],
     info: [
-      'bg-info-100',
-      'text-info-900',
-      'border-info-250',
-      'hover:bg-info-250',
-      'dark:bg-info-900',
-      'dark:text-info-100',
-      'dark:border-info-750',
-      'dark:hover:bg-info-750',
+      'bg-surface-selected',
+      'text-info',
+      'border-info',
+      'hover:bg-info/10',
+      'hover:border-info',
     ],
     'outline-primary': [
       'bg-transparent',
-      'text-primary-700',
-      'border-primary-300',
-      'hover:bg-primary-50',
-      'hover:border-primary-400',
-      'dark:text-primary-300',
-      'dark:border-primary-600',
-      'dark:hover:bg-primary-950',
-      'dark:hover:border-primary-500',
-    ],
-    'outline-secondary': [
-      'bg-transparent',
-      'text-secondary-700',
-      'border-secondary-300',
-      'hover:bg-secondary-50',
-      'hover:border-secondary-400',
-      'dark:text-secondary-300',
-      'dark:border-secondary-600',
-      'dark:hover:bg-secondary-950',
-      'dark:hover:border-secondary-500',
+      'text-primary',
+      'border-primary',
+      'hover:bg-primary/10',
+      'hover:border-primary',
     ],
     'outline-success': [
       'bg-transparent',
-      'text-success-750',
-      'border-success-500',
-      'hover:bg-success-50',
-      'hover:border-success-600',
-      'dark:text-success-400',
-      'dark:border-success-600',
-      'dark:hover:bg-success-950',
-      'dark:hover:border-success-500',
+      'text-success',
+      'border-success',
+      'hover:bg-success/10',
+      'hover:border-success',
     ],
     'outline-warning': [
       'bg-transparent',
-      'text-warning-750',
-      'border-warning-500',
-      'hover:bg-warning-50',
-      'hover:border-warning-600',
-      'dark:text-warning-400',
-      'dark:border-warning-600',
-      'dark:hover:bg-warning-950',
-      'dark:hover:border-warning-500',
+      'text-warning',
+      'border-warning',
+      'hover:bg-warning/10',
+      'hover:border-warning',
     ],
     'outline-danger': [
       'bg-transparent',
-      'text-error-750',
-      'border-error-500',
-      'hover:bg-error-50',
-      'hover:border-error-600',
-      'dark:text-error-400',
-      'dark:border-error-600',
-      'dark:hover:bg-error-950',
-      'dark:hover:border-error-500',
+      'text-error',
+      'border-error',
+      'hover:bg-error/10',
+      'hover:border-error',
     ],
     'outline-info': [
       'bg-transparent',
-      'text-info-750',
-      'border-info-500',
-      'hover:bg-info-50',
-      'hover:border-info-600',
-      'dark:text-info-400',
-      'dark:border-info-600',
-      'dark:hover:bg-info-950',
-      'dark:hover:border-info-500',
+      'text-info',
+      'border-info',
+      'hover:bg-info/10',
+      'hover:border-info',
     ],
   };
 
@@ -307,7 +249,7 @@
     {#if dismissible}
       <button
         onclick={handleDismiss}
-        class="opacity-60 group-hover:opacity-100 hover:opacity-100 transition-all flex-shrink-0 ml-0.5 p-0.5 -mr-0.5 rounded-full hover:bg-black/5 dark:hover:bg-white/5 focus:outline-hidden focus:ring-2 focus:ring-current/20"
+        class="cursor-pointer opacity-60 group-hover:opacity-100 hover:opacity-100 transition-all flex-shrink-0 ml-0.5 p-0.5 -mr-0.5 rounded-full hover:bg-surface-hover focus:outline-hidden focus:ring-2 focus:ring-current/20"
         aria-label="Dismiss chip"
         title="Dismiss"
         type="button"

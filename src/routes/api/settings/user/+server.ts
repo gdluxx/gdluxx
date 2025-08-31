@@ -10,7 +10,17 @@
 
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { userSettingsManager, type UserSettings } from '$lib/server/userSettingsManager';
+import { userSettingsManager } from '$lib/server/userSettingsManager';
+import { AVAILABLE_THEMES, type ThemeName } from '$lib/themes/themeUtils.js';
+import { z } from 'zod';
+
+// Validation schema for user settings
+const UserSettingsSchema = z
+  .object({
+    warnOnSiteRuleOverride: z.boolean().optional(),
+    selectedTheme: z.enum(Object.keys(AVAILABLE_THEMES) as [ThemeName, ...ThemeName[]]).optional(),
+  })
+  .strict();
 
 export const GET: RequestHandler = async ({ locals }) => {
   try {
@@ -33,8 +43,19 @@ export const POST: RequestHandler = async ({ request, locals }) => {
       return json({ success: false, error: 'Not authenticated' }, { status: 401 });
     }
 
-    const body = (await request.json()) as Partial<UserSettings>;
-    userSettingsManager.updateUserSettings(user.id, body);
+    const body = await request.json();
+
+    // Validate the request body
+    const validationResult = UserSettingsSchema.safeParse(body);
+    if (!validationResult.success) {
+      const errorMessages = validationResult.error.issues
+        .map((err: any) => `${err.path.join('.')}: ${err.message}`)
+        .join(', ');
+      return json({ success: false, error: `Invalid settings: ${errorMessages}` }, { status: 400 });
+    }
+
+    const validatedSettings = validationResult.data;
+    userSettingsManager.updateUserSettings(user.id, validatedSettings);
 
     return json({ success: true, message: 'Settings updated successfully' });
   } catch (_error) {

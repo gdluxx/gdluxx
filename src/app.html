@@ -11,15 +11,41 @@
 <!doctype html>
 <!--suppress HtmlUnknownTarget -->
 <html lang="en">
+  <!-- Attempting to prevent flash of unstyled content -->
+  <script>
+    (function () {
+      try {
+        const savedTheme = localStorage.getItem('gdluxx-theme') || 'indigo';
+        const savedMode = localStorage.getItem('gdluxx-theme-mode');
+        const isDark =
+          savedMode === 'dark' ||
+          (!savedMode && window.matchMedia('(prefers-color-scheme: dark)').matches);
+
+        // Apply theme class
+        document.documentElement.classList.add(`theme-${savedTheme}`);
+
+        // Apply mode class
+        if (isDark) {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      } catch (e) {
+        // Fallback to default theme and dark mode if there's any error
+        document.documentElement.classList.add('theme-indigo', 'dark');
+      }
+    })();
+  </script>
   <head>
     <meta charset="utf-8" />
     <link rel="icon" href="%sveltekit.assets%/favicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>gdluxx</title>
+
     %sveltekit.head%
   </head>
 
-  <body class="preload bg-secondary-50 dark:bg-secondary-950">
+  <body class="preload">
     <main>%sveltekit.body%</main>
   </body>
 </html>

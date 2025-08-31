@@ -42,8 +42,8 @@
     foldKeymap,
   } from '@codemirror/language';
   import { lintGutter, linter } from '@codemirror/lint';
-  import { oneDark } from '@codemirror/theme-one-dark';
-  import { githubLightTheme } from '$lib/codemirror/github-light';
+  import { codemirrorLight } from '$lib/themes/codemirror/codemirror-light';
+  import { codemirrorDark } from '$lib/themes/codemirror/codemirror-dark';
   import { Button, ConfirmModal } from '$lib/components/ui';
 
   interface Props {
@@ -119,7 +119,7 @@
         }
       }),
       EditorState.readOnly.of(readonly),
-      theme === 'dark' ? githubLightTheme : oneDark,
+      theme === 'dark' ? codemirrorDark : codemirrorLight,
       EditorView.theme({
         '&': { height },
         '.cm-scroller': { overflow: 'auto' },
@@ -243,7 +243,7 @@
             }
           }),
           EditorState.readOnly.of(readonly),
-          theme === 'dark' ? githubLightTheme : oneDark,
+          theme === 'dark' ? codemirrorDark : codemirrorLight,
           EditorView.theme({
             '&': { height },
             '.cm-scroller': { overflow: 'auto' },
@@ -268,11 +268,11 @@
   });
 </script>
 
-<div class="mx-auto rounded-t-sm border border-primary-600 shadow-md dark:border-primary-400">
+<div class="mx-auto rounded-t-sm border-strong">
   <div
-    class="cursor-default font-med flex items-center justify-between rounded-t-sm border-b border-b-primary-600 bg-primary-50 px-4 py-3 text-gray-100 dark:bg-primary-800 dark:text-gray-900"
+    class="cursor-default font-medium flex items-center justify-between rounded-t-sm border-b-strong bg-surface px-4 py-3"
   >
-    <span class="">config.json</span>
+    <span class="text-muted-foreground">Edit your configuration file</span>
     <div class="flex items-center gap-3">
       {#if saveStatus}
         <span class="save-status" class:error={saveStatus.startsWith('Error')}>
@@ -281,7 +281,7 @@
       {/if}
       {#if onSave && !readonly}
         <Button
-          variant={hasLintErrors ? 'danger' : 'secondary'}
+          variant={hasLintErrors ? 'danger' : 'primary'}
           onclick={() => handleSave()}
           disabled={isSaving}
           loading={isSaving}
@@ -303,7 +303,7 @@
   confirmText="Save Anyway"
   cancelText="Cancel"
   confirmVariant="warning"
-  cancelVariant="outline-secondary"
+  cancelVariant="outline-warning"
   onConfirm={confirmSaveWithErrors}
   onCancel={cancelSave}
 />
@@ -311,10 +311,10 @@
 <style>
   .save-status {
     font-size: 0.875rem;
-    color: #10b981;
+    color: var(--color-success);
   }
 
   .save-status.error {
-    color: #ef4444;
+    color: var(--color-error);
   }
 </style>

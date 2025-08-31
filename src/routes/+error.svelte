@@ -11,6 +11,8 @@
 <script>
   import { page } from '$app/state';
   import { Icon } from '$lib/components/index.js';
+  import { goto } from '$app/navigation';
+  import { Button, Info } from '$lib/components/ui/index.js';
 
   const is404 = $derived(page.status === 404);
   const isServerError = $derived(page.status >= 500);
@@ -21,112 +23,114 @@
 </svelte:head>
 
 <div
-  class="mx-auto rounded-lg border border-secondary-200 bg-secondary-50 p-6 shadow-md dark:border-secondary-700 dark:bg-secondary-950"
+  class="content-panel"
 >
   <div class="flex items-center justify-center p-8">
     {#if is404}
       <!-- 404 -->
       <div class="max-w-2xl mx-auto text-center">
-        <div class="flex justify-center text-6xl md:text-8xl font-bold text-primary-500 mb-4">
-          <Icon iconName="magnifying-glass" size={128} class="text-primary-600" />
+        <div class="flex justify-center text-6xl md:text-8xl font-bold text-foreground mb-4">
+          <Icon iconName="magnifying-glass" size={96} class="text-muted-foreground" />
         </div>
-        <div class="text-4xl md:text-6xl font-bold text-secondary-900 dark:text-secondary-100 mb-2">
+        <div class="text-4xl md:text-6xl font-bold text-foreground mb-2">
           {page.status}
         </div>
         <h2
-          class="text-2xl md:text-3xl font-semibold text-secondary-800 dark:text-secondary-200 mb-6"
+          class="text-2xl md:text-3xl font-semibold text-accent-foreground mb-6"
         >
           Page Not Found
         </h2>
-        <p class="text-lg text-secondary-600 dark:text-secondary-400 mb-8 leading-relaxed">
-          The page you're looking for doesn't exist. It might have been moved, deleted, or you
-          entered the wrong URL.
+        <p class="text-lg text-muted-foreground mb-8 leading-relaxed">
+          Wrong turn!
         </p>
 
         <div class="flex flex-wrap gap-4 justify-center mb-12">
-          <a
-            href="/"
-            class="inline-flex items-center px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-secondary-950"
-          >
-            Go Home
-          </a>
-          <button
+          <Button
+            variant="outline-info"
             onclick={() => history.back()}
-            class="cursor-pointer inline-flex items-center px-6 py-3 bg-secondary-600 hover:bg-secondary-700 text-white font-medium rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-secondary-500 focus:ring-offset-2 dark:focus:ring-offset-secondary-950"
           >
             Go Back
-          </button>
+          </Button>
+          <Button
+            variant="outline-success"
+            onclick={() => goto("/")}
+          >
+            Go Home
+          </Button>
         </div>
       </div>
     {:else if isServerError}
       <!-- Server error -->
       <div class="max-w-2xl mx-auto text-center">
-        <h1 class="text-6xl md:text-8xl font-bold text-error-500 mb-4">🚨</h1>
-        <div class="text-4xl md:text-6xl font-bold text-secondary-900 dark:text-secondary-100 mb-2">
+        <div class="flex text-6xl md:text-8xl font-bold text-foreground mb-4 items-center justify-center pb-4">
+          <svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 16 16"><path fill="currentColor" d="M2 8a6 6 0 0 0 4.509 5.813A5.5 5.5 0 0 1 6 11.5a5.5 5.5 0 0 1 .207-1.5h-.028A11 11 0 0 1 6 8c0-.714.064-1.39.179-2H9.82q.024.122.043.247a5.5 5.5 0 0 1 .98-.208L10.837 6h1.747l.05.117a5.5 5.5 0 0 1 1.18.392A6 6 0 0 0 2 8m6-5c.374 0 .875.356 1.313 1.318q.141.313.26.682H6.427a6 6 0 0 1 .26-.682C7.125 3.356 7.627 3 8 3m-2.223.904q-.227.5-.393 1.096H4a5 5 0 0 1 2.038-1.6a6 6 0 0 0-.261.504M5.163 6A12 12 0 0 0 5 8c0 .699.057 1.373.163 2H3.416A5 5 0 0 1 3 8c0-.711.148-1.388.416-2zm.221 5q.166.596.393 1.096q.119.262.26.504A5 5 0 0 1 4 11zm4.578-7.6A5 5 0 0 1 12 5h-1.384a7.5 7.5 0 0 0-.393-1.096a6 6 0 0 0-.26-.504M16 11.5a4.5 4.5 0 1 1-9 0a4.5 4.5 0 0 1 9 0M11.5 9a.5.5 0 0 0-.5.5v2a.5.5 0 0 0 1 0v-2a.5.5 0 0 0-.5-.5m0 5.125a.625.625 0 1 0 0-1.25a.625.625 0 0 0 0 1.25"/></svg>
+        </div>
+        <div class="text-4xl md:text-6xl font-bold text-accent-foreground mb-2">
           {page.status}
         </div>
         <h2
-          class="text-2xl md:text-3xl font-semibold text-secondary-800 dark:text-secondary-200 mb-6"
+          class="text-2xl md:text-3xl font-semibold text-accent-foreground mb-6"
         >
           Server Error
         </h2>
-        <p class="text-lg text-secondary-600 dark:text-secondary-400 mb-6 leading-relaxed">
-          Something went wrong on our end. Please try again later.
+        <p class="text-lg text-muted-foreground mb-6 leading-relaxed">
+          Uh oh, something went terribly wrong!
         </p>
         {#if page.error?.message}
-          <div
-            class="bg-error-100 dark:bg-error-900 border border-error-250 dark:border-error-750 rounded-lg p-4 mb-8"
+          <Info
+            variant="error"
+            class="mb-8"
           >
-            <p class="text-error-750 dark:text-error-250 font-mono text-sm">
-              {page.error.message}
-            </p>
-          </div>
+            {page.error?.message}
+          </Info>
         {/if}
 
         <div class="flex flex-wrap gap-4 justify-center">
-          <button
+          <Button
+            variant="outline-warning"
             onclick={() => location.reload()}
-            class="inline-flex items-center px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-secondary-950"
           >
             Try Again
-          </button>
-          <a
-            href="/"
-            class="inline-flex items-center px-6 py-3 bg-secondary-600 hover:bg-secondary-700 text-white font-medium rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-secondary-500 focus:ring-offset-2 dark:focus:ring-offset-secondary-950"
+          </Button>
+          <Button
+          variant="outline-success"
+          onclick={() => goto("/")}
           >
             Go Home
-          </a>
+          </Button>
         </div>
       </div>
     {:else}
       <!-- Other Errors (4xx) -->
       <div class="max-w-2xl mx-auto text-center">
-        <h1 class="text-6xl md:text-8xl font-bold text-warning-500 mb-4">⚠️</h1>
-        <div class="text-4xl md:text-6xl font-bold text-secondary-900 dark:text-secondary-100 mb-2">
+        <h1 class="text-6xl md:text-8xl font-bold text-warning mb-4">
+          <Icon iconName="error" size={96}/>
+        </h1>
+        <div class="text-4xl md:text-6xl font-bold text-muted-foreground mb-2">
           {page.status}
         </div>
         <h2
-          class="text-2xl md:text-3xl font-semibold text-secondary-800 dark:text-secondary-200 mb-6"
+          class="text-2xl md:text-3xl font-semibold text-muted-foreground mb-6"
         >
           Something's Wrong
         </h2>
-        <p class="text-lg text-secondary-600 dark:text-secondary-400 mb-8 leading-relaxed">
+        <p class="text-lg text-foreground mb-8 leading-relaxed">
           {page.error?.message ?? 'An unexpected error occurred.'}
         </p>
 
         <div class="flex flex-wrap gap-4 justify-center">
-          <a
-            href="/"
-            class="inline-flex items-center px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-secondary-950"
-          >
-            Go Home
-          </a>
-          <button
+          <Button
+            variant="outline-warning"
             onclick={() => history.back()}
-            class="inline-flex items-center px-6 py-3 bg-secondary-600 hover:bg-secondary-700 text-white font-medium rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-secondary-500 focus:ring-offset-2 dark:focus:ring-offset-secondary-950"
           >
             Go Back
-          </button>
+          </Button>
+          <Button
+            variant="outline-success"
+            onclick={() => goto("/")}
+          >
+            Go Home
+          </Button>
         </div>
       </div>
     {/if}

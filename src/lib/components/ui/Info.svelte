@@ -13,7 +13,7 @@
   import type { HTMLAttributes } from 'svelte/elements';
   import { Icon } from '$lib/components';
 
-  type InfoVariant = 'success' | 'warning' | 'danger' | 'info';
+  type InfoVariant = 'success' | 'warning' | 'error' | 'info';
   type InfoSize = 'sm' | 'default' | 'lg';
 
   interface InfoProps extends Omit<HTMLAttributes<HTMLDivElement>, 'class'> {
@@ -60,51 +60,23 @@
   };
 
   const variantClasses: Record<InfoVariant, string[]> = {
-    success: [
-      'dark:bg-success-100',
-      'dark:text-success-900',
-      'dark:border-success-250',
-      'bg-success-900/20',
-      'text-success-100',
-      'border-success-750/40',
-    ],
-    warning: [
-      'dark:bg-warning-100',
-      'dark:text-warning-900',
-      'dark:border-warning-250',
-      'bg-warning-900/20',
-      'text-warning-100',
-      'border-warning-750/40',
-    ],
-    danger: [
-      'dark:bg-error-100',
-      'dark:text-error-900',
-      'dark:border-error-250',
-      'bg-error-900/20',
-      'text-error-100',
-      'border-error-750/40',
-    ],
-    info: [
-      'dark:bg-info-100',
-      'dark:text-info-900',
-      'dark:border-info-250',
-      'bg-info-900/20',
-      'text-info-100',
-      'border-info-750/40',
-    ],
+    success: ['bg-success', 'text-on-success', 'border-success'],
+    warning: ['bg-warning', 'text-on-warning', 'border-warning'],
+    error: ['bg-error', 'text-on-error', 'border-error'],
+    info: ['bg-info', 'text-on-info', 'border-info'],
   };
 
   const iconClasses: Record<InfoVariant, string[]> = {
-    success: ['text-success-500', 'dark:text-success-500'],
-    warning: ['text-warning-500', 'dark:text-warning-500'],
-    danger: ['text-error-500', 'dark:text-error-500'],
-    info: ['text-info-500', 'dark:text-info-500'],
+    success: ['text-on-success'],
+    warning: ['text-on-warning'],
+    error: ['text-on-error'],
+    info: ['text-on-info'],
   };
 
   const defaultIcons: Record<InfoVariant, string> = {
     success: '✓',
     warning: '⚠',
-    danger: '✗',
+    error: '✗',
     info: 'ℹ',
   };
 
@@ -174,7 +146,7 @@
     {#if dismissible}
       <button
         onclick={handleDismiss}
-        class="cursor-pointer flex-shrink-0 ml-2 p-1 -mr-1 -mt-1 opacity-60 hover:opacity-100 rounded-xs dark:hover:bg-black/5 hover:bg-white/5 transition-all focus:outline-hidden focus:ring-2 focus:ring-current/20"
+        class="cursor-pointer flex-shrink-0 ml-2 p-1 -mr-1 -mt-1 opacity-60 hover:opacity-100 rounded-xs hover:bg-surface-hover transition-all focus:outline-hidden focus:ring-2 focus:ring-current/20"
         aria-label="Dismiss notification"
         type="button"
       >

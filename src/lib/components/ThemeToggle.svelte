@@ -10,61 +10,20 @@
 
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { themeStore } from '$lib/themes/themeStore.js';
 
+  const isDarkStore = themeStore.isDark;
   let isDark = $state(false);
-  let isInitialized = $state(false);
-
-  function applyTheme(dark: boolean): void {
-    if (typeof document === 'undefined') {
-      return;
-    }
-
-    const htmlEl = document.documentElement;
-    if (dark) {
-      htmlEl.classList.add('dark');
-    } else {
-      htmlEl.classList.remove('dark');
-    }
-
-    try {
-      localStorage.setItem('theme', dark ? 'dark' : 'light');
-    } catch (error) {
-      console.warn('Failed to save theme preference:', error);
-    }
-  }
-
-  function initializeTheme(): void {
-    if (typeof window === 'undefined') {
-      return;
-    }
-
-    try {
-      const storedTheme = localStorage.getItem('theme');
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      const shouldBeDark = storedTheme === 'dark' || (!storedTheme && prefersDark);
-
-      isDark = shouldBeDark;
-      applyTheme(shouldBeDark);
-      isInitialized = true;
-    } catch (error) {
-      console.warn('Failed to initialize theme:', error);
-      // Fallback to system preference
-      isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      applyTheme(isDark);
-      isInitialized = true;
-    }
-  }
 
   $effect(() => {
-    if (isInitialized) {
-      applyTheme(isDark);
-    }
+    const unsubscribe = isDarkStore.subscribe(value => (isDark = value));
+    return unsubscribe;
   });
 
   // Remove focus ring when user clicks theme toggle
   // But keep it for keyboard navigation for accessibility
   function handleThemeToggleClick(event: MouseEvent) {
-    isDark = !isDark;
+    themeStore.toggleMode();
 
     if (event.detail > 0 && event.currentTarget) {
       const target = event.currentTarget as HTMLButtonElement | null;
@@ -73,39 +32,42 @@
   }
 
   onMount(() => {
-    initializeTheme();
+    // Listening for system theme changes
+    if (window.matchMedia) {
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
 
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const handleSystemThemeChange = (e: MediaQueryListEvent) => {
-      try {
-        const storedTheme = localStorage.getItem('theme');
-        if (!storedTheme) {
-          isDark = e.matches;
+      const handleSystemThemeChange = (e: MediaQueryListEvent) => {
+        const hasManualPreference = localStorage.getItem('gdluxx-theme-mode');
+        if (!hasManualPreference) {
+          // Apply system preference to current theme
+          const newMode = e.matches ? 'dark' : 'light';
+          if (newMode === 'dark') {
+            themeStore.setDarkMode();
+          } else {
+            themeStore.setLightMode();
+          }
         }
-      } catch {
-        isDark = e.matches;
-      }
-    };
+      };
 
-    mediaQuery.addEventListener('change', handleSystemThemeChange);
+      mediaQuery.addEventListener('change', handleSystemThemeChange);
 
-    return () => {
-      mediaQuery.removeEventListener('change', handleSystemThemeChange);
-    };
+      return () => {
+        mediaQuery.removeEventListener('change', handleSystemThemeChange);
+      };
+    }
   });
 </script>
 
-<!--  rounded-lg bg-secondary-100 dark:bg-secondary-800 hover:bg-secondary-200 dark:hover:bg-secondary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 focus:ring-offset-secondary-50 dark:focus:ring-offset-secondary-900 transition-all duration-200 -->
 <button
   type="button"
-  class="cursor-pointer relative flex items-center justify-center w-10 h-10"
+  class="cursor-pointer relative flex items-center justify-center w-10 h-10 transition-all duration-200"
   aria-pressed={isDark}
   aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
   onclick={handleThemeToggleClick}
 >
   <!-- light mode -->
   <svg
-    class="absolute w-6 h-6 text-primary-600 dark:text-primary-400 transition-all duration-400 {isDark
+    class="absolute w-6 h-6 text-primary transition-all duration-400 {isDark
       ? 'opacity-0 rotate-180 scale-75'
       : 'opacity-100 rotate-0 scale-100'}"
     fill="none"
@@ -123,7 +85,7 @@
 
   <!-- dark mode -->
   <svg
-    class="absolute w-6 h-6 text-primary-600 dark:text-primary-400 transition-all duration-400 {isDark
+    class="absolute w-6 h-6 text-primary transition-all duration-400 {isDark
       ? 'opacity-100 rotate-0 scale-100'
       : 'opacity-0 rotate-180 scale-75'}"
     xmlns="http://www.w3.org/2000/svg"

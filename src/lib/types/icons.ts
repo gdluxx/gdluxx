@@ -53,10 +53,6 @@ export type IconName =
   | 'extract'
   | 'save'
   | 'general-settings'
-  | 'options';
-
-export interface IconConfig {
-  name: IconName;
-  label: string;
-  category: 'navigation' | 'action' | 'status' | 'object' | 'theme' | 'work';
-}
+  | 'options'
+  | 'checked'
+  | 'error';

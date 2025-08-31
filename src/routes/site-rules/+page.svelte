@@ -21,7 +21,7 @@
   const { categories: _categories } = data;
 
   let configs = $state<SiteConfig[]>(data.configs || []);
-  const supportedSites = data.supportedSites || [];
+  let supportedSites = $state(data.supportedSites || []);
   let showAddModal = $state(false);
   let editingConfig = $state<SiteConfig | null>(null);
   let isRefreshingSites = $state(false);
@@ -30,7 +30,7 @@
 
   let sortMode = $state<'alphabetical' | 'cli-options' | 'none'>('none');
   let isAlphabeticalAscending = $state(true);
-  let isCLIOptionsAscending = $state(false); // Start with descending (highest first)
+  let isCLIOptionsAscending = $state(false);
 
   async function handleSaveConfig(configData: Partial<SiteConfig>) {
     try {
@@ -148,10 +148,24 @@
   async function refreshSupportedSites() {
     isRefreshingSites = true;
     try {
+// Step 1: Refresh the site data
       const response = await fetch('/api/supported-sites', { method: 'POST' });
       if (response.ok) {
-        // Reload the page
-        window.location.reload();
+// Step 2: Fetch the fresh data
+        const freshDataResponse = await fetch('/api/supported-sites', { method: 'GET' });
+        if (freshDataResponse.ok) {
+          const freshData = await freshDataResponse.json();
+
+// Step 3: Update reactive variables with fresh data
+          supportedSites = freshData.data.sites ?? [];
+
+// Also update any other data that might have changed
+// configs would stay the same since we only refreshed supported sites
+
+          toastStore.success('Success', `Sites refreshed successfully. Found ${supportedSites.length} supported sites.`);
+        } else {
+          throw new Error('Failed to fetch fresh data');
+        }
       } else {
         const errorResult = await response.json();
         toastStore.error('Refresh Failed', errorResult.error ?? 'Failed to refresh sites');
@@ -200,7 +214,7 @@
       isCLIOptionsAscending = !isCLIOptionsAscending;
     } else {
       sortMode = 'cli-options';
-      isCLIOptionsAscending = false; // Start with descending (highest first)
+      isCLIOptionsAscending = false;
     }
 
     configs = [...configs].sort((a, b) => {
@@ -220,7 +234,7 @@
     <Icon iconName="site-rules" size={32} />
   {/snippet}
 
-  {#if configs.length === 0}
+  {#if supportedSites.length === 0}
     <Info variant="info" class="mb-4">
       Use the 'Refresh Sites' button to download the latest list of sites supported by <i
         >gallery-dl</i
@@ -228,44 +242,34 @@
     </Info>
   {/if}
 
-  <div
-    class="bg-primary-50 dark:border-primary-400 rounded-sm border border-primary-600 dark:bg-primary-800"
-  >
+  <div class="data-list">
     <!-- Header -->
-    <div class="cursor-default border-b border-secondary-200 px-4 py-4 dark:border-secondary-700">
+    <div class="data-list-header">
       <div class="flex items-center justify-between mb-3">
-        <p class="font-semibold text-secondary-900 dark:text-secondary-100">
-          Configure site rules using <i>gallery-dl</i>'s CLI options.
+        <p class="font-semibold text-sm text-accent-foreground">
+          Configure Site rules using <i>gallery-dl</i>'s CLI options.
         </p>
       </div>
 
       <!-- Site Stats -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
         <!-- config count card -->
-        <div
-          class="bg-white dark:bg-secondary-800 border border-secondary-200 dark:border-secondary-700 rounded-sm p-4"
-        >
-          <h3 class="text-lg font-semibold text-secondary-900 dark:text-secondary-100">Rules</h3>
-          <p class="text-3xl font-bold text-primary-600 dark:text-primary-400">
+        <div class="data-list-stats">
+          <h3 class="text-lg font-semibold text-primary">Rules</h3>
+          <p class="text-3xl font-bold text-success">
             {configs.length}
           </p>
         </div>
         <!-- Supported sites card -->
-        <div
-          class="bg-white dark:bg-secondary-800 border border-secondary-200 dark:border-secondary-700 rounded-sm p-4"
-        >
-          <h3 class="text-lg font-semibold text-secondary-900 dark:text-secondary-100">
-            Supported Sites
-          </h3>
-          <p class="text-3xl font-bold text-green-600 dark:text-green-400">
+        <div class="data-list-stats">
+          <h3 class="text-lg font-semibold text-primary">Supported Sites</h3>
+          <p class="text-3xl font-bold text-success">
             {supportedSites.length}
           </p>
         </div>
       </div>
       <!-- buttons -->
-      <div
-        class="bg-white dark:bg-secondary-800/50 rounded-sm border border-secondary-200 dark:border-secondary-700 p-3"
-      >
+      <div class="data-list-controls">
         <div class="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
           <div class="flex items-center gap-2">
             <Button
@@ -329,64 +333,59 @@
     </div>
 
     <!-- Config list -->
-    <ul class="divide-y divide-secondary-200 dark:divide-secondary-700">
+    <div>
       {#each configs as config (config.id)}
-        <li class="flex w-full items-center justify-between p-4">
-          <div class="flex-1">
-            <div class="flex items-center gap-2 mb-1">
-              <h3 class="text-lg font-medium text-secondary-900 dark:text-secondary-100">
-                {config.display_name}
-              </h3>
-              {#if config.is_default}
-                <span
-                  class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/20"
+        <div class="data-list-item flex items-center justify-between">
+            <div class="flex-1">
+              <div class="flex items-center">
+                <h3 class="text-lg font-medium text-primary pr-2">
+                  {config.display_name}
+                </h3>
+                {#if config.is_default}
+                  <span
+                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-info bg-surface-selected"
+                  >
+                    Default
+                  </span>
+                {/if}
+                {#if !config.enabled}
+                  <Chip variant="warning" label="Disabled" size="sm" dismissible={false} />
+                {/if}
+              </div>
+              <p class="text-sm text-muted-foreground">
+                Pattern: <code class="bg-surface-selected text-muted-foreground py-0.5 px-1 rounded-sm">{config.site_pattern}</code
                 >
-                  Default
-                </span>
-              {/if}
-              {#if !config.enabled}
-                <Chip variant="warning" label="Disabled" size="sm" dismissible={false} />
-              {/if}
+              </p>
+              <p class="text-sm text-muted-foreground">
+                CLI Options: {config.cli_options.length}
+              </p>
             </div>
-            <p class="text-sm text-secondary-600 dark:text-secondary-400">
-              Pattern: <code class="bg-secondary-100 dark:bg-secondary-700 px-1 rounded-sm"
-                >{config.site_pattern}</code
-              >
-            </p>
-            <p class="text-sm text-secondary-600 dark:text-secondary-400">
-              CLI Options: {config.cli_options.length}
-            </p>
-          </div>
-          <!-- Buttons -->
-          <div class="flex items-center gap-3">
-            <!-- Enable/Disable  -->
-            <Toggle
-              variant="primary"
-              size="sm"
-              id="toggle-{config.id}"
-              checked={config.enabled}
-              onchange={() => handleToggleEnabled(config)}
-            ></Toggle>
+            <!-- Buttons -->
+            <div class="flex items-center gap-3">
+              <!-- Enable/Disable  -->
+              <Toggle
+                variant="primary"
+                size="sm"
+                id="toggle-{config.id}"
+                checked={config.enabled}
+                onchange={() => handleToggleEnabled(config)}
+              ></Toggle>
 
-            <div class="flex gap-2">
-              <Button onclick={() => openEditModal(config)} variant="outline-primary" size="sm">
-                <Icon iconName="edit" size={20} class="mr-1" />
-              </Button>
-              <Button onclick={() => openDeleteConfirm(config)} variant="outline-danger" size="sm">
-                <Icon iconName="delete" size={20} class="mr-1" />
-              </Button>
+              <div class="flex gap-2">
+                <Button onclick={() => openEditModal(config)} variant="outline-primary" size="sm">
+                  <Icon iconName="edit" size={20} class="mr-1" />
+                </Button>
+                <Button onclick={() => openDeleteConfirm(config)} variant="outline-danger" size="sm">
+                  <Icon iconName="delete" size={20} class="mr-1" />
+                </Button>
+              </div>
             </div>
-          </div>
-        </li>
+        </div>
       {/each}
 
       {#if configs.length === 0}
-        <div class="cursor-default text-center py-12 text-secondary-500 dark:text-secondary-400">
-          <Icon
-            iconName="site-rules"
-            size={48}
-            class="mx-auto mb-4 text-secondary-400 dark:text-secondary-500"
-          />
+        <div class="cursor-default text-center py-12 text-muted text-foreground">
+          <Icon iconName="site-rules" size={48} class="mx-auto mb-4 text-muted text-accent-foreground" />
           <p class="text-lg font-medium">No site rules yet</p>
           <p class="text-sm">Add your first rule to get started with site-specific CLI options.</p>
           <Button onclick={openAddModal} variant="primary" class="mt-4">
@@ -395,15 +394,13 @@
           </Button>
         </div>
       {/if}
-    </ul>
+    </div>
   </div>
 
   <!-- Add/Edit Modal -->
   <Modal show={showAddModal} onClose={closeModal} size="xl">
-    <div
-      class="p-6 bg-primary-50 dark:border-primary-400 rounded-sm border border-primary-600 dark:bg-primary-800"
-    >
-      <h2 class="cursor-default text-xl font-bold text-secondary-900 dark:text-secondary-100 mb-4">
+    <div class="content-panel">
+      <h2 class="cursor-default text-xl font-bold text-primary mb-4">
         {editingConfig ? 'Edit' : 'Add'} Site Rule
       </h2>
       <SiteRules
@@ -426,13 +423,13 @@
     onCancel={cancelDelete}
   >
     {#if configToDelete}
-      <p class="text-secondary-700 dark:text-secondary-300 leading-relaxed mb-4">
+      <p class="text-foreground leading-relaxed mb-4">
         Are you sure you want to delete the site rule for
         <strong>{configToDelete.display_name}</strong>?
       </p>
-      <p class="text-sm text-secondary-600 dark:text-secondary-400 mb-4">
+      <p class="text-sm text-accent-foreground mb-4">
         Pattern:
-        <code class="bg-secondary-100 dark:bg-secondary-700 px-1 rounded">
+        <code class="bg-surface-elevated px-1 rounded">
           {configToDelete.site_pattern}
         </code>
       </p>

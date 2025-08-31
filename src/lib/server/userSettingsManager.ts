@@ -11,15 +11,18 @@
 import Database from 'better-sqlite3';
 import path from 'path';
 import { PATHS } from './constants';
+import type { ThemeName } from '$lib/themes/themeUtils.js';
 
 const dbPath = path.join(PATHS.DATA_DIR, 'gdluxx.db');
 
 export interface UserSettings {
   warnOnSiteRuleOverride: boolean;
+  selectedTheme: ThemeName;
 }
 
 const DEFAULT_SETTINGS: UserSettings = {
   warnOnSiteRuleOverride: false,
+  selectedTheme: 'indigo',
 };
 
 export const userSettingsManager = {
@@ -27,13 +30,18 @@ export const userSettingsManager = {
   getUserSettings(userId: string): UserSettings {
     try {
       const db = new Database(dbPath);
-      const stmt = db.prepare('SELECT warnOnSiteRuleOverride FROM user WHERE id = ?');
-      const row = stmt.get(userId) as { warnOnSiteRuleOverride: number } | undefined;
+      const stmt = db.prepare(
+        'SELECT warnOnSiteRuleOverride, selectedTheme FROM user WHERE id = ?'
+      );
+      const row = stmt.get(userId) as
+        | { warnOnSiteRuleOverride: number; selectedTheme: string }
+        | undefined;
       db.close();
 
       if (row) {
         return {
           warnOnSiteRuleOverride: Boolean(row.warnOnSiteRuleOverride),
+          selectedTheme: (row.selectedTheme || 'indigo') as ThemeName,
         };
       }
       return DEFAULT_SETTINGS;
@@ -56,6 +64,15 @@ export const userSettingsManager = {
           WHERE id = ?
         `);
         stmt.run(settings.warnOnSiteRuleOverride ? 1 : 0, timestamp, userId);
+      }
+
+      if (settings.selectedTheme !== undefined) {
+        const stmt = db.prepare(`
+          UPDATE user 
+          SET selectedTheme = ?, updatedAt = ? 
+          WHERE id = ?
+        `);
+        stmt.run(settings.selectedTheme, timestamp, userId);
       }
 
       db.close();

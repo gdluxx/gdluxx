@@ -156,12 +156,12 @@
     tabindex="-1"
   >
     <div
-      class="relative max-h-[80vh] w-full max-w-2xl overflow-hidden rounded-lg bg-white shadow-xl dark:bg-secondary-900"
+      class="relative max-h-[80vh] w-full max-w-2xl overflow-hidden rounded-lg bg-white shadow-xl"
       transition:scale={{ duration: 300, easing: quintOut, start: 0.95 }}
     >
       <!-- Header -->
-      <div class="border-b border-secondary-200 px-6 py-4 dark:border-secondary-700">
-        <h2 class="text-xl font-semibold text-secondary-900 dark:text-secondary-100">
+      <div class="border-b-strong px-6 py-4">
+        <h2 class="text-xl font-semibold text-muted-foreground">
           {category.title}
         </h2>
       </div>
@@ -171,18 +171,18 @@
         <div class="space-y-3">
           {#each category.options as option (option.id)}
             <div
-              class="flex items-start gap-3 rounded-lg p-3 transition-colors hover:bg-secondary-50 dark:hover:bg-secondary-800"
+              class="flex items-start gap-3 rounded-lg p-3 transition-colors hover:bg-surface-hover"
             >
               <input
                 type="checkbox"
                 id="option-{option.id}"
                 checked={localSelected.has(option.id)}
                 onchange={() => toggleOption(option)}
-                class="mt-1 h-4 w-4 rounded border-secondary-300 bg-white text-primary-600 focus:ring-2 focus:ring-primary-500 dark:border-secondary-600 dark:bg-secondary-700 dark:focus:ring-primary-400"
+                class="mt-1 h-4 w-4 rounded border-strong bg-white text-foreground focus:ring-2 focus:ring-primary"
               />
               <div class="flex-1">
                 <label for="option-{option.id}" class="cursor-pointer">
-                  <span class="font-medium text-secondary-900 dark:text-secondary-100">
+                  <span class="font-medium text-muted-foreground">
                     {option.command}
                   </span>
                 </label>
@@ -194,14 +194,14 @@
                         placeholder={option.placeholder}
                         value={localSelected.get(option.id)}
                         oninput={e => updateOptionValue(option.id, e.currentTarget.value)}
-                        class="w-full rounded-md border-secondary-300 bg-white px-3 py-2 text-secondary-900 focus:border-primary-500 focus:ring-primary-500 dark:border-secondary-600 dark:bg-secondary-800 dark:text-secondary-100 {validationErrors.has(
+                        class="w-full rounded-md border-strong bg-white px-3 py-2 text-muted-foreground focus:border-primary focus:ring-primary {validationErrors.has(
                           option.id
                         )
-                          ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
+                          ? 'border-error focus:border-error focus:ring-error'
                           : ''}"
                       />
                       {#if validationErrors.has(option.id)}
-                        <div class="mt-1 text-sm text-red-600 dark:text-red-400">
+                        <div class="mt-1 text-sm text-error">
                           {validationErrors.get(option.id)}
                         </div>
                       {/if}
@@ -211,14 +211,14 @@
                         placeholder={option.placeholder}
                         value={localSelected.get(option.id)}
                         oninput={e => updateOptionValue(option.id, e.currentTarget.valueAsNumber)}
-                        class="w-full rounded-md border-secondary-300 bg-white px-3 py-2 text-secondary-900 focus:border-primary-500 focus:ring-primary-500 dark:border-secondary-600 dark:bg-secondary-800 dark:text-secondary-100 {validationErrors.has(
+                        class="w-full rounded-md border-strong bg-white px-3 py-2 text-muted-foreground focus:border-primary focus:ring-primary {validationErrors.has(
                           option.id
                         )
-                          ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
+                          ? 'border-error focus:border-error focus:ring-error'
                           : ''}"
                       />
                       {#if validationErrors.has(option.id)}
-                        <div class="mt-1 text-sm text-red-600 dark:text-red-400">
+                        <div class="mt-1 text-sm text-error">
                           {validationErrors.get(option.id)}
                         </div>
                       {/if}
@@ -228,14 +228,14 @@
                         placeholder={option.placeholder}
                         value={localSelected.get(option.id)}
                         oninput={e => updateOptionValue(option.id, e.currentTarget.value)}
-                        class="w-full rounded-md border-secondary-300 bg-white px-3 py-2 text-secondary-900 focus:border-primary-500 focus:ring-primary-500 dark:border-secondary-600 dark:bg-secondary-800 dark:text-secondary-100 {validationErrors.has(
+                        class="w-full rounded-md border-strong bg-white px-3 py-2 text-muted-foreground focus:border-primary focus:ring-primary {validationErrors.has(
                           option.id
                         )
-                          ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
+                          ? 'border-error focus:border-error focus:ring-error'
                           : ''}"
                       />
                       {#if validationErrors.has(option.id)}
-                        <div class="mt-1 text-sm text-red-600 dark:text-red-400">
+                        <div class="mt-1 text-sm text-error">
                           {validationErrors.get(option.id)}
                         </div>
                       {/if}
@@ -261,7 +261,7 @@
 
       <!-- Footer -->
       <div
-        class="flex justify-end gap-3 border-t border-secondary-200 px-6 py-4 dark:border-secondary-700"
+        class="flex justify-end gap-3 border-t-strong px-6 py-4"
       >
         <Button onclick={onClose} variant="outline-primary" size="sm">Close</Button>
         <Button onclick={handleApply} variant="primary" size="sm">Apply Options</Button>
@@ -273,16 +273,16 @@
       {@const option = category.options.find(o => o.id === hoveredOption)}
       {#if option}
         <div
-          class="pointer-events-none fixed z-60 max-w-sm rounded-lg bg-secondary-900 p-3 text-sm text-secondary-100 shadow-lg dark:bg-secondary-100 dark:text-secondary-900"
+          class="pointer-events-none fixed z-60 max-w-sm rounded-lg bg-surface p-3 text-sm text-muted-foreground shadow-lg"
           style:left="{tooltipPosition.x}px"
           style:top="{tooltipPosition.y}px"
           style:transform="translateY(-50%)"
           transition:fade={{ duration: 150 }}
         >
           <div class="mb-1 font-medium">{option.command}</div>
-          <div class="text-secondary-300 dark:text-secondary-700">{option.description}</div>
+          <div class="text-muted-foreground">{option.description}</div>
           <div
-            class="absolute top-1/2 -left-2 h-0 w-0 -translate-y-1/2 border-t-8 border-r-8 border-b-8 border-t-transparent border-r-secondary-900 border-b-transparent dark:border-r-secondary-100"
+            class="absolute top-1/2 -left-2 h-0 w-0 -translate-y-1/2 border-t-8 border-r-8 border-b-8 border-t-transparent border-r-strong border-b-transparent"
           ></div>
         </div>
       {/if}

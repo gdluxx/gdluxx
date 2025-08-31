@@ -23,36 +23,36 @@
 
   const styleMap = {
     success: {
-      container: 'dark:bg-success-100 border-success-500 bg-success-900',
-      icon: 'bg-success-500 text-white',
-      title: 'dark:text-success-900 text-success-100',
-      message: 'dark:text-success-750 text-success-250',
-      close: 'text-success-500 dark:hover:text-success-700 hover:text-success-300',
-      ex: 'rounded-lg text-success-250 hover:bg-success-500 hover:text-success-100 dark:text-success-750 dark:hover:text-success-900 dark:hover:bg-success-500',
+      container: 'bg-surface-overlay border-success',
+      icon: 'bg-success text-on-success',
+      title: 'text-foreground',
+      message: 'text-muted-foreground',
+      close: 'text-success hover:text-success-hover',
+      closeButton: 'hover:bg-success/10 focus:ring-success',
     },
     error: {
-      container: 'bg-error-100 border-error-500 dark:bg-error-900',
-      icon: 'bg-error-500 text-white',
-      title: 'text-error-900 dark:text-error-100',
-      message: 'text-error-700 dark:text-error-300',
-      close: 'text-error-500 hover:text-error-700 dark:hover:text-error-300',
-      ex: 'rounded-lg text-info-250 hover:bg-info-500 hover:text-info-100 dark:text-info-750 dark:hover:text-info-900 dark:hover:bg-info-500',
+      container: 'bg-surface-overlay border-error',
+      icon: 'bg-error text-on-error',
+      title: 'text-foreground',
+      message: 'text-muted-foreground',
+      close: 'text-error hover:text-error-hover',
+      closeButton: 'hover:bg-error/10 focus:ring-error',
     },
     warning: {
-      container: 'bg-warning-100 border-warning-500 dark:bg-warning-900',
-      icon: 'bg-warning-500 text-white',
-      title: 'text-warning-900 dark:text-warning-100',
-      message: 'text-warning-700 dark:text-warning-300',
-      close: 'text-warning-500 hover:text-warning-700 dark:hover:text-warning-300',
-      ex: 'rounded-lg text-warning-250 hover:bg-warning-500 hover:text-warning-100 dark:text-warning-750 dark:hover:text-warning-900 dark:hover:bg-warning-500',
+      container: 'bg-surface-overlay border-warning',
+      icon: 'bg-warning text-on-warning',
+      title: 'text-foreground',
+      message: 'text-muted-foreground',
+      close: 'text-warning hover:text-warning-hover',
+      closeButton: 'hover:bg-warning/10 focus:ring-warning',
     },
     info: {
-      container: 'dark:bg-info-100 border-info-500 bg-info-900',
-      icon: 'bg-info-500 text-white',
-      title: 'dark:text-info-900 text-info-100',
-      message: 'dark:text-info-750 text-info-250',
-      close: 'text-info-500 dark:hover:text-info-700 hover:bg-info-750 hover:text-info-300',
-      ex: 'rounded-lg text-info-250 hover:bg-info-500 hover:text-info-100 dark:text-info-750 dark:hover:text-info-900 dark:hover:bg-info-500',
+      container: 'bg-surface-overlay border-info',
+      icon: 'bg-info text-on-info',
+      title: 'text-foreground',
+      message: 'text-muted-foreground',
+      close: 'text-info hover:text-info-hover',
+      closeButton: 'hover:bg-info/10 focus:ring-info',
     },
   };
 
@@ -64,7 +64,7 @@
 </script>
 
 <div
-  class="pointer-events-auto w-full max-w-sm overflow-hidden rounded-lg border-l-4 shadow-lg {styles.container}"
+  class="pointer-events-auto w-full max-w-sm overflow-hidden rounded-lg border-l-8 shadow-lg {styles.container}"
   transition:fly={{ x: 400, duration: 300 }}
 >
   <div class="p-4">
@@ -101,10 +101,10 @@
       </div>
 
       <!-- Close Button -->
-      <div class="ml-4 flex flex-shrink-0 transition-colors {styles.ex}">
+      <div class="ml-4 flex flex-shrink-0">
         <button
           type="button"
-          class="cursor-pointer inline-flex rounded-md p-1.5 duration-150 focus:outline-none focus:ring-1 focus:ring-offset-1"
+          class="cursor-pointer inline-flex rounded-sm p-1.5 transition-colors duration-150 focus:outline-none focus:ring-1 focus:ring-offset-1 {styles.close} {styles.closeButton}"
           onclick={handleClose}
         >
           <span class="sr-only">Close</span>

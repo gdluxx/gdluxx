@@ -69,7 +69,7 @@
     <!-- Modal container -->
     <div class="fixed inset-0 flex items-center justify-center p-4">
       <div
-        class="bg-white dark:bg-secondary-800 rounded-lg shadow-xl w-full {sizeClasses[
+        class="bg-surface-elevated rounded-lg shadow-xl w-full {sizeClasses[
           size
         ]} max-h-[90vh] overflow-auto relative"
         transition:scale={{ duration: 200, easing: quintOut }}
@@ -79,7 +79,7 @@
           <div class="absolute top-4 right-4 z-10">
             <button
               onclick={onClose}
-              class="cursor-pointer flex-shrink-0 w-8 h-8 inline-flex justify-center items-center rounded-full border border-transparent bg-secondary-100 text-secondary-800 hover:bg-secondary-200 focus:outline-hidden focus:bg-secondary-200 focus:ring-2 focus:ring-secondary-300 transition-all dark:bg-secondary-700 dark:hover:bg-secondary-600 dark:text-secondary-400 dark:focus:bg-secondary-600 dark:focus:ring-secondary-500"
+              class="cursor-pointer flex-shrink-0 w-8 h-8 inline-flex justify-center items-center rounded-full border-transparent bg-surface-hover text-muted-foreground hover:bg-surface-active focus:outline-hidden focus:bg-surface-active focus:ring-2 focus:border-focus transition-all"
               aria-label="Close modal"
             >
               <span class="sr-only">Close</span>

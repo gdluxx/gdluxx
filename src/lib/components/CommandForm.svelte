@@ -296,18 +296,11 @@
   }
 </script>
 
-<div
-  class="bg-primary-50 p-4 dark:border-primary-400 rounded-sm border border-primary-600 dark:bg-primary-800"
->
+<div class="content-panel">
   <form class="space-y-6" onsubmit={handleSubmit}>
     <div class="m-4">
-      <label
-        for="commandUrlsInput"
-        class="mb-2 block px-2 text-sm font-medium text-primary-900 dark:text-primary-100"
-      >
-        URL(s) <span class="text-xs dark:text-secondary-600 text-secondary-500">
-          (one per line or space-separated)
-        </span>
+      <label for="commandUrlsInput" class="mb-2 block px-2 text-sm font-medium text-primary">
+        URL(s) <span class="text-xs text-muted-foreground"> (one per line or space-separated) </span>
       </label>
       <div class="relative">
         <textarea
@@ -316,12 +309,8 @@
           bind:value={commandUrlsInput}
           placeholder="https://example.com/gallery1&#10;https://example.com/image.jpg https://othersite.com/album"
           autocomplete="off"
-          rows="5"
-          class="w-full rounded-sm border dark:border-secondary-300 dark:bg-secondary-900 px-4 py-3 text-base dark:text-primary-100
-         dark:placeholder-secondary-500 transition-colors duration-200
-         dark:focus:border-primary-500 focus:ring-3 dark:focus:ring-primary-500/20 focus:outline-hidden
-         border-secondary-700 bg-secondary-100 text-primary-900
-         placeholder-secondary-500 focus:border-primary-400 focus:ring-primary-400/20 pr-9"
+          rows="7"
+          class="form-textarea"
         ></textarea>
       </div>
     </div>
@@ -331,13 +320,13 @@
       <Info variant="info" title="Site Rules Detected" class="p-4 mx-4">
         {#each siteConfigData as config (config.url)}
           <div
-            class="config-item flex items-center justify-between bg-primary-200 dark:bg-primary-800 bg-opacity-50 px-3 py-2 rounded border dark:border-primary-200 border-primary-600"
+            class="config-item flex items-center justify-between bg-surface-elevated px-3 py-2 rounded border-strong"
           >
             <div class="flex flex-col">
-              <span class="font-medium text-primary-900 dark:text-primary-100 text-sm">
+              <span class="font-medium text-primary text-sm">
                 Rule: {config.configName}
               </span>
-              <span class="text-xs text-primary-600 dark:text-primary-300">
+              <span class="text-xs text-muted-foreground">
                 Pattern: {config.matchedPattern}
               </span>
             </div>
@@ -380,11 +369,11 @@
                   {/if}:
                   <br />
                   Your
-                  <code class="bg-secondary-200 dark:bg-secondary-700 px-1 rounded text-xs"
+                  <code class="bg-surface-elevated px-1 rounded text-xs"
                     >{option.command} = {conflict.userValue}</code
                   >
                   will override
-                  <code class="bg-secondary-200 dark:bg-secondary-700 px-1 rounded text-xs"
+                  <code class="bg-surface-elevated px-1 rounded text-xs"
                     >{option.command} = {conflict.siteRuleValue}</code
                   >
                 </li>
@@ -396,7 +385,7 @@
             <Button onclick={handleProceedAnyway} variant="primary" size="sm">
               Proceed Anyway
             </Button>
-            <Button onclick={handleCancelWarning} variant="secondary" size="sm">Cancel</Button>
+            <Button onclick={handleCancelWarning} variant="outline-primary" size="sm">Cancel</Button>
           </div>
         </div>
       </Info>
@@ -408,6 +397,7 @@
         onclick={clearUrlsInput}
         disabled={isLoading || !commandUrlsInput}
         class="mt-2 w-full"
+        variant="outline-primary"
       >
         Clear
       </Button>
@@ -434,7 +424,6 @@
     {/if}
   </form>
 
-
   <!-- OptionsManager -->
   <OptionsManager
     bind:selectedOptions
@@ -444,13 +433,12 @@
     {userWarningSetting}
     {commandUrlsInput}
     onConflictDetected={conflicts => {
-        if (conflicts.length > 0) {
-          showConflictWarning = true;
-        }
-      }}
+      if (conflicts.length > 0) {
+        showConflictWarning = true;
+      }
+    }}
     onSiteRuleSaved={() => {
-        // Handle site rule saved if needed
-      }}
+      // Handle site rule saved
+    }}
   />
-
 </div>

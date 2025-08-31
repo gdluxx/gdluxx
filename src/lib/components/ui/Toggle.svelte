@@ -71,24 +71,24 @@
 
   const variantClasses: Record<ToggleVariant, { trackOff: string; trackOn: string }> = {
     default: {
-      trackOff: 'bg-secondary-600 dark:bg-secondary-300',
-      trackOn: 'peer-checked:bg-secondary-400 dark:peer-checked:bg-secondary-600',
+      trackOff: 'bg-border-strong',
+      trackOn: 'peer-checked:bg-text-muted',
     },
     primary: {
-      trackOff: 'bg-secondary-600 dark:bg-secondary-300',
-      trackOn: 'peer-checked:bg-primary-400 dark:peer-checked:bg-primary-600',
+      trackOff: 'bg-border-strong',
+      trackOn: 'peer-checked:bg-primary',
     },
     success: {
-      trackOff: 'bg-secondary-600 dark:bg-secondary-300',
-      trackOn: 'peer-checked:bg-success-400 dark:peer-checked:bg-success-600',
+      trackOff: 'bg-border-strong',
+      trackOn: 'peer-checked:bg-success',
     },
     warning: {
-      trackOff: 'bg-secondary-600 dark:bg-secondary-300',
-      trackOn: 'peer-checked:bg-warning-400 dark:peer-checked:bg-warning-600',
+      trackOff: 'bg-border-strong',
+      trackOn: 'peer-checked:bg-warning',
     },
     danger: {
-      trackOff: 'bg-secondary-600 dark:bg-secondary-300',
-      trackOn: 'peer-checked:bg-error-400 dark:peer-checked:bg-error-600',
+      trackOff: 'bg-border-strong',
+      trackOn: 'peer-checked:bg-error',
     },
   };
 
@@ -108,7 +108,7 @@
       'absolute',
       sizeClasses[size].thumb,
       'rounded-full',
-      'bg-white',
+      'bg-surface-elevated',
       'transition-transform',
       'peer-disabled:opacity-70',
       'shadow-sm',
@@ -116,13 +116,7 @@
   );
 
   const labelClasses = $derived(
-    [
-      sizeClasses[size].label,
-      'font-medium',
-      'dark:text-gray-700',
-      'text-gray-300',
-      disabled && 'opacity-50',
-    ]
+    [sizeClasses[size].label, 'font-medium', 'text-foreground', disabled && 'text-disabled']
       .filter(Boolean)
       .join(' ')
   );
@@ -146,7 +140,7 @@
 </script>
 
 <label for={inputId} class={containerClasses}>
-  <div class="relative">
+  <div class="relative cursor-pointer">
     <input
       bind:checked
       {disabled}
@@ -169,13 +163,13 @@
 
   {#if tooltipContent}
     <Tooltip maxWidth="32rem" class="!whitespace-normal !min-w-80" content={tooltipContent}>
-      <Icon iconName="question" size={20} class="text-secondary-800" />
+      <Icon iconName="question" size={20} class="text-muted-foreground" />
     </Tooltip>
   {/if}
 </label>
 
 {#if description}
-  <p id="{inputId}-description" class="mt-1 text-xs text-secondary-600 dark:text-secondary-400">
+  <p id="{inputId}-description" class="mt-1 text-xs text-muted-foreground">
     {description}
   </p>
 {/if}

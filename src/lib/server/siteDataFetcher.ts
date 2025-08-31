@@ -80,7 +80,7 @@ export class SiteDataFetcher {
     const sites: SiteTableRow[] = [];
 
     const tableRowRegex =
-      /<tr>\s*<td>(.*?)<\/td>\s*<td>(.*?)<\/td>\s*<td>(.*?)<\/td>\s*<td>(.*?)<\/td>\s*<\/tr>/g;
+      /<tr[^>]*>\s*<td>(.*?)<\/td>\s*<td>(.*?)<\/td>\s*<td>(.*?)<\/td>\s*<td>(.*?)<\/td>\s*<\/tr>/g;
 
     let match;
 
@@ -195,8 +195,8 @@ export class SiteDataFetcher {
   private parseCapabilities(capabilities: string): string[] {
     return capabilities
       .split(/[,;]/)
-      .map(cap => cap.trim())
-      .filter(cap => cap.length > 0);
+      .map((cap) => cap.trim())
+      .filter((cap) => cap.length > 0);
   }
 }
 

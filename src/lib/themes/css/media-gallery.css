@@ -1,0 +1,151 @@
+/*
+ * Copyright (C) 2025 jsouthgb
+ *
+ * This file is part of gdluxx.
+ *
+ * gdluxx is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 (GPL-2.0),
+ * as published by the Free Software Foundation.
+ */
+
+.theme-media-gallery {
+    --color-background: #ffffff;
+    --color-surface: #fafaf9;
+    --color-surface-elevated: #ffffff;
+    --color-surface-sunken: #f5f5f4;
+    --color-surface-overlay: #f8fafc;
+
+    --color-foreground: #0c0a09;
+    --color-accent-foreground: #44403c;
+    --color-muted-foreground: #1c1917;
+    --color-text-inverse: #ffffff;
+    --color-text-disabled: #a8a29e;
+
+    --color-primary: #ea580c;
+    --color-primary-hover: #c2410c;
+    --color-primary-active: #9a3412;
+    --color-primary-disabled: #fed7aa;
+    --color-primary-text: #ffffff;
+
+    --color-surface-hover: #f5f5f4;
+    --color-surface-active: #e7e5e4;
+    --color-surface-selected: #fff7ed;
+    --color-surface-disabled: #fafaf9;
+
+    --color-success: #059669;
+    --color-success-hover: #047857;
+    --color-success-active: #065f46;
+    --color-success-text: #ffffff;
+
+    --color-warning: #f59e0b;
+    --color-warning-hover: #d97706;
+    --color-warning-active: #b45309;
+    --color-warning-text: #ffffff;
+
+    --color-error: #dc2626;
+    --color-error-hover: #b91c1c;
+    --color-error-active: #991b1b;
+    --color-error-text: #ffffff;
+
+    --color-info: #0ea5e9;
+    --color-info-hover: #0284c7;
+    --color-info-active: #0369a1;
+    --color-info-text: #ffffff;
+
+    --color-border: #e7e5e4;
+    --color-border-strong: #d6d3d1;
+    --color-border-focus: #ea580c;
+    --color-border-disabled: #f5f5f4;
+    --color-border-error: #fca5a5;
+    --color-border-success: #86efac;
+
+    --color-input-background: #fafaf9;
+    --color-input-disabled: #f5f5f4;
+    --color-input-invalid: #fef2f2;
+    --color-input-valid: #f0fdf4;
+
+    --color-skeleton: #f5f5f4;
+    --color-spinner: #ea580c;
+
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -1px rgb(0 0 0 / 0.06);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -2px rgb(0 0 0 / 0.05);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 10px 10px -5px rgb(0 0 0 / 0.04);
+
+    --color-media-overlay: rgb(0 0 0 / 0.6);
+    --color-media-overlay-hover: rgb(0 0 0 / 0.8);
+    --color-thumbnail-border: #e7e5e4;
+    --color-thumbnail-selected: #ea580c;
+    --color-lightbox-bg: rgb(0 0 0 / 0.9);
+}
+
+.theme-media-gallery.dark {
+    --color-background: #0c0a09;
+    --color-surface: #1c1917;
+    --color-surface-elevated: #292524;
+    --color-surface-sunken: #0c0a09;
+    --color-surface-overlay: #44403c;
+
+    --color-foreground: #e7e5e4;
+    --color-accent-foreground: #a8a29e;
+    --color-muted-foreground: #d6d3d1;
+    --color-text-inverse: #0c0a09;
+    --color-text-disabled: #57534e;
+
+    --color-primary: #fb923c;
+    --color-primary-hover: #fed7aa;
+    --color-primary-active: #f97316;
+    --color-primary-disabled: #431407;
+    --color-primary-text: #0c0a09;
+
+    --color-surface-hover: #322f2c;
+    --color-surface-active: #44403c;
+    --color-surface-selected: #431407;
+    --color-surface-disabled: #1c1917;
+
+    --color-success: #34d399;
+    --color-success-hover: #6ee7b7;
+    --color-success-active: #10b981;
+    --color-success-text: #0c0a09;
+
+    --color-warning: #fbbf24;
+    --color-warning-hover: #fcd34d;
+    --color-warning-active: #f59e0b;
+    --color-warning-text: #0c0a09;
+
+    --color-error: #f87171;
+    --color-error-hover: #fca5a5;
+    --color-error-active: #ef4444;
+    --color-error-text: #0c0a09;
+
+    --color-info: #38bdf8;
+    --color-info-hover: #7dd3fc;
+    --color-info-active: #0ea5e9;
+    --color-info-text: #0c0a09;
+
+    --color-border: #44403c;
+    --color-border-strong: #57534e;
+    --color-border-focus: #fb923c;
+    --color-border-disabled: #292524;
+    --color-border-error: #dc2626;
+    --color-border-success: #059669;
+
+    --color-input-background: #292524;
+    --color-input-disabled: #1c1917;
+    --color-input-invalid: #431407;
+    --color-input-valid: #052e16;
+
+    --color-skeleton: #292524;
+    --color-spinner: #fb923c;
+
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.4);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.5), 0 2px 4px -1px rgb(0 0 0 / 0.4);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.6), 0 4px 6px -2px rgb(0 0 0 / 0.5);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.7), 0 10px 10px -5px rgb(0 0 0 / 0.6);
+
+    --color-media-overlay: rgb(0 0 0 / 0.7);
+    --color-media-overlay-hover: rgb(0 0 0 / 0.9);
+    --color-thumbnail-border: #44403c;
+    --color-thumbnail-selected: #fb923c;
+    --color-lightbox-bg: rgb(0 0 0 / 0.95);
+}

@@ -87,7 +87,7 @@
         bind:value={name}
         onkeydown={handleKeyPress}
         required
-        class="mt-1 block w-full px-3 py-2 border border-secondary-300 dark:border-secondary-600 rounded-md shadow-sm placeholder-secondary-400 dark:placeholder-secondary-500 bg-white dark:bg-secondary-800 text-secondary-900 dark:text-secondary-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+        class="text-sm w-full px-3 py-2 border rounded-sm bg-input text-foreground"
         placeholder="username"
         disabled={isLoading}
       />
@@ -100,7 +100,7 @@
         bind:value={email}
         onkeydown={handleKeyPress}
         required
-        class="mt-1 block w-full px-3 py-2 border border-secondary-300 dark:border-secondary-600 rounded-md shadow-sm placeholder-secondary-400 dark:placeholder-secondary-500 bg-white dark:bg-secondary-800 text-secondary-900 dark:text-secondary-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+        class="text-sm w-full px-3 py-2 border rounded-sm bg-input text-foreground"
         placeholder="email address"
         disabled={isLoading}
       />
@@ -113,7 +113,7 @@
         bind:value={password}
         onkeydown={handleKeyPress}
         required
-        class="mt-1 block w-full px-3 py-2 border border-secondary-300 dark:border-secondary-600 rounded-md shadow-sm placeholder-secondary-400 dark:placeholder-secondary-500 bg-white dark:bg-secondary-800 text-secondary-900 dark:text-secondary-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+        class="text-sm w-full px-3 py-2 border rounded-sm bg-input text-foreground"
         placeholder="password (min 8 characters)"
         disabled={isLoading}
       />
@@ -126,7 +126,7 @@
         bind:value={confirmPassword}
         onkeydown={handleKeyPress}
         required
-        class="mt-1 block w-full px-3 py-2 border border-secondary-300 dark:border-secondary-600 rounded-md shadow-sm placeholder-secondary-400 dark:placeholder-secondary-500 bg-white dark:bg-secondary-800 text-secondary-900 dark:text-secondary-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+        class="text-sm w-full px-3 py-2 border rounded-sm bg-input text-foreground"
         placeholder="Confirm password"
         disabled={isLoading}
       />
@@ -135,7 +135,7 @@
     <div class="flex justify-end m-4 gap-6">
       <Button
         onclick={clearForm}
-        variant="outline-secondary"
+        variant="outline-primary"
         disabled={isLoading}
         class="w-full mt-2"
       >

@@ -10,6 +10,7 @@
 
 <script lang="ts">
   import '../app.css';
+  import '$lib/themes/css';
   import { Icon, Sidebar, ThemeToggle } from '$lib/components';
   import { ToastContainer } from '$lib/components/toast';
   import { JobsIndicator, JobOutputModal } from '$lib/components/jobs';
@@ -20,6 +21,11 @@
   import { navItems } from './navigation';
   import { page } from '$app/state';
   import { clientLogger as logger } from '$lib/client/logger';
+  import {
+    initializeThemeStore,
+    initializeThemeStoreFallback,
+    validateThemeSystem,
+  } from '$lib/themes/themeStore.js';
 
   const { children, data } = $props();
 
@@ -67,6 +73,24 @@
 
     checkMobile();
 
+    const validation = validateThemeSystem();
+    if (!validation.valid) {
+      logger.warn('Theme system validation failed:', validation.errors);
+    }
+
+    (async () => {
+      if (user) {
+        try {
+          await initializeThemeStore();
+        } catch (error) {
+          logger.warn('Failed to initialize theme from database, using fallback:', error);
+          initializeThemeStoreFallback();
+        }
+      } else {
+        initializeThemeStoreFallback();
+      }
+    })();
+
     const handleResize = () => {
       const wasMobile = isMobile;
       checkMobile();
@@ -82,28 +106,36 @@
       window.removeEventListener('resize', handleResize);
     };
   });
+
+  $effect(() => {
+    if (typeof window !== 'undefined') {
+      if (user) {
+        initializeThemeStore().catch(() => {
+          initializeThemeStoreFallback();
+        });
+      } else {
+        initializeThemeStoreFallback();
+      }
+    }
+  });
 </script>
 
 {#if isAuthRoute}
   <!-- Auth-only layout -->
-  <div
-    class="min-h-screen bg-gradient-to-br from-primary-50 to-secondary-100 dark:from-primary-950 dark:to-secondary-950"
-  >
+  <div class="min-h-screen bg-background">
     {@render children()}
   </div>
 {:else}
   <!-- Main layout with sidebar and header -->
-  <div class="flex flex-col h-screen bg-secondary-50 dark:bg-secondary-950">
-    <header
-      class="sticky top-0 z-50 border-b border-secondary-300 bg-secondary-100 dark:border-secondary-700 dark:bg-secondary-900 px-6 py-4"
-    >
+  <div class="flex flex-col h-screen bg-background">
+    <header class="sticky top-0 z-50 border-b-strong bg-surface px-6 py-4">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-4">
           {#if isMobile}
             <!-- hamburger -->
             <button
               onclick={handleSidebarToggle}
-              class="p-2 rounded-md text-secondary-600 dark:text-secondary-400 hover:bg-secondary-200 dark:hover:bg-secondary-800 focus:outline-hidden focus:ring-2 focus:ring-primary-500"
+              class="p-2 rounded-md text-muted-foreground hover:bg-surface-hover focus:outline-hidden focus:border-focus"
               aria-label={sidebarOpen ? 'Close navigation menu' : 'Open navigation menu'}
               aria-expanded={sidebarOpen}
             >
@@ -117,11 +149,7 @@
 
           <div class="flex-shrink-0 flex items-center select-none">
             <img src={icon} alt="gdluxx Logo" class="me-3 h-6 sm:h-9" />
-            <span
-              class="text-xl font-semibold whitespace-nowrap text-secondary-900 dark:text-secondary-100"
-            >
-              gdluxx
-            </span>
+            <span class="text-xl font-semibold whitespace-nowrap text-foreground"> gdluxx </span>
           </div>
           <JobsIndicator />
         </div>

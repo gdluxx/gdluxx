@@ -19,7 +19,10 @@
     "format:check": "prettier --check .",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "fix-all": "pnpm format; pnpm lint:fix"
+    "fix-all": "pnpm format; pnpm lint:fix",
+    "validate-themes": "node scripts/validate-themes.js",
+    "test:themes": "vitest run tests/theme-system.test.js",
+    "theme-check": "pnpm validate-themes && pnpm test:themes"
   },
   "devDependencies": {
     "@better-auth/cli": "^1.2.10",
@@ -85,6 +88,7 @@
     "node-gyp": "^11.2.0",
     "uuid": "^11.1.0",
     "winston": "^3.17.0",
-    "winston-daily-rotate-file": "^5.0.0"
+    "winston-daily-rotate-file": "^5.0.0",
+    "zod": "^4.1.1"
   }
 }

@@ -18,7 +18,6 @@
   type ButtonVariant =
     | 'default'
     | 'primary'
-    | 'secondary'
     | 'success'
     | 'warning'
     | 'danger'
@@ -26,7 +25,6 @@
     | 'light'
     | 'dark'
     | 'outline-primary'
-    | 'outline-secondary'
     | 'outline-success'
     | 'outline-warning'
     | 'outline-danger'
@@ -59,7 +57,7 @@
     children,
     cancelText = 'Cancel',
     confirmText = 'Confirm',
-    cancelVariant = 'outline-secondary',
+    cancelVariant = 'outline-primary',
     confirmVariant = 'primary',
     size = 'md',
     showCloseButton = true,
@@ -159,14 +157,11 @@
       'w-full',
       'flex',
       'flex-col',
-      'bg-white',
-      'border',
-      'border-secondary-200',
+      'bg-surface-elevated',
+      'border-strong',
       'shadow-xl',
-      'rounded-lg',
+      'rounded-sm',
       'pointer-events-auto',
-      'dark:bg-secondary-800',
-      'dark:border-secondary-700',
       sizeClasses[size],
     ].join(' ')
   );
@@ -192,20 +187,20 @@
     >
       <!-- Header -->
       <div
-        class="flex justify-between items-center py-4 px-6 border-b border-secondary-200 dark:border-secondary-700"
+        class="flex justify-between items-center py-4 px-6 border-b-primary/35"
       >
-        <h3
+        <h1
           id="modal-title"
-          class="text-lg font-semibold text-secondary-900 dark:text-secondary-100"
+          class="text-lg font-semibold text-primary"
         >
           {title}
-        </h3>
+        </h1>
 
         {#if showCloseButton}
           <button
             type="button"
             onclick={handleClose}
-            class="cursor-pointer flex-shrink-0 w-8 h-8 inline-flex justify-center items-center rounded-full border border-transparent bg-secondary-100 text-secondary-800 hover:bg-secondary-200 focus:outline-hidden focus:bg-secondary-200 focus:ring-2 focus:ring-secondary-300 transition-all dark:bg-secondary-700 dark:hover:bg-secondary-600 dark:text-secondary-400 dark:focus:bg-secondary-600 dark:focus:ring-secondary-500"
+            class="cursor-pointer flex-shrink-0 w-8 h-8 inline-flex justify-center items-center rounded-full border-primary/35 text-foreground hover:outline-hidden hover:ring-2 hover:ring-primary transition-all"
             aria-label="Close modal"
           >
             <span class="sr-only">Close</span>
@@ -221,7 +216,7 @@
         {:else if message}
           <p
             id="modal-description"
-            class="text-secondary-700 dark:text-secondary-300 leading-relaxed"
+            class="text-foreground leading-relaxed"
           >
             {message}
           </p>
@@ -230,7 +225,7 @@
 
       <!-- Footer -->
       <div
-        class="flex justify-end items-center gap-3 py-4 px-6 border-t border-secondary-200 dark:border-secondary-700"
+        class="flex justify-end items-center gap-3 py-4 px-6 border-t-primary/35"
       >
         <Button variant={cancelVariant} onclick={handleCancel} type="button">
           {cancelText}

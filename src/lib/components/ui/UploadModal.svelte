@@ -221,14 +221,11 @@
       'w-full',
       'flex',
       'flex-col',
-      'bg-white',
+      'bg-surface-elevated',
       'border',
-      'border-secondary-200',
       'shadow-xl',
       'rounded-sm',
       'pointer-events-auto',
-      'dark:bg-secondary-800',
-      'dark:border-secondary-700',
       sizeClasses[size],
     ].join(' ')
   );
@@ -254,11 +251,11 @@
     >
       <!-- Header -->
       <div
-        class="flex justify-between items-center py-4 px-6 border-b border-secondary-200 dark:border-secondary-700"
+        class="flex justify-between items-center py-4 px-6 border-b"
       >
         <h3
           id="modal-title"
-          class="text-lg font-semibold text-secondary-900 dark:text-secondary-100"
+          class="text-lg font-semibold text-foreground"
         >
           {uploadConfig.title}
         </h3>
@@ -267,7 +264,7 @@
           <button
             type="button"
             onclick={handleClose}
-            class="cursor-pointer flex-shrink-0 w-8 h-8 inline-flex justify-center items-center rounded-full border border-transparent bg-secondary-100 text-secondary-800 hover:bg-secondary-200 focus:outline-hidden focus:bg-secondary-200 focus:ring-2 focus:ring-secondary-300 transition-all dark:bg-secondary-700 dark:hover:bg-secondary-600 dark:text-secondary-400 dark:focus:bg-secondary-600 dark:focus:ring-secondary-500"
+            class="cursor-pointer text-foreground flex-shrink-0 w-8 h-8 inline-flex justify-center items-center rounded-full border-transparent hover:ring-1 transition-all"
             aria-label="Close modal"
           >
             <span class="sr-only">Close</span>
@@ -278,7 +275,7 @@
 
       <!-- Content -->
       <div class="p-6">
-        <p id="modal-description" class="text-secondary-700 dark:text-secondary-300 mb-6">
+        <p id="modal-description" class="text-foreground mb-6">
           {uploadConfig.description}
         </p>
 
@@ -295,10 +292,10 @@
         <!-- Drop zone -->
         <div
           class="relative border-2 border-dashed rounded-sm p-8 text-center transition-colors cursor-pointer {isDragOver
-            ? 'border-primary-400 bg-primary-50 dark:border-primary-500 dark:bg-primary-950'
+            ? 'bg-primary'
             : selectedFile
-              ? 'border-success-400 bg-success-50 dark:border-success-500 dark:bg-success-950'
-              : 'border-secondary-300 hover:border-secondary-400 dark:border-secondary-600 dark:hover:border-secondary-500'}"
+              ? 'border-success border-solid bg-success/10'
+              : 'border-primary'}"
           ondragover={handleDragOver}
           ondragleave={handleDragLeave}
           ondrop={handleDrop}
@@ -315,15 +312,15 @@
                 <Icon
                   iconName="circle"
                   size={48}
-                  class="text-success-500"
+                  class="text-success"
                   ariaLabel="File selected"
                 />
               </div>
               <div>
-                <p class="text-lg font-medium text-secondary-900 dark:text-secondary-100">
+                <p class="text-lg font-medium text-success">
                   {selectedFile.name}
                 </p>
-                <p class="text-sm text-secondary-500 dark:text-secondary-400">
+                <p class="text-sm text-success">
                   {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
                 </p>
               </div>
@@ -333,12 +330,12 @@
                 <Icon
                   iconName="plus"
                   size={48}
-                  class="text-secondary-400 dark:text-secondary-500"
+                  class="text-primary"
                   ariaLabel="Upload icon"
                 />
               </div>
               <div>
-                <p class="text-lg font-medium text-secondary-900 dark:text-secondary-100">
+                <p class="text-lg font-medium text-muted-foreground">
                   Click to upload or drag and drop
                 </p>
               </div>
@@ -347,7 +344,7 @@
 
           {#if isDragOver}
             <div
-              class="absolute inset-0 bg-primary-100 dark:bg-primary-900 opacity-50 rounded-sm"
+              class="absolute inset-0 opacity-50 rounded-sm"
             ></div>
           {/if}
         </div>
@@ -356,14 +353,14 @@
       <!-- Footer -->
       {#if selectedFile}
         <div
-          class="flex justify-end items-center gap-3 py-4 px-6 border-t border-secondary-200 dark:border-secondary-700"
+          class="flex justify-end items-center gap-3 py-4 px-6 border-t"
         >
-          <Button variant="outline-secondary" size="sm" onclick={handleRemoveFile}>
+          <Button variant="outline-warning" size="sm" onclick={handleRemoveFile}>
             Remove file
           </Button>
-          <Button variant="outline-secondary" size="sm" onclick={handleClose} type="button"
-            >Cancel</Button
-          >
+          <Button variant="default" size="sm" onclick={handleClose} type="button">
+            Cancel
+          </Button>
 
           <Button
             variant="primary"

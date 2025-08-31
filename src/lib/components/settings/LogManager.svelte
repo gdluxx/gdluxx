@@ -249,24 +249,23 @@
 <div class="container mx-auto max-w-4xl p-6 space-y-8">
   {#if loading}
     <div class="text-center py-8">
-      <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-      <p class="mt-2 text-gray-600 dark:text-gray-400">Loading...</p>
+      <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-strong"></div>
+      <p class="mt-2 text-foreground">Loading...</p>
     </div>
   {:else}
     <!-- Server logging config -->
     <div
-      class="bg-primary-50 p-4 dark:border-primary-400 rounded-sm border border-primary-600 dark:bg-primary-800"
+      class="content-panel"
     >
       <div class="flex items-center justify-between mb-4">
-        <h2 class="cursor-default text-xl font-semibold dark:text-gray-900 text-gray-100">
+        <h2 class="">
           Server Logging
         </h2>
         <Button
           onclick={updateServerConfig}
           disabled={loading}
-          variant="primary"
+          variant="outline-primary"
           size="sm"
-          class=""
         >
           Update Server Config
         </Button>
@@ -279,13 +278,14 @@
             label="Enable Server Logging"
             tooltipContent={tooltipVars.server.enable}
             variant="primary"
+            size="sm"
           />
 
           <div>
             <div class="flex flex-row gap-2 items-center">
               <label
                 for="server-log-level"
-                class="block text-sm font-medium dark:text-gray-700 text-gray-300 mb-1"
+                class="block text-sm font-medium text-muted-foreground mb-1"
               >
                 Log Level
                 <Tooltip
@@ -293,14 +293,14 @@
                   class="!whitespace-normal !min-w-80"
                   content={tooltipVars.server.level}
                 >
-                  <Icon iconName="question" size={20} class="text-secondary-800" />
+                  <Icon iconName="question" size={20} class="text-muted-foreground" />
                 </Tooltip>
               </label>
             </div>
             <select
               id="server-log-level"
               bind:value={serverConfig.level}
-              class="w-full px-3 py-2 text-sm border dark:border-gray-300 border-gray-600 rounded-md bg-white dark:bg-gray-700 dark:text-gray-900 text-gray-100"
+              class="form-select"
             >
               <option value="debug">Debug</option>
               <option value="info">Info</option>
@@ -313,7 +313,7 @@
             <div class="flex flex-row gap-2 items-center">
               <label
                 for="server-format"
-                class="block text-sm font-medium dark:text-gray-700 text-gray-300 mb-1"
+                class="block text-sm font-medium text-muted-foreground mb-1"
               >
                 Log Format
                 <Tooltip
@@ -321,14 +321,14 @@
                   class="!whitespace-normal !min-w-80"
                   content={tooltipVars.server.format}
                 >
-                  <Icon iconName="question" size={20} class="text-secondary-800" />
+                  <Icon iconName="question" size={20} class="text-muted-foreground" />
                 </Tooltip>
               </label>
             </div>
             <select
               id="server-format"
               bind:value={serverConfig.format}
-              class="w-full px-3 py-2 text-sm border dark:border-gray-300 border-gray-600 rounded-md bg-white dark:bg-gray-700 dark:text-gray-900 text-gray-100"
+              class="form-select"
             >
               <option value="simple">Simple</option>
               <option value="json">JSON</option>
@@ -340,6 +340,7 @@
             label="Console Output"
             tooltipContent={tooltipVars.server.console}
             variant="primary"
+            size="sm"
           />
         </div>
 
@@ -349,43 +350,44 @@
             label="File Output"
             tooltipContent={tooltipVars.server.file}
             variant="primary"
+            size="sm"
           />
 
           {#if serverConfig.fileEnabled}
             <div>
               <label
                 for="server-file-directory"
-                class="block text-sm font-medium dark:text-gray-700 text-gray-300 mb-1"
+                class="block text-sm font-medium text-muted-foreground mb-1"
               >
                 Log Directory
                 <Tooltip maxWidth="" content={tooltipVars.server.directory}>
-                  <Icon iconName="question" size={20} class="text-secondary-800" />
+                  <Icon iconName="question" size={20} class="text-muted-foreground" />
                 </Tooltip>
               </label>
               <input
                 id="server-file-directory"
                 type="text"
                 bind:value={serverConfig.fileDirectory}
-                class="text-sm w-full px-3 py-2 border dark:border-gray-300 border-gray-600 rounded-md bg-white dark:bg-gray-700 dark:text-gray-900 text-gray-100"
+                class="form-input"
               />
 
               <!-- Docker path preview -->
               {#if isDockerEnvironment && pathPreview}
                 <div
-                  class="mt-2 p-3 bg-blue-50 dark:bg-blue-900 rounded-md text-sm border border-blue-200 dark:border-blue-700"
+                  class="mt-2 p-3 bg-surface-elevated rounded-sm text-sm border-strong"
                 >
                   <div class="flex items-center gap-2 mb-1">
-                    <Icon iconName="settings" size={16} class="text-blue-600 dark:text-blue-400" />
-                    <span class="text-blue-700 dark:text-blue-300 font-medium">
+                    <Icon iconName="settings" size={16} class="text-foreground" />
+                    <span class="text-foreground font-medium">
                       Docker Environment Detected
                     </span>
                   </div>
 
                   {#if pathPreview.wasTransformed}
                     <div class="ml-6">
-                      <div class="text-blue-700 dark:text-blue-300">
+                      <div class="text-info">
                         Transformed path: <code
-                          class="font-mono bg-blue-100 dark:bg-blue-800 px-1 py-0.5 rounded text-xs"
+                          class="font-mono bg-primary/10 px-1 py-0.5 rounded text-xs"
                         >
                           {pathPreview.path}
                         </code>
@@ -393,7 +395,7 @@
 
                       <!-- Warnings for special transformations -->
                       {#each pathPreview.warnings as warning, index (index)}
-                        <div class="mt-1 text-amber-700 dark:text-amber-300 flex items-start gap-1">
+                        <div class="mt-1 text-warning flex items-start gap-1">
                           <Icon iconName="question" size={14} class="mt-0.5 flex-shrink-0" />
                           <span class="text-xs">{warning}</span>
                         </div>
@@ -401,21 +403,21 @@
 
                       <!-- Errors if any -->
                       {#each pathPreview.errors as error, index (index)}
-                        <div class="mt-1 text-red-700 dark:text-red-300 flex items-start gap-1">
+                        <div class="mt-1 text-error flex items-start gap-1">
                           <Icon iconName="close" size={14} class="mt-0.5 flex-shrink-0" />
                           <span class="text-xs">{error}</span>
                         </div>
                       {/each}
                     </div>
                   {:else}
-                    <div class="ml-6 text-blue-600 dark:text-blue-400 text-xs">
+                    <div class="ml-6 text-foreground text-xs">
                       Path is already compatible with Docker environment
                     </div>
                   {/if}
                 </div>
               {:else if isDockerEnvironment}
                 <div
-                  class="mt-2 p-2 bg-gray-50 dark:bg-gray-800 rounded text-xs text-gray-600 dark:text-gray-400 border"
+                  class="mt-2 p-2 bg-primary/10 rounded text-xs text-foreground border-strong"
                 >
                   <Icon iconName="settings" size={14} class="inline mr-1" />
                   Docker environment detected - paths will be automatically transformed
@@ -426,7 +428,7 @@
             <div>
               <label
                 for="server-file-max-size"
-                class="block text-sm font-medium dark:text-gray-700 text-gray-300 mb-1"
+                class="block text-sm font-medium text-muted-foreground mb-1"
               >
                 Max File Size
                 <Tooltip
@@ -434,7 +436,7 @@
                   class="!whitespace-normal !min-w-80"
                   content={tooltipVars.server.fileSize}
                 >
-                  <Icon iconName="question" size={20} class="text-secondary-800" />
+                  <Icon iconName="question" size={20} class="text-muted-foreground" />
                 </Tooltip>
               </label>
               <input
@@ -442,14 +444,14 @@
                 type="text"
                 bind:value={serverConfig.fileMaxSize}
                 placeholder="10m"
-                class="text-sm w-full px-3 py-2 border dark:border-gray-300 border-gray-600 rounded-md bg-white dark:bg-gray-700 dark:text-gray-900 text-gray-100"
+                class="form-input"
               />
             </div>
 
             <div>
               <label
                 for="server-file-max-files"
-                class="block text-sm font-medium dark:text-gray-700 text-gray-300 mb-1"
+                class="block text-sm font-medium text-muted-foreground mb-1"
               >
                 Max Files to Keep
                 <Tooltip
@@ -457,7 +459,7 @@
                   class="!whitespace-normal !min-w-80"
                   content={tooltipVars.server.fileRetention}
                 >
-                  <Icon iconName="question" size={20} class="text-secondary-800" />
+                  <Icon iconName="question" size={20} class="text-muted-foreground" />
                 </Tooltip>
               </label>
               <input
@@ -465,7 +467,7 @@
                 type="text"
                 bind:value={serverConfig.fileMaxFiles}
                 placeholder="7d"
-                class="text-sm w-full px-3 py-2 border dark:border-gray-300 border-gray-600 rounded-md bg-white dark:bg-gray-700 dark:text-gray-900 text-gray-100"
+                class="form-input"
               />
             </div>
           {/if}
@@ -475,13 +477,14 @@
             label="Performance Logging"
             tooltipContent={tooltipVars.server.performance}
             variant="primary"
+            size="sm"
           />
 
           {#if serverConfig.performanceLogging}
             <div>
               <label
                 for="server-slow-query-threshold"
-                class="block text-sm font-medium dark:text-gray-700 text-gray-300 mb-1"
+                class="block text-sm font-medium text-muted-foreground mb-1"
               >
                 Slow Query Threshold (ms)
                 <Tooltip
@@ -489,7 +492,7 @@
                   class="!whitespace-normal !min-w-80"
                   content={tooltipVars.server.queryThreshold}
                 >
-                  <Icon iconName="question" size={20} class="text-secondary-800" />
+                  <Icon iconName="question" size={20} class="text-muted-foreground" />
                 </Tooltip>
               </label>
               <input
@@ -497,7 +500,7 @@
                 type="number"
                 bind:value={serverConfig.slowQueryThreshold}
                 min="0"
-                class="text-sm w-full px-3 py-2 border dark:border-gray-300 border-gray-600 rounded-md bg-white dark:bg-gray-700 dark:text-gray-900 text-gray-100"
+                class="form-input"
               />
             </div>
           {/if}
@@ -507,13 +510,13 @@
 
     <!-- Client log config -->
     <div
-      class="bg-primary-50 p-4 dark:border-primary-400 rounded-sm border border-primary-600 dark:bg-primary-800"
+      class="content-panel"
     >
       <div class="flex items-center justify-between mb-4">
-        <h2 class="cursor-default text-xl font-semibold dark:text-gray-900 text-gray-100">
+        <h2 class="">
           Client Logging
         </h2>
-        <Button onclick={updateClientConfig} variant="primary" size="sm" class="">
+        <Button onclick={updateClientConfig} variant="outline-primary" size="sm" class="">
           Update Client Config
         </Button>
       </div>
@@ -525,18 +528,19 @@
             label="Enable Client Logging"
             tooltipContent={tooltipVars.client.enable}
             variant="primary"
+            size="sm"
           />
 
           <div>
             <label
               for="client-log-level"
-              class="block text-sm font-medium dark:text-gray-700 text-gray-300 mb-1"
+              class="block text-sm font-medium text-muted-foreground mb-1"
               >Log Level</label
             >
             <select
               id="client-log-level"
               bind:value={clientConfig.level}
-              class="w-full px-3 py-2 text-sm border dark:border-gray-300 border-gray-600 rounded-md bg-white dark:bg-gray-700 dark:text-gray-900 text-gray-100"
+              class="form-select"
             >
               <option value="debug">Debug</option>
               <option value="info">Info</option>
@@ -550,6 +554,7 @@
             label="Send Logs to Server"
             tooltipContent={tooltipVars.client.sendToServer}
             variant="primary"
+            size="sm"
           />
 
           <Toggle
@@ -557,6 +562,7 @@
             label="Include URL in Logs"
             tooltipContent={tooltipVars.client.includeUrl}
             variant="primary"
+            size="sm"
           />
         </div>
 
@@ -565,7 +571,7 @@
             <div>
               <label
                 for="client-buffer-size"
-                class="block text-sm font-medium dark:text-gray-700 text-gray-300 mb-1"
+                class="block text-sm font-medium text-muted-foreground mb-1"
               >
                 Buffer Size
                 <Tooltip
@@ -573,7 +579,7 @@
                   class="!whitespace-normal !min-w-80"
                   content={tooltipVars.client.bufferSize}
                 >
-                  <Icon iconName="question" size={20} class="text-secondary-800" />
+                  <Icon iconName="question" size={20} class="text-muted-foreground" />
                 </Tooltip>
               </label>
               <input
@@ -582,14 +588,14 @@
                 bind:value={clientConfig.bufferSize}
                 min="1"
                 max="1000"
-                class="text-sm w-full px-3 py-2 text-sm border dark:border-gray-300 border-gray-600 rounded-md bg-white dark:bg-gray-700 dark:text-gray-900 text-gray-100"
+                class="form-input"
               />
             </div>
 
             <div>
               <label
                 for="client-batch-interval"
-                class="block text-sm font-medium dark:text-gray-700 text-gray-300 mb-1"
+                class="block text-sm font-medium text-muted-foreground mb-1"
               >
                 Batch Interval (ms)
                 <Tooltip
@@ -597,7 +603,7 @@
                   class="!whitespace-normal !min-w-80"
                   content={tooltipVars.client.batchInterval}
                 >
-                  <Icon iconName="question" size={20} class="text-secondary-800" />
+                  <Icon iconName="question" size={20} class="text-muted-foreground" />
                 </Tooltip>
               </label>
               <input
@@ -606,7 +612,7 @@
                 bind:value={clientConfig.batchInterval}
                 min="1000"
                 max="60000"
-                class="text-sm w-full px-3 py-2 border dark:border-gray-300 border-gray-600 rounded-md bg-white dark:bg-gray-700 dark:text-gray-900 text-gray-100"
+                class="form-input"
               />
             </div>
 
@@ -615,6 +621,7 @@
               label="Include User Agent"
               tooltipContent={tooltipVars.client.userAgent}
               variant="primary"
+              size="sm"
             />
           {/if}
         </div>

@@ -13,7 +13,7 @@
   import { onMount } from 'svelte';
   import type { ClientJob } from '$lib/stores/jobs.svelte';
   import { jobStore } from '$lib/stores/jobs.svelte';
-  import { Button, Info, ConfirmModal } from '$lib/components/ui';
+  import { Button, Info, ConfirmModal, Toggle } from '$lib/components/ui';
   import { Icon } from '$lib/components/index';
   import type { Job } from '$lib/server/jobs/jobManager';
 
@@ -98,15 +98,15 @@
   function getStatusColor(status: ClientJob['status']): string {
     switch (status) {
       case 'running':
-        return 'bg-blue-500 shadow-lg animate-pulse';
+        return 'bg-info shadow-lg animate-pulse';
       case 'success':
-        return 'bg-green-500 shadow-lg';
+        return 'bg-success shadow-lg';
       case 'no_action':
-        return 'bg-yellow-500 shadow-lg';
+        return 'bg-warning shadow-lg';
       case 'error':
-        return 'bg-red-500 shadow-lg';
+        return 'bg-error shadow-lg';
       default:
-        return 'bg-gray-500';
+        return 'bg-surface-sunken';
     }
   }
 
@@ -252,16 +252,14 @@
   });
 </script>
 
-<div
-  class="bg-primary-50 dark:border-primary-400 rounded-sm border border-primary-600 dark:bg-primary-800"
->
+<div class="data-list">
   <!-- Header -->
-  <div class="cursor-default border-b border-secondary-200 px-4 py-4 dark:border-secondary-700">
+  <div class="data-list-header">
     <div class="flex items-center justify-between mb-3">
-      <h2 class="text-xl font-semibold text-secondary-900 dark:text-secondary-100">
+      <h2>
         Jobs: {jobs.length} / {aggregateStats().total}
         {#if hasSelection}
-          <span class="text-sm text-secondary-600 dark:text-secondary-400">
+          <span class="text-sm text-muted-foreground">
             ({selectedCount} selected)
           </span>
         {/if}
@@ -273,21 +271,17 @@
       <!-- running card -->
       <button
         onclick={() => toggleFilter('running')}
-        class={`bg-secondary-50 dark:bg-secondary-900 rounded-sm border px-3 py-1.5 cursor-pointer ${
+        class={`text-foreground rounded-sm border px-3 py-1.5 cursor-pointer ${
           activeFilters.has('running')
-            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30'
-            : 'border-secondary-200 dark:border-secondary-700 hover:border-secondary-300'
+            ? 'border-info bg-info/10'
+            : 'bg-surface-elevated border-strong hover:border-info hover:bg-info-hover/10'
         }`}
       >
         <div class="flex items-center gap-2 justify-center">
-          <div class="w-2 h-2 rounded-full bg-blue-500"></div>
-          <span class="text-xs font-medium text-secondary-600 dark:text-secondary-400">
-            Running
-          </span>
+          <div class="w-2 h-2 rounded-full bg-info"></div>
+          <span class="text-md font-medium text-accent-foreground">Running</span>
         </div>
-        <div
-          class="mt-1 text-lg font-semibold text-secondary-900 dark:text-secondary-100 flex justify-center"
-        >
+        <div class="mt-1 text-xl font-semibold text-primary flex justify-center">
           {aggregateStats().running}
         </div>
       </button>
@@ -295,21 +289,17 @@
       <!-- success card -->
       <button
         onclick={() => toggleFilter('success')}
-        class={`bg-secondary-50 dark:bg-secondary-900 rounded-sm border px-3 py-1.5 cursor-pointer ${
+        class={`text-foreground rounded-sm border px-3 py-1.5 cursor-pointer ${
           activeFilters.has('success')
-            ? 'border-green-500'
-            : 'border-secondary-200 dark:border-secondary-700 hover:border-secondary-300'
+            ? 'border-success bg-success/10'
+            : 'bg-surface-elevated border-strong hover:border-success hover:bg-success-hover/10'
         }`}
       >
         <div class="flex items-center gap-2 justify-center">
-          <div class="w-2 h-2 rounded-full bg-green-500"></div>
-          <span class="text-xs font-medium text-secondary-600 dark:text-secondary-400">
-            Success
-          </span>
+          <div class="w-2 h-2 rounded-full bg-success"></div>
+          <span class="text-md font-medium text-accent-foreground">Success</span>
         </div>
-        <div
-          class="mt-1 text-lg font-semibold text-secondary-900 dark:text-secondary-100 flex justify-center"
-        >
+        <div class="mt-1 text-xl font-semibold text-primary flex justify-center">
           {aggregateStats().success}
         </div>
       </button>
@@ -317,21 +307,17 @@
       <!-- skips card -->
       <button
         onclick={() => toggleFilter('no_action')}
-        class={`bg-secondary-50 dark:bg-secondary-900 rounded-sm border px-3 py-1.5 cursor-pointer ${
+        class={`text-foreground rounded-sm border px-3 py-1.5 cursor-pointer ${
           activeFilters.has('no_action')
-            ? 'border-yellow-500'
-            : 'border-secondary-200 dark:border-secondary-700 hover:border-secondary-300'
+            ? 'border-warning bg-warning/10'
+            : 'bg-surface-elevated border-strong hover:border-warning hover:bg-warning-hover/10'
         }`}
       >
         <div class="flex items-center gap-2 justify-center">
-          <div class="w-2 h-2 rounded-full bg-yellow-500"></div>
-          <span class="text-xs font-medium text-secondary-600 dark:text-secondary-400">
-            Skips
-          </span>
+          <div class="w-2 h-2 rounded-full bg-warning"></div>
+          <span class="text-md font-medium text-accent-foreground">Skips</span>
         </div>
-        <div
-          class="mt-1 text-lg font-semibold text-secondary-900 dark:text-secondary-100 flex justify-center"
-        >
+        <div class="mt-1 text-xl font-semibold text-primary flex justify-center">
           {aggregateStats().skips}
         </div>
       </button>
@@ -339,67 +325,49 @@
       <!-- error card -->
       <button
         onclick={() => toggleFilter('error')}
-        class={`bg-secondary-50 dark:bg-secondary-900 rounded-sm border px-3 py-1.5 cursor-pointer ${
+        class={`text-foreground rounded-sm border px-3 py-1.5 cursor-pointer ${
           activeFilters.has('error')
-            ? 'border-red-500 bg-red-50 dark:bg-red-900/30'
-            : 'border-secondary-200 dark:border-secondary-700 hover:border-secondary-300'
+            ? 'border-error bg-error/10'
+            : 'bg-surface-elevated border-strong hover:border-error hover:bg-error-hover/10'
         }`}
       >
         <div class="flex items-center gap-2 justify-center">
-          <div class="w-2 h-2 rounded-full bg-red-500"></div>
-          <span class="text-xs font-medium text-secondary-600 dark:text-secondary-400">
-            Errors
-          </span>
+          <div class="w-2 h-2 rounded-full bg-error"></div>
+          <span class="text-md font-medium text-accent-foreground">Errors</span>
         </div>
-        <div
-          class="mt-1 text-lg font-semibold text-secondary-900 dark:text-secondary-100 flex justify-center"
-        >
+        <div class="mt-1 text-xl font-semibold text-primary flex justify-center">
           {aggregateStats().error}
         </div>
       </button>
 
       <!-- totalDownloads card -->
-      <div
-        class="bg-secondary-50 dark:bg-secondary-900 rounded-sm border border-secondary-200 dark:border-secondary-700 px-3 py-1.5"
-      >
+      <div class="data-list-stats">
         <div class="flex items-center gap-2 justify-center">
-          <Icon iconName="download-arrow" size={18} class="align-middle -mx-1 text-green-500" />
-          <span class="text-xs font-medium text-secondary-600 dark:text-secondary-400">
-            Downloads
-          </span>
+          <Icon iconName="download-arrow" size={18} class="align-middle -mx-1 text-success" />
+          <span class="text-md font-medium text-accent-foreground">Downloads</span>
         </div>
-        <div
-          class="mt-1 text-lg font-semibold text-secondary-900 dark:text-secondary-100 flex justify-center"
-        >
+        <div class="mt-1 text-xl font-semibold text-primary flex justify-center">
           {aggregateStats().totalDownloads}
         </div>
       </div>
 
       <!-- totalSkips card -->
-      <div
-        class="bg-secondary-50 dark:bg-secondary-900 rounded-sm border px-3 py-1.5 border-secondary-200 dark:border-secondary-700"
-      >
+      <div class="data-list-stats">
         <div class="flex items-center gap-2 justify-center">
-          <Icon iconName="no-circle" size={16} class="align-middle text-yellow-500" />
-          <span class="text-xs font-medium text-secondary-600 dark:text-secondary-400">
-            Skips
-          </span>
+          <Icon iconName="no-circle" size={16} class="align-middle text-warning" />
+          <span class="text-md font-medium text-accent-foreground">Skips</span>
         </div>
-        <div
-          class="mt-1 text-lg font-semibold text-secondary-900 dark:text-secondary-100 flex justify-center"
-        >
+        <div class="mt-1 text-xl font-semibold text-primary flex justify-center">
           {aggregateStats().totalSkips}
         </div>
       </div>
     </div>
 
     <!-- Controls -->
-    <div
-      class="bg-secondary-50 dark:bg-secondary-800/50 rounded-sm border border-secondary-200 dark:border-secondary-700 p-3"
-    >
+    <div class="data-list-controls">
       <div class="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
         <div class="flex items-center gap-2 flex-wrap">
-          <Button variant="secondary" size="sm" onclick={toggleSelectAll}>
+          <Button variant="outline-primary" size="sm" onclick={toggleSelectAll}>
             {allSelected ? 'Deselect All' : 'Select All'}
           </Button>
 
@@ -408,7 +376,7 @@
               name="Delete Selected Jobs"
               onclick={deleteSelectedJobs}
               aria-label="Delete Selected Jobs"
-              variant="danger"
+              variant="outline-danger"
               size="sm"
             >
               Delete Selected
@@ -418,7 +386,7 @@
               name="Delete All Jobs"
               onclick={deleteAllJobs}
               aria-label="Delete All Jobs"
-              variant="danger"
+              variant="outline-danger"
               size="sm"
             >
               Delete All
@@ -463,41 +431,27 @@
   </div>
 
   <!-- Job list -->
-  <div class="overflow-y-auto">
+  <div class="overflow-y-auto mt-2">
     {#if jobs.length === 0}
-      <div class="p-8 text-center text-secondary-600 dark:text-secondary-400">
-        No jobs to display
-      </div>
+      <div class="p-8 text-center text-foreground">No jobs to display</div>
     {:else}
-      <ul class="divide-y divide-secondary-200 dark:divide-secondary-700">
-        {#each jobs as job (job.id)}
-          <li
-            class="flex w-full items-center justify-between p-4 transition-colors hover:bg-primary-100 dark:hover:bg-primary-900 hover:rounded-sm"
-          >
+      {#each jobs as job (job.id)}
+        <div class="mt-2 data-list-item flex items-center justify-between">
             <div class="flex items-center gap-3 flex-1 min-w-0">
-              <input
-                type="checkbox"
+              <Toggle
                 checked={selectedJobs.has(job.id)}
                 onchange={() => toggleJobSelection(job.id)}
-                class="w-5 h-5 bg-white border-2 border-primary-300 rounded transition-all
-                  duration-150 ease-in-out hover:border-primary-600
-                  dark:checked:bg-primary-600 dark:checked:border-primary-600 dark:checked:hover:bg-primary-700
-                  dark:checked:hover:border-primary-700
-                  dark:bg-primary-800 dark:border-primary-600 checked:bg-primary-500 checked:border-primary-500
-                  dark:hover:border-primary-400 appearance-none cursor-pointer relative
-                  before:content-[''] before:absolute before:top-[2px] before:left-[5px]
-                  before:w-[7px] before:h-[12px] before:border-r-2 before:border-b-2 before:border-white
-                  before:transform before:rotate-45 before:scale-0 before:transition-transform before:duration-150
-                  checked:before:scale-100"
-                aria-label={`Select job ${job.url}`}
+                variant="primary"
+                size="default"
               />
               <button
                 onclick={() => handleJobClick(job)}
-                class="flex min-w-0 flex-1 cursor-pointer flex-col text-left hover:scale-101 focus:outline-none"
+                class="flex min-w-0 flex-1 cursor-pointer flex-col text-left"
                 aria-label={`View details for job ${job.url}`}
               >
                 <div class="flex-grow">
                   <div class="mb-1 flex items-center gap-2">
+                    <!-- status circle -->
                     <div
                       class={`h-3 w-3 rounded-full cursor-help transition-transform hover:scale-125 ${getStatusColor(job.status)}`}
                       onmouseenter={e => showTooltip(e, getStatusTooltip(job))}
@@ -505,19 +459,28 @@
                       role="tooltip"
                       aria-label={getStatusTooltip(job)}
                     ></div>
-                    <span class="text-sm font-medium text-secondary-900 dark:text-secondary-100">
+                    <!-- Job status text -->
+                    <span class="text-sm font-medium text-primary">
                       {#if getStatusText(job.status) === 'Skips'}
-                        Skipped
+                        <span class="text-warning">
+                          Skipped
+                        </span>
                       {:else}
-                        {getStatusText(job.status)}
+                        <span
+                          class:text-foreground={getStatusText(job.status) === 'Running'}
+                          class:text-success={getStatusText(job.status) === 'Success'}
+                          class:text-error={getStatusText(job.status) === 'Error'}
+                        >
+                          {getStatusText(job.status)}
+                        </span>
                       {/if}
                     </span>
 
                     <!-- Show download/skip counts for completed jobs -->
                     {#if job.status === 'success' || job.status === 'no_action'}
-                      <span class="text-xs text-secondary-600 dark:text-secondary-400">
+                      <span class="text-xs">
                         {#if job.downloadCount > 0}
-                          <span class="text-green-600 dark:text-green-400">
+                          <span class="text-success">
                             <Icon
                               iconName="download-arrow"
                               size={18}
@@ -526,7 +489,7 @@
                           </span>
                         {/if}
                         {#if job.skipCount > 0}
-                          <span class="text-yellow-600 dark:text-yellow-400">
+                          <span class="text-warning">
                             <Icon
                               iconName="no-circle"
                               size={14}
@@ -537,16 +500,16 @@
                       </span>
                     {/if}
 
-                    <span class="text-xs text-secondary-500 dark:text-secondary-400">
+                    <span class="text-xs text-muted-foreground">
                       {formatDuration(job.startTime, job.endTime)}
                     </span>
                   </div>
-                  <p class="truncate text-sm text-secondary-700 dark:text-secondary-300">
+                  <p class="truncate text-sm text-foreground">
                     {job.url}
                   </p>
                 </div>
 
-                <span class="mt-2 text-xs text-secondary-500 dark:text-secondary-400">
+                <span class="mt-2 text-xs text-muted-foreground">
                   Started: {new Date(job.startTime).toLocaleString()}
                   {#if job.endTime}
                     | Ended: {new Date(job.endTime).toLocaleString()}
@@ -556,15 +519,14 @@
             </div>
             <button
               onclick={e => deleteJob(e, job.id)}
-              class="ml-4 flex-shrink-0 cursor-pointer p-2 text-secondary-600 transition-all hover:scale-120 hover:text-red-600 dark:text-secondary-400 dark:hover:text-red-400"
+              class="cursor-pointer ml-4 p-1 text-error hover:bg-error/50 hover:text-foreground rounded-sm focus:outline-none transition-colors"
               title="Delete job"
               aria-label={`Delete job ${job.url}`}
             >
               <Icon iconName="delete" size={20} />
             </button>
-          </li>
-        {/each}
-      </ul>
+        </div>
+      {/each}
     {/if}
   </div>
 </div>
@@ -572,7 +534,7 @@
 <!-- Tooltip -->
 {#if tooltip.visible}
   <div
-    class="fixed z-50 px-2 py-1 text-xs text-white bg-black rounded shadow-lg pointer-events-none whitespace-nowrap"
+    class="fixed z-50 px-2 py-1 text-xs text-foreground bg-surface-elevated border-strong rounded shadow-lg pointer-events-none whitespace-nowrap"
     style:left="{tooltip.x + 10}px"
     style:top="{tooltip.y - 30}px"
     transition:fade={{ duration: 150 }}
@@ -594,29 +556,22 @@
       ? `Delete ${selectedCount} Jobs`
       : 'Delete Job'}
   cancelText="Cancel"
-  confirmVariant="danger"
-  cancelVariant="outline-primary"
+  confirmVariant="outline-danger"
+  cancelVariant="default"
   onConfirm={confirmDelete}
   onCancel={cancelDelete}
 >
-  {#if deleteAction === 'all'}
-    <p class="text-secondary-700 dark:text-secondary-300 mb-4">
-      This will permanently delete all
-      <span class="text-xl font-bold text-warning-500">{jobs.length}</span>
-      jobs.
-    </p>
-    <Info variant="danger">This is a destructive action that cannot be reversed.</Info>
-  {:else if deleteAction === 'selected'}
-    <p class="text-secondary-700 dark:text-secondary-300 mb-4">
+  {#if deleteAction === 'selected'}
+    <p class="text-muted-foreground mb-4">
       This will permanently delete
-      <span class="text-xl font-bold text-warning-500">{selectedCount}</span>
+      <span class="text-xl font-bold text-error">{selectedCount}</span>
       selected jobs.
     </p>
-    <Info variant="danger">This is a destructive action that cannot be reversed.</Info>
+    <Info variant="error">This is a destructive action that cannot be reversed.</Info>
   {:else}
-    <p class="text-secondary-700 dark:text-secondary-300 mb-4">
-      This will permanently delete this job.
+    <p class="text-muted-foreground mb-4">
+      This will permanently delete the job.
     </p>
-    <Info variant="danger">This action cannot be reversed.</Info>
+    <Info variant="error">This action cannot be reversed.</Info>
   {/if}
 </ConfirmModal>

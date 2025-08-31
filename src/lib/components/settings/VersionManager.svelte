@@ -112,40 +112,40 @@
   </Info>
 {/if}
 
-<div
-  class="cursor-default bg-primary-50 dark:border-primary-400 p-4 rounded-sm border border-primary-600 dark:bg-primary-800"
+<section
+  class="content-panel"
 >
   <div class="flex justify-between">
-    <span class="font-medium text-secondary-700 dark:text-secondary-300">Current Version:</span>
-    <span class="text-secondary-900 dark:text-secondary-100">
+    <span class="font-medium text-foreground">Current Version:</span>
+    <span class="text-foreground">
       {versionState?.current ?? 'Not Installed or Unknown'}
     </span>
   </div>
 
   <div class="flex justify-between">
-    <span class="font-medium text-secondary-700 dark:text-secondary-300">Last Checked:</span>
-    <span class="text-secondary-900 dark:text-secondary-100">
+    <span class="font-medium text-foreground">Last Checked:</span>
+    <span class="text-foreground">
       {formatTimestamp(versionState?.lastChecked ?? null)}
     </span>
   </div>
 
   {#if versionState?.latestAvailable}
     <div class="flex justify-between">
-      <span class="font-medium text-secondary-700 dark:text-secondary-300">Latest Available:</span>
-      <span class="text-secondary-900 dark:text-secondary-100">
+      <span class="font-medium text-foreground">Latest Available:</span>
+      <span class="text-foreground">
         {versionState.latestAvailable}
       </span>
     </div>
   {/if}
-</div>
+</section>
 
-<div class="flex flex-col sm:flex-row m-4 gap-3 sm:gap-6">
+<section class="flex flex-col sm:flex-row m-4 gap-3 sm:gap-6">
   <Button
     onclick={handleCheckForUpdates}
     disabled={versionState?.loading ?? versionState?.updateInProgress ?? updateAvailable ?? false}
     loading={versionState?.loading ?? versionState?.updateInProgress ?? false}
     class="mt-2 w-full"
-    variant="primary"
+    variant="outline-primary"
   >
     {#if versionState?.loading ?? versionState?.updateInProgress}
       <!-- The button loses size if there's no text -->
@@ -161,16 +161,16 @@
       (versionState?.loading ?? versionState?.updateInProgress ?? false)}
     loading={versionState?.updateInProgress}
     class="mt-2 w-full"
-    variant="secondary"
+    variant="outline-info"
   >
     {#if versionState?.updateInProgress}
       <!-- The button loses size if there's no text -->
-      <span>Updating gallery-dl</span>
+      <span class="text-foreground">Updating gallery-dl</span>
     {:else}
       Update gallery-dl
     {/if}
   </Button>
-</div>
+</section>
 
 {#if updateAvailable}
   <div class="mt-8 mx-4">

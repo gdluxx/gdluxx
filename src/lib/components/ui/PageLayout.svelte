@@ -38,14 +38,14 @@
     <div class="flex items-center justify-center mb-3 sm:mb-4">
       {#if icon}
         <div
-          class="h-6 w-6 sm:h-8 sm:w-8 text-primary-600 dark:text-primary-100 mr-2 sm:mr-3"
+          class="h-6 w-6 sm:h-8 sm:w-8 text-primary mr-2 sm:mr-3"
           aria-hidden="true"
         >
           {@render icon()}
         </div>
       {:else}
         <div
-          class="h-6 w-6 sm:h-8 sm:w-8 text-primary-600 dark:text-primary-100 mr-2 sm:mr-3"
+          class="h-6 w-6 sm:h-8 sm:w-8 text-primary mr-2 sm:mr-3"
           aria-hidden="true"
         >
           <Icon iconName="circle" size={16} />
@@ -54,7 +54,7 @@
 
       <h1
         id="page-title"
-        class="cursor-default text-xl sm:text-2xl lg:text-3xl font-bold text-secondary-900 dark:text-secondary-100"
+        class="cursor-default text-xl sm:text-2xl lg:text-3xl font-bold text-primary"
       >
         {title}
       </h1>
@@ -62,7 +62,7 @@
 
     <p
       id="page-description"
-      class="cursor-default text-sm sm:text-base text-secondary-600 dark:text-secondary-400 max-w-2xl mx-auto px-4 sm:px-0"
+      class="cursor-default text-sm sm:text-base text-muted-foreground max-w-2xl mx-auto px-4 sm:px-0"
     >
       <!-- eslint-disable-next-line svelte/no-at-html-tags -->
       {@html description}
