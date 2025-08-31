@@ -193,7 +193,7 @@
       className,
     ]
       .filter(Boolean)
-      .join(' ')
+      .join(' '),
   );
 
   const inputClasses = $derived(
@@ -204,7 +204,7 @@
       'text-current',
       'min-w-0',
       size === 'sm' ? 'w-16' : size === 'lg' ? 'w-24' : 'w-20',
-    ].join(' ')
+    ].join(' '),
   );
 
   const ariaAttributes = $derived<Record<string, string | undefined>>({
@@ -215,7 +215,11 @@
 </script>
 
 {#if !dismissed}
-  <div class={computedClasses} {...ariaAttributes} {...restProps}>
+  <div
+    class={computedClasses}
+    {...ariaAttributes}
+    {...restProps}
+  >
     {#if icon}
       <div class="flex-shrink-0">
         {@render icon()}
@@ -236,9 +240,9 @@
       {:else}
         <button
           type="button"
-          class="font-medium opacity-80 hover:opacity-100 hover:underline bg-transparent border-none p-0 cursor-pointer transition-opacity"
+          class="cursor-pointer border-none bg-transparent p-0 font-medium opacity-80 transition-opacity hover:underline hover:opacity-100"
           onclick={startEditing}
-          onkeydown={e => e.key === 'Enter' && startEditing()}
+          onkeydown={(e) => e.key === 'Enter' && startEditing()}
           title={editable ? 'Click to edit' : ''}
         >
           {value}
@@ -249,12 +253,15 @@
     {#if dismissible}
       <button
         onclick={handleDismiss}
-        class="cursor-pointer opacity-60 group-hover:opacity-100 hover:opacity-100 transition-all flex-shrink-0 ml-0.5 p-0.5 -mr-0.5 rounded-full hover:bg-surface-hover focus:outline-hidden focus:ring-2 focus:ring-current/20"
+        class="-mr-0.5 ml-0.5 flex-shrink-0 cursor-pointer rounded-full p-0.5 opacity-60 transition-all group-hover:opacity-100 hover:bg-surface-hover hover:opacity-100 focus:ring-2 focus:ring-current/20 focus:outline-hidden"
         aria-label="Dismiss chip"
         title="Dismiss"
         type="button"
       >
-        <Icon iconName="close" size={size === 'sm' ? 10 : size === 'lg' ? 14 : 12} />
+        <Icon
+          iconName="close"
+          size={size === 'sm' ? 10 : size === 'lg' ? 14 : 12}
+        />
       </button>
     {/if}
   </div>

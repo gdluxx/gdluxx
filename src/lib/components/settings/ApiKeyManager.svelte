@@ -86,7 +86,7 @@
   function validateInput(): string | null {
     return validateApiKeyInput(
       newKeyName,
-      !neverExpires && expirationDate ? expirationDate : undefined
+      !neverExpires && expirationDate ? expirationDate : undefined,
     );
   }
 
@@ -137,8 +137,15 @@
 </script>
 
 {#if isLoading}
-  <div class="flex items-center justify-center py-12" role="status" aria-live="polite">
-    <div class="animate-spin rounded-full h-8 w-8 border-b-2" aria-hidden="true"></div>
+  <div
+    class="flex items-center justify-center py-12"
+    role="status"
+    aria-live="polite"
+  >
+    <div
+      class="h-8 w-8 animate-spin rounded-full border-b-2"
+      aria-hidden="true"
+    ></div>
     <span class="ml-3 text-foreground">Loading API keys...</span>
   </div>
 {:else}
@@ -158,18 +165,21 @@
       <strong>Important:</strong> This is the only time you'll be able to see your API key. Make
       sure to copy it now and store it securely.
 
-      <div class="-success rounded-sm p-3 my-4">
+      <div class="-success my-4 rounded-sm p-3">
         <div class="flex items-center justify-between">
-          <code class="text-lg font-mono text-foreground break-all flex-1 mr-4">
+          <code class="mr-4 flex-1 font-mono text-lg break-all text-foreground">
             {createdKey.key}
           </code>
           {#if clipboard !== undefined}
             <button
               onclick={() => copyApiKey(createdKey.key, createdKey.name)}
-              class="cursor-pointer p-2 text-success focus:outline-none focus:ring-1 focus:ring-success rounded transition-colors"
+              class="cursor-pointer rounded p-2 text-success transition-colors focus:ring-1 focus:ring-success focus:outline-none"
               aria-label={`Copy API key for ${createdKey.name} to clipboard`}
             >
-              <Icon iconName="copy-clipboard" size={20} />
+              <Icon
+                iconName="copy-clipboard"
+                size={20}
+              />
             </button>
           {/if}
         </div>
@@ -181,13 +191,23 @@
   {/if}
 
   {#if copyFeedback}
-    <Info variant="success" size="sm" class="my-8">
+    <Info
+      variant="success"
+      size="sm"
+      class="my-8"
+    >
       {copyFeedback}
     </Info>
   {/if}
 
   {#if error}
-    <Info variant="warning" title="Error" dismissible onDismiss={handleDismiss} class="my-8">
+    <Info
+      variant="warning"
+      title="Error"
+      dismissible
+      onDismiss={handleDismiss}
+      class="my-8"
+    >
       <div class="whitespace-pre-line">
         {error}
       </div>
@@ -247,7 +267,10 @@
       >
         <div class="flex gap-4">
           <div class="flex-1">
-            <label for="keyName" class="ml-2 block text-xs font-medium text-accent-foreground mb-2">
+            <label
+              for="keyName"
+              class="mb-2 ml-2 block text-xs font-medium text-accent-foreground"
+            >
               Create New API Key
             </label>
             <div class="space-y-4">
@@ -265,24 +288,24 @@
                   aria-describedby="keyNameHelp"
                 />
               </div>
-              <div class="flex flex-col sm:flex-row sm:justify-between gap-4 w-full">
+              <div class="flex w-full flex-col gap-4 sm:flex-row sm:justify-between">
                 <!-- Expiration -->
                 <div class="flex flex-col">
                   <div
-                    class="flex space-y-3 justify-start sm:items-center flex-col sm:flex-row items-start"
+                    class="flex flex-col items-start justify-start space-y-3 sm:flex-row sm:items-center"
                   >
-                    <label class="flex items-center ml-2">
+                    <label class="ml-2 flex items-center">
                       <Toggle
                         name="neverExpires"
                         bind:checked={neverExpires}
                         variant="primary"
                         size="sm"
                       ></Toggle>
-                      <span class="text-sm text-muted-foreground ml-2"> Never expires? </span>
+                      <span class="ml-2 text-sm text-muted-foreground"> Never expires? </span>
                     </label>
 
                     {#if !neverExpires}
-                      <div class="flex items-center sm:justify-end ml-2 w-full">
+                      <div class="ml-2 flex w-full items-center sm:justify-end">
                         <input
                           type="datetime-local"
                           name="expiresAt"
@@ -291,7 +314,10 @@
                           class="form-input h-10"
                           aria-describedby="expirationHelp"
                         />
-                        <p id="expirationHelp" class="mt-1 ml-2 text-xs text-muted-foreground">
+                        <p
+                          id="expirationHelp"
+                          class="mt-1 ml-2 text-xs text-muted-foreground"
+                        >
                           Set expiration date
                         </p>
                       </div>
@@ -300,7 +326,7 @@
                 </div>
 
                 <!-- Generate Button -->
-                <div class="flex justify-end flex-col mr-2">
+                <div class="mr-2 flex flex-col justify-end">
                   <Button
                     type="submit"
                     size="sm"
@@ -321,8 +347,12 @@
     <!-- API Keys list -->
     {#if apiKeys.length === 0}
       <div class="cursor-default p-8 text-center">
-        <Icon iconName="key" size={50} class="text-foreground" />
-        <h3 class="text-lg font-medium text-foreground my-2">No API Keys</h3>
+        <Icon
+          iconName="key"
+          size={50}
+          class="text-foreground"
+        />
+        <h3 class="my-2 text-lg font-medium text-foreground">No API Keys</h3>
         <p class="text-foreground">Create your first API key to get started.</p>
       </div>
     {:else}
@@ -330,37 +360,37 @@
         {#each apiKeys as apiKey (apiKey.id)}
           <article class="data-list-item">
             <div class="flex items-start justify-between">
-              <div class="flex-1 min-w-0">
-                <h3 class="text-lg font-medium text-foreground mb-2">
+              <div class="min-w-0 flex-1">
+                <h3 class="mb-2 text-lg font-medium text-foreground">
                   {apiKey.name}
                 </h3>
 
-<!--                <div -->
-<!--                  class="bg-surface-selected rounded-sm border-strong p-3 mb-3 flex items-center justify-between" -->
-<!--                > -->
-<!--                  <div class="flex items-center flex-1"> -->
-<!--                    <Icon iconName="lock" size={16} class="text-foreground mr-2" /> -->
-<!--                    <span class="text-sm text-muted-foreground select-none"> -->
-<!--                      API key is securely stored -->
-<!--                    </span> -->
-<!--                  </div> -->
-<!--                </div> -->
+                <!--                <div -->
+                <!--                  class="bg-surface-selected rounded-sm border-strong p-3 mb-3 flex items-center justify-between" -->
+                <!--                > -->
+                <!--                  <div class="flex items-center flex-1"> -->
+                <!--                    <Icon iconName="lock" size={16} class="text-foreground mr-2" /> -->
+                <!--                    <span class="text-sm text-muted-foreground select-none"> -->
+                <!--                      API key is securely stored -->
+                <!--                    </span> -->
+                <!--                  </div> -->
+                <!--                </div> -->
                 <div class="relative">
                   <input
                     type="text"
                     placeholder="API key is securely stored"
-                    class="form-input pl-10 cursor-default"
+                    class="form-input cursor-default pl-10"
                     disabled
                     readonly
                   />
                   <Icon
                     iconName="lock"
                     size={16}
-                    class="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground pointer-events-none"
+                    class="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 transform text-muted-foreground"
                   />
                 </div>
 
-                <div class="space-y-1 flex flex-row justify-between mt-3">
+                <div class="mt-3 flex flex-row justify-between space-y-1">
                   <p class="text-sm text-accent-foreground">
                     <time datetime={apiKey.createdAt}>
                       Created: {new Date(apiKey.createdAt).toLocaleString()}
@@ -383,11 +413,14 @@
               <button
                 type="button"
                 onclick={() => confirmDelete(apiKey.id)}
-                class="cursor-pointer ml-4 p-1 text-error hover:bg-error/75 hover:text-foreground rounded-sm focus:outline-none transition-colors"
+                class="ml-4 cursor-pointer rounded-sm p-1 text-error transition-colors hover:bg-error/75 hover:text-foreground focus:outline-none"
                 class:opacity-75={isExpired(apiKey.expiresAt)}
                 aria-label={`Delete API key for ${apiKey.name}`}
               >
-                <Icon iconName="delete" size={20} />
+                <Icon
+                  iconName="delete"
+                  size={20}
+                />
               </button>
             </div>
           </article>
@@ -416,7 +449,7 @@
           const data: ApiKeyDeleteSuccessResult = result.data;
 
           if (data.success && data.deletedKeyId) {
-            apiKeys = apiKeys.filter(key => key.id !== data.deletedKeyId);
+            apiKeys = apiKeys.filter((key) => key.id !== data.deletedKeyId);
             copyFeedback = data.message ?? 'API key deleted successfully';
             setTimeout(() => {
               copyFeedback = null;
@@ -435,11 +468,15 @@
     };
   }}
 >
-  <input type="hidden" name="keyId" value={keyToDelete} />
+  <input
+    type="hidden"
+    name="keyId"
+    value={keyToDelete}
+  />
 </form>
 
 {#if keyToDelete}
-  {@const keyName = apiKeys.find(k => k.id === keyToDelete)?.name ?? 'Unknown'}
+  {@const keyName = apiKeys.find((k) => k.id === keyToDelete)?.name ?? 'Unknown'}
   <ConfirmModal
     show={!!keyToDelete}
     title="Delete API Key?"
@@ -449,7 +486,7 @@
     onConfirm={handleConfirmDelete}
     onCancel={cancelDelete}
   >
-    <p class="text-foreground mb-4">
+    <p class="mb-4 text-foreground">
       This will permanently delete API key
       <span class="text-xl font-bold text-warning">{keyName}</span>.
     </p>

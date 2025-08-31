@@ -14,9 +14,16 @@
   import { PageLayout } from '$lib/components/ui';
 </script>
 
-<PageLayout title="Log Manager" description="Manage your log settings">
+<PageLayout
+  title="Log Manager"
+  description="Manage your log settings"
+>
   {#snippet icon()}
-    <Icon iconName="log" size={32} ariaLabel="logIcon" />
+    <Icon
+      iconName="log"
+      size={32}
+      ariaLabel="logIcon"
+    />
   {/snippet}
 
   <LogManager />

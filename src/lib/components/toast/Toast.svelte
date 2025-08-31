@@ -104,11 +104,15 @@
       <div class="ml-4 flex flex-shrink-0">
         <button
           type="button"
-          class="cursor-pointer inline-flex rounded-sm p-1.5 transition-colors duration-150 focus:outline-none focus:ring-1 focus:ring-offset-1 {styles.close} {styles.closeButton}"
+          class="inline-flex cursor-pointer rounded-sm p-1.5 transition-colors duration-150 focus:ring-1 focus:ring-offset-1 focus:outline-none {styles.close} {styles.closeButton}"
           onclick={handleClose}
         >
           <span class="sr-only">Close</span>
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 fill-current" viewBox="0 0 48 48">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-4 w-4 fill-current"
+            viewBox="0 0 48 48"
+          >
             <path
               fill="none"
               stroke="currentColor"

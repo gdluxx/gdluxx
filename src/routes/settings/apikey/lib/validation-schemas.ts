@@ -18,6 +18,6 @@ export const createApiKeySchema: ValidationSchema = {
     pattern: /^[a-zA-Z0-9_-]+$/,
   },
   expiresAt: {
-    custom: value => !value || !isNaN(Date.parse(value as string)),
+    custom: (value) => !value || !isNaN(Date.parse(value as string)),
   },
 };

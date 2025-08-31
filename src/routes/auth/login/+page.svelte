@@ -17,17 +17,19 @@
   <title>Sign In - gdluxx</title>
 </svelte:head>
 
-<div class="flex items-center justify-center min-h-screen py-12 px-4 sm:px-6 lg:px-8">
+<div class="flex min-h-screen items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
   <div class="content-panel">
-    <div class="max-w-md w-full space-y-8">
+    <div class="w-full max-w-md space-y-8">
       <div class="text-center">
-        <div class="flex justify-center items-center mb-6">
-          <img src={icon} alt="gdluxx Logo" class="h-12 w-12 mr-3" />
+        <div class="mb-6 flex items-center justify-center">
+          <img
+            src={icon}
+            alt="gdluxx Logo"
+            class="mr-3 h-12 w-12"
+          />
           <h1 class="text-3xl font-bold text-foreground">gdluxx</h1>
         </div>
-        <p class="mt-2 text-sm text-muted-foreground">
-          Welcome back! Enter your credentials below
-        </p>
+        <p class="mt-2 text-sm text-muted-foreground">Welcome back! Enter your credentials below</p>
       </div>
       <LoginForm />
     </div>

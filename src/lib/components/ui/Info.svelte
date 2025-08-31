@@ -89,7 +89,7 @@
       className,
     ]
       .filter(Boolean)
-      .join(' ')
+      .join(' '),
   );
 
   const iconContainerClasses = $derived(
@@ -102,7 +102,7 @@
       'justify-center',
       'font-bold',
       ...iconClasses[variant],
-    ].join(' ')
+    ].join(' '),
   );
 
   const ariaAttributes = $derived<Record<string, string | undefined>>({
@@ -119,7 +119,11 @@
 </script>
 
 {#if !dismissed}
-  <div class={computedClasses} {...ariaAttributes} {...restProps}>
+  <div
+    class={computedClasses}
+    {...ariaAttributes}
+    {...restProps}
+  >
     <!-- Icon -->
     <div class={iconContainerClasses}>
       {#if icon}
@@ -130,9 +134,9 @@
     </div>
 
     <!-- Content -->
-    <div class="flex-1 min-w-0">
+    <div class="min-w-0 flex-1">
       {#if title}
-        <h4 class="font-semibold mb-1 text-current">
+        <h4 class="mb-1 font-semibold text-current">
           {title}
         </h4>
       {/if}
@@ -146,11 +150,14 @@
     {#if dismissible}
       <button
         onclick={handleDismiss}
-        class="cursor-pointer flex-shrink-0 ml-2 p-1 -mr-1 -mt-1 opacity-60 hover:opacity-100 rounded-xs hover:bg-surface-hover transition-all focus:outline-hidden focus:ring-2 focus:ring-current/20"
+        class="-mt-1 -mr-1 ml-2 flex-shrink-0 cursor-pointer rounded-xs p-1 opacity-60 transition-all hover:bg-surface-hover hover:opacity-100 focus:ring-2 focus:ring-current/20 focus:outline-hidden"
         aria-label="Dismiss notification"
         type="button"
       >
-        <Icon iconName="close" size={16} />
+        <Icon
+          iconName="close"
+          size={16}
+        />
       </button>
     {/if}
   </div>

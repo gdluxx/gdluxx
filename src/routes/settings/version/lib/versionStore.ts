@@ -38,7 +38,7 @@ function createVersionStore() {
 
   const handleApiError = async (
     response: Response,
-    fallbackErrorPrefix: string
+    fallbackErrorPrefix: string,
   ): Promise<StoreActionResult> => {
     const errorData = await response.json().catch((): { error: string } => ({
       error: `${fallbackErrorPrefix}: ${response.statusText}`,
@@ -51,7 +51,7 @@ function createVersionStore() {
   const handleErrorResult = (
     errorFromResult: string | undefined,
     response: Response,
-    fallbackErrorPrefix: string
+    fallbackErrorPrefix: string,
   ): StoreActionResult => {
     const errorMsg = errorFromResult || `${fallbackErrorPrefix}: ${response.statusText}`;
     setError(errorMsg);
@@ -59,18 +59,18 @@ function createVersionStore() {
   };
 
   const setLoading: (isLoading: boolean) => void = (isLoading: boolean): void =>
-    update(s => ({ ...s, loading: isLoading, error: null }));
+    update((s) => ({ ...s, loading: isLoading, error: null }));
   const setUpdateInProgress: (isLoading: boolean) => void = (isInProgress: boolean): void =>
-    update(s => ({ ...s, updateInProgress: isInProgress, error: null }));
+    update((s) => ({ ...s, updateInProgress: isInProgress, error: null }));
   const setError: (errorMessage: string) => void = (errorMessage: string): void =>
-    update(s => ({
+    update((s) => ({
       ...s,
       error: errorMessage,
       loading: false,
       updateInProgress: false,
     }));
   const setData: (data: VersionInfo) => void = (data: VersionInfo): void =>
-    update(s => ({
+    update((s) => ({
       ...s,
       current: data.current,
       latestAvailable: data.latestAvailable,
@@ -153,7 +153,7 @@ function createVersionStore() {
         setError(errorMsg);
         return { success: false, message: errorMsg, type: 'error' };
       } finally {
-        update(s => (s.updateInProgress ? { ...s, updateInProgress: false } : s));
+        update((s) => (s.updateInProgress ? { ...s, updateInProgress: false } : s));
       }
     },
   };

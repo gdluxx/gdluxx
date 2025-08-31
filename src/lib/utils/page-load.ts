@@ -81,7 +81,7 @@ export const createMultiPageLoad = (endpoints: Record<string, PageLoadOptions>):
         }
 
         return [key, apiResponse];
-      })
+      }),
     );
 
     const data: Record<string, unknown> = {};

@@ -43,7 +43,7 @@ export const POST: RequestHandler = async ({ request }: RequestEvent): Promise<R
     } catch (jsonParseError) {
       logger.warn(
         'Failed to parse request body as JSON for /api/extension/external:',
-        jsonParseError
+        jsonParseError,
       );
       return handleApiError(new Error('Invalid request body. Expected valid JSON.'));
     }
@@ -59,7 +59,7 @@ export const POST: RequestHandler = async ({ request }: RequestEvent): Promise<R
         {
           urlToProcess: body.urlToProcess,
         },
-        externalApiSchema
+        externalApiSchema,
       );
     } catch (error) {
       return handleApiError(error as Error);
@@ -79,7 +79,7 @@ export const POST: RequestHandler = async ({ request }: RequestEvent): Promise<R
   }
 
   logger.info(
-    `API key validated for: ${authResult.keyInfo?.name} (ID: ${authResult.keyInfo?.id}). Forwarding URL: ${urlToProcess}`
+    `API key validated for: ${authResult.keyInfo?.name} (ID: ${authResult.keyInfo?.id}). Forwarding URL: ${urlToProcess}`,
   );
 
   try {

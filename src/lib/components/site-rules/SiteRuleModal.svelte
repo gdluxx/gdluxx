@@ -115,17 +115,17 @@
       <div
         class="fixed inset-0 backdrop-blur-xs transition-opacity"
         onclick={onCancel}
-        onkeydown={e => e.key === 'Enter' && onCancel()}
+        onkeydown={(e) => e.key === 'Enter' && onCancel()}
         role="button"
         tabindex="-1"
         aria-label="Close modal"
       ></div>
 
       <div
-        class="relative transform overflow-hidden border rounded-sm bg-surface-elevated px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6"
+        class="relative transform overflow-hidden rounded-sm border bg-surface-elevated px-4 pt-5 pb-4 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6"
         transition:scale={{ duration: 150, start: 0.95 }}
       >
-        <div class="absolute right-0 top-0 pr-4 pt-4">
+        <div class="absolute top-0 right-0 pt-4 pr-4">
           <Button
             pill
             onclick={onCancel}
@@ -152,20 +152,26 @@
         </div>
 
         <div class="sm:flex sm:items-start">
-          <div class="mt-3 w-full text-center sm:ml-0 sm:mt-0 sm:text-left">
+          <div class="mt-3 w-full text-center sm:mt-0 sm:ml-0 sm:text-left">
             <h3
-              class="text-lg font-medium leading-6 text-foreground"
+              class="text-lg leading-6 font-medium text-foreground"
               id="modal-title"
             >
-              <Icon iconName="save" size={20} />
+              <Icon
+                iconName="save"
+                size={20}
+              />
               Save Options as Site Rule
             </h3>
 
-            <div class="mt-4 space-y-4" id="modal-description">
+            <div
+              class="mt-4 space-y-4"
+              id="modal-description"
+            >
               <div>
                 <label
                   for="site-pattern"
-                  class="block text-sm font-medium text-foreground mb-1"
+                  class="mb-1 block text-sm font-medium text-foreground"
                 >
                   Site Pattern:
                 </label>
@@ -173,7 +179,7 @@
                   id="site-pattern"
                   bind:value={selectedPattern}
                   disabled={isSaving}
-                  class="w-full rounded-sm border bg-input px-3 py-2 text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:ring-offset-1 disabled:opacity-50"
+                  class="bg-input w-full rounded-sm border px-3 py-2 text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:ring-offset-1 disabled:opacity-50"
                 >
                   {#each detectedPatterns as pattern (pattern)}
                     <option value={pattern}>{pattern}</option>
@@ -184,7 +190,7 @@
               <div>
                 <label
                   for="rule-name"
-                  class="block text-sm font-medium text-foreground mb-1"
+                  class="mb-1 block text-sm font-medium text-foreground"
                 >
                   Rule Name:
                 </label>
@@ -194,35 +200,29 @@
                   bind:value={displayName}
                   disabled={isSaving}
                   placeholder="My custom rule"
-                  class="w-full rounded-sm border bg-input px-3 py-2 text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:ring-offset-1 disabled:opacity-50"
+                  class="bg-input w-full rounded-sm border px-3 py-2 text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:ring-offset-1 disabled:opacity-50"
                 />
               </div>
 
               {#if getUserOptions().length > 0}
-                <div
-                  class="options-preview bg-primary/10 rounded-sm p-3 border"
-                >
-                  <h4 class="text-sm font-medium text-foreground mb-2">
+                <div class="options-preview rounded-sm border bg-primary/10 p-3">
+                  <h4 class="mb-2 text-sm font-medium text-foreground">
                     Options to save ({getUserOptions().length}):
                   </h4>
-                  <div class="space-y-1 max-h-32 overflow-y-auto">
+                  <div class="max-h-32 space-y-1 overflow-y-auto">
                     {#each getUserOptions() as [id, value] (id)}
-                      <div class="text-xs  text-foreground font-mono">
+                      <div class="font-mono text-xs text-foreground">
                         {id}: {value}
                       </div>
                     {/each}
                   </div>
                 </div>
               {:else}
-                <div class="text-sm text-foreground italic">
-                  No user-selected options to save.
-                </div>
+                <div class="text-sm text-foreground italic">No user-selected options to save.</div>
               {/if}
 
               {#if error}
-                <div
-                  class="bg-error/50 -error rounded-sm p-3"
-                >
+                <div class="-error rounded-sm bg-error/50 p-3">
                   <div class="text-sm text-error">
                     {error}
                   </div>

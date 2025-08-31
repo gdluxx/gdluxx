@@ -68,7 +68,7 @@
           'Update Check',
           result.message,
           (result.type ?? 'info') === 'info' ? 3000 : 5000,
-          false
+          false,
         );
       } else {
         toastStore.error('Error', result.message, 5000, false);
@@ -107,14 +107,18 @@
 </script>
 
 {#if versionState?.error && !versionState?.loading && !versionState?.updateInProgress}
-  <Info variant="warning" size="default" title="Last Operation Error" dismissible class="my-4">
+  <Info
+    variant="warning"
+    size="default"
+    title="Last Operation Error"
+    dismissible
+    class="my-4"
+  >
     {versionState.error}
   </Info>
 {/if}
 
-<section
-  class="content-panel"
->
+<section class="content-panel">
   <div class="flex justify-between">
     <span class="font-medium text-foreground">Current Version:</span>
     <span class="text-foreground">
@@ -139,7 +143,7 @@
   {/if}
 </section>
 
-<section class="flex flex-col sm:flex-row m-4 gap-3 sm:gap-6">
+<section class="m-4 flex flex-col gap-3 sm:flex-row sm:gap-6">
   <Button
     onclick={handleCheckForUpdates}
     disabled={versionState?.loading ?? versionState?.updateInProgress ?? updateAvailable ?? false}
@@ -173,7 +177,10 @@
 </section>
 
 {#if updateAvailable}
-  <div class="mt-8 mx-4">
-    <Info variant="info" title="Update available!">A newer version is ready to install.</Info>
+  <div class="mx-4 mt-8">
+    <Info
+      variant="info"
+      title="Update available!">A newer version is ready to install.</Info
+    >
   </div>
 {/if}

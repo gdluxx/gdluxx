@@ -31,7 +31,7 @@ export const userSettingsManager = {
     try {
       const db = new Database(dbPath);
       const stmt = db.prepare(
-        'SELECT warnOnSiteRuleOverride, selectedTheme FROM user WHERE id = ?'
+        'SELECT warnOnSiteRuleOverride, selectedTheme FROM user WHERE id = ?',
       );
       const row = stmt.get(userId) as
         | { warnOnSiteRuleOverride: number; selectedTheme: string }

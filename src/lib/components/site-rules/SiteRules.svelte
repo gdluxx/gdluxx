@@ -39,7 +39,7 @@
 
   // Watch for site selection from dropdown
   $effect(() => {
-    const site = supportedSites.find(s => s.url === formData.site_pattern);
+    const site = supportedSites.find((s) => s.url === formData.site_pattern);
     if (site) {
       try {
         const url = new URL(site.url);
@@ -107,11 +107,14 @@
   }
 </script>
 
-<form onsubmit={handleSubmit} class="space-y-6">
+<form
+  onsubmit={handleSubmit}
+  class="space-y-6"
+>
   <div>
     <label
       for="site_pattern"
-      class="block text-sm font-medium text-foreground mb-2"
+      class="mb-2 block text-sm font-medium text-foreground"
     >
       Site Pattern
     </label>
@@ -132,23 +135,32 @@
       {/each}
     </datalist>
     {#if errors.site_pattern}
-      <p class="text-error text-sm mt-1">{errors.site_pattern}</p>
+      <p class="mt-1 text-sm text-error">{errors.site_pattern}</p>
     {/if}
 
     <div class="mt-2 mr-1.5 flex justify-end">
-      <Tooltip placement="left" maxWidth="32rem" class="!whitespace-normal !min-w-80 bg-surface-elevated">
+      <Tooltip
+        placement="left"
+        maxWidth="32rem"
+        class="!min-w-80 bg-surface-elevated !whitespace-normal"
+      >
         {#snippet tooltipContent()}
           <div class="space-y-2">
             <div class="text-sm opacity-90">
-              <p class="cursor-default text-sm text-muted-foreground mt-1">
-                Select from <b class="text-primary">{supportedSites.length}</b> supported sites or enter custom pattern
+              <p class="mt-1 cursor-default text-sm text-muted-foreground">
+                Select from <b class="text-primary">{supportedSites.length}</b> supported sites or
+                enter custom pattern
                 <br />- * for all sites
                 <br />- *.domain.com
               </p>
             </div>
           </div>
         {/snippet}
-        <Icon iconName="question" size={20} class="text-primary" />
+        <Icon
+          iconName="question"
+          size={20}
+          class="text-primary"
+        />
       </Tooltip>
     </div>
   </div>
@@ -156,7 +168,7 @@
   <div>
     <label
       for="display_name"
-      class="block text-sm font-medium text-foreground mb-2"
+      class="mb-2 block text-sm font-medium text-foreground"
     >
       Display Name
     </label>
@@ -168,20 +180,21 @@
       class="form-input {errors.display_name ? 'border-red-300 dark:border-red-700' : ''}"
     />
     {#if errors.display_name}
-      <p class="text-error text-sm mt-1">{errors.display_name}</p>
+      <p class="mt-1 text-sm text-error">{errors.display_name}</p>
     {/if}
   </div>
 
   <!-- Enable rule -->
   <div class="space-y-4">
-    <label for="enabled" class="cursor-pointer">
-      <div
-        class="flex items-center justify-between p-3 bg-primary/25 rounded-sm"
-      >
+    <label
+      for="enabled"
+      class="cursor-pointer"
+    >
+      <div class="flex items-center justify-between rounded-sm bg-primary/25 p-3">
         <span class="font-medium text-foreground">
           Rule {formData.enabled ? 'Enabled' : 'Disabled'}
         </span>
-        <div class="relative inline-block w-[26px] h-4 ml-4">
+        <div class="relative ml-4 inline-block h-4 w-[26px]">
           <Toggle
             id="enabled"
             bind:checked={formData.enabled}
@@ -195,24 +208,18 @@
 
   <!-- CLI Options Selection -->
   <div>
-    <h3 class="cursor-default text-lg font-medium text-foreground mb-4">
-      CLI Options
-    </h3>
-    <div
-      class="max-h-96 overflow-y-auto border rounded p-4 bg-surface"
-    >
+    <h3 class="mb-4 cursor-default text-lg font-medium text-foreground">CLI Options</h3>
+    <div class="max-h-96 overflow-y-auto rounded border bg-surface p-4">
       {#each Object.entries(typedOptionsData) as [_categoryKey, category] (_categoryKey)}
         <details class="mb-4">
-          <summary
-            class="font-medium cursor-pointer text-foreground hover:text-primary"
-          >
+          <summary class="cursor-pointer font-medium text-foreground hover:text-primary">
             {category.title}
           </summary>
           <div class="mt-2 space-y-2">
             {#each category.options as option (option.id)}
-              <div class="flex items-start gap-2 p-2 bg-surface-elevated rounded">
+              <div class="flex items-start gap-2 rounded bg-surface-elevated p-2">
                 <!-- slider -->
-                <div class="relative inline-block w-[26px] h-4">
+                <div class="relative inline-block h-4 w-[26px]">
                   <Toggle
                     id="option-{option.id}"
                     checked={formData.cli_options.has(option.id)}
@@ -226,7 +233,7 @@
                 <div class="flex-1">
                   <label
                     for="option-{option.id}"
-                    class="font-medium text-foreground cursor-pointer"
+                    class="cursor-pointer font-medium text-foreground"
                   >
                     {option.command}
                   </label>
@@ -236,32 +243,32 @@
                 </div>
 
                 <!-- Input fields -->
-                <div class="flex-shrink-0 w-48 text-right">
+                <div class="w-48 flex-shrink-0 text-right">
                   <!-- Option value input for non-boolean options -->
                   {#if formData.cli_options.has(option.id) && option.type !== 'boolean'}
                     {#if option.type === 'string'}
                       <input
                         type="text"
                         value={formData.cli_options.get(option.id) ?? ''}
-                        oninput={e => handleOptionInputChange(e, option.id, 'string')}
+                        oninput={(e) => handleOptionInputChange(e, option.id, 'string')}
                         placeholder="Enter value..."
-                        class="form-input px-2 py-1 text-sm w-full"
+                        class="form-input w-full px-2 py-1 text-sm"
                       />
                     {:else if option.type === 'number'}
                       <input
                         type="number"
                         value={formData.cli_options.get(option.id) ?? ''}
-                        oninput={e => handleOptionInputChange(e, option.id, 'number')}
+                        oninput={(e) => handleOptionInputChange(e, option.id, 'number')}
                         placeholder="Enter number..."
-                        class="form-input px-2 py-1 text-sm w-full"
+                        class="form-input w-full px-2 py-1 text-sm"
                       />
                     {:else if option.type === 'range'}
                       <input
                         type="text"
                         value={formData.cli_options.get(option.id) ?? ''}
-                        oninput={e => handleOptionInputChange(e, option.id, 'string')}
+                        oninput={(e) => handleOptionInputChange(e, option.id, 'string')}
                         placeholder={option.placeholder}
-                        class="form-input px-2 py-1 text-sm w-full"
+                        class="form-input w-full px-2 py-1 text-sm"
                       />
                     {/if}
                   {/if}
@@ -284,15 +291,29 @@
     </div>
   </div>
 
-  <div class="flex gap-4 justify-end">
-    <Button type="submit" disabled={isSubmitting} variant="primary" size="sm">
+  <div class="flex justify-end gap-4">
+    <Button
+      type="submit"
+      disabled={isSubmitting}
+      variant="primary"
+      size="sm"
+    >
       {#if isSubmitting}
-        <Icon iconName="loading" size={16} class="animate-spin mr-2" />
+        <Icon
+          iconName="loading"
+          size={16}
+          class="mr-2 animate-spin"
+        />
         Saving...
       {:else}
         Save Rule
       {/if}
     </Button>
-    <Button type="button" onclick={onCancel} variant="outline-primary" size="sm">Cancel</Button>
+    <Button
+      type="button"
+      onclick={onCancel}
+      variant="outline-primary"
+      size="sm">Cancel</Button
+    >
   </div>
 </form>

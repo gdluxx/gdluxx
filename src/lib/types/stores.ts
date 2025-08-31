@@ -19,7 +19,7 @@ export interface JobStoreState {
 export interface JobStoreMethods {
   startJob: (
     urls: string[],
-    options?: Map<string, string | number | boolean>
+    options?: Map<string, string | number | boolean>,
   ) => Promise<BatchJobStartResult>;
   deleteJob: (jobId: string) => Promise<void>;
   showJob: (jobId: string) => void;

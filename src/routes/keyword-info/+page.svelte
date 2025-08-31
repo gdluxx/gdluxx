@@ -13,9 +13,15 @@
   import { PageLayout } from '$lib/components/ui';
 </script>
 
-<PageLayout title="Keyword Info" description="Get keywords and extractor info for a supported URL">
+<PageLayout
+  title="Keyword Info"
+  description="Get keywords and extractor info for a supported URL"
+>
   {#snippet icon()}
-    <Icon iconName="extract" size={32} />
+    <Icon
+      iconName="extract"
+      size={32}
+    />
   {/snippet}
   <KeywordInfo />
 </PageLayout>

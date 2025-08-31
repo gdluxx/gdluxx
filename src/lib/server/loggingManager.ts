@@ -119,7 +119,7 @@ export async function writeServerLoggingConfig(config: ServerLoggingConfig): Pro
       config.performanceLogging ? 1 : 0,
       config.slowQueryThreshold,
       timestamp,
-      timestamp
+      timestamp,
     );
 
     db.close();

@@ -16,9 +16,15 @@
   const { data } = $props();
 </script>
 
-<PageLayout title="Jobs" description="Manage your job logs">
+<PageLayout
+  title="Jobs"
+  description="Manage your job logs"
+>
   {#snippet icon()}
-    <Icon iconName="job" size={32} />
+    <Icon
+      iconName="job"
+      size={32}
+    />
   {/snippet}
   <JobsList initialJobs={data.success ? data.jobs : []} />
 </PageLayout>

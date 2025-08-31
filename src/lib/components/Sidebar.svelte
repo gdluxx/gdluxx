@@ -120,7 +120,7 @@
 </script>
 
 <nav
-  class="flex h-full flex-col bg-surface border-r-strong transition-all duration-300 overflow-x-hidden {collapsed &&
+  class="flex h-full flex-col overflow-x-hidden bg-surface transition-all duration-300 border-r-strong {collapsed &&
   !isMobile
     ? 'w-16'
     : 'w-54'}"
@@ -132,13 +132,16 @@
       <button
         onclick={handleSidebarClick}
         onkeydown={handleSidebarKeydown}
-        class="cursor-pointer w-full flex items-center gap-3 pl-3 py-2 rounded-sm text-muted-foreground hover:bg-surface-hover focus:bg-surface-active focus:outline-hidden focus:border-focus transition-colors"
+        class="flex w-full cursor-pointer items-center gap-3 rounded-sm py-2 pl-3 text-muted-foreground transition-colors hover:bg-surface-hover focus:bg-surface-active focus:outline-hidden focus:border-focus"
         aria-label={collapsed ? 'Expand sidebar navigation' : 'Collapse sidebar navigation'}
         aria-expanded={!collapsed}
         aria-controls="nav-items-list"
         tabindex="0"
       >
-        <span class="flex-shrink-0 flex items-center justify-center" aria-hidden="true">
+        <span
+          class="flex flex-shrink-0 items-center justify-center"
+          aria-hidden="true"
+        >
           <Icon
             iconName="double-chevron-left"
             size={24}
@@ -149,24 +152,34 @@
 
       <!-- Tooltip for desktop collapsed state -->
       {#if collapsed}
-        <div id="navigation-tooltip" class="sr-only" role="tooltip">Navigation</div>
+        <div
+          id="navigation-tooltip"
+          class="sr-only"
+          role="tooltip"
+        >
+          Navigation
+        </div>
       {/if}
     </div>
   {/if}
 
   <!-- Nav items -->
   <div
-    class="flex-1 overflow-y-auto overflow-x-hidden p-2"
+    class="flex-1 overflow-x-hidden overflow-y-auto p-2"
     id="nav-items-container"
     aria-labelledby={collapsed && !isMobile ? undefined : 'nav-heading'}
   >
-    <ul id="nav-items-list" role="list" class="space-y-1">
+    <ul
+      id="nav-items-list"
+      role="list"
+      class="space-y-1"
+    >
       {#each items as item (item.id)}
         <li>
           <button
             onclick={() => handleItemClick(item)}
-            onkeydown={e => handleKeydown(e, item)}
-            class="cursor-pointer w-full flex items-center gap-3 px-3 py-2 rounded-sm text-foreground hover:bg-surface-hover focus:bg-surface-hover focus:outline-hidden focus:ring-2 focus:ring-primary/20 transition-colors {activeItemId ===
+            onkeydown={(e) => handleKeydown(e, item)}
+            class="flex w-full cursor-pointer items-center gap-3 rounded-sm px-3 py-2 text-foreground transition-colors hover:bg-surface-hover focus:bg-surface-hover focus:ring-2 focus:ring-primary/20 focus:outline-hidden {activeItemId ===
             item.id
               ? 'bg-surface-selected text-foreground'
               : ''}"
@@ -175,7 +188,10 @@
             aria-describedby={collapsed && !isMobile ? `${item.id}-tooltip` : undefined}
             tabindex="0"
           >
-            <span class="flex-shrink-0 size-5" aria-hidden="true">
+            <span
+              class="size-5 flex-shrink-0"
+              aria-hidden="true"
+            >
               <!-- eslint-disable-next-line svelte/no-at-html-tags -->
               {@html item.icon}
             </span>
@@ -198,27 +214,38 @@
 
           <!-- Tooltip for collapsed state desktop only) -->
           {#if collapsed && !isMobile}
-            <div id="{item.id}-tooltip" class="sr-only" role="tooltip">
+            <div
+              id="{item.id}-tooltip"
+              class="sr-only"
+              role="tooltip"
+            >
               {item.label}
             </div>
           {/if}
 
           <!-- Child items -->
           {#if item.children && isItemExpanded(item.id) && (!collapsed || isMobile)}
-            <ul class="mt-1 ml-2 space-y-1" role="list" aria-label="{item.label} submenu">
+            <ul
+              class="mt-1 ml-2 space-y-1"
+              role="list"
+              aria-label="{item.label} submenu"
+            >
               {#each item.children as child (child.id)}
                 <li>
                   <button
                     onclick={() => handleItemClick(child)}
-                    onkeydown={e => handleKeydown(e, child)}
-                    class="cursor-pointer w-full flex items-center gap-3 px-3 py-2 rounded-sm text-sm text-muted-foreground hover:bg-surface-hover focus:bg-surface-hover focus:outline-hidden focus:ring-2 focus:ring-primary/20 transition-colors {activeItemId ===
+                    onkeydown={(e) => handleKeydown(e, child)}
+                    class="flex w-full cursor-pointer items-center gap-3 rounded-sm px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-surface-hover focus:bg-surface-hover focus:ring-2 focus:ring-primary/20 focus:outline-hidden {activeItemId ===
                     child.id
                       ? 'bg-surface-selected text-foreground'
                       : ''}"
                     aria-current={activeItemId === child.id ? 'page' : undefined}
                     tabindex="0"
                   >
-                    <span class="size-4" aria-hidden="true">
+                    <span
+                      class="size-4"
+                      aria-hidden="true"
+                    >
                       <!-- eslint-disable-next-line svelte/no-at-html-tags -->
                       {@html child.icon}
                     </span>
@@ -236,15 +263,15 @@
   </div>
 
   {#if user}
-    <div class="border-t-strong p-4">
+    <div class="p-4 border-t-strong">
       {#if !collapsed || isMobile}
         <div class="flex flex-row items-center">
           <div
-            class="cursor-default w-full flex items-center gap-3 px-3 py-2 rounded-lg text-muted-foreground hover:bg-surface-hover transition-colors"
+            class="flex w-full cursor-default items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-colors hover:bg-surface-hover"
           >
             <!-- Avatar -->
             <div
-              class="size-8 rounded-full bg-surface-selected flex items-center justify-center text-primary font-semibold text-sm"
+              class="flex size-8 items-center justify-center rounded-full bg-surface-selected text-sm font-semibold text-primary"
             >
               {user.name[0].toUpperCase()}
             </div>
@@ -261,18 +288,21 @@
               onclick={() => {
                 handleLogout();
               }}
-              class="cursor-pointer ml-2 p-1.5 rounded-sm text-muted-foreground hover:bg-surface-hover focus:outline-hidden focus:ring-2 focus:ring-primary/20"
+              class="ml-2 cursor-pointer rounded-sm p-1.5 text-muted-foreground hover:bg-surface-hover focus:ring-2 focus:ring-primary/20 focus:outline-hidden"
               title="Sign out"
               aria-label="Sign out"
             >
-              <Icon iconName="logout" size={24} />
+              <Icon
+                iconName="logout"
+                size={24}
+              />
             </button>
           </div>
         </div>
       {:else}
-        <div class="flex justify-center py-4 flex-col items-center gap-2">
+        <div class="flex flex-col items-center justify-center gap-2 py-4">
           <div
-            class="size-8 rounded-full bg-surface-selected flex items-center justify-center text-primary font-semibold text-sm"
+            class="flex size-8 items-center justify-center rounded-full bg-surface-selected text-sm font-semibold text-primary"
           >
             {user.name[0].toUpperCase()}
           </div>
@@ -280,11 +310,14 @@
             onclick={() => {
               handleLogout();
             }}
-            class="cursor-pointer ml-2 p-1.5 rounded-sm text-muted-foreground hover:bg-surface-hover focus:outline-hidden focus:ring-2 focus:ring-primary/20"
+            class="ml-2 cursor-pointer rounded-sm p-1.5 text-muted-foreground hover:bg-surface-hover focus:ring-2 focus:ring-primary/20 focus:outline-hidden"
             title="Sign out"
             aria-label="Sign out"
           >
-            <Icon iconName="logout" size={24} />
+            <Icon
+              iconName="logout"
+              size={24}
+            />
           </button>
         </div>
       {/if}

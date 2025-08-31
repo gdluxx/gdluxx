@@ -189,7 +189,7 @@ export function transformConfigPaths(jsonString: string): string {
 
       // Try pattern matching with wildcards (prioritize longer patterns)
       const matchingConfigs = Object.entries(keyConfigs).filter(([configKey]) =>
-        matchesPattern(fullPath, configKey)
+        matchesPattern(fullPath, configKey),
       );
 
       if (matchingConfigs.length > 0) {
@@ -199,7 +199,7 @@ export function transformConfigPaths(jsonString: string): string {
       }
 
       // if any part of the path contains 'archive', they'll get dumped to /app/data/archives
-      if (keyPath.some(part => part === 'archive') || currentKey === 'archive') {
+      if (keyPath.some((part) => part === 'archive') || currentKey === 'archive') {
         return keyConfigs.archive;
       }
 

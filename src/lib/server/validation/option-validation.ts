@@ -13,8 +13,8 @@ import type { Option, OptionsData } from '$lib/types/options';
 import { serverLogger as logger } from '$lib/server/logger';
 
 const validOptions = new Map<string, Option>();
-Object.values(optionsData as OptionsData).forEach(category => {
-  category.options.forEach(option => {
+Object.values(optionsData as OptionsData).forEach((category) => {
+  category.options.forEach((option) => {
     validOptions.set(option.id, option as Option);
   });
 });

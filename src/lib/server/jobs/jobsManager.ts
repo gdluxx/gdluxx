@@ -75,7 +75,7 @@ export async function readAllJobs(): Promise<DatabaseJob[]> {
     }
 
     // Combine jobs with their outputs
-    return jobRows.map(job => {
+    return jobRows.map((job) => {
       const validStatuses = ['running', 'success', 'no_action', 'error'] as const;
       if (!validStatuses.includes(job.status as (typeof validStatuses)[number])) {
         serverLogger.error('Invalid job status found, defaulting to error', {
@@ -122,7 +122,7 @@ export async function createJob(job: Omit<DatabaseJob, 'outputs'>): Promise<void
       job.downloadCount || 0,
       job.skipCount || 0,
       now,
-      now
+      now,
     );
   } catch (error) {
     serverLogger.error('Error creating job in database:', error);
@@ -134,7 +134,7 @@ export async function updateJob(
   jobId: string,
   updates: Partial<
     Pick<DatabaseJob, 'status' | 'endTime' | 'exitCode' | 'downloadCount' | 'skipCount'>
-  >
+  >,
 ): Promise<void> {
   try {
     const now = getCurrentTimestamp();

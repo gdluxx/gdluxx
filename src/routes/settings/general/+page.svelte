@@ -21,9 +21,15 @@
   const { data }: Props = $props();
 </script>
 
-<PageLayout title="General Settings" description="Manage general application preferences">
+<PageLayout
+  title="General Settings"
+  description="Manage general application preferences"
+>
   {#snippet icon()}
-    <Icon iconName="general-settings" size={24} />
+    <Icon
+      iconName="general-settings"
+      size={24}
+    />
   {/snippet}
 
   <GeneralManager userSettings={data.userSettings} />

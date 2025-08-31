@@ -40,8 +40,8 @@
       } else if (selectedIds) {
         // Options page usage - Set of option IDs
         localSelected = new Map();
-        selectedIds.forEach(id => {
-          const option = category.options.find(opt => opt.id === id);
+        selectedIds.forEach((id) => {
+          const option = category.options.find((opt) => opt.id === id);
           if (option) {
             localSelected.set(id, option.defaultValue ?? true);
           }
@@ -64,7 +64,7 @@
 
   function validateOptionValue(
     option: Option,
-    value: unknown
+    value: unknown,
   ): { valid: boolean; sanitized?: string | number | boolean; error?: string } {
     if (option.type === 'boolean') {
       return { valid: true, sanitized: Boolean(value) };
@@ -95,7 +95,7 @@
 
   function updateOptionValue(optionId: string, value: string | number) {
     if (localSelected.has(optionId)) {
-      const option = category.options.find(opt => opt.id === optionId);
+      const option = category.options.find((opt) => opt.id === optionId);
       if (option) {
         const validation = validateOptionValue(option, value);
         if (validation.valid) {
@@ -151,7 +151,7 @@
     class="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm"
     transition:fade={{ duration: 200 }}
     onclick={handleBackdropClick}
-    onkeydown={e => e.key === 'Escape' && onClose()}
+    onkeydown={(e) => e.key === 'Escape' && onClose()}
     role="button"
     tabindex="-1"
   >
@@ -160,7 +160,7 @@
       transition:scale={{ duration: 300, easing: quintOut, start: 0.95 }}
     >
       <!-- Header -->
-      <div class="border-b-strong px-6 py-4">
+      <div class="px-6 py-4 border-b-strong">
         <h2 class="text-xl font-semibold text-muted-foreground">
           {category.title}
         </h2>
@@ -178,10 +178,13 @@
                 id="option-{option.id}"
                 checked={localSelected.has(option.id)}
                 onchange={() => toggleOption(option)}
-                class="mt-1 h-4 w-4 rounded border-strong bg-white text-foreground focus:ring-2 focus:ring-primary"
+                class="mt-1 h-4 w-4 rounded bg-white text-foreground border-strong focus:ring-2 focus:ring-primary"
               />
               <div class="flex-1">
-                <label for="option-{option.id}" class="cursor-pointer">
+                <label
+                  for="option-{option.id}"
+                  class="cursor-pointer"
+                >
                   <span class="font-medium text-muted-foreground">
                     {option.command}
                   </span>
@@ -193,9 +196,9 @@
                         type="text"
                         placeholder={option.placeholder}
                         value={localSelected.get(option.id)}
-                        oninput={e => updateOptionValue(option.id, e.currentTarget.value)}
-                        class="w-full rounded-md border-strong bg-white px-3 py-2 text-muted-foreground focus:border-primary focus:ring-primary {validationErrors.has(
-                          option.id
+                        oninput={(e) => updateOptionValue(option.id, e.currentTarget.value)}
+                        class="w-full rounded-md bg-white px-3 py-2 text-muted-foreground border-strong focus:border-primary focus:ring-primary {validationErrors.has(
+                          option.id,
                         )
                           ? 'border-error focus:border-error focus:ring-error'
                           : ''}"
@@ -210,9 +213,9 @@
                         type="number"
                         placeholder={option.placeholder}
                         value={localSelected.get(option.id)}
-                        oninput={e => updateOptionValue(option.id, e.currentTarget.valueAsNumber)}
-                        class="w-full rounded-md border-strong bg-white px-3 py-2 text-muted-foreground focus:border-primary focus:ring-primary {validationErrors.has(
-                          option.id
+                        oninput={(e) => updateOptionValue(option.id, e.currentTarget.valueAsNumber)}
+                        class="w-full rounded-md bg-white px-3 py-2 text-muted-foreground border-strong focus:border-primary focus:ring-primary {validationErrors.has(
+                          option.id,
                         )
                           ? 'border-error focus:border-error focus:ring-error'
                           : ''}"
@@ -227,9 +230,9 @@
                         type="text"
                         placeholder={option.placeholder}
                         value={localSelected.get(option.id)}
-                        oninput={e => updateOptionValue(option.id, e.currentTarget.value)}
-                        class="w-full rounded-md border-strong bg-white px-3 py-2 text-muted-foreground focus:border-primary focus:ring-primary {validationErrors.has(
-                          option.id
+                        oninput={(e) => updateOptionValue(option.id, e.currentTarget.value)}
+                        class="w-full rounded-md bg-white px-3 py-2 text-muted-foreground border-strong focus:border-primary focus:ring-primary {validationErrors.has(
+                          option.id,
                         )
                           ? 'border-error focus:border-error focus:ring-error'
                           : ''}"
@@ -248,9 +251,9 @@
                 type="button"
                 size="sm"
                 variant="light"
-                onmouseenter={e => handleMouseEnter(e, option.id)}
+                onmouseenter={(e) => handleMouseEnter(e, option.id)}
                 onmouseleave={handleMouseLeave}
-                onclick={e => e.preventDefault()}
+                onclick={(e) => e.preventDefault()}
               >
                 <span class="">?</span>
               </Button>
@@ -260,17 +263,23 @@
       </div>
 
       <!-- Footer -->
-      <div
-        class="flex justify-end gap-3 border-t-strong px-6 py-4"
-      >
-        <Button onclick={onClose} variant="outline-primary" size="sm">Close</Button>
-        <Button onclick={handleApply} variant="primary" size="sm">Apply Options</Button>
+      <div class="flex justify-end gap-3 px-6 py-4 border-t-strong">
+        <Button
+          onclick={onClose}
+          variant="outline-primary"
+          size="sm">Close</Button
+        >
+        <Button
+          onclick={handleApply}
+          variant="primary"
+          size="sm">Apply Options</Button
+        >
       </div>
     </div>
 
     <!-- Tooltip -->
     {#if hoveredOption}
-      {@const option = category.options.find(o => o.id === hoveredOption)}
+      {@const option = category.options.find((o) => o.id === hoveredOption)}
       {#if option}
         <div
           class="pointer-events-none fixed z-60 max-w-sm rounded-lg bg-surface p-3 text-sm text-muted-foreground shadow-lg"
@@ -282,7 +291,7 @@
           <div class="mb-1 font-medium">{option.command}</div>
           <div class="text-muted-foreground">{option.description}</div>
           <div
-            class="absolute top-1/2 -left-2 h-0 w-0 -translate-y-1/2 border-t-8 border-r-8 border-b-8 border-t-transparent border-r-strong border-b-transparent"
+            class="absolute top-1/2 -left-2 h-0 w-0 -translate-y-1/2 border-t-8 border-r-8 border-b-8 border-t-transparent border-b-transparent border-r-strong"
           ></div>
         </div>
       {/if}

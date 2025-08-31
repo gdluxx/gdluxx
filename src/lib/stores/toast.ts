@@ -45,7 +45,7 @@ function createToastStore(): ToastStoreMethods {
       ...restToast,
     };
 
-    update(toasts => [...toasts, newToast]);
+    update((toasts) => [...toasts, newToast]);
 
     // Auto remove after duration
     if (newToast.duration && newToast.duration > 0) {
@@ -58,7 +58,7 @@ function createToastStore(): ToastStoreMethods {
   }
 
   function removeToast(id: string): void {
-    update(toasts => toasts.filter(toast => toast.id !== id));
+    update((toasts) => toasts.filter((toast) => toast.id !== id));
   }
 
   function success(title: string, message?: string, duration?: number, allowHtml?: boolean) {

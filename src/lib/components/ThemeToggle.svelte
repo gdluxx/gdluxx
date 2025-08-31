@@ -16,7 +16,7 @@
   let isDark = $state(false);
 
   $effect(() => {
-    const unsubscribe = isDarkStore.subscribe(value => (isDark = value));
+    const unsubscribe = isDarkStore.subscribe((value) => (isDark = value));
     return unsubscribe;
   });
 
@@ -60,16 +60,16 @@
 
 <button
   type="button"
-  class="cursor-pointer relative flex items-center justify-center w-10 h-10 transition-all duration-200"
+  class="relative flex h-10 w-10 cursor-pointer items-center justify-center transition-all duration-200"
   aria-pressed={isDark}
   aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
   onclick={handleThemeToggleClick}
 >
   <!-- light mode -->
   <svg
-    class="absolute w-6 h-6 text-primary transition-all duration-400 {isDark
-      ? 'opacity-0 rotate-180 scale-75'
-      : 'opacity-100 rotate-0 scale-100'}"
+    class="absolute h-6 w-6 text-primary transition-all duration-400 {isDark
+      ? 'scale-75 rotate-180 opacity-0'
+      : 'scale-100 rotate-0 opacity-100'}"
     fill="none"
     stroke="currentColor"
     viewBox="0 0 24 24"
@@ -85,9 +85,9 @@
 
   <!-- dark mode -->
   <svg
-    class="absolute w-6 h-6 text-primary transition-all duration-400 {isDark
-      ? 'opacity-100 rotate-0 scale-100'
-      : 'opacity-0 rotate-180 scale-75'}"
+    class="absolute h-6 w-6 text-primary transition-all duration-400 {isDark
+      ? 'scale-100 rotate-0 opacity-100'
+      : 'scale-75 rotate-180 opacity-0'}"
     xmlns="http://www.w3.org/2000/svg"
     viewBox="0 0 24 24"
     aria-hidden="true"

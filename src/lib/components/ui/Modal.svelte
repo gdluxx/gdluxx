@@ -59,7 +59,7 @@
 {#if show}
   <!-- Modal backdrop -->
   <div
-    class="fixed inset-0 backdrop-blur-sm z-50"
+    class="fixed inset-0 z-50 backdrop-blur-sm"
     onclick={handleBackdropClick}
     onkeydown={handleBackdropKeydown}
     role="dialog"
@@ -69,9 +69,9 @@
     <!-- Modal container -->
     <div class="fixed inset-0 flex items-center justify-center p-4">
       <div
-        class="bg-surface-elevated rounded-lg shadow-xl w-full {sizeClasses[
+        class="w-full rounded-lg bg-surface-elevated shadow-xl {sizeClasses[
           size
-        ]} max-h-[90vh] overflow-auto relative"
+        ]} relative max-h-[90vh] overflow-auto"
         transition:scale={{ duration: 200, easing: quintOut }}
       >
         <!-- Close button -->
@@ -79,11 +79,14 @@
           <div class="absolute top-4 right-4 z-10">
             <button
               onclick={onClose}
-              class="cursor-pointer flex-shrink-0 w-8 h-8 inline-flex justify-center items-center rounded-full border-transparent bg-surface-hover text-muted-foreground hover:bg-surface-active focus:outline-hidden focus:bg-surface-active focus:ring-2 focus:border-focus transition-all"
+              class="inline-flex h-8 w-8 flex-shrink-0 cursor-pointer items-center justify-center rounded-full border-transparent bg-surface-hover text-muted-foreground transition-all hover:bg-surface-active focus:bg-surface-active focus:ring-2 focus:outline-hidden focus:border-focus"
               aria-label="Close modal"
             >
               <span class="sr-only">Close</span>
-              <Icon iconName="close" size={12} />
+              <Icon
+                iconName="close"
+                size={12}
+              />
             </button>
           </div>
         {/if}

@@ -86,7 +86,7 @@
       setTimeout(() => {
         if (modalElement) {
           const focusableElements = modalElement.querySelectorAll(
-            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
           );
           const firstElement = focusableElements[0] as HTMLElement;
           if (firstElement) {
@@ -111,7 +111,7 @@
 
     if (event.key === 'Tab' && modalElement) {
       const focusableElements = modalElement.querySelectorAll(
-        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
       );
       const firstElement = focusableElements[0] as HTMLElement;
       const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
@@ -163,7 +163,7 @@
       'rounded-sm',
       'pointer-events-auto',
       sizeClasses[size],
-    ].join(' ')
+    ].join(' '),
   );
 </script>
 
@@ -186,9 +186,7 @@
       role="document"
     >
       <!-- Header -->
-      <div
-        class="flex justify-between items-center py-4 px-6 border-b-primary/35"
-      >
+      <div class="flex items-center justify-between border-b-primary/35 px-6 py-4">
         <h1
           id="modal-title"
           class="text-lg font-semibold text-primary"
@@ -200,23 +198,26 @@
           <button
             type="button"
             onclick={handleClose}
-            class="cursor-pointer flex-shrink-0 w-8 h-8 inline-flex justify-center items-center rounded-full border-primary/35 text-foreground hover:outline-hidden hover:ring-2 hover:ring-primary transition-all"
+            class="inline-flex h-8 w-8 flex-shrink-0 cursor-pointer items-center justify-center rounded-full border-primary/35 text-foreground transition-all hover:ring-2 hover:ring-primary hover:outline-hidden"
             aria-label="Close modal"
           >
             <span class="sr-only">Close</span>
-            <Icon iconName="close" size={12} />
+            <Icon
+              iconName="close"
+              size={12}
+            />
           </button>
         {/if}
       </div>
 
       <!-- content -->
-      <div class="p-6 overflow-y-auto">
+      <div class="overflow-y-auto p-6">
         {#if children}
           {@render children()}
         {:else if message}
           <p
             id="modal-description"
-            class="text-foreground leading-relaxed"
+            class="leading-relaxed text-foreground"
           >
             {message}
           </p>
@@ -224,14 +225,20 @@
       </div>
 
       <!-- Footer -->
-      <div
-        class="flex justify-end items-center gap-3 py-4 px-6 border-t-primary/35"
-      >
-        <Button variant={cancelVariant} onclick={handleCancel} type="button">
+      <div class="flex items-center justify-end gap-3 border-t-primary/35 px-6 py-4">
+        <Button
+          variant={cancelVariant}
+          onclick={handleCancel}
+          type="button"
+        >
           {cancelText}
         </Button>
 
-        <Button variant={confirmVariant} onclick={handleConfirm} type="button">
+        <Button
+          variant={confirmVariant}
+          onclick={handleConfirm}
+          type="button"
+        >
           {confirmText}
         </Button>
       </div>

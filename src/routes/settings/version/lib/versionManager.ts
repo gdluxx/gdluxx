@@ -151,7 +151,7 @@ export function compareVersions(a: string | null, b: string | null): number {
   } // a is newer
 
   const parse: (v: string) => number[] = (v: string): number[] =>
-    v.split('.').map(num => parseInt(num, 10) || 0);
+    v.split('.').map((num) => parseInt(num, 10) || 0);
   const versionA: number[] = parse(a);
   const versionB: number[] = parse(b);
 

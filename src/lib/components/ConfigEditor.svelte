@@ -112,7 +112,7 @@
       json(),
       jsonLinter,
       lintGutter(),
-      EditorView.updateListener.of(update => {
+      EditorView.updateListener.of((update) => {
         if (update.docChanged) {
           value = update.state.doc.toString();
           checkLintErrors();
@@ -236,7 +236,7 @@
           json(),
           jsonLinter,
           lintGutter(),
-          EditorView.updateListener.of(update => {
+          EditorView.updateListener.of((update) => {
             if (update.docChanged) {
               value = update.state.doc.toString();
               checkLintErrors();
@@ -270,12 +270,15 @@
 
 <div class="mx-auto rounded-t-sm border-strong">
   <div
-    class="cursor-default font-medium flex items-center justify-between rounded-t-sm border-b-strong bg-surface px-4 py-3"
+    class="flex cursor-default items-center justify-between rounded-t-sm bg-surface px-4 py-3 font-medium border-b-strong"
   >
     <span class="text-muted-foreground">Edit your configuration file</span>
     <div class="flex items-center gap-3">
       {#if saveStatus}
-        <span class="save-status" class:error={saveStatus.startsWith('Error')}>
+        <span
+          class="save-status"
+          class:error={saveStatus.startsWith('Error')}
+        >
           {saveStatus}
         </span>
       {/if}
@@ -293,7 +296,10 @@
       {/if}
     </div>
   </div>
-  <div bind:this={container} class="font-mono text-sm"></div>
+  <div
+    bind:this={container}
+    class="font-mono text-sm"
+  ></div>
 </div>
 
 <ConfirmModal

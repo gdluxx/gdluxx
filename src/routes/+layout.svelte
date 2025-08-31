@@ -127,15 +127,15 @@
   </div>
 {:else}
   <!-- Main layout with sidebar and header -->
-  <div class="flex flex-col h-screen bg-background">
-    <header class="sticky top-0 z-50 border-b-strong bg-surface px-6 py-4">
+  <div class="flex h-screen flex-col bg-background">
+    <header class="sticky top-0 z-50 bg-surface px-6 py-4 border-b-strong">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-4">
           {#if isMobile}
             <!-- hamburger -->
             <button
               onclick={handleSidebarToggle}
-              class="p-2 rounded-md text-muted-foreground hover:bg-surface-hover focus:outline-hidden focus:border-focus"
+              class="rounded-md p-2 text-muted-foreground hover:bg-surface-hover focus:outline-hidden focus:border-focus"
               aria-label={sidebarOpen ? 'Close navigation menu' : 'Open navigation menu'}
               aria-expanded={sidebarOpen}
             >
@@ -147,19 +147,23 @@
             </button>
           {/if}
 
-          <div class="flex-shrink-0 flex items-center select-none">
-            <img src={icon} alt="gdluxx Logo" class="me-3 h-6 sm:h-9" />
+          <div class="flex flex-shrink-0 items-center select-none">
+            <img
+              src={icon}
+              alt="gdluxx Logo"
+              class="me-3 h-6 sm:h-9"
+            />
             <span class="text-xl font-semibold whitespace-nowrap text-foreground"> gdluxx </span>
           </div>
           <JobsIndicator />
         </div>
-        <div class="flex items-center mr-4">
+        <div class="mr-4 flex items-center">
           <ThemeToggle />
         </div>
       </div>
     </header>
 
-    <div class="flex flex-1 overflow-hidden relative">
+    <div class="relative flex flex-1 overflow-hidden">
       {#if !isMobile}
         <Sidebar
           items={navItems}
@@ -173,7 +177,7 @@
       <!-- Mobile sidebar is overlay so there's no squishing -->
       {#if isMobile && sidebarOpen}
         <div
-          class="fixed inset-0 bg-blur-sm z-40 md:hidden"
+          class="bg-blur-sm fixed inset-0 z-40 md:hidden"
           onclick={closeSidebar}
           aria-hidden="true"
         ></div>

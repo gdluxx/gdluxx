@@ -45,9 +45,24 @@
     aria-label={ariaLabel}
     class={`icon icon-${iconName} ${className}`}
   >
-    <g fill="none" stroke={color} stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
-      <path stroke-dasharray="16" stroke-dashoffset="16" d="M12 3c4.97 0 9 4.03 9 9">
-        <animate fill="freeze" attributeName="stroke-dashoffset" dur="0.3s" values="16;0" />
+    <g
+      fill="none"
+      stroke={color}
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      stroke-width="2"
+    >
+      <path
+        stroke-dasharray="16"
+        stroke-dashoffset="16"
+        d="M12 3c4.97 0 9 4.03 9 9"
+      >
+        <animate
+          fill="freeze"
+          attributeName="stroke-dashoffset"
+          dur="0.3s"
+          values="16;0"
+        />
         <animateTransform
           attributeName="transform"
           dur="1.5s"
@@ -62,7 +77,12 @@
         stroke-opacity="0.3"
         d="M12 3c4.97 0 9 4.03 9 9c0 4.97 -4.03 9 -9 9c-4.97 0 -9 -4.03 -9 -9c0 -4.97 4.03 -9 9 -9Z"
       >
-        <animate fill="freeze" attributeName="stroke-dashoffset" dur="1.2s" values="64;0" />
+        <animate
+          fill="freeze"
+          attributeName="stroke-dashoffset"
+          dur="1.2s"
+          values="64;0"
+        />
       </path>
     </g>
   </svg>

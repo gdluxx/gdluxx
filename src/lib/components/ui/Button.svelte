@@ -215,7 +215,7 @@
       className,
     ]
       .filter(Boolean)
-      .join(' ')
+      .join(' '),
   );
 
   const ariaAttributes = $derived<Record<string, string | undefined>>({
@@ -245,9 +245,12 @@
 
   <!-- Loading spinner -->
   {#if loading}
-    <div class="absolute inset-0 flex items-center justify-center" aria-hidden="true">
+    <div
+      class="absolute inset-0 flex items-center justify-center"
+      aria-hidden="true"
+    >
       <div
-        class="w-4 h-4 border-2 border-skeleton border-t-spinner rounded-full animate-spin"
+        class="h-4 w-4 animate-spin rounded-full border-2 border-skeleton border-t-spinner"
         role="status"
         aria-label="Loading"
       ></div>

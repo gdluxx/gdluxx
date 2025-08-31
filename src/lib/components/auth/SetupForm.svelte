@@ -74,7 +74,7 @@
 
 <div class="m-4 mx-8">
   <form
-    onsubmit={e => {
+    onsubmit={(e) => {
       e.preventDefault();
       handleSetup();
     }}
@@ -87,7 +87,7 @@
         bind:value={name}
         onkeydown={handleKeyPress}
         required
-        class="text-sm w-full px-3 py-2 border rounded-sm bg-input text-foreground"
+        class="bg-input w-full rounded-sm border px-3 py-2 text-sm text-foreground"
         placeholder="username"
         disabled={isLoading}
       />
@@ -100,7 +100,7 @@
         bind:value={email}
         onkeydown={handleKeyPress}
         required
-        class="text-sm w-full px-3 py-2 border rounded-sm bg-input text-foreground"
+        class="bg-input w-full rounded-sm border px-3 py-2 text-sm text-foreground"
         placeholder="email address"
         disabled={isLoading}
       />
@@ -113,7 +113,7 @@
         bind:value={password}
         onkeydown={handleKeyPress}
         required
-        class="text-sm w-full px-3 py-2 border rounded-sm bg-input text-foreground"
+        class="bg-input w-full rounded-sm border px-3 py-2 text-sm text-foreground"
         placeholder="password (min 8 characters)"
         disabled={isLoading}
       />
@@ -126,22 +126,27 @@
         bind:value={confirmPassword}
         onkeydown={handleKeyPress}
         required
-        class="text-sm w-full px-3 py-2 border rounded-sm bg-input text-foreground"
+        class="bg-input w-full rounded-sm border px-3 py-2 text-sm text-foreground"
         placeholder="Confirm password"
         disabled={isLoading}
       />
     </div>
 
-    <div class="flex justify-end m-4 gap-6">
+    <div class="m-4 flex justify-end gap-6">
       <Button
         onclick={clearForm}
         variant="outline-primary"
         disabled={isLoading}
-        class="w-full mt-2"
+        class="mt-2 w-full"
       >
         Clear
       </Button>
-      <Button type="submit" variant="primary" disabled={isLoading} class="w-full mt-2">
+      <Button
+        type="submit"
+        variant="primary"
+        disabled={isLoading}
+        class="mt-2 w-full"
+      >
         {isLoading ? 'Creating account...' : 'Create account'}
       </Button>
     </div>

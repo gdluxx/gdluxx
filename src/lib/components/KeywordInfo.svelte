@@ -155,10 +155,11 @@
   });
 </script>
 
-<div
-  class="content-panel"
->
-  <form class="space-y-6" onsubmit={handleExtractorInfo}>
+<div class="content-panel">
+  <form
+    class="space-y-6"
+    onsubmit={handleExtractorInfo}
+  >
     <!-- URL Input -->
     <div class="m-4">
       <label
@@ -184,7 +185,7 @@
           bind:value={urlInput}
           placeholder="https://imgur.com/gallery/OvxRX"
           autocomplete="off"
-          onkeydown={e => {
+          onkeydown={(e) => {
             if (e.key === 'Enter') {
               e.preventDefault();
               if (urlInput.trim() && !buttonsDisabled) {
@@ -197,11 +198,19 @@
 
         <!-- URL validation indicator -->
         {#if urlInput.trim()}
-          <div class="absolute right-3 top-1/2 transform -translate-y-1/2">
+          <div class="absolute top-1/2 right-3 -translate-y-1/2 transform">
             {#if isValidUrl()}
-              <Icon iconName="circle" size={12} class="text-success" />
+              <Icon
+                iconName="circle"
+                size={12}
+                class="text-success"
+              />
             {:else}
-              <Icon iconName="circle" size={12} class="text-error" />
+              <Icon
+                iconName="circle"
+                size={12}
+                class="text-error"
+              />
             {/if}
           </div>
         {/if}
@@ -209,13 +218,13 @@
     </div>
 
     <!-- Buttons -->
-    <div class="flex flex-col sm:flex-row justify-end m-4 gap-2">
+    <div class="m-4 flex flex-col justify-end gap-2 sm:flex-row">
       <Button
         onclick={() => keywordInfoStore.clearAllCachedData()}
         disabled={buttonsDisabled}
         size="sm"
         variant="outline-danger"
-        class="w-full sm:w-auto order-2 sm:order-1"
+        class="order-2 w-full sm:order-1 sm:w-auto"
       >
         Clear Data
       </Button>
@@ -224,10 +233,14 @@
         disabled={buttonsDisabled}
         size="sm"
         variant="primary"
-        class="w-full sm:w-auto order-2 sm:order-1"
+        class="order-2 w-full sm:order-1 sm:w-auto"
       >
         {#if keywordInfoStore.state.isLoading && keywordInfoStore.state.lastCommand === 'list-keywords'}
-          <Icon iconName="loading" size={16} class="animate-spin mr-2" />
+          <Icon
+            iconName="loading"
+            size={16}
+            class="mr-2 animate-spin"
+          />
         {/if}
         List Keywords
       </Button>
@@ -237,10 +250,14 @@
         disabled={buttonsDisabled}
         size="sm"
         variant="primary"
-        class="w-full sm:w-auto order-1 sm:order-2"
+        class="order-1 w-full sm:order-2 sm:w-auto"
       >
         {#if keywordInfoStore.state.isLoading && keywordInfoStore.state.lastCommand === 'extractor-info'}
-          <Icon iconName="loading" size={16} class="animate-spin mr-2" />
+          <Icon
+            iconName="loading"
+            size={16}
+            class="mr-2 animate-spin"
+          />
         {/if}
         Extractor Info
       </Button>
@@ -248,8 +265,11 @@
 
     <!-- Error -->
     {#if keywordInfoStore.state.error}
-      <div class="cursor-default mx-4">
-        <Info variant={getErrorVariant()} dismissible>
+      <div class="mx-4 cursor-default">
+        <Info
+          variant={getErrorVariant()}
+          dismissible
+        >
           {getErrorMessage()}
         </Info>
       </div>
@@ -257,7 +277,7 @@
 
     <!-- Output -->
     {#if keywordInfoStore.hasOutput || keywordInfoStore.state.isLoading}
-      <div class="cursor-default mx-4 space-y-4">
+      <div class="mx-4 cursor-default space-y-4">
         <!-- Context Info -->
         {#if keywordInfoStore.state.currentUrl && keywordInfoStore.state.lastCommand}
           <Info variant="info">
@@ -272,17 +292,20 @@
 
         <!-- Output display -->
         <div class="relative">
-          <div class="flex justify-between items-center mb-2">
+          <div class="mb-2 flex items-center justify-between">
             <span class="text-sm font-medium text-primary"> Output </span>
             <div class="flex gap-2">
               {#if keywordInfoStore.currentOutput()}
                 <Button
-                  onclick={e => copyToClipboard(keywordInfoStore.currentOutput(), e)}
+                  onclick={(e) => copyToClipboard(keywordInfoStore.currentOutput(), e)}
                   variant="outline-primary"
                   size="sm"
                   class="flex items-center gap-1"
                 >
-                  <Icon iconName="copy-clipboard" size={14} />
+                  <Icon
+                    iconName="copy-clipboard"
+                    size={14}
+                  />
                   Copy
                 </Button>
               {/if}
@@ -293,7 +316,10 @@
                   size="sm"
                   class="flex items-center gap-1"
                 >
-                  <Icon iconName="close" size={14} />
+                  <Icon
+                    iconName="close"
+                    size={14}
+                  />
                   Clear
                 </Button>
               {/if}
@@ -301,11 +327,15 @@
           </div>
 
           <div
-            class="cursor-default bg-surface text-foreground mt-4 w-full rounded-sm border px-4 py-3 text-sm whitespace-pre-wrap break-words max-h-96 overflow-auto font-mono leading-relaxed"
+            class="mt-4 max-h-96 w-full cursor-default overflow-auto rounded-sm border bg-surface px-4 py-3 font-mono text-sm leading-relaxed break-words whitespace-pre-wrap text-foreground"
           >
             {#if keywordInfoStore.state.isLoading}
               <div class="flex items-center justify-center py-8">
-                <Icon iconName="loading" size={24} class="animate-spin mr-2" />
+                <Icon
+                  iconName="loading"
+                  size={24}
+                  class="mr-2 animate-spin"
+                />
                 <span class="text-base">
                   Executing {keywordInfoStore.state.lastCommand === 'list-keywords'
                     ? 'List Keywords'
@@ -316,9 +346,7 @@
               <!-- prettier-ignore -->
               {keywordInfoStore.currentOutput()}
             {:else}
-              <span class="text-muted-foreground italic">
-                No output to display
-              </span>
+              <span class="text-muted-foreground italic"> No output to display </span>
             {/if}
           </div>
         </div>
@@ -327,5 +355,10 @@
   </form>
 
   <!-- Copy -->
-  <CopyTooltip x={tooltip.x} y={tooltip.y} visible={tooltip.visible} text={tooltip.text} />
+  <CopyTooltip
+    x={tooltip.x}
+    y={tooltip.y}
+    visible={tooltip.visible}
+    text={tooltip.text}
+  />
 </div>

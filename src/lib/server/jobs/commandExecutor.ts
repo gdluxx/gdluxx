@@ -22,7 +22,7 @@ export interface CommandExecutionResult {
 
 export async function executeGalleryDlCommand(
   url: string,
-  cliArgs: string[]
+  cliArgs: string[],
 ): Promise<CommandExecutionResult> {
   try {
     // Create job
@@ -62,7 +62,7 @@ export async function executeGalleryDlCommand(
       }): Promise<void> => {
         logger.info(`Process for job ${jobId} exited with code ${exitCode}, signal ${signal}`);
         await jobManager.completeJob(jobId, exitCode || 0);
-      }
+      },
     );
 
     return {

@@ -61,7 +61,7 @@ async function getAdminUserId(): Promise<string> {
 
 export async function createApiKey(
   name: string,
-  expiresAt?: Date
+  expiresAt?: Date,
 ): Promise<{
   id: string;
   name: string;

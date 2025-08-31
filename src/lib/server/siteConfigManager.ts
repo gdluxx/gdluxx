@@ -62,7 +62,7 @@ class SiteConfigManager {
   }
 
   async createSiteConfig(
-    config: Omit<SiteConfig, 'id' | 'created_at' | 'updated_at'>
+    config: Omit<SiteConfig, 'id' | 'created_at' | 'updated_at'>,
   ): Promise<number> {
     try {
       const stmt = this.db.prepare(`
@@ -77,7 +77,7 @@ class SiteConfigManager {
         config.is_default ? 1 : 0,
         config.enabled ? 1 : 0,
         now,
-        now
+        now,
       );
       return result.lastInsertRowid as number;
     } catch (error) {
@@ -100,7 +100,7 @@ class SiteConfigManager {
       const stmt = this.db.prepare(`
         SELECT * FROM site_configs
       `);
-      return stmt.all().map(row => this.rowToSiteConfig(row as Record<string, unknown>));
+      return stmt.all().map((row) => this.rowToSiteConfig(row as Record<string, unknown>));
     } catch (error) {
       serverLogger.error('Error reading site configs from database:', error);
       return [];
@@ -172,7 +172,7 @@ class SiteConfigManager {
   }
 
   async upsertSupportedSite(
-    site: Omit<SupportedSite, 'id' | 'created_at' | 'updated_at'>
+    site: Omit<SupportedSite, 'id' | 'created_at' | 'updated_at'>,
   ): Promise<void> {
     try {
       const stmt = this.db.prepare(`
@@ -193,7 +193,7 @@ class SiteConfigManager {
         site.last_fetched,
         site.url,
         now,
-        now
+        now,
       );
     } catch (error) {
       serverLogger.error('Error upserting supported site in database:', error);
@@ -214,7 +214,7 @@ class SiteConfigManager {
       const stmt = this.db.prepare(query);
       return stmt
         .all(...params)
-        .map(row => this.rowToSupportedSite(row as Record<string, unknown>));
+        .map((row) => this.rowToSupportedSite(row as Record<string, unknown>));
     } catch (error) {
       serverLogger.error('Error reading supported sites from database:', error);
       return [];
@@ -313,7 +313,7 @@ class SiteConfigManager {
       const configs = await this.getSiteConfigsAll();
 
       const matchingConfigs = configs.filter(
-        config => config.enabled && this.urlMatchesPattern(url, config.site_pattern)
+        (config) => config.enabled && this.urlMatchesPattern(url, config.site_pattern),
       );
 
       if (matchingConfigs.length === 0) {
@@ -347,7 +347,7 @@ class SiteConfigManager {
       const configs = await this.getSiteConfigsAll();
 
       const matchingConfigs = configs.filter(
-        config => config.enabled && this.urlMatchesPattern(url, config.site_pattern)
+        (config) => config.enabled && this.urlMatchesPattern(url, config.site_pattern),
       );
 
       if (matchingConfigs.length === 0) {

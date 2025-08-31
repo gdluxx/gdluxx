@@ -18,9 +18,16 @@
   const user = $derived(data.user);
 </script>
 
-<PageLayout title="User Manager" description="Manage user accounts">
+<PageLayout
+  title="User Manager"
+  description="Manage user accounts"
+>
   {#snippet icon()}
-    <Icon iconName="user" size={40} ariaLabel="userIcon" />
+    <Icon
+      iconName="user"
+      size={40}
+      ariaLabel="userIcon"
+    />
   {/snippet}
   <UserManager {user} />
 </PageLayout>

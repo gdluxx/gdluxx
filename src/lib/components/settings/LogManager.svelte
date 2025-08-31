@@ -95,13 +95,13 @@
         const errorData = await response.json();
         toastStore.error(
           'Server Configuration Failed',
-          errorData.error ?? 'Failed to update server logging configuration'
+          errorData.error ?? 'Failed to update server logging configuration',
         );
       }
     } catch (error) {
       toastStore.error(
         'Server Configuration Failed',
-        'Failed to update server logging configuration'
+        'Failed to update server logging configuration',
       );
       clientLogger.error('Failed to update server logging configuration:', error);
     } finally {
@@ -117,7 +117,7 @@
     } catch (error) {
       toastStore.error(
         'Client Configuration Failed',
-        'Failed to update client logging configuration'
+        'Failed to update client logging configuration',
       );
       clientLogger.error('Failed to update client logging configuration:', error);
     }
@@ -246,21 +246,17 @@
   <title>Log Settings - gdluxx</title>
 </svelte:head>
 
-<div class="container mx-auto max-w-4xl p-6 space-y-8">
+<div class="container mx-auto max-w-4xl space-y-8 p-6">
   {#if loading}
-    <div class="text-center py-8">
-      <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-strong"></div>
+    <div class="py-8 text-center">
+      <div class="inline-block h-8 w-8 animate-spin rounded-full border-b-2 border-strong"></div>
       <p class="mt-2 text-foreground">Loading...</p>
     </div>
   {:else}
     <!-- Server logging config -->
-    <div
-      class="content-panel"
-    >
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="">
-          Server Logging
-        </h2>
+    <div class="content-panel">
+      <div class="mb-4 flex items-center justify-between">
+        <h2 class="">Server Logging</h2>
         <Button
           onclick={updateServerConfig}
           disabled={loading}
@@ -271,7 +267,7 @@
         </Button>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
         <div class="space-y-4">
           <Toggle
             bind:checked={serverConfig.enabled}
@@ -282,18 +278,22 @@
           />
 
           <div>
-            <div class="flex flex-row gap-2 items-center">
+            <div class="flex flex-row items-center gap-2">
               <label
                 for="server-log-level"
-                class="block text-sm font-medium text-muted-foreground mb-1"
+                class="mb-1 block text-sm font-medium text-muted-foreground"
               >
                 Log Level
                 <Tooltip
                   maxWidth="32rem"
-                  class="!whitespace-normal !min-w-80"
+                  class="!min-w-80 !whitespace-normal"
                   content={tooltipVars.server.level}
                 >
-                  <Icon iconName="question" size={20} class="text-muted-foreground" />
+                  <Icon
+                    iconName="question"
+                    size={20}
+                    class="text-muted-foreground"
+                  />
                 </Tooltip>
               </label>
             </div>
@@ -310,18 +310,22 @@
           </div>
 
           <div>
-            <div class="flex flex-row gap-2 items-center">
+            <div class="flex flex-row items-center gap-2">
               <label
                 for="server-format"
-                class="block text-sm font-medium text-muted-foreground mb-1"
+                class="mb-1 block text-sm font-medium text-muted-foreground"
               >
                 Log Format
                 <Tooltip
                   maxWidth="32rem"
-                  class="!whitespace-normal !min-w-80"
+                  class="!min-w-80 !whitespace-normal"
                   content={tooltipVars.server.format}
                 >
-                  <Icon iconName="question" size={20} class="text-muted-foreground" />
+                  <Icon
+                    iconName="question"
+                    size={20}
+                    class="text-muted-foreground"
+                  />
                 </Tooltip>
               </label>
             </div>
@@ -357,11 +361,18 @@
             <div>
               <label
                 for="server-file-directory"
-                class="block text-sm font-medium text-muted-foreground mb-1"
+                class="mb-1 block text-sm font-medium text-muted-foreground"
               >
                 Log Directory
-                <Tooltip maxWidth="" content={tooltipVars.server.directory}>
-                  <Icon iconName="question" size={20} class="text-muted-foreground" />
+                <Tooltip
+                  maxWidth=""
+                  content={tooltipVars.server.directory}
+                >
+                  <Icon
+                    iconName="question"
+                    size={20}
+                    class="text-muted-foreground"
+                  />
                 </Tooltip>
               </label>
               <input
@@ -373,21 +384,21 @@
 
               <!-- Docker path preview -->
               {#if isDockerEnvironment && pathPreview}
-                <div
-                  class="mt-2 p-3 bg-surface-elevated rounded-sm text-sm border-strong"
-                >
-                  <div class="flex items-center gap-2 mb-1">
-                    <Icon iconName="settings" size={16} class="text-foreground" />
-                    <span class="text-foreground font-medium">
-                      Docker Environment Detected
-                    </span>
+                <div class="mt-2 rounded-sm bg-surface-elevated p-3 text-sm border-strong">
+                  <div class="mb-1 flex items-center gap-2">
+                    <Icon
+                      iconName="settings"
+                      size={16}
+                      class="text-foreground"
+                    />
+                    <span class="font-medium text-foreground"> Docker Environment Detected </span>
                   </div>
 
                   {#if pathPreview.wasTransformed}
                     <div class="ml-6">
                       <div class="text-info">
                         Transformed path: <code
-                          class="font-mono bg-primary/10 px-1 py-0.5 rounded text-xs"
+                          class="rounded bg-primary/10 px-1 py-0.5 font-mono text-xs"
                         >
                           {pathPreview.path}
                         </code>
@@ -395,31 +406,41 @@
 
                       <!-- Warnings for special transformations -->
                       {#each pathPreview.warnings as warning, index (index)}
-                        <div class="mt-1 text-warning flex items-start gap-1">
-                          <Icon iconName="question" size={14} class="mt-0.5 flex-shrink-0" />
+                        <div class="mt-1 flex items-start gap-1 text-warning">
+                          <Icon
+                            iconName="question"
+                            size={14}
+                            class="mt-0.5 flex-shrink-0"
+                          />
                           <span class="text-xs">{warning}</span>
                         </div>
                       {/each}
 
                       <!-- Errors if any -->
                       {#each pathPreview.errors as error, index (index)}
-                        <div class="mt-1 text-error flex items-start gap-1">
-                          <Icon iconName="close" size={14} class="mt-0.5 flex-shrink-0" />
+                        <div class="mt-1 flex items-start gap-1 text-error">
+                          <Icon
+                            iconName="close"
+                            size={14}
+                            class="mt-0.5 flex-shrink-0"
+                          />
                           <span class="text-xs">{error}</span>
                         </div>
                       {/each}
                     </div>
                   {:else}
-                    <div class="ml-6 text-foreground text-xs">
+                    <div class="ml-6 text-xs text-foreground">
                       Path is already compatible with Docker environment
                     </div>
                   {/if}
                 </div>
               {:else if isDockerEnvironment}
-                <div
-                  class="mt-2 p-2 bg-primary/10 rounded text-xs text-foreground border-strong"
-                >
-                  <Icon iconName="settings" size={14} class="inline mr-1" />
+                <div class="mt-2 rounded bg-primary/10 p-2 text-xs text-foreground border-strong">
+                  <Icon
+                    iconName="settings"
+                    size={14}
+                    class="mr-1 inline"
+                  />
                   Docker environment detected - paths will be automatically transformed
                 </div>
               {/if}
@@ -428,15 +449,19 @@
             <div>
               <label
                 for="server-file-max-size"
-                class="block text-sm font-medium text-muted-foreground mb-1"
+                class="mb-1 block text-sm font-medium text-muted-foreground"
               >
                 Max File Size
                 <Tooltip
                   maxWidth="32rem"
-                  class="!whitespace-normal !min-w-80"
+                  class="!min-w-80 !whitespace-normal"
                   content={tooltipVars.server.fileSize}
                 >
-                  <Icon iconName="question" size={20} class="text-muted-foreground" />
+                  <Icon
+                    iconName="question"
+                    size={20}
+                    class="text-muted-foreground"
+                  />
                 </Tooltip>
               </label>
               <input
@@ -451,15 +476,19 @@
             <div>
               <label
                 for="server-file-max-files"
-                class="block text-sm font-medium text-muted-foreground mb-1"
+                class="mb-1 block text-sm font-medium text-muted-foreground"
               >
                 Max Files to Keep
                 <Tooltip
                   maxWidth="32rem"
-                  class="!whitespace-normal !min-w-80"
+                  class="!min-w-80 !whitespace-normal"
                   content={tooltipVars.server.fileRetention}
                 >
-                  <Icon iconName="question" size={20} class="text-muted-foreground" />
+                  <Icon
+                    iconName="question"
+                    size={20}
+                    class="text-muted-foreground"
+                  />
                 </Tooltip>
               </label>
               <input
@@ -484,15 +513,19 @@
             <div>
               <label
                 for="server-slow-query-threshold"
-                class="block text-sm font-medium text-muted-foreground mb-1"
+                class="mb-1 block text-sm font-medium text-muted-foreground"
               >
                 Slow Query Threshold (ms)
                 <Tooltip
                   maxWidth="32rem"
-                  class="!whitespace-normal !min-w-80"
+                  class="!min-w-80 !whitespace-normal"
                   content={tooltipVars.server.queryThreshold}
                 >
-                  <Icon iconName="question" size={20} class="text-muted-foreground" />
+                  <Icon
+                    iconName="question"
+                    size={20}
+                    class="text-muted-foreground"
+                  />
                 </Tooltip>
               </label>
               <input
@@ -509,19 +542,20 @@
     </div>
 
     <!-- Client log config -->
-    <div
-      class="content-panel"
-    >
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="">
-          Client Logging
-        </h2>
-        <Button onclick={updateClientConfig} variant="outline-primary" size="sm" class="">
+    <div class="content-panel">
+      <div class="mb-4 flex items-center justify-between">
+        <h2 class="">Client Logging</h2>
+        <Button
+          onclick={updateClientConfig}
+          variant="outline-primary"
+          size="sm"
+          class=""
+        >
           Update Client Config
         </Button>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
         <div class="space-y-4">
           <Toggle
             bind:checked={clientConfig.enabled}
@@ -534,8 +568,7 @@
           <div>
             <label
               for="client-log-level"
-              class="block text-sm font-medium text-muted-foreground mb-1"
-              >Log Level</label
+              class="mb-1 block text-sm font-medium text-muted-foreground">Log Level</label
             >
             <select
               id="client-log-level"
@@ -571,15 +604,19 @@
             <div>
               <label
                 for="client-buffer-size"
-                class="block text-sm font-medium text-muted-foreground mb-1"
+                class="mb-1 block text-sm font-medium text-muted-foreground"
               >
                 Buffer Size
                 <Tooltip
                   maxWidth="32rem"
-                  class="!whitespace-normal !min-w-80"
+                  class="!min-w-80 !whitespace-normal"
                   content={tooltipVars.client.bufferSize}
                 >
-                  <Icon iconName="question" size={20} class="text-muted-foreground" />
+                  <Icon
+                    iconName="question"
+                    size={20}
+                    class="text-muted-foreground"
+                  />
                 </Tooltip>
               </label>
               <input
@@ -595,15 +632,19 @@
             <div>
               <label
                 for="client-batch-interval"
-                class="block text-sm font-medium text-muted-foreground mb-1"
+                class="mb-1 block text-sm font-medium text-muted-foreground"
               >
                 Batch Interval (ms)
                 <Tooltip
                   maxWidth="32rem"
-                  class="!whitespace-normal !min-w-80"
+                  class="!min-w-80 !whitespace-normal"
                   content={tooltipVars.client.batchInterval}
                 >
-                  <Icon iconName="question" size={20} class="text-muted-foreground" />
+                  <Icon
+                    iconName="question"
+                    size={20}
+                    class="text-muted-foreground"
+                  />
                 </Tooltip>
               </label>
               <input

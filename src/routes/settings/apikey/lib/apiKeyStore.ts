@@ -38,7 +38,7 @@ function createApiKeyStore() {
 
   const handleApiError = async (
     response: Response,
-    fallbackErrorPrefix: string
+    fallbackErrorPrefix: string,
   ): Promise<ApiKeyActionResult> => {
     const errorData = await response.json().catch((): { error?: string; message?: string } => ({
       error: `${fallbackErrorPrefix}: ${response.statusText}`,
@@ -50,17 +50,17 @@ function createApiKeyStore() {
   };
 
   const setLoading = (isLoading: boolean): void =>
-    update(s => ({ ...s, loading: isLoading, error: null }));
+    update((s) => ({ ...s, loading: isLoading, error: null }));
 
   const setError = (errorMessage: string): void =>
-    update(s => ({
+    update((s) => ({
       ...s,
       error: errorMessage,
       loading: false,
     }));
 
   const setApiKeys = (apiKeys: ApiKey[]): void =>
-    update(s => ({
+    update((s) => ({
       ...s,
       apiKeys,
       loading: false,
@@ -68,7 +68,7 @@ function createApiKeyStore() {
     }));
 
   const setNewlyCreatedKey = (plainKey: string | null): void =>
-    update(s => ({ ...s, newlyCreatedKey: plainKey }));
+    update((s) => ({ ...s, newlyCreatedKey: plainKey }));
 
   return {
     subscribe,
@@ -112,7 +112,7 @@ function createApiKeyStore() {
         const data: NewApiKeyResponse = await response.json();
 
         setNewlyCreatedKey(data.plainKey);
-        update(s => ({
+        update((s) => ({
           ...s,
           apiKeys: [data.apiKey, ...s.apiKeys],
           loading: false,
@@ -144,9 +144,9 @@ function createApiKeyStore() {
           return await handleApiError(response, 'Failed to delete API key');
         }
 
-        update(s => ({
+        update((s) => ({
           ...s,
-          apiKeys: s.apiKeys.filter(key => key.id !== keyId),
+          apiKeys: s.apiKeys.filter((key) => key.id !== keyId),
           loading: false,
           error: null,
         }));
@@ -167,7 +167,7 @@ function createApiKeyStore() {
 
     getState: (): ApiKeyStoreState => {
       let currentState = initialState;
-      update(s => {
+      update((s) => {
         currentState = s;
         return s;
       });

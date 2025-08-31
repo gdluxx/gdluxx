@@ -46,7 +46,7 @@ export const POST: RequestHandler = async ({ request }) => {
           results: [],
           error: 'URLs are required and cannot be empty',
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -62,7 +62,7 @@ export const POST: RequestHandler = async ({ request }) => {
           results: [],
           error: 'At least one valid URL is required',
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -87,7 +87,7 @@ export const POST: RequestHandler = async ({ request }) => {
           })),
           error: 'gallery-dl.bin not found or not executable',
         },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -150,7 +150,7 @@ export const POST: RequestHandler = async ({ request }) => {
         results: [],
         error: getClientSafeMessage(error as Error),
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 };

@@ -19,3 +19,8 @@ data/
 .DS_Store
 Thumbs.db
 CHANGELOG.md
+
+.output
+.wxt
+coverage
+.vite

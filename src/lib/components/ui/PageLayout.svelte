@@ -25,7 +25,10 @@
 
 <svelte:head>
   <title>{title} - gdluxx</title>
-  <meta name="description" content={description} />
+  <meta
+    name="description"
+    content={description}
+  />
 </svelte:head>
 
 <section
@@ -35,26 +38,29 @@
   {...ariaLabel && { 'aria-label': ariaLabel }}
 >
   <header class="text-center">
-    <div class="flex items-center justify-center mb-3 sm:mb-4">
+    <div class="mb-3 flex items-center justify-center sm:mb-4">
       {#if icon}
         <div
-          class="h-6 w-6 sm:h-8 sm:w-8 text-primary mr-2 sm:mr-3"
+          class="mr-2 h-6 w-6 text-primary sm:mr-3 sm:h-8 sm:w-8"
           aria-hidden="true"
         >
           {@render icon()}
         </div>
       {:else}
         <div
-          class="h-6 w-6 sm:h-8 sm:w-8 text-primary mr-2 sm:mr-3"
+          class="mr-2 h-6 w-6 text-primary sm:mr-3 sm:h-8 sm:w-8"
           aria-hidden="true"
         >
-          <Icon iconName="circle" size={16} />
+          <Icon
+            iconName="circle"
+            size={16}
+          />
         </div>
       {/if}
 
       <h1
         id="page-title"
-        class="cursor-default text-xl sm:text-2xl lg:text-3xl font-bold text-primary"
+        class="cursor-default text-xl font-bold text-primary sm:text-2xl lg:text-3xl"
       >
         {title}
       </h1>
@@ -62,14 +68,17 @@
 
     <p
       id="page-description"
-      class="cursor-default text-sm sm:text-base text-muted-foreground max-w-2xl mx-auto px-4 sm:px-0"
+      class="mx-auto max-w-2xl cursor-default px-4 text-sm text-muted-foreground sm:px-0 sm:text-base"
     >
       <!-- eslint-disable-next-line svelte/no-at-html-tags -->
       {@html description}
     </p>
   </header>
 
-  <div aria-labelledby="page-title" class="px-2 sm:px-0">
+  <div
+    aria-labelledby="page-title"
+    class="px-2 sm:px-0"
+  >
     {@render children()}
   </div>
 </section>

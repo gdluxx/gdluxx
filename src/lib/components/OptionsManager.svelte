@@ -73,7 +73,7 @@
   });
 
   const allOptions: Option[] = Object.values(typedOptionsData).flatMap(
-    category => category.options as Option[]
+    (category) => category.options as Option[],
   );
   const categoriesArray = Object.entries(typedOptionsData);
 
@@ -111,12 +111,12 @@
   }
 
   function getOptionById(optionId: string): Option | undefined {
-    return allOptions.find(opt => opt.id === optionId);
+    return allOptions.find((opt) => opt.id === optionId);
   }
 
   function getCategoryKeyForOption(optionId: string): string | undefined {
     for (const [categoryKey, category] of Object.entries(typedOptionsData)) {
-      if (category.options.some(opt => opt.id === optionId)) {
+      if (category.options.some((opt) => opt.id === optionId)) {
         return categoryKey;
       }
     }
@@ -155,7 +155,7 @@
     const detectedConflicts: Conflict[] = [];
 
     const userSelectedOptions = Array.from(selectedOptions.entries()).filter(
-      ([, optionData]) => optionData.source === 'user'
+      ([, optionData]) => optionData.source === 'user',
     );
 
     for (const [optionId, userOptionData] of userSelectedOptions) {
@@ -260,23 +260,37 @@
 </script>
 
 <!-- Options Accordion -->
-<details class="bg-surface-elevated m-4 group border-strong rounded-sm" bind:open={isAccordionOpen}>
+<details
+  class="group m-4 rounded-sm bg-surface-elevated border-strong"
+  bind:open={isAccordionOpen}
+>
   <summary
-    class="flex items-center justify-between p-4 cursor-pointer hover:rounded-t-sm hover:bg-surface-hover transition-colors"
+    class="flex cursor-pointer items-center justify-between p-4 transition-colors hover:rounded-t-sm hover:bg-surface-hover"
   >
     <div class="flex items-center gap-1">
-      <Icon iconName="options" size={20} class="text-foreground" />
+      <Icon
+        iconName="options"
+        size={20}
+        class="text-foreground"
+      />
       <span class="font-medium text-foreground"> Options </span>
     </div>
     <div class="flex items-center gap-2">
       {#if selectedOptions.size > 0}
-        <Chip label={`${selectedOptions.size.toString()} selected`} size="sm" dismissible={false} />
+        <Chip
+          label={`${selectedOptions.size.toString()} selected`}
+          size="sm"
+          dismissible={false}
+        />
       {/if}
       <span
-        class="transform group-open:rotate-90 transition-transform text-foreground"
+        class="transform text-foreground transition-transform group-open:rotate-90"
         aria-hidden="true"
       >
-        <Icon iconName="chevron-right" size={24} />
+        <Icon
+          iconName="chevron-right"
+          size={24}
+        />
       </span>
     </div>
   </summary>
@@ -286,16 +300,16 @@
     <div class="space-y-2 p-4">
       {#each categoriesArray as [categoryKey, category] (categoryKey)}
         <details
-          class="bg-surface-elevated group border-strong rounded-sm"
+          class="group rounded-sm bg-surface-elevated border-strong"
           open={categoryAccordionStates.get(categoryKey) ?? false}
-          ontoggle={e => {
+          ontoggle={(e) => {
             const target = e.target as HTMLDetailsElement;
             categoryAccordionStates.set(categoryKey, target.open);
             categoryAccordionStates = new Map(categoryAccordionStates);
           }}
         >
           <summary
-            class="flex items-center justify-between p-3 cursor-pointer hover:rounded-sm hover:bg-surface-hover transition-colors"
+            class="flex cursor-pointer items-center justify-between p-3 transition-colors hover:rounded-sm hover:bg-surface-hover"
           >
             <span class="font-medium text-foreground">
               {category.title}
@@ -309,21 +323,22 @@
                 />
               {/if}
               <span
-                class="transform group-open:rotate-90 transition-transform text-foreground"
+                class="transform text-foreground transition-transform group-open:rotate-90"
                 aria-hidden="true"
               >
-                <Icon iconName="chevron-right" size={20} />
+                <Icon
+                  iconName="chevron-right"
+                  size={20}
+                />
               </span>
             </div>
           </summary>
 
-          <div
-            class="border-t-strong p-3 max-h-60 overflow-y-auto bg-surface-sunken"
-          >
+          <div class="max-h-60 overflow-y-auto bg-surface-sunken p-3 border-t-strong">
             <div class="space-y-3">
               {#each category.options as option (option.id)}
                 <div
-                  class="flex border-strong bg-surface-elevated items-start gap-3 p-2 rounded transition-colors"
+                  class="flex items-start gap-3 rounded bg-surface-elevated p-2 transition-colors border-strong"
                 >
                   <Toggle
                     id="inline-option-{option.id}"
@@ -332,12 +347,15 @@
                     variant="primary"
                     size="sm"
                   />
-                  <div class="flex-1 min-w-0">
-                    <label for="inline-option-{option.id}" class="cursor-pointer">
+                  <div class="min-w-0 flex-1">
+                    <label
+                      for="inline-option-{option.id}"
+                      class="cursor-pointer"
+                    >
                       <span class="font-medium text-foreground">
                         {option.command}
                       </span>
-                      <span class="text-sm text-muted-foreground mt-1 block">
+                      <span class="mt-1 block text-sm text-muted-foreground">
                         {option.description}
                       </span>
                     </label>
@@ -346,17 +364,17 @@
                         <input
                           type={option.type === 'number' ? 'number' : 'text'}
                           value={selectedOptions.get(option.id)?.value ?? ''}
-                          oninput={e => {
+                          oninput={(e) => {
                             const target = e.target;
                             if (target instanceof HTMLInputElement) {
                               editOption(
                                 option.id,
-                                option.type === 'number' ? Number(target.value) : target.value
+                                option.type === 'number' ? Number(target.value) : target.value,
                               );
                             }
                           }}
                           placeholder={option.placeholder ?? ''}
-                          class="w-full px-2 py-1 bg-input text-sm text-foreground border-strong rounded-sm focus:ring-primary"
+                          class="bg-input w-full rounded-sm px-2 py-1 text-sm text-foreground border-strong focus:ring-primary"
                         />
                       </div>
                     {/if}
@@ -373,22 +391,30 @@
 
 <!-- Conflict warnings panel -->
 {#if conflictWarnings.size > 0}
-  <Info variant="warning" title="Conflicts Detected" class="my-4">
+  <Info
+    variant="warning"
+    title="Conflicts Detected"
+    class="my-4"
+  >
     {#each Array.from(conflictWarnings.entries()) as [optionId, warning] (optionId)}
       {@const option = getOptionById(optionId)}
       {#if option}
         <div
-          class="config-item flex items-center justify-between bg-surface px-3 py-2 rounded border"
+          class="config-item flex items-center justify-between rounded border bg-surface px-3 py-2"
         >
           <div class="flex flex-col">
-            <span class="font-medium text-foreground text-sm">
+            <span class="text-sm font-medium text-foreground">
               {option.command}
             </span>
             <span class="text-xs text-warning">
               {warning}
             </span>
           </div>
-          <Button variant="warning" size="sm" onclick={() => revertToSiteConfig(optionId)}>
+          <Button
+            variant="warning"
+            size="sm"
+            onclick={() => revertToSiteConfig(optionId)}
+          >
             Revert
           </Button>
         </div>
@@ -399,40 +425,51 @@
 
 <!-- Selected options display -->
 {#if selectedOptions.size > 0}
-  <div class="bg-surface-elevated p-2 rounded-sm border-strong m-4">
+  <div class="m-4 rounded-sm bg-surface-elevated p-2 border-strong">
     <!-- Optional to save as Site Rule -->
     {#if canSaveAsSiteRule()}
-      <div
-        class="save-site-rule bg-surface border-strong rounded-sm p-4 mt-4 mx-4 mb-4"
-      >
+      <div class="save-site-rule mx-4 mt-4 mb-4 rounded-sm bg-surface p-4 border-strong">
         <div class="flex items-center justify-between">
           <div class="flex flex-col">
             <h4 class="text-sm font-medium text-foreground">Save Current Options</h4>
-            <p class="text-xs text-muted-foreground mt-1">
+            <p class="mt-1 text-xs text-muted-foreground">
               Create a site rule from your selected options
             </p>
           </div>
-          <Button onclick={() => (showSaveRuleDialog = true)} variant="outline-primary" size="sm">
-            <Icon iconName="save" size={20} />
+          <Button
+            onclick={() => (showSaveRuleDialog = true)}
+            variant="outline-primary"
+            size="sm"
+          >
+            <Icon
+              iconName="save"
+              size={20}
+            />
           </Button>
         </div>
       </div>
     {/if}
 
     <div class="m-4">
-      <div class="flex justify-between items-center mb-4">
+      <div class="mb-4 flex items-center justify-between">
         <span class="text-sm font-medium text-foreground">
           Selected Options <span class="text-primary">({selectedOptions.size})</span>
         </span>
 
         <!-- Legend/key -->
-        <div class="cursor-default flex items-center gap-4 text-xs text-foreground">
-          <div class="flex items-center gap-1 border-strong rounded-sm px-2 py-1">
-            <Icon iconName="site-rules" size={16} />
+        <div class="flex cursor-default items-center gap-4 text-xs text-foreground">
+          <div class="flex items-center gap-1 rounded-sm px-2 py-1 border-strong">
+            <Icon
+              iconName="site-rules"
+              size={16}
+            />
             <span>Site Rules</span>
           </div>
-          <div class="flex items-center gap-1 border-strong rounded-sm px-2 py-1">
-            <Icon iconName="options" size={16} />
+          <div class="flex items-center gap-1 rounded-sm px-2 py-1 border-strong">
+            <Icon
+              iconName="options"
+              size={16}
+            />
             <span>User Selected</span>
           </div>
         </div>
@@ -442,16 +479,16 @@
           onclick={clearAllOptions}
           size="sm"
           variant="warning"
-          class="text-xs px-2 py-1"
+          class="px-2 py-1 text-xs"
         >
           Clear All
         </Button>
       </div>
-      <div class="space-y-4 cursor-default">
+      <div class="cursor-default space-y-4">
         {#each [...selectedOptionsByCategory.entries()] as [categoryKey, categoryOptions] (categoryKey)}
           {#if categoryOptions.size > 0}
             <div>
-              <h3 class="text-sm font-medium mb-2">
+              <h3 class="mb-2 text-sm font-medium">
                 <span class="text-foreground">{getCategoryTitle(categoryKey)}</span>
                 <span class="text-primary">({categoryOptions.size})</span>
               </h3>
@@ -469,14 +506,20 @@
                       dismissible={true}
                       editable={option.type === 'string' && optionData.source === 'user'}
                       onDismiss={() => removeOption(optionId)}
-                      onEdit={newValue => editOption(optionId, newValue)}
+                      onEdit={(newValue) => editOption(optionId, newValue)}
                       ariaLabel={`${optionData.source === 'site-config' ? 'Site rule' : 'User selected'} option: ${option.command}`}
                     >
                       {#snippet icon()}
                         {#if optionData.source === 'site-config'}
-                          <Icon iconName="site-rules" size={16} />
+                          <Icon
+                            iconName="site-rules"
+                            size={16}
+                          />
                         {:else}
-                          <Icon iconName="options" size={16} />
+                          <Icon
+                            iconName="options"
+                            size={16}
+                          />
                         {/if}
                       {/snippet}
                     </Chip>
@@ -499,8 +542,8 @@
     detectedPatterns={extractUniquePatterns(
       commandUrlsInput
         .split(/[\s\n]+/)
-        .map(url => url.trim())
-        .filter(url => url !== '')
+        .map((url) => url.trim())
+        .filter((url) => url !== ''),
     )}
     onSaved={handleSiteRuleSaved}
     onCancel={() => (showSaveRuleDialog = false)}

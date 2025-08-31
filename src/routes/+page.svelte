@@ -18,7 +18,10 @@
   <title>gdluxx</title>
 </svelte:head>
 
-<PageLayout title="Run" description="Retrieve your URLs">
+<PageLayout
+  title="Run"
+  description="Retrieve your URLs"
+>
   {#snippet icon()}
     <RunIcon />
   {/snippet}

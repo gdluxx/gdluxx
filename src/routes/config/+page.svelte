@@ -142,26 +142,47 @@
   }
 </script>
 
-<PageLayout title="Configuration" description="Manage your config file">
+<PageLayout
+  title="Configuration"
+  description="Manage your config file"
+>
   {#snippet icon()}
-    <Icon iconName="json" size={32} />
+    <Icon
+      iconName="json"
+      size={32}
+    />
   {/snippet}
 
-  <div class="flex justify-between items-center mb-6">
+  <div class="mb-6 flex items-center justify-between">
     <div></div>
-    <Button variant="outline-primary" size="sm" onclick={handleUploadClick}>
-      <Icon iconName="plus" size={16} class="mr-2" />
+    <Button
+      variant="outline-primary"
+      size="sm"
+      onclick={handleUploadClick}
+    >
+      <Icon
+        iconName="plus"
+        size={16}
+        class="mr-2"
+      />
       Upload Config
     </Button>
   </div>
 
   {#if loadError}
-    <Info variant="warning" size="lg">
+    <Info
+      variant="warning"
+      size="lg"
+    >
       {loadError}
     </Info>
   {:else}
     {#if loadMessage}
-      <Info variant="warning" size="lg" class="my-8">
+      <Info
+        variant="warning"
+        size="lg"
+        class="my-8"
+      >
         {loadMessage}
       </Info>
     {/if}
@@ -186,8 +207,17 @@
         };
       }}
     >
-      <input type="hidden" name="content" value={jsonContent} />
-      <ConfigEditor bind:value={jsonContent} {theme} onSave={saveJsonFile} height="75vh" />
+      <input
+        type="hidden"
+        name="content"
+        value={jsonContent}
+      />
+      <ConfigEditor
+        bind:value={jsonContent}
+        {theme}
+        onSave={saveJsonFile}
+        height="75vh"
+      />
     </form>
   {/if}
 </PageLayout>

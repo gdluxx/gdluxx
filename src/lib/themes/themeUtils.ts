@@ -24,8 +24,10 @@ export type ThemeMode = 'light' | 'dark';
 export const DEFAULT_THEME: ThemeName = 'indigo';
 export const DEFAULT_MODE: ThemeMode = 'dark';
 
-const debugLog = (message: string, ...args: unknown[]) => logger.debug(`[ThemeUtils] ${message}`, ...args);
-const themeWarn = (message: string, ...args: unknown[]) => logger.warn(`[ThemeUtils] ${message}`, ...args);
+const debugLog = (message: string, ...args: unknown[]) =>
+  logger.debug(`[ThemeUtils] ${message}`, ...args);
+const themeWarn = (message: string, ...args: unknown[]) =>
+  logger.warn(`[ThemeUtils] ${message}`, ...args);
 
 export interface ThemeConfig {
   name: ThemeName;

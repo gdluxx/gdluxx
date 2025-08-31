@@ -74,7 +74,7 @@
             description: 'Upload a file',
             acceptedTypes: '*',
             endpoint: '/upload',
-          }
+          },
   );
 
   // Focus
@@ -88,7 +88,7 @@
       setTimeout(() => {
         if (modalElement) {
           const focusableElements = modalElement.querySelectorAll(
-            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
           );
           const firstElement = focusableElements[0] as HTMLElement;
           if (firstElement) {
@@ -113,7 +113,7 @@
 
     if (event.key === 'Tab' && modalElement) {
       const focusableElements = modalElement.querySelectorAll(
-        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
       );
       const firstElement = focusableElements[0] as HTMLElement;
       const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
@@ -202,7 +202,7 @@
       handleClose();
     } catch (error) {
       toastStore.error(
-        `Upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+        `Upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
       );
     } finally {
       isUploading = false;
@@ -227,7 +227,7 @@
       'rounded-sm',
       'pointer-events-auto',
       sizeClasses[size],
-    ].join(' ')
+    ].join(' '),
   );
 </script>
 
@@ -250,9 +250,7 @@
       role="document"
     >
       <!-- Header -->
-      <div
-        class="flex justify-between items-center py-4 px-6 border-b"
-      >
+      <div class="flex items-center justify-between border-b px-6 py-4">
         <h3
           id="modal-title"
           class="text-lg font-semibold text-foreground"
@@ -264,18 +262,24 @@
           <button
             type="button"
             onclick={handleClose}
-            class="cursor-pointer text-foreground flex-shrink-0 w-8 h-8 inline-flex justify-center items-center rounded-full border-transparent hover:ring-1 transition-all"
+            class="inline-flex h-8 w-8 flex-shrink-0 cursor-pointer items-center justify-center rounded-full border-transparent text-foreground transition-all hover:ring-1"
             aria-label="Close modal"
           >
             <span class="sr-only">Close</span>
-            <Icon iconName="close" size={12} />
+            <Icon
+              iconName="close"
+              size={12}
+            />
           </button>
         {/if}
       </div>
 
       <!-- Content -->
       <div class="p-6">
-        <p id="modal-description" class="text-foreground mb-6">
+        <p
+          id="modal-description"
+          class="mb-6 text-foreground"
+        >
           {uploadConfig.description}
         </p>
 
@@ -291,10 +295,10 @@
 
         <!-- Drop zone -->
         <div
-          class="relative border-2 border-dashed rounded-sm p-8 text-center transition-colors cursor-pointer {isDragOver
+          class="relative cursor-pointer rounded-sm border-2 border-dashed p-8 text-center transition-colors {isDragOver
             ? 'bg-primary'
             : selectedFile
-              ? 'border-success border-solid bg-success/10'
+              ? 'border-solid border-success bg-success/10'
               : 'border-primary'}"
           ondragover={handleDragOver}
           ondragleave={handleDragLeave}
@@ -302,7 +306,7 @@
           role="button"
           tabindex="0"
           onclick={handleButtonClick}
-          onkeydown={e => e.key === 'Enter' && handleButtonClick()}
+          onkeydown={(e) => e.key === 'Enter' && handleButtonClick()}
           aria-label="Click to select file or drag and drop"
         >
           <div class="space-y-4">
@@ -343,22 +347,27 @@
           </div>
 
           {#if isDragOver}
-            <div
-              class="absolute inset-0 opacity-50 rounded-sm"
-            ></div>
+            <div class="absolute inset-0 rounded-sm opacity-50"></div>
           {/if}
         </div>
       </div>
 
       <!-- Footer -->
       {#if selectedFile}
-        <div
-          class="flex justify-end items-center gap-3 py-4 px-6 border-t"
-        >
-          <Button variant="outline-warning" size="sm" onclick={handleRemoveFile}>
+        <div class="flex items-center justify-end gap-3 border-t px-6 py-4">
+          <Button
+            variant="outline-warning"
+            size="sm"
+            onclick={handleRemoveFile}
+          >
             Remove file
           </Button>
-          <Button variant="default" size="sm" onclick={handleClose} type="button">
+          <Button
+            variant="default"
+            size="sm"
+            onclick={handleClose}
+            type="button"
+          >
             Cancel
           </Button>
 

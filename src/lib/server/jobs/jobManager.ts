@@ -66,7 +66,7 @@ class JobManager {
       .then(() => {
         logger.info('Jobs loaded successfully during initialization');
       })
-      .catch(error => {
+      .catch((error) => {
         logger.error('Failed to load jobs during initialization:', error);
         throw error;
       });
@@ -149,7 +149,7 @@ class JobManager {
 
   async getAllJobs(): Promise<Job[]> {
     await this.initializationPromise;
-    return Array.from(this.jobs.values()).map(job => {
+    return Array.from(this.jobs.values()).map((job) => {
       const { process: _process, subscribers: _subscribers, ...jobData } = job;
       return jobData as Job;
     });
@@ -269,8 +269,8 @@ class JobManager {
                 status: job.status,
                 downloadCount: job.downloadCount,
                 skipCount: job.skipCount,
-              })}\n\n`
-            )
+              })}\n\n`,
+            ),
           );
           controller.close();
         } catch (error) {
@@ -283,7 +283,7 @@ class JobManager {
 
   async addSubscriber(
     id: string,
-    controller: ReadableStreamDefaultController<Uint8Array>
+    controller: ReadableStreamDefaultController<Uint8Array>,
   ): Promise<void> {
     await this.initializationPromise;
     const job: Job | undefined = this.jobs.get(id);
@@ -310,14 +310,14 @@ class JobManager {
                 status: job.status,
                 downloadCount: job.downloadCount,
                 skipCount: job.skipCount,
-              })}\n\n`
-            )
+              })}\n\n`,
+            ),
           );
           controller.close();
         } catch (error) {
           logger.warn(
             `Error sending close event to new subscriber for completed job ${id}:`,
-            error
+            error,
           );
           job.subscribers.delete(controller);
         }
@@ -327,7 +327,7 @@ class JobManager {
 
   async removeSubscriber(
     id: string,
-    controller: ReadableStreamDefaultController<Uint8Array>
+    controller: ReadableStreamDefaultController<Uint8Array>,
   ): Promise<void> {
     await this.initializationPromise;
     const job: Job | undefined = this.jobs.get(id);

@@ -54,7 +54,10 @@
   ];
 </script>
 
-<PageLayout title="Settings" description="Configure your gdluxx application">
+<PageLayout
+  title="Settings"
+  description="Configure your gdluxx application"
+>
   {#snippet icon()}
     <VersionIcon />
   {/snippet}
@@ -66,16 +69,23 @@
           <div class="flex items-center">
             <div class="flex-shrink-0">
               {#if typeof page.icon === 'string'}
-                <Icon iconName={page.icon} size={32} class="text-accent-foreground" />
+                <Icon
+                  iconName={page.icon}
+                  size={32}
+                  class="text-accent-foreground"
+                />
               {:else}
-                <page.icon size={32} class="text-accent-foreground" />
+                <page.icon
+                  size={32}
+                  class="text-accent-foreground"
+                />
               {/if}
             </div>
             <div class="ml-4">
               <h3 class="text-lg font-medium text-foreground">
                 {page.title}
               </h3>
-              <p class="text-sm text-muted-foreground mt-1">
+              <p class="mt-1 text-sm text-muted-foreground">
                 {page.description}
               </p>
             </div>
@@ -83,7 +93,11 @@
         </div>
         <div class="mt-4">
           <a href={page.href}>
-            <Button variant="outline-primary" size="sm" class="w-full">
+            <Button
+              variant="outline-primary"
+              size="sm"
+              class="w-full"
+            >
               Configure {page.name}
             </Button>
           </a>

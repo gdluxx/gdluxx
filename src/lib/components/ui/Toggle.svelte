@@ -100,7 +100,7 @@
       'peer-disabled:opacity-50',
       variantClasses[variant].trackOff,
       variantClasses[variant].trackOn,
-    ].join(' ')
+    ].join(' '),
   );
 
   const thumbClasses = $derived(
@@ -112,17 +112,17 @@
       'transition-transform',
       'peer-disabled:opacity-70',
       'shadow-sm',
-    ].join(' ')
+    ].join(' '),
   );
 
   const labelClasses = $derived(
     [sizeClasses[size].label, 'font-medium', 'text-foreground', disabled && 'text-disabled']
       .filter(Boolean)
-      .join(' ')
+      .join(' '),
   );
 
   const containerClasses = $derived(
-    ['flex', 'items-center', 'space-x-3', containerClass].filter(Boolean).join(' ')
+    ['flex', 'items-center', 'space-x-3', containerClass].filter(Boolean).join(' '),
   );
 
   function handleChange(event: Event) {
@@ -139,7 +139,10 @@
   });
 </script>
 
-<label for={inputId} class={containerClasses}>
+<label
+  for={inputId}
+  class={containerClasses}
+>
   <div class="relative cursor-pointer">
     <input
       bind:checked
@@ -162,14 +165,25 @@
   {/if}
 
   {#if tooltipContent}
-    <Tooltip maxWidth="32rem" class="!whitespace-normal !min-w-80" content={tooltipContent}>
-      <Icon iconName="question" size={20} class="text-muted-foreground" />
+    <Tooltip
+      maxWidth="32rem"
+      class="!min-w-80 !whitespace-normal"
+      content={tooltipContent}
+    >
+      <Icon
+        iconName="question"
+        size={20}
+        class="text-muted-foreground"
+      />
     </Tooltip>
   {/if}
 </label>
 
 {#if description}
-  <p id="{inputId}-description" class="mt-1 text-xs text-muted-foreground">
+  <p
+    id="{inputId}-description"
+    class="mt-1 text-xs text-muted-foreground"
+  >
     {description}
   </p>
 {/if}

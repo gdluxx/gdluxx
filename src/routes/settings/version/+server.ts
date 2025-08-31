@@ -45,7 +45,7 @@ export const GET: RequestHandler = async (): Promise<Response> => {
     logger.error('Error in version status:', error);
     return json(
       { ...DEFAULT_VERSION_INFO, error: 'Failed to get version status' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 };

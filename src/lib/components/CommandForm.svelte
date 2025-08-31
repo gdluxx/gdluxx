@@ -53,7 +53,7 @@
   let detectedConflicts = $state<Conflict[]>([]);
 
   const allOptions: Option[] = Object.values(typedOptionsData).flatMap(
-    category => category.options as Option[]
+    (category) => category.options as Option[],
   );
 
   onMount(async () => {
@@ -87,7 +87,7 @@
   });
 
   function getOptionById(optionId: string): Option | undefined {
-    return allOptions.find(opt => opt.id === optionId);
+    return allOptions.find((opt) => opt.id === optionId);
   }
 
   async function checkConfigFileForErrors() {
@@ -115,8 +115,8 @@
   function extractUrlsFromInput(input: string): string[] {
     return input
       .split(/[\s\n]+/)
-      .map(url => url.trim())
-      .filter(url => url !== '');
+      .map((url) => url.trim())
+      .filter((url) => url !== '');
   }
 
   function mergeSiteConfigsWithUserOptions(siteConfigs: SiteConfigData[]) {
@@ -146,7 +146,7 @@
         if (siteConfigOption?.sitePattern) {
           conflictWarnings.set(
             optionId,
-            `Your selection overrides site config for ${siteConfigOption.sitePattern}`
+            `Your selection overrides site config for ${siteConfigOption.sitePattern}`,
           );
         }
       }
@@ -166,19 +166,19 @@
 
     const urlsToProcess = commandUrlsInput
       .split(/[\s\n]+/)
-      .map(url => url.trim())
-      .filter(url => url !== '');
+      .map((url) => url.trim())
+      .filter((url) => url !== '');
 
     let localStartedCount = 0;
     const localErrorMessages: string[] = [];
 
     if (result.results && result.results.length > 0) {
-      result.results.forEach(jobResult => {
+      result.results.forEach((jobResult) => {
         if (jobResult.success && jobResult.jobId) {
           localStartedCount++;
         } else {
           localErrorMessages.push(
-            `Error for "${jobResult.url}": ${jobResult.error ?? jobResult.message ?? 'Unknown error'}`
+            `Error for "${jobResult.url}": ${jobResult.error ?? jobResult.message ?? 'Unknown error'}`,
           );
         }
       });
@@ -274,7 +274,7 @@
       // Submitting job
       const result = await jobStore.startJob(
         extractUrlsFromInput(commandUrlsInput),
-        selectedOptions
+        selectedOptions,
       );
       handleFormResult(result);
     } catch (error) {
@@ -297,10 +297,18 @@
 </script>
 
 <div class="content-panel">
-  <form class="space-y-6" onsubmit={handleSubmit}>
+  <form
+    class="space-y-6"
+    onsubmit={handleSubmit}
+  >
     <div class="m-4">
-      <label for="commandUrlsInput" class="mb-2 block px-2 text-sm font-medium text-primary">
-        URL(s) <span class="text-xs text-muted-foreground"> (one per line or space-separated) </span>
+      <label
+        for="commandUrlsInput"
+        class="mb-2 block px-2 text-sm font-medium text-primary"
+      >
+        URL(s) <span class="text-xs text-muted-foreground">
+          (one per line or space-separated)
+        </span>
       </label>
       <div class="relative">
         <textarea
@@ -317,13 +325,17 @@
 
     <!-- Site Rule Panel -->
     {#if siteConfigData.length > 0}
-      <Info variant="info" title="Site Rules Detected" class="p-4 mx-4">
+      <Info
+        variant="info"
+        title="Site Rules Detected"
+        class="mx-4 p-4"
+      >
         {#each siteConfigData as config (config.url)}
           <div
-            class="config-item flex items-center justify-between bg-surface-elevated px-3 py-2 rounded border-strong"
+            class="config-item flex items-center justify-between rounded bg-surface-elevated px-3 py-2 border-strong"
           >
             <div class="flex flex-col">
-              <span class="font-medium text-primary text-sm">
+              <span class="text-sm font-medium text-primary">
                 Rule: {config.configName}
               </span>
               <span class="text-xs text-muted-foreground">
@@ -348,17 +360,21 @@
       type="hidden"
       name="args"
       value={JSON.stringify(
-        Array.from(selectedOptions.entries()).map(([key, optionData]) => [key, optionData.value])
+        Array.from(selectedOptions.entries()).map(([key, optionData]) => [key, optionData.value]),
       )}
     />
 
     <!-- Conflict warning Info -->
     {#if showConflictWarning}
-      <Info variant="warning" title="Site Rule Override" class="mx-4">
+      <Info
+        variant="warning"
+        title="Site Rule Override"
+        class="mx-4"
+      >
         <div class="space-y-3">
           <p class="text-sm">Your selections will override the following automated site rules:</p>
 
-          <ul class="list-disc pl-5 space-y-1 text-sm">
+          <ul class="list-disc space-y-1 pl-5 text-sm">
             {#each detectedConflicts as conflict (conflict.optionId)}
               {@const option = getOptionById(conflict.optionId)}
               {#if option}
@@ -369,11 +385,11 @@
                   {/if}:
                   <br />
                   Your
-                  <code class="bg-surface-elevated px-1 rounded text-xs"
+                  <code class="rounded bg-surface-elevated px-1 text-xs"
                     >{option.command} = {conflict.userValue}</code
                   >
                   will override
-                  <code class="bg-surface-elevated px-1 rounded text-xs"
+                  <code class="rounded bg-surface-elevated px-1 text-xs"
                     >{option.command} = {conflict.siteRuleValue}</code
                   >
                 </li>
@@ -382,17 +398,25 @@
           </ul>
 
           <div class="flex gap-3 pt-2">
-            <Button onclick={handleProceedAnyway} variant="primary" size="sm">
+            <Button
+              onclick={handleProceedAnyway}
+              variant="primary"
+              size="sm"
+            >
               Proceed Anyway
             </Button>
-            <Button onclick={handleCancelWarning} variant="outline-primary" size="sm">Cancel</Button>
+            <Button
+              onclick={handleCancelWarning}
+              variant="outline-primary"
+              size="sm">Cancel</Button
+            >
           </div>
         </div>
       </Info>
     {/if}
 
     <!-- Form Buttons with Error Handling -->
-    <div class="flex justify-end m-4 gap-6">
+    <div class="m-4 flex justify-end gap-6">
       <Button
         onclick={clearUrlsInput}
         disabled={isLoading || !commandUrlsInput}
@@ -413,12 +437,22 @@
     </div>
 
     {#if formError}
-      <Info variant="warning" dismissible>{formError}</Info>
+      <Info
+        variant="warning"
+        dismissible>{formError}</Info
+      >
     {/if}
 
     {#if $hasJsonLintErrors}
-      <Info variant="warning" title="Stop!" class="m-8">
-        There is at least one error in your <a href="/config" class="underline">config file</a>
+      <Info
+        variant="warning"
+        title="Stop!"
+        class="m-8"
+      >
+        There is at least one error in your <a
+          href="/config"
+          class="underline">config file</a
+        >
         that you must fix before proceeding!
       </Info>
     {/if}
@@ -432,7 +466,7 @@
     {siteConfigData}
     {userWarningSetting}
     {commandUrlsInput}
-    onConflictDetected={conflicts => {
+    onConflictDetected={(conflicts) => {
       if (conflicts.length > 0) {
         showConflictWarning = true;
       }

@@ -42,7 +42,7 @@
   const filteredJobs = $derived(
     activeFilters.has('all') || activeFilters.size === 0
       ? allJobs
-      : allJobs.filter(job => activeFilters.has(job.status))
+      : allJobs.filter((job) => activeFilters.has(job.status)),
   );
 
   const jobs = $derived(
@@ -54,7 +54,7 @@
       } else {
         return sortNewestFirst ? b.startTime - a.startTime : a.startTime - b.startTime;
       }
-    })
+    }),
   );
 
   function toggleFilter(filterType: string) {
@@ -85,10 +85,10 @@
   const aggregateStats = $derived(() => {
     const stats = {
       total: allJobs.length,
-      running: allJobs.filter(job => job.status === 'running').length,
-      success: allJobs.filter(job => job.status === 'success').length,
-      skips: allJobs.filter(job => job.status === 'no_action').length,
-      error: allJobs.filter(job => job.status === 'error').length,
+      running: allJobs.filter((job) => job.status === 'running').length,
+      success: allJobs.filter((job) => job.status === 'success').length,
+      skips: allJobs.filter((job) => job.status === 'no_action').length,
+      error: allJobs.filter((job) => job.status === 'error').length,
       totalDownloads: allJobs.reduce((sum, job) => sum + (job.downloadCount ?? 0), 0),
       totalSkips: allJobs.reduce((sum, job) => sum + (job.skipCount ?? 0), 0),
     };
@@ -122,7 +122,7 @@
         return 'Error';
       default:
         console.warn(
-          `Unknown job status encountered: "${status}". This may indicate a data migration issue.`
+          `Unknown job status encountered: "${status}". This may indicate a data migration issue.`,
         );
         return 'Unknown';
     }
@@ -209,7 +209,7 @@
     if (allSelected) {
       selectedJobs.clear();
     } else {
-      selectedJobs = new Set(jobs.map(job => job.id));
+      selectedJobs = new Set(jobs.map((job) => job.id));
     }
     selectedJobs = new Set(selectedJobs);
   }
@@ -255,7 +255,7 @@
 <div class="data-list">
   <!-- Header -->
   <div class="data-list-header">
-    <div class="flex items-center justify-between mb-3">
+    <div class="mb-3 flex items-center justify-between">
       <h2>
         Jobs: {jobs.length} / {aggregateStats().total}
         {#if hasSelection}
@@ -267,21 +267,21 @@
     </div>
 
     <!-- Statistics -->
-    <div class="grid grid-cols-3 lg:grid-cols-6 gap-3 mb-4">
+    <div class="mb-4 grid grid-cols-3 gap-3 lg:grid-cols-6">
       <!-- running card -->
       <button
         onclick={() => toggleFilter('running')}
-        class={`text-foreground rounded-sm border px-3 py-1.5 cursor-pointer ${
+        class={`cursor-pointer rounded-sm border px-3 py-1.5 text-foreground ${
           activeFilters.has('running')
             ? 'border-info bg-info/10'
             : 'bg-surface-elevated border-strong hover:border-info hover:bg-info-hover/10'
         }`}
       >
-        <div class="flex items-center gap-2 justify-center">
-          <div class="w-2 h-2 rounded-full bg-info"></div>
+        <div class="flex items-center justify-center gap-2">
+          <div class="h-2 w-2 rounded-full bg-info"></div>
           <span class="text-md font-medium text-accent-foreground">Running</span>
         </div>
-        <div class="mt-1 text-xl font-semibold text-primary flex justify-center">
+        <div class="mt-1 flex justify-center text-xl font-semibold text-primary">
           {aggregateStats().running}
         </div>
       </button>
@@ -289,17 +289,17 @@
       <!-- success card -->
       <button
         onclick={() => toggleFilter('success')}
-        class={`text-foreground rounded-sm border px-3 py-1.5 cursor-pointer ${
+        class={`cursor-pointer rounded-sm border px-3 py-1.5 text-foreground ${
           activeFilters.has('success')
             ? 'border-success bg-success/10'
             : 'bg-surface-elevated border-strong hover:border-success hover:bg-success-hover/10'
         }`}
       >
-        <div class="flex items-center gap-2 justify-center">
-          <div class="w-2 h-2 rounded-full bg-success"></div>
+        <div class="flex items-center justify-center gap-2">
+          <div class="h-2 w-2 rounded-full bg-success"></div>
           <span class="text-md font-medium text-accent-foreground">Success</span>
         </div>
-        <div class="mt-1 text-xl font-semibold text-primary flex justify-center">
+        <div class="mt-1 flex justify-center text-xl font-semibold text-primary">
           {aggregateStats().success}
         </div>
       </button>
@@ -307,17 +307,17 @@
       <!-- skips card -->
       <button
         onclick={() => toggleFilter('no_action')}
-        class={`text-foreground rounded-sm border px-3 py-1.5 cursor-pointer ${
+        class={`cursor-pointer rounded-sm border px-3 py-1.5 text-foreground ${
           activeFilters.has('no_action')
             ? 'border-warning bg-warning/10'
             : 'bg-surface-elevated border-strong hover:border-warning hover:bg-warning-hover/10'
         }`}
       >
-        <div class="flex items-center gap-2 justify-center">
-          <div class="w-2 h-2 rounded-full bg-warning"></div>
+        <div class="flex items-center justify-center gap-2">
+          <div class="h-2 w-2 rounded-full bg-warning"></div>
           <span class="text-md font-medium text-accent-foreground">Skips</span>
         </div>
-        <div class="mt-1 text-xl font-semibold text-primary flex justify-center">
+        <div class="mt-1 flex justify-center text-xl font-semibold text-primary">
           {aggregateStats().skips}
         </div>
       </button>
@@ -325,39 +325,47 @@
       <!-- error card -->
       <button
         onclick={() => toggleFilter('error')}
-        class={`text-foreground rounded-sm border px-3 py-1.5 cursor-pointer ${
+        class={`cursor-pointer rounded-sm border px-3 py-1.5 text-foreground ${
           activeFilters.has('error')
             ? 'border-error bg-error/10'
             : 'bg-surface-elevated border-strong hover:border-error hover:bg-error-hover/10'
         }`}
       >
-        <div class="flex items-center gap-2 justify-center">
-          <div class="w-2 h-2 rounded-full bg-error"></div>
+        <div class="flex items-center justify-center gap-2">
+          <div class="h-2 w-2 rounded-full bg-error"></div>
           <span class="text-md font-medium text-accent-foreground">Errors</span>
         </div>
-        <div class="mt-1 text-xl font-semibold text-primary flex justify-center">
+        <div class="mt-1 flex justify-center text-xl font-semibold text-primary">
           {aggregateStats().error}
         </div>
       </button>
 
       <!-- totalDownloads card -->
       <div class="data-list-stats">
-        <div class="flex items-center gap-2 justify-center">
-          <Icon iconName="download-arrow" size={18} class="align-middle -mx-1 text-success" />
+        <div class="flex items-center justify-center gap-2">
+          <Icon
+            iconName="download-arrow"
+            size={18}
+            class="-mx-1 align-middle text-success"
+          />
           <span class="text-md font-medium text-accent-foreground">Downloads</span>
         </div>
-        <div class="mt-1 text-xl font-semibold text-primary flex justify-center">
+        <div class="mt-1 flex justify-center text-xl font-semibold text-primary">
           {aggregateStats().totalDownloads}
         </div>
       </div>
 
       <!-- totalSkips card -->
       <div class="data-list-stats">
-        <div class="flex items-center gap-2 justify-center">
-          <Icon iconName="no-circle" size={16} class="align-middle text-warning" />
+        <div class="flex items-center justify-center gap-2">
+          <Icon
+            iconName="no-circle"
+            size={16}
+            class="align-middle text-warning"
+          />
           <span class="text-md font-medium text-accent-foreground">Skips</span>
         </div>
-        <div class="mt-1 text-xl font-semibold text-primary flex justify-center">
+        <div class="mt-1 flex justify-center text-xl font-semibold text-primary">
           {aggregateStats().totalSkips}
         </div>
       </div>
@@ -365,9 +373,13 @@
 
     <!-- Controls -->
     <div class="data-list-controls">
-      <div class="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
-        <div class="flex items-center gap-2 flex-wrap">
-          <Button variant="outline-primary" size="sm" onclick={toggleSelectAll}>
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div class="flex flex-wrap items-center gap-2">
+          <Button
+            variant="outline-primary"
+            size="sm"
+            onclick={toggleSelectAll}
+          >
             {allSelected ? 'Deselect All' : 'Select All'}
           </Button>
 
@@ -403,7 +415,11 @@
             size="sm"
             title={`Sort ${sortNewestFirst ? 'descending' : 'ascending'}`}
           >
-            <Icon iconName="sort" size={20} class={`${sortNewestFirst ? '' : 'rotate-180'}`} />
+            <Icon
+              iconName="sort"
+              size={20}
+              class={`${sortNewestFirst ? '' : 'rotate-180'}`}
+            />
           </Button>
           <Button
             onclick={() => setSortBy('time')}
@@ -413,7 +429,10 @@
             size="sm"
             title={`Sort ${sortNewestFirst ? 'newest' : 'oldest'} first`}
           >
-            <Icon iconName="date" class="w-5 h-5" />
+            <Icon
+              iconName="date"
+              class="h-5 w-5"
+            />
           </Button>
           <Button
             onclick={() => setSortBy('downloads')}
@@ -423,7 +442,10 @@
             size="sm"
             title={`Sort ${sortNewestFirst ? 'most' : 'fewest'} downloads first`}
           >
-            <Icon iconName="download-arrow" class="w-5 h-5" />
+            <Icon
+              iconName="download-arrow"
+              class="h-5 w-5"
+            />
           </Button>
         </div>
       </div>
@@ -431,100 +453,101 @@
   </div>
 
   <!-- Job list -->
-  <div class="overflow-y-auto mt-2">
+  <div class="mt-2 overflow-y-auto">
     {#if jobs.length === 0}
       <div class="p-8 text-center text-foreground">No jobs to display</div>
     {:else}
       {#each jobs as job (job.id)}
-        <div class="mt-2 data-list-item flex items-center justify-between">
-            <div class="flex items-center gap-3 flex-1 min-w-0">
-              <Toggle
-                checked={selectedJobs.has(job.id)}
-                onchange={() => toggleJobSelection(job.id)}
-                variant="primary"
-                size="default"
-              />
-              <button
-                onclick={() => handleJobClick(job)}
-                class="flex min-w-0 flex-1 cursor-pointer flex-col text-left"
-                aria-label={`View details for job ${job.url}`}
-              >
-                <div class="flex-grow">
-                  <div class="mb-1 flex items-center gap-2">
-                    <!-- status circle -->
-                    <div
-                      class={`h-3 w-3 rounded-full cursor-help transition-transform hover:scale-125 ${getStatusColor(job.status)}`}
-                      onmouseenter={e => showTooltip(e, getStatusTooltip(job))}
-                      onmouseleave={hideTooltip}
-                      role="tooltip"
-                      aria-label={getStatusTooltip(job)}
-                    ></div>
-                    <!-- Job status text -->
-                    <span class="text-sm font-medium text-primary">
-                      {#if getStatusText(job.status) === 'Skips'}
-                        <span class="text-warning">
-                          Skipped
+        <div class="data-list-item mt-2 flex items-center justify-between">
+          <div class="flex min-w-0 flex-1 items-center gap-3">
+            <Toggle
+              checked={selectedJobs.has(job.id)}
+              onchange={() => toggleJobSelection(job.id)}
+              variant="primary"
+              size="default"
+            />
+            <button
+              onclick={() => handleJobClick(job)}
+              class="flex min-w-0 flex-1 cursor-pointer flex-col text-left"
+              aria-label={`View details for job ${job.url}`}
+            >
+              <div class="flex-grow">
+                <div class="mb-1 flex items-center gap-2">
+                  <!-- status circle -->
+                  <div
+                    class={`h-3 w-3 cursor-help rounded-full transition-transform hover:scale-125 ${getStatusColor(job.status)}`}
+                    onmouseenter={(e) => showTooltip(e, getStatusTooltip(job))}
+                    onmouseleave={hideTooltip}
+                    role="tooltip"
+                    aria-label={getStatusTooltip(job)}
+                  ></div>
+                  <!-- Job status text -->
+                  <span class="text-sm font-medium text-primary">
+                    {#if getStatusText(job.status) === 'Skips'}
+                      <span class="text-warning"> Skipped </span>
+                    {:else}
+                      <span
+                        class:text-foreground={getStatusText(job.status) === 'Running'}
+                        class:text-success={getStatusText(job.status) === 'Success'}
+                        class:text-error={getStatusText(job.status) === 'Error'}
+                      >
+                        {getStatusText(job.status)}
+                      </span>
+                    {/if}
+                  </span>
+
+                  <!-- Show download/skip counts for completed jobs -->
+                  {#if job.status === 'success' || job.status === 'no_action'}
+                    <span class="text-xs">
+                      {#if job.downloadCount > 0}
+                        <span class="text-success">
+                          <Icon
+                            iconName="download-arrow"
+                            size={18}
+                            class="inline -translate-y-px"
+                          />{job.downloadCount}
                         </span>
-                      {:else}
-                        <span
-                          class:text-foreground={getStatusText(job.status) === 'Running'}
-                          class:text-success={getStatusText(job.status) === 'Success'}
-                          class:text-error={getStatusText(job.status) === 'Error'}
-                        >
-                          {getStatusText(job.status)}
+                      {/if}
+                      {#if job.skipCount > 0}
+                        <span class="text-warning">
+                          <Icon
+                            iconName="no-circle"
+                            size={14}
+                            class="inline -translate-y-px"
+                          />{job.skipCount}
                         </span>
                       {/if}
                     </span>
-
-                    <!-- Show download/skip counts for completed jobs -->
-                    {#if job.status === 'success' || job.status === 'no_action'}
-                      <span class="text-xs">
-                        {#if job.downloadCount > 0}
-                          <span class="text-success">
-                            <Icon
-                              iconName="download-arrow"
-                              size={18}
-                              class="inline -translate-y-px"
-                            />{job.downloadCount}
-                          </span>
-                        {/if}
-                        {#if job.skipCount > 0}
-                          <span class="text-warning">
-                            <Icon
-                              iconName="no-circle"
-                              size={14}
-                              class="inline -translate-y-px"
-                            />{job.skipCount}
-                          </span>
-                        {/if}
-                      </span>
-                    {/if}
-
-                    <span class="text-xs text-muted-foreground">
-                      {formatDuration(job.startTime, job.endTime)}
-                    </span>
-                  </div>
-                  <p class="truncate text-sm text-foreground">
-                    {job.url}
-                  </p>
-                </div>
-
-                <span class="mt-2 text-xs text-muted-foreground">
-                  Started: {new Date(job.startTime).toLocaleString()}
-                  {#if job.endTime}
-                    | Ended: {new Date(job.endTime).toLocaleString()}
                   {/if}
-                </span>
-              </button>
-            </div>
-            <button
-              onclick={e => deleteJob(e, job.id)}
-              class="cursor-pointer ml-4 p-1 text-error hover:bg-error/50 hover:text-foreground rounded-sm focus:outline-none transition-colors"
-              title="Delete job"
-              aria-label={`Delete job ${job.url}`}
-            >
-              <Icon iconName="delete" size={20} />
+
+                  <span class="text-xs text-muted-foreground">
+                    {formatDuration(job.startTime, job.endTime)}
+                  </span>
+                </div>
+                <p class="truncate text-sm text-foreground">
+                  {job.url}
+                </p>
+              </div>
+
+              <span class="mt-2 text-xs text-muted-foreground">
+                Started: {new Date(job.startTime).toLocaleString()}
+                {#if job.endTime}
+                  | Ended: {new Date(job.endTime).toLocaleString()}
+                {/if}
+              </span>
             </button>
+          </div>
+          <button
+            onclick={(e) => deleteJob(e, job.id)}
+            class="ml-4 cursor-pointer rounded-sm p-1 text-error transition-colors hover:bg-error/50 hover:text-foreground focus:outline-none"
+            title="Delete job"
+            aria-label={`Delete job ${job.url}`}
+          >
+            <Icon
+              iconName="delete"
+              size={20}
+            />
+          </button>
         </div>
       {/each}
     {/if}
@@ -534,7 +557,7 @@
 <!-- Tooltip -->
 {#if tooltip.visible}
   <div
-    class="fixed z-50 px-2 py-1 text-xs text-foreground bg-surface-elevated border-strong rounded shadow-lg pointer-events-none whitespace-nowrap"
+    class="pointer-events-none fixed z-50 rounded bg-surface-elevated px-2 py-1 text-xs whitespace-nowrap text-foreground shadow-lg border-strong"
     style:left="{tooltip.x + 10}px"
     style:top="{tooltip.y - 30}px"
     transition:fade={{ duration: 150 }}
@@ -562,16 +585,14 @@
   onCancel={cancelDelete}
 >
   {#if deleteAction === 'selected'}
-    <p class="text-muted-foreground mb-4">
+    <p class="mb-4 text-muted-foreground">
       This will permanently delete
       <span class="text-xl font-bold text-error">{selectedCount}</span>
       selected jobs.
     </p>
     <Info variant="error">This is a destructive action that cannot be reversed.</Info>
   {:else}
-    <p class="text-muted-foreground mb-4">
-      This will permanently delete the job.
-    </p>
+    <p class="mb-4 text-muted-foreground">This will permanently delete the job.</p>
     <Info variant="error">This action cannot be reversed.</Info>
   {/if}
 </ConfirmModal>

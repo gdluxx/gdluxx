@@ -25,7 +25,7 @@ const REDACT_PATTERNS = [
 
 function sanitizeMessage(message: string): string {
   let sanitized = message;
-  REDACT_PATTERNS.forEach(pattern => {
+  REDACT_PATTERNS.forEach((pattern) => {
     sanitized = sanitized.replace(pattern, (match, group1) => {
       return match.replace(group1, '[REDACTED]');
     });
@@ -34,7 +34,7 @@ function sanitizeMessage(message: string): string {
 }
 
 function sanitizeArgs(args: unknown[]): unknown[] {
-  return args.map(arg => {
+  return args.map((arg) => {
     if (typeof arg === 'string') {
       return sanitizeMessage(arg);
     }
@@ -86,10 +86,10 @@ class ServerLogger {
                   winston.format.printf(({ timestamp, level, message, ...meta }) => {
                     const metaStr = Object.keys(meta).length ? ` ${JSON.stringify(meta)}` : '';
                     return `${timestamp} [${level}] ${message}${metaStr}`;
-                  })
+                  }),
                 )
               : winston.format.combine(winston.format.timestamp(), winston.format.json()),
-        })
+        }),
       );
     }
 
@@ -102,7 +102,7 @@ class ServerLogger {
           maxSize: this.config.fileMaxSize,
           maxFiles: this.config.fileMaxFiles,
           format: winston.format.combine(winston.format.timestamp(), winston.format.json()),
-        })
+        }),
       );
     }
 

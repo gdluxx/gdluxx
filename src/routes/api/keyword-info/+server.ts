@@ -50,7 +50,7 @@ export const POST: RequestHandler = async ({ request }: RequestEvent): Promise<R
           url: body.url,
           command: body.command,
         },
-        keywordInfoSchema
+        keywordInfoSchema,
       );
     } catch (error) {
       return handleApiError(error as Error);
@@ -105,7 +105,7 @@ export const POST: RequestHandler = async ({ request }: RequestEvent): Promise<R
     }
 
     return handleApiError(
-      new Error('Failed to execute gallery-dl command. Please check the URL and try again.')
+      new Error('Failed to execute gallery-dl command. Please check the URL and try again.'),
     );
   }
 };

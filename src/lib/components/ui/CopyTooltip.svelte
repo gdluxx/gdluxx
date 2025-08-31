@@ -16,9 +16,9 @@
 </script>
 
 {#if visible}
-  <div 
-    class="fixed bg-text-primary text-inverse px-2.5 py-1.5 rounded text-sm pointer-events-none -translate-x-1/2 -translate-y-full whitespace-nowrap z-50 opacity-90" 
-    style:top="{y}px" 
+  <div
+    class="bg-text-primary text-inverse pointer-events-none fixed z-50 -translate-x-1/2 -translate-y-full rounded px-2.5 py-1.5 text-sm whitespace-nowrap opacity-90"
+    style:top="{y}px"
     style:left="{x}px"
   >
     {text}

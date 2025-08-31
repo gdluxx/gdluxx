@@ -17,7 +17,13 @@
   const { class: className = 'w-9 h-9', size = 36 }: IconProps = $props();
 </script>
 
-<svg viewBox="0 0 16 16" width={size} height={size} class={className} aria-hidden="true">
+<svg
+  viewBox="0 0 16 16"
+  width={size}
+  height={size}
+  class={className}
+  aria-hidden="true"
+>
   <path
     fill="currentColor"
     fill-rule="evenodd"

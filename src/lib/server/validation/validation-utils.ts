@@ -106,13 +106,13 @@ export const validateRequestRate = (
   requests: Map<string, number[]>,
   clientId: string,
   maxRequests = 100,
-  windowMs = 60000 // 1 minute
+  windowMs = 60000, // 1 minute
 ): boolean => {
   const now = Date.now();
   const clientRequests = requests.get(clientId) || [];
 
   // Remove old requests outside the window
-  const validRequests = clientRequests.filter(time => now - time < windowMs);
+  const validRequests = clientRequests.filter((time) => now - time < windowMs);
 
   // Check if under limit
   if (validRequests.length >= maxRequests) {
@@ -129,7 +129,7 @@ export const validateRequestRate = (
 export const validateConfigArray = (
   configs: unknown[],
   maxLength = 50,
-  validator?: (item: unknown) => boolean
+  validator?: (item: unknown) => boolean,
 ): boolean => {
   if (!Array.isArray(configs)) {
     return false;

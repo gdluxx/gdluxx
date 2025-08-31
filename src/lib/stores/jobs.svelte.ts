@@ -44,28 +44,28 @@ export interface BatchJobStartResult {
 let jobs = $state<Record<string, ClientJob>>({});
 let isJobListModalOpen = $state(false);
 
-const visibleJobs = $derived(Object.values(jobs).filter(job => job.isVisible));
+const visibleJobs = $derived(Object.values(jobs).filter((job) => job.isVisible));
 const jobCount = $derived(Object.keys(jobs).length);
 const runningJobCount = $derived(
-  Object.values(jobs).filter(job => job.status === 'running').length
+  Object.values(jobs).filter((job) => job.status === 'running').length,
 );
 
 const successJobCount = $derived(
-  Object.values(jobs).filter(job => job.status === 'success').length
+  Object.values(jobs).filter((job) => job.status === 'success').length,
 );
 
 const noActionJobCount = $derived(
-  Object.values(jobs).filter(job => job.status === 'no_action').length
+  Object.values(jobs).filter((job) => job.status === 'no_action').length,
 );
 
-const errorJobCount = $derived(Object.values(jobs).filter(job => job.status === 'error').length);
+const errorJobCount = $derived(Object.values(jobs).filter((job) => job.status === 'error').length);
 
 const totalDownloads = $derived(
-  Object.values(jobs).reduce((sum, job) => sum + (job.downloadCount ?? 0), 0)
+  Object.values(jobs).reduce((sum, job) => sum + (job.downloadCount ?? 0), 0),
 );
 
 const totalSkips = $derived(
-  Object.values(jobs).reduce((sum, job) => sum + (job.skipCount ?? 0), 0)
+  Object.values(jobs).reduce((sum, job) => sum + (job.skipCount ?? 0), 0),
 );
 
 async function loadJobs(): Promise<void> {
@@ -96,12 +96,12 @@ async function loadJobs(): Promise<void> {
 
 async function startJob(
   urls: string[],
-  selectedOptions = new Map<string, OptionWithSource>()
+  selectedOptions = new Map<string, OptionWithSource>(),
 ): Promise<BatchJobStartResult> {
   if (!browser) {
     return {
       overallSuccess: false,
-      results: urls.map(url => ({
+      results: urls.map((url) => ({
         url,
         success: false,
         error: 'Cannot start job during SSR',
@@ -170,7 +170,7 @@ async function startJob(
         overallSuccess: false,
         results:
           data.results ||
-          urls.map(url => ({
+          urls.map((url) => ({
             url,
             success: false,
             error: errorMsg || 'Unknown API error for this URL',
@@ -182,7 +182,7 @@ async function startJob(
     logger.error('Network or parsing error starting jobs:', error);
     return {
       overallSuccess: false,
-      results: urls.map(url => ({
+      results: urls.map((url) => ({
         url,
         success: false,
         error: error instanceof Error ? error.message : 'Network/parsing error',
@@ -209,12 +209,12 @@ function connectToJob(jobId: string): void {
 
   eventSource.onopen = () => {
     logger.info(`EventSource connected for job ${jobId}`);
-    fetchJobDetails(jobId).catch(e =>
-      logger.error(`Error fetching details for ${jobId} onopen:`, e)
+    fetchJobDetails(jobId).catch((e) =>
+      logger.error(`Error fetching details for ${jobId} onopen:`, e),
     );
   };
 
-  ['stdout', 'info', 'stderr', 'error', 'fatal', 'status'].forEach(eventType => {
+  ['stdout', 'info', 'stderr', 'error', 'fatal', 'status'].forEach((eventType) => {
     eventSource.addEventListener(eventType, (event: MessageEvent) => {
       try {
         const data = JSON.parse(event.data);
@@ -269,17 +269,17 @@ function connectToJob(jobId: string): void {
         } else {
           logger.warn(
             `EventSource close event for job ${jobId} had data, but no 'code' field:`,
-            parsedData
+            parsedData,
           );
         }
       } else {
         logger.info(
-          `EventSource close event for job ${jobId} had no data. Likely a client/browser initiated closure or network issue.`
+          `EventSource close event for job ${jobId} had no data. Likely a client/browser initiated closure or network issue.`,
         );
       }
     } catch (e) {
       logger.warn(
-        `Failed to parse close event data for job ${jobId}: '${event.data}'. Error: ${e}. Assuming client/browser initiated or abrupt closure.`
+        `Failed to parse close event data for job ${jobId}: '${event.data}'. Error: ${e}. Assuming client/browser initiated or abrupt closure.`,
       );
     }
 
@@ -288,12 +288,12 @@ function connectToJob(jobId: string): void {
       currentJob.eventSource.close();
       currentJob.eventSource = undefined;
       logger.info(
-        `Cleared eventSource for job ${jobId} after its close event (serverInitiatedProperClose: ${serverInitiatedProperClose}).`
+        `Cleared eventSource for job ${jobId} after its close event (serverInitiatedProperClose: ${serverInitiatedProperClose}).`,
       );
     }
   });
 
-  eventSource.onerror = err => {
+  eventSource.onerror = (err) => {
     logger.error(`EventSource error for job ${jobId}:`, err);
 
     const currentJob = jobs[jobId];
@@ -303,7 +303,7 @@ function connectToJob(jobId: string): void {
       eventSource.readyState === EventSource.CLOSED
     ) {
       logger.info(
-        `EventSource for job ${jobId} is now CLOSED due to an error. Clearing reference.`
+        `EventSource for job ${jobId} is now CLOSED due to an error. Clearing reference.`,
       );
       currentJob.eventSource = undefined;
     }

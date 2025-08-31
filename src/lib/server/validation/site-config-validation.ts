@@ -14,8 +14,8 @@ import optionsData from '$lib/assets/options.json';
 
 // map for CLI option validation
 const validOptions = new Map<string, Option>();
-Object.values(optionsData as OptionsData).forEach(category => {
-  category.options.forEach(option => {
+Object.values(optionsData as OptionsData).forEach((category) => {
+  category.options.forEach((option) => {
     validOptions.set(option.id, option as Option);
   });
 });
@@ -28,7 +28,7 @@ const WILDCARD_PATTERN =
   /^\*$|^(\*\.|[a-zA-Z0-9])([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
 
 function containsDangerousChars(str: string): boolean {
-  return DANGEROUS_CHARS.some(char => str.includes(char));
+  return DANGEROUS_CHARS.some((char) => str.includes(char));
 }
 
 function validateCliOptionValue(optionId: string, value: unknown): boolean {
@@ -114,7 +114,7 @@ export const siteConfigSchema: ValidationSchema = {
     required: true,
     minLength: 1,
     maxLength: 253, // Max domain length
-    custom: value => {
+    custom: (value) => {
       if (typeof value !== 'string') {
         return false;
       }
@@ -125,7 +125,7 @@ export const siteConfigSchema: ValidationSchema = {
     required: true,
     minLength: 1,
     maxLength: 100,
-    custom: value => {
+    custom: (value) => {
       if (typeof value !== 'string') {
         return false;
       }
@@ -137,10 +137,10 @@ export const siteConfigSchema: ValidationSchema = {
     custom: validateCliOptions,
   },
   is_default: {
-    custom: value => typeof value === 'boolean',
+    custom: (value) => typeof value === 'boolean',
   },
   enabled: {
-    custom: value => typeof value === 'boolean',
+    custom: (value) => typeof value === 'boolean',
   },
 };
 
@@ -148,7 +148,7 @@ export const siteConfigUpdateSchema: ValidationSchema = {
   site_pattern: {
     minLength: 1,
     maxLength: 253,
-    custom: value => {
+    custom: (value) => {
       if (typeof value !== 'string') {
         return false;
       }
@@ -158,7 +158,7 @@ export const siteConfigUpdateSchema: ValidationSchema = {
   display_name: {
     minLength: 1,
     maxLength: 100,
-    custom: value => {
+    custom: (value) => {
       if (typeof value !== 'string') {
         return false;
       }
@@ -169,10 +169,10 @@ export const siteConfigUpdateSchema: ValidationSchema = {
     custom: validateCliOptions,
   },
   is_default: {
-    custom: value => typeof value === 'boolean',
+    custom: (value) => typeof value === 'boolean',
   },
   enabled: {
-    custom: value => typeof value === 'boolean',
+    custom: (value) => typeof value === 'boolean',
   },
 };
 
@@ -189,7 +189,7 @@ export const urlTestSchema: ValidationSchema = {
     minLength: 1,
     maxLength: 2048,
     pattern: URL_PATTERN,
-    custom: value => {
+    custom: (value) => {
       if (typeof value !== 'string') {
         return false;
       }
@@ -211,7 +211,7 @@ export const urlTestSchema: ValidationSchema = {
 export const bulkSiteConfigSchema: ValidationSchema = {
   configs: {
     required: true,
-    custom: value => {
+    custom: (value) => {
       if (!Array.isArray(value)) {
         return false;
       }

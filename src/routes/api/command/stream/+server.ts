@@ -30,8 +30,8 @@ export async function GET({ request }: { request: Request }): Promise<Response> 
         const encoder = new TextEncoder();
         controller.enqueue(
           encoder.encode(
-            `event: error\ndata: ${JSON.stringify({ message: 'Invalid URL parameter' })}\n\n`
-          )
+            `event: error\ndata: ${JSON.stringify({ message: 'Invalid URL parameter' })}\n\n`,
+          ),
         );
         controller.close();
       },
@@ -47,7 +47,7 @@ export async function GET({ request }: { request: Request }): Promise<Response> 
   }
 
   logger.info(
-    `[SERVER STREAM] URL: ${commandToRunUrl}, Use User Config Path: ${useUserConfigPath}`
+    `[SERVER STREAM] URL: ${commandToRunUrl}, Use User Config Path: ${useUserConfigPath}`,
   );
 
   if (!commandToRunUrl) {
@@ -56,8 +56,8 @@ export async function GET({ request }: { request: Request }): Promise<Response> 
         const encoder = new TextEncoder();
         controller.enqueue(
           encoder.encode(
-            `event: error\ndata: ${JSON.stringify({ message: 'URL parameter is required' })}\n\n`
-          )
+            `event: error\ndata: ${JSON.stringify({ message: 'URL parameter is required' })}\n\n`,
+          ),
         );
         controller.close();
       },
@@ -108,7 +108,7 @@ export async function GET({ request }: { request: Request }): Promise<Response> 
 
       sendEvent(
         'info',
-        `Executing in PTY: ${PATHS.BIN_FILE} ${args.join(' ')} ${effectiveCwd ? `(CWD: ${effectiveCwd})` : '(CWD: project root or default)'}`
+        `Executing in PTY: ${PATHS.BIN_FILE} ${args.join(' ')} ${effectiveCwd ? `(CWD: ${effectiveCwd})` : '(CWD: project root or default)'}`,
       );
 
       try {
@@ -135,11 +135,11 @@ export async function GET({ request }: { request: Request }): Promise<Response> 
           ({ exitCode, signal }: { exitCode: number; signal?: number | undefined }) => {
             sendEvent(
               'info',
-              `Process exited with code ${exitCode}${signal ? ` (signal ${signal})` : ''}.`
+              `Process exited with code ${exitCode}${signal ? ` (signal ${signal})` : ''}.`,
             );
             sendEvent('close', { code: exitCode });
             controller.close();
-          }
+          },
         );
 
         request.signal.addEventListener('abort', (): void => {

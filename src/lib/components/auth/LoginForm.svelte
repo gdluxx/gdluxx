@@ -59,7 +59,7 @@
 
 <div class="m-4 mx-8">
   <form
-    onsubmit={e => {
+    onsubmit={(e) => {
       e.preventDefault();
       handleLogin();
     }}
@@ -72,7 +72,7 @@
         bind:value={email}
         onkeydown={handleKeyPress}
         required
-        class="text-sm w-full px-3 py-2 border rounded-sm bg-input text-foreground"
+        class="bg-input w-full rounded-sm border px-3 py-2 text-sm text-foreground"
         placeholder="email"
         disabled={isLoading}
       />
@@ -85,17 +85,27 @@
         bind:value={password}
         onkeydown={handleKeyPress}
         required
-        class="text-sm w-full px-3 py-2 border rounded-sm bg-input text-foreground"
+        class="bg-input w-full rounded-sm border px-3 py-2 text-sm text-foreground"
         placeholder="password"
         disabled={isLoading}
       />
     </div>
 
-    <div class="flex justify-end m-4 gap-6">
-      <Button onclick={clearForm} variant="outline-primary" disabled={isLoading} class="w-full">
+    <div class="m-4 flex justify-end gap-6">
+      <Button
+        onclick={clearForm}
+        variant="outline-primary"
+        disabled={isLoading}
+        class="w-full"
+      >
         Clear
       </Button>
-      <Button type="submit" variant="primary" disabled={isLoading} class="w-full">
+      <Button
+        type="submit"
+        variant="primary"
+        disabled={isLoading}
+        class="w-full"
+      >
         {isLoading ? 'Signing in...' : 'Sign in'}
       </Button>
     </div>

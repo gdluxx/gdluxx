@@ -58,7 +58,7 @@ export const POST: RequestHandler = async ({ request }) => {
     }
 
     // Only return results that have matches
-    const matchedResults = results.filter(result => result.hasMatch);
+    const matchedResults = results.filter((result) => result.hasMatch);
 
     return json({
       success: true,

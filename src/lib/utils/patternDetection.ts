@@ -15,7 +15,7 @@ export function detectSitePattern(url: string): string {
 
 export function extractUniquePatterns(urls: string[]): string[] {
   const patterns = new Set<string>();
-  urls.forEach(url => {
+  urls.forEach((url) => {
     try {
       patterns.add(detectSitePattern(url));
     } catch {

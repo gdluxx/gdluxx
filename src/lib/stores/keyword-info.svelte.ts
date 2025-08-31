@@ -40,7 +40,7 @@ const initialState: KeywordInfoState = {
 const keywordInfoState = $state<KeywordInfoState>({ ...initialState });
 
 const hasOutput = $derived(
-  keywordInfoState.listKeywordsOutput !== null || keywordInfoState.extractorInfoOutput !== null
+  keywordInfoState.listKeywordsOutput !== null || keywordInfoState.extractorInfoOutput !== null,
 );
 
 const currentOutput = $derived(() => {
@@ -59,7 +59,7 @@ const getStorageKey = (url: string, command: 'list-keywords' | 'extractor-info')
 
 const loadFromStorage = (
   url: string,
-  command: 'list-keywords' | 'extractor-info'
+  command: 'list-keywords' | 'extractor-info',
 ): string | null => {
   if (!browser) {
     return null;
@@ -78,7 +78,7 @@ const loadFromStorage = (
 const saveToStorage = (
   url: string,
   command: 'list-keywords' | 'extractor-info',
-  output: string
+  output: string,
 ): void => {
   if (!browser) {
     return;
@@ -107,7 +107,7 @@ const clearAllStorage = (): void => {
       }
     }
 
-    keysToRemove.forEach(key => localStorage.removeItem(key));
+    keysToRemove.forEach((key) => localStorage.removeItem(key));
     logger.info(`Cleared ${keysToRemove.length} keyword info entries from localStorage`);
   } catch (error) {
     logger.warn('Failed to clear keyword info data from localStorage', error);
@@ -116,7 +116,7 @@ const clearAllStorage = (): void => {
 
 const executeCommand = async (
   url: string,
-  command: 'list-keywords' | 'extractor-info'
+  command: 'list-keywords' | 'extractor-info',
 ): Promise<void> => {
   if (!url.trim()) {
     keywordInfoState.error = 'URL is required';

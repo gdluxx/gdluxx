@@ -34,7 +34,7 @@ export const POST: RequestHandler = async (): Promise<Response> => {
     if (!latestVersionFromGithub) {
       return json(
         { ...versionInfo, error: 'Could not determine latest version from GitHub.' },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -50,14 +50,14 @@ export const POST: RequestHandler = async (): Promise<Response> => {
     }
 
     logger.info(
-      `Updating from ${currentVersionOnServer ?? 'unknown'} to ${latestVersionFromGithub}`
+      `Updating from ${currentVersionOnServer ?? 'unknown'} to ${latestVersionFromGithub}`,
     );
     const downloadSuccess: boolean = await downloadAndInstallBinary();
 
     if (!downloadSuccess) {
       return json(
         { ...versionInfo, error: 'Binary download or installation failed.' },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -84,7 +84,7 @@ export const POST: RequestHandler = async (): Promise<Response> => {
         ...currentInfo,
         error: error instanceof Error ? error.message : 'Update failed due to an unknown error.',
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 };

@@ -29,59 +29,52 @@
 <div class="content-panel">
   <div class="cursor-default">
     <div class="px-4 py-2 sm:p-2">
-      <div
-        class="overflow-y-auto border-strong rounded-sm"
-      >
+      <div class="overflow-y-auto rounded-sm border-strong">
         <table class="min-w-full">
           <thead class="bg-surface border-b-strong">
             <tr>
               <th
                 scope="col"
-                class="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider"
+                class="px-6 py-3 text-left text-xs font-medium tracking-wider text-foreground uppercase"
               >
                 Username
               </th>
               <th
                 scope="col"
-                class="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider"
+                class="px-6 py-3 text-left text-xs font-medium tracking-wider text-foreground uppercase"
               >
                 Email
               </th>
               <th
                 scope="col"
-                class="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider"
+                class="px-6 py-3 text-left text-xs font-medium tracking-wider text-foreground uppercase"
               >
                 Created
               </th>
               <th
                 scope="col"
-                class="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider"
+                class="px-6 py-3 text-left text-xs font-medium tracking-wider text-foreground uppercase"
               >
                 Status
               </th>
-              <th scope="col" class="relative px-6 py-3">
+              <th
+                scope="col"
+                class="relative px-6 py-3"
+              >
                 <span class="sr-only">Actions</span>
               </th>
             </tr>
           </thead>
-          <tbody
-            class="bg-surface-elevated divide-y"
-          >
+          <tbody class="divide-y bg-surface-elevated">
             {#if user}
               <tr>
-                <td
-                  class="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground"
-                >
+                <td class="px-6 py-4 text-sm font-medium whitespace-nowrap text-foreground">
                   {user.name}
                 </td>
-                <td
-                  class="px-6 py-4 whitespace-nowrap text-sm text-foreground"
-                >
+                <td class="px-6 py-4 text-sm whitespace-nowrap text-foreground">
                   {user.email}
                 </td>
-                <td
-                  class="px-6 py-4 whitespace-nowrap text-sm text-foreground"
-                >
+                <td class="px-6 py-4 text-sm whitespace-nowrap text-foreground">
                   {new Date(user.createdAt).toLocaleDateString()}
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
@@ -92,7 +85,7 @@
                     variant="outline-primary"
                   />
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium"> </td>
+                <td class="px-6 py-4 text-right text-sm font-medium whitespace-nowrap"> </td>
               </tr>
             {/if}
           </tbody>

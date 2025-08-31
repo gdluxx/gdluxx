@@ -23,9 +23,16 @@
   const { data }: { data: PageData } = $props();
 </script>
 
-<PageLayout title="Key Manager" description="Manage your API keys">
+<PageLayout
+  title="Key Manager"
+  description="Manage your API keys"
+>
   {#snippet icon()}
-    <Icon iconName="key" size={32} ariaLabel="keyIcon" />
+    <Icon
+      iconName="key"
+      size={32}
+      ariaLabel="keyIcon"
+    />
   {/snippet}
   <ApiKeyManager initialData={data} />
 </PageLayout>

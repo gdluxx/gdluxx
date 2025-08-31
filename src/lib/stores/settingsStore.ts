@@ -33,7 +33,7 @@ export function createSettingsStore<T>(endpoint: string, defaults: T) {
 
   const handleApiError = async (
     response: Response,
-    fallbackErrorPrefix: string
+    fallbackErrorPrefix: string,
   ): Promise<StoreActionResult> => {
     const errorData = await response.json().catch((): { error?: string; message?: string } => ({
       error: `${fallbackErrorPrefix}: ${response.statusText}`,
@@ -45,17 +45,17 @@ export function createSettingsStore<T>(endpoint: string, defaults: T) {
   };
 
   const setLoading = (isLoading: boolean): void =>
-    update(s => ({ ...s, loading: isLoading, error: null }));
+    update((s) => ({ ...s, loading: isLoading, error: null }));
 
   const setError = (errorMessage: string): void =>
-    update(s => ({
+    update((s) => ({
       ...s,
       error: errorMessage,
       loading: false,
     }));
 
   const setData = (data: T): void =>
-    update(s => ({
+    update((s) => ({
       ...s,
       data,
       loading: false,
@@ -108,7 +108,7 @@ export function createSettingsStore<T>(endpoint: string, defaults: T) {
     // Helper method to get current data synchronously
     getData: (): T => {
       let currentData = defaults;
-      update(s => {
+      update((s) => {
         currentData = s.data;
         return s;
       });

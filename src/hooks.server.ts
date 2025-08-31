@@ -54,7 +54,7 @@ export const handle: Handle = async ({ event, resolve }) => {
   }
 
   // Skip auth for browser extension API endpoint
-  const isPublicRoute = publicRoutes.some(route => event.url.pathname.startsWith(route));
+  const isPublicRoute = publicRoutes.some((route) => event.url.pathname.startsWith(route));
 
   if (!isPublicRoute) {
     const userCount = await getUserCount();

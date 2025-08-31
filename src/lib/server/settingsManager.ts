@@ -23,7 +23,7 @@ export function getCurrentTimestamp(): number {
 export function createSettingsManager<T>(
   tableName: string,
   defaults: T,
-  transformer?: (row: Record<string, unknown>) => T
+  transformer?: (row: Record<string, unknown>) => T,
 ) {
   return {
     read: async (): Promise<T> => {
@@ -48,7 +48,7 @@ export function createSettingsManager<T>(
         const columns = Object.keys(dataObj);
         const placeholders = columns.map(() => '?').join(', ');
 
-        const values = Object.values(dataObj).map(value => {
+        const values = Object.values(dataObj).map((value) => {
           if (typeof value === 'boolean') {
             return value ? 1 : 0;
           }
