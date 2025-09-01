@@ -17,26 +17,26 @@ export const config = {
   name: 'codemirrorLight',
   dark: false,
   background: 'var(--color-surface)',
-  foreground: 'var(--color-text-primary)',
+  foreground: 'var(--color-foreground)',
   selection: 'var(--color-surface-selected)',
   cursor: 'var(--color-primary)',
   dropdownBackground: 'var(--color-surface-elevated)',
   dropdownBorder: 'var(--color-border)',
   activeLine: 'var(--color-surface-hover)',
-  lineNumber: 'var(--color-text-muted)',
-  lineNumberActive: 'var(--color-text-secondary)',
+  lineNumber: 'var(--color-muted-foreground)',
+  lineNumberActive: 'var(--color-accent-foreground)',
   matchingBracket: 'var(--color-surface-selected)',
   keyword: 'var(--color-primary)',
   storage: 'var(--color-primary)',
   variable: 'var(--color-warning)',
-  parameter: 'var(--color-text-primary)',
+  parameter: 'var(--color-foreground)',
   function: 'var(--color-info)',
   string: 'var(--color-success)',
   constant: 'var(--color-info)',
   type: 'var(--color-info)',
   class: 'var(--color-primary)',
   number: 'var(--color-info)',
-  comment: 'var(--color-text-muted)',
+  comment: 'var(--color-muted-foreground)',
   heading: 'var(--color-info)',
   invalid: 'var(--color-error)',
   regexp: 'var(--color-success)',
@@ -77,13 +77,17 @@ export const codemirrorLightTheme = EditorView.theme(
 
     '.cm-gutters': {
       backgroundColor: config.background,
-      color: config.foreground,
+      color: config.lineNumber,
       border: 'none',
     },
-    '.cm-activeLineGutter': { backgroundColor: config.background },
 
-    '.cm-lineNumbers .cm-gutterElement': { color: config.lineNumber },
-    '.cm-lineNumbers .cm-activeLineGutter': { color: config.lineNumberActive },
+    '.cm-lineNumbers .cm-gutterElement': {
+      color: config.lineNumber,
+    },
+    
+    '.cm-lineNumbers .cm-gutterElement.cm-activeLineGutter': {
+      color: config.lineNumberActive,
+    },
 
     '.cm-foldPlaceholder': {
       backgroundColor: 'transparent',
@@ -138,6 +142,7 @@ export const codemirrorLightHighlightStyle = HighlightStyle.define([
   { tag: t.link, textDecoration: 'underline' },
   { tag: t.heading, fontWeight: 'bold', color: config.heading },
   { tag: [t.atom, t.bool, t.special(t.variableName)], color: config.variable },
+  { tag: [t.bracket], color: config.foreground },
   { tag: t.invalid, color: config.invalid },
   { tag: t.strikethrough, textDecoration: 'line-through' },
 ]);
