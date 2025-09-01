@@ -28,6 +28,7 @@ export type IconName =
   | 'plus'
   | 'user'
   | 'minimize'
+  | 'maximize'
   | 'logout'
   | 'lock'
   | 'circle'

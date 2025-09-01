@@ -74,8 +74,13 @@
     <symbol id="close" viewBox="0 0 48 48">
         <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="6" d="m8 8l32 32M8 40L40 8" />
     </symbol>
+    <!-- solor:minimize-bold -->
     <symbol id="minimize" viewBox="0 0 24 24">
-        <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="m2 22l7-7m0 0H3.143M9 15v5.857M22 2l-7 7m0 0h5.857M15 9V3.143" />
+        <path fill="currentColor" d="M20.857 9.75a.75.75 0 1 0 0-1.5h-4.046l5.72-5.72a.75.75 0 0 0-1.061-1.06l-5.72 5.72V3.142a.75.75 0 0 0-1.5 0V9c0 .414.336.75.75.75zm-17.714 4.5a.75.75 0 0 0 0 1.5h4.046l-5.72 5.72a.75.75 0 1 0 1.061 1.06l5.72-5.72v4.047a.75.75 0 1 0 1.5 0V15a.75.75 0 0 0-.75-.75z"/>
+    </symbol>
+    <!-- solor:maximize-bold -->
+    <symbol id="maximize" viewBox="0 0 24 24">
+        <path fill="currentColor" d="M16.143 1.25a.75.75 0 1 0 0 1.5h4.046l-5.72 5.72a.75.75 0 0 0 1.061 1.06l5.72-5.72v4.047a.75.75 0 0 0 1.5 0V2a.75.75 0 0 0-.75-.75zm-8.286 21.5a.75.75 0 0 0 0-1.5H3.811l5.72-5.72a.75.75 0 1 0-1.061-1.06l-5.72 5.72v-4.047a.75.75 0 1 0-1.5 0V22c0 .414.336.75.75.75z"/>
     </symbol>
     <symbol id="logout" viewBox="0 0 24 24" fill="none" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />

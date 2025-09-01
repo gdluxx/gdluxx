@@ -45,6 +45,7 @@
   import { codemirrorLight } from '$lib/themes/codemirror/codemirror-light';
   import { codemirrorDark } from '$lib/themes/codemirror/codemirror-dark';
   import { Button, ConfirmModal } from '$lib/components/ui';
+  import { Icon } from '$lib/components/index';
 
   interface Props {
     value?: string;
@@ -72,6 +73,7 @@
   let saveStatus = $state('');
   let hasLintErrors = $state(false);
   let showConfirmModal = $state(false);
+  let isFullscreen = $state(false);
 
   const jsonLinter = linter(jsonParseLinter());
 
@@ -107,6 +109,7 @@
   }
 
   function createEditorState(initialValue: string) {
+    const editorHeight = isFullscreen ? 'calc(100vh - 120px)' : height;
     const extensions = [
       ...getBasicSetup(),
       json(),
@@ -121,7 +124,7 @@
       EditorState.readOnly.of(readonly),
       theme === 'dark' ? codemirrorDark : codemirrorLight,
       EditorView.theme({
-        '&': { height },
+        '&': { height: editorHeight },
         '.cm-scroller': { overflow: 'auto' },
       }),
     ];
@@ -186,6 +189,10 @@
     showConfirmModal = false;
   }
 
+  function toggleFullscreen() {
+    isFullscreen = !isFullscreen;
+  }
+
   function handleKeyDown(event: KeyboardEvent) {
     if ((event.ctrlKey || event.metaKey) && event.key === 's') {
       event.preventDefault();
@@ -195,6 +202,11 @@
     if (event.key === 'Escape' && showConfirmModal) {
       event.preventDefault();
       cancelSave();
+    }
+
+    if (event.key === 'Escape' && !showConfirmModal && isFullscreen) {
+      event.preventDefault();
+      toggleFullscreen();
     }
   }
 
@@ -227,9 +239,10 @@
     }
   });
 
-  // React to theme, readonly, and height changes
+  // React to theme, readonly, height, and fullscreen changes
   $effect(() => {
-    if (editor && (theme || readonly || height)) {
+    if (editor && (theme || readonly || height || isFullscreen)) {
+      const editorHeight = isFullscreen ? 'calc(100vh - 120px)' : height;
       editor.dispatch({
         effects: StateEffect.reconfigure.of([
           ...getBasicSetup(),
@@ -245,7 +258,7 @@
           EditorState.readOnly.of(readonly),
           theme === 'dark' ? codemirrorDark : codemirrorLight,
           EditorView.theme({
-            '&': { height },
+            '&': { height: editorHeight },
             '.cm-scroller': { overflow: 'auto' },
           }),
         ]),
@@ -268,7 +281,11 @@
   });
 </script>
 
-<div class="mx-auto rounded-t-sm border-strong">
+<div
+  class="transition-all duration-300 {isFullscreen
+    ? 'fixed inset-5 z-50 mx-0'
+    : 'mx-auto'} rounded-t-sm border-strong"
+>
   <div
     class="flex cursor-default items-center justify-between rounded-t-sm bg-surface px-4 py-3 font-medium border-b-strong"
   >
@@ -282,6 +299,27 @@
           {saveStatus}
         </span>
       {/if}
+      <Button
+        variant="outline-info"
+        onclick={toggleFullscreen}
+        title={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+        size="sm"
+        square
+      >
+        {#if isFullscreen}
+          <Icon
+            iconName="minimize"
+            size={20}
+            class="w-[1rem] text-foreground"
+          />
+        {:else}
+          <Icon
+            iconName="maximize"
+            size={20}
+            class="w-[1rem] text-foreground"
+          />
+        {/if}
+      </Button>
       {#if onSave && !readonly}
         <Button
           variant={hasLintErrors ? 'danger' : 'primary'}
