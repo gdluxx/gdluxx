@@ -327,7 +327,7 @@
           </div>
 
           <div
-            class="mt-4 max-h-96 w-full cursor-default overflow-auto rounded-sm border bg-surface px-4 py-3 font-mono text-sm leading-relaxed break-words whitespace-pre-wrap text-foreground"
+            class="mt-4 max-h-[calc(100vh-550px)] w-full cursor-default overflow-auto rounded-sm border bg-surface px-4 py-3 font-mono text-sm leading-relaxed break-words whitespace-pre-wrap text-foreground"
           >
             {#if keywordInfoStore.state.isLoading}
               <div class="flex items-center justify-center py-8">
