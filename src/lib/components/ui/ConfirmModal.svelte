@@ -186,7 +186,7 @@
       role="document"
     >
       <!-- Header -->
-      <div class="flex items-center justify-between border-b-primary/35 px-6 py-4">
+      <div class="flex items-center justify-between border-b-strong px-6 py-4">
         <h1
           id="modal-title"
           class="text-lg font-semibold text-primary"
@@ -198,7 +198,7 @@
           <button
             type="button"
             onclick={handleClose}
-            class="inline-flex h-8 w-8 flex-shrink-0 cursor-pointer items-center justify-center rounded-full border-primary/35 text-foreground transition-all hover:ring-2 hover:ring-primary hover:outline-hidden"
+            class="inline-flex h-8 w-8 flex-shrink-0 cursor-pointer items-center justify-center rounded-full border-strong text-foreground transition-all hover:ring-2 hover:ring-primary hover:outline-hidden"
             aria-label="Close modal"
           >
             <span class="sr-only">Close</span>
@@ -225,11 +225,12 @@
       </div>
 
       <!-- Footer -->
-      <div class="flex items-center justify-end gap-3 border-t-primary/35 px-6 py-4">
+      <div class="flex items-center justify-end gap-3 border-t-strong px-6 py-4">
         <Button
           variant={cancelVariant}
           onclick={handleCancel}
           type="button"
+          size="sm"
         >
           {cancelText}
         </Button>
@@ -238,6 +239,7 @@
           variant={confirmVariant}
           onclick={handleConfirm}
           type="button"
+          size="sm"
         >
           {confirmText}
         </Button>
