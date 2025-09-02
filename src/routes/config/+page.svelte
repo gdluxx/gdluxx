@@ -11,9 +11,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { enhance } from '$app/forms';
-  import { invalidateAll } from '$app/navigation';
   import { ConfigEditor, Icon } from '$lib/components';
-  import { Info, PageLayout, UploadModal, Button } from '$lib/components/ui';
+  import { Info, PageLayout } from '$lib/components/ui';
   import { type ConfigSaveSuccessResult, isConfigSaveSuccess } from '$lib/types/form-results';
   import { clientLogger as logger } from '$lib/client/logger';
 
@@ -35,7 +34,6 @@
   });
 
   let configForm: HTMLFormElement | undefined = $state();
-  let showUploadModal = $state(false);
 
   async function saveJsonFile(content: string) {
     if (!configForm) {
@@ -73,72 +71,8 @@
     };
   });
 
-  function handleUploadClick() {
-    showUploadModal = true;
-  }
-
-  function handleUploadClose() {
-    showUploadModal = false;
-  }
-
-  async function refreshConfigContent() {
-    try {
-      logger.info('Attempting manual config refresh from server');
-      const response = await fetch('/config');
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const result = await response.json();
-
-      if (result.success && result.data?.content) {
-        jsonContent = result.data.content;
-        logger.info('Manual config refresh successful');
-      } else {
-        logger.warn('Manual config refresh failed - invalid response', result);
-      }
-    } catch (error) {
-      logger.error('Manual config refresh failed:', error);
-    }
-  }
-
-  async function handleUploadSuccess(file: File) {
-    try {
-      const beforeContent = jsonContent;
-      const beforePreview = beforeContent.substring(0, 100);
-
-      logger.info('Config upload completed, starting refresh process', {
-        filename: file.name,
-        beforeContentPreview: beforePreview,
-      });
-
-      // ensure complete refresh
-      await invalidateAll();
-
-      // Give the system a moment to process the invalidation
-      // Preventing race condition
-      setTimeout(() => {
-        const afterContent = jsonContent;
-        const afterPreview = afterContent.substring(0, 100);
-
-        logger.info('Checking content after invalidation', {
-          afterContentPreview: afterPreview,
-          contentChanged: beforeContent !== afterContent,
-        });
-
-        if (beforeContent !== afterContent) {
-          logger.info('Config content updated successfully via invalidation');
-        } else {
-          logger.warn('Config content unchanged after invalidation - triggering manual refresh');
-          refreshConfigContent();
-        }
-      }, 200);
-
-      logger.info('Config uploaded successfully', { filename: file.name });
-    } catch (error) {
-      logger.error('Error during config upload success handling:', error);
-    }
+  function handleUploadSuccess(file: File) {
+    logger.info('Config uploaded successfully', { filename: file.name });
   }
 </script>
 
@@ -152,22 +86,6 @@
       size={32}
     />
   {/snippet}
-
-  <div class="mb-6 flex items-center justify-between">
-    <div></div>
-    <Button
-      variant="outline-primary"
-      size="sm"
-      onclick={handleUploadClick}
-    >
-      <Icon
-        iconName="plus"
-        size={16}
-        class="mr-2"
-      />
-      Upload Config
-    </Button>
-  </div>
 
   {#if loadError}
     <Info
@@ -217,14 +135,9 @@
         {theme}
         onSave={saveJsonFile}
         height="75vh"
+        enableUpload
+        onUploadSuccess={handleUploadSuccess}
       />
     </form>
   {/if}
 </PageLayout>
-
-<UploadModal
-  show={showUploadModal}
-  type="config"
-  onClose={handleUploadClose}
-  onUploadSuccess={handleUploadSuccess}
-/>

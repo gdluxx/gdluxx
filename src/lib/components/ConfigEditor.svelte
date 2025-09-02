@@ -44,8 +44,10 @@
   import { lintGutter, linter } from '@codemirror/lint';
   import { codemirrorLight } from '$lib/themes/codemirror/codemirror-light';
   import { codemirrorDark } from '$lib/themes/codemirror/codemirror-dark';
-  import { Button, ConfirmModal } from '$lib/components/ui';
+  import { Button, ConfirmModal, UploadModal } from '$lib/components/ui';
   import { Icon } from '$lib/components/index';
+  import { invalidateAll } from '$app/navigation';
+  import { clientLogger } from '$lib/client/logger';
 
   interface Props {
     value?: string;
@@ -55,6 +57,11 @@
     theme?: 'light' | 'dark';
     height?: string;
     readonly?: boolean;
+    enableUpload?: boolean;
+    uploadEndpoint?: string;
+    invalidateAfterUpload?: boolean;
+    onUploadSuccess?: (file: File) => void;
+    onUploadError?: (error: Error) => void;
   }
 
   /* eslint-disable prefer-const */
@@ -64,6 +71,11 @@
     theme = 'light',
     height = '400px',
     readonly = false,
+    enableUpload = false,
+    uploadEndpoint = '/config',
+    invalidateAfterUpload = false,
+    onUploadSuccess,
+    onUploadError,
   }: Props = $props();
   /* eslint-enable prefer-const */
 
@@ -74,6 +86,8 @@
   let hasLintErrors = $state(false);
   let showConfirmModal = $state(false);
   let isFullscreen = $state(false);
+  let showUploadModal = $state(false);
+  let isUploading = $state(false);
 
   const jsonLinter = linter(jsonParseLinter());
 
@@ -191,6 +205,48 @@
 
   function toggleFullscreen() {
     isFullscreen = !isFullscreen;
+  }
+
+  async function handleUploadSuccess(file: File) {
+    try {
+      isUploading = true;
+      clientLogger.info('Config upload completed, refreshing content', { filename: file.name });
+
+      const response = await fetch(uploadEndpoint, { method: 'GET' });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      if (result?.success && result?.data?.content) {
+        value = result.data.content;
+        clientLogger.info('Config content updated successfully after upload');
+      } else {
+        throw new Error('Invalid response format from server');
+      }
+
+      if (invalidateAfterUpload) {
+        await invalidateAll();
+      }
+
+      onUploadSuccess?.(file);
+      showUploadModal = false;
+    } catch (error) {
+      clientLogger.error('Error during upload success handling:', error);
+      onUploadError?.(error instanceof Error ? error : new Error('Upload handling failed'));
+    } finally {
+      isUploading = false;
+      showUploadModal = false;
+    }
+  }
+
+  function handleUploadClick() {
+    isUploading = false;
+    showUploadModal = true;
+  }
+
+  function handleUploadClose() {
+    showUploadModal = false;
   }
 
   function handleKeyDown(event: KeyboardEvent) {
@@ -320,6 +376,22 @@
           />
         {/if}
       </Button>
+      {#if enableUpload && !readonly}
+        <Button
+          variant="outline-primary"
+          size="sm"
+          disabled={showUploadModal || isUploading}
+          onclick={handleUploadClick}
+          title="Upload configuration file"
+        >
+          <Icon
+            iconName="plus"
+            size={16}
+            class="mr-2"
+          />
+          Upload
+        </Button>
+      {/if}
       {#if onSave && !readonly}
         <Button
           variant={hasLintErrors ? 'danger' : 'primary'}
@@ -351,6 +423,15 @@
   onConfirm={confirmSaveWithErrors}
   onCancel={cancelSave}
 />
+
+{#if enableUpload}
+  <UploadModal
+    show={showUploadModal}
+    type="config"
+    onClose={handleUploadClose}
+    onUploadSuccess={handleUploadSuccess}
+  />
+{/if}
 
 <style>
   .save-status {
