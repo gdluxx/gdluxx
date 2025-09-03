@@ -1,5 +1,24 @@
 # Changelog
 
+# [0.5.0](https://github.com/gdluxx/gdluxx/compare/v0.4.0...v0.5.0) (2025-09-03)
+
+
+### Bug Fixes
+
+* automate store uploads ([534006f](https://github.com/gdluxx/gdluxx/commit/534006fa921721773563f2fce12cfebe51e4925f))
+* ConfigEditor line numbers weren't being styled by the theme ([b6602c2](https://github.com/gdluxx/gdluxx/commit/b6602c2d1581d092c1d36298999d2c3bc4975b0d))
+* ConfirmModal was still using old Tailwind classes ([80c0386](https://github.com/gdluxx/gdluxx/commit/80c03861c6b2e2b7b3350e928138c1a7e06c80ef))
+* edit root .release-it.json to prevent extension/ commits from being added ([7bb90c5](https://github.com/gdluxx/gdluxx/commit/7bb90c58e0ef1ad337badbd1e641e222badc760c))
+* enable KeywordInfo Output box to stretch to bottom of screen ([2eb1acc](https://github.com/gdluxx/gdluxx/commit/2eb1acc47e7f84df1673fd2ce6142c38d9952f02))
+* modify extension/.release-it.json to include only extension/  directory ([1aa0752](https://github.com/gdluxx/gdluxx/commit/1aa075230ee8ecd3f05a49f26c1b35620971fa55))
+
+
+### Features
+
+* add file management controls to ConfigEditor ([cc5549c](https://github.com/gdluxx/gdluxx/commit/cc5549c00c9dce3a8384eab188a7508a9f8d79ad))
+* added ability to full screen the config editor within the browser window ([93b1bef](https://github.com/gdluxx/gdluxx/commit/93b1befe56741ac6c1fc378c49e564c4b01285ff))
+* implement theming system with multiple themes ([b3c3886](https://github.com/gdluxx/gdluxx/commit/b3c3886623b19e85d675297f15d5df79410d9db6))
+
 # [0.4.0](https://github.com/gdluxx/gdluxx/compare/v0.3.0...v0.4.0) (2025-08-13)
 
 
