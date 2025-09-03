@@ -20,17 +20,17 @@
 
   let theme = $state<'light' | 'dark'>('light');
   let _isSubmitting = $state(false);
-  // eslint-disable-next-line svelte/prefer-writable-derived
   let jsonContent = $state(data.success ? data.content : '{}');
+  let lastSavedISO = $state<string | undefined>(data.success ? data.mtimeISO : undefined);
 
   // React to data changes from invalidation
   const loadMessage = $derived(data.message ?? '');
   const loadError = $derived(data.success ? '' : (data.error ?? 'Failed to load configuration'));
 
-  // Update jsonContent when data changes (after invalidation)
-  // Otherwise a page refresh is required
+  // Update jsonContent and lastSavedISO when changes
   $effect(() => {
     jsonContent = data.success ? data.content : '{}';
+    lastSavedISO = data.success ? data.mtimeISO : undefined;
   });
 
   let configForm: HTMLFormElement | undefined = $state();
@@ -73,6 +73,30 @@
 
   function handleUploadSuccess(file: File) {
     logger.info('Config uploaded successfully', { filename: file.name });
+  }
+
+  function handleReloadSuccess(content: string) {
+    logger.info('Config reloaded successfully');
+    // Update page to the reloaded content
+    jsonContent = content;
+  }
+
+  function handleReloadError(error: Error) {
+    logger.error('Config reload failed:', error);
+  }
+
+  function handleRestoreSuccess(content: string) {
+    logger.info('Default configuration restored successfully');
+    // Update page to the restored content
+    jsonContent = content;
+  }
+
+  function handleRestoreError(error: Error) {
+    logger.error('Restore defaults failed:', error);
+  }
+
+  function handleLastSavedChange(newLastSaved: string | undefined) {
+    lastSavedISO = newLastSaved;
   }
 </script>
 
@@ -120,6 +144,7 @@
               if (data.transformed && data.content) {
                 jsonContent = data.content;
               }
+              lastSavedISO = new Date().toISOString();
             }
           }
         };
@@ -136,7 +161,17 @@
         onSave={saveJsonFile}
         height="75vh"
         enableUpload
+        enableReload
+        enableSourceBadge
+        enableRestoreDefaults
+        source={data.success ? data.source : 'example'}
+        {lastSavedISO}
         onUploadSuccess={handleUploadSuccess}
+        onReloadSuccess={handleReloadSuccess}
+        onReloadError={handleReloadError}
+        onRestoreSuccess={handleRestoreSuccess}
+        onRestoreError={handleRestoreError}
+        onLastSavedChange={handleLastSavedChange}
       />
     </form>
   {/if}

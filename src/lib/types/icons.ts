@@ -56,4 +56,9 @@ export type IconName =
   | 'general-settings'
   | 'options'
   | 'checked'
-  | 'error';
+  | 'error'
+  | 'format'
+  | 'export'
+  | 'import'
+  | 'reload'
+  | 'restore';

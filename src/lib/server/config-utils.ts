@@ -8,7 +8,7 @@
  * as published by the Free Software Foundation.
  */
 
-import { readFile, writeFile } from 'fs/promises';
+import { readFile, writeFile, stat } from 'fs/promises';
 import { join, dirname } from 'path';
 import { serverLogger as logger } from '$lib/server/logger';
 import { ensureDir } from '$lib/utils/fs';
@@ -23,6 +23,8 @@ export interface ConfigReadResult {
   source: 'config' | 'example';
   path: string;
   message?: string;
+  mtimeMs?: number;
+  mtimeISO?: string;
 }
 
 export interface ConfigWriteResult {
@@ -256,6 +258,9 @@ export async function readConfigFile(): Promise<ConfigReadResult> {
   try {
     const content: string = await readFile(configPath, 'utf-8');
 
+    // Get file stats for mtime info
+    const stats = await stat(configPath);
+
     // Don't validate JSON here - just return the raw content
     // Otherwise the editor won't show parts of the JSON that are invalid,
     //   yet it will exist in the file
@@ -265,6 +270,8 @@ export async function readConfigFile(): Promise<ConfigReadResult> {
       content,
       source: 'config',
       path: CONFIG_FILE,
+      mtimeMs: stats.mtimeMs,
+      mtimeISO: stats.mtime.toISOString(),
     };
   } catch (configError) {
     // If it doesn't exist, load the example config
