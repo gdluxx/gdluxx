@@ -69,3 +69,7 @@ export const GITHUB = {
     return `https://github.com/${this.USER}/${this.REPO}/releases/latest/download/gallery-dl.bin`;
   },
 } as const;
+
+export const API_LIMITS = {
+  MAX_BATCH_URLS: 200,
+} as const;

@@ -11,21 +11,21 @@
 import type { RequestEvent, RequestHandler } from '@sveltejs/kit';
 import { serverLogger as logger } from '$lib/server/logger';
 import { type AuthResult, validateApiKey } from '$lib/server/auth/apiAuth';
-import type { BatchJobStartResult } from '$lib/stores/jobs.svelte';
-import { createApiResponse, handleApiError } from '$lib/server/api-utils';
+import type { BatchJobStartResult, BatchUrlResult } from '$lib/stores/jobs.svelte';
+import { createApiResponse, createApiError, handleApiError } from '$lib/server/api-utils';
 import { validateInput } from '$lib/server/validation/validation-utils';
 import { externalApiSchema } from '$lib/server/validation/command-validation';
 import { siteConfigManager } from '$lib/server/siteConfigManager';
 import { validateAndBuildCliArgs } from '$lib/server/validation/option-validation';
 import { executeGalleryDlCommand } from '$lib/server/jobs/commandExecutor';
+import { API_LIMITS } from '$lib/server/constants';
 
 interface ExternalApiRequestBody {
-  urlToProcess: unknown;
+  urlToProcess?: unknown;
+  urls?: unknown;
 }
 
 export const POST: RequestHandler = async ({ request }: RequestEvent): Promise<Response> => {
-  let body: ExternalApiRequestBody;
-
   // Extract bearer token from auth header
   const authHeader: string | null = request.headers.get('authorization');
   if (!authHeader?.startsWith('Bearer ')) {
@@ -37,39 +37,47 @@ export const POST: RequestHandler = async ({ request }: RequestEvent): Promise<R
     return handleApiError(new Error('Bearer token cannot be empty'));
   }
 
+  let body: ExternalApiRequestBody;
+
   try {
-    try {
-      body = await request.json();
-    } catch (jsonParseError) {
-      logger.warn(
-        'Failed to parse request body as JSON for /api/extension/external:',
-        jsonParseError,
-      );
-      return handleApiError(new Error('Invalid request body. Expected valid JSON.'));
-    }
-
-    if (typeof body !== 'object' || body === null) {
-      logger.warn('Request body is not a valid JSON object for /api/extension/external:', body);
-      return handleApiError(new Error('Invalid request body. Expected a JSON object.'));
-    }
-
-    // Validate input
-    try {
-      validateInput(
-        {
-          urlToProcess: body.urlToProcess,
-        },
-        externalApiSchema,
-      );
-    } catch (error) {
-      return handleApiError(error as Error);
-    }
-  } catch (error) {
-    logger.warn('Unexpected error processing external endpoint request:', error);
-    return handleApiError(error as Error);
+    body = await request.json();
+  } catch (jsonParseError) {
+    logger.warn(
+      'Failed to parse request body as JSON for /api/extension/external:',
+      jsonParseError,
+    );
+    return createApiError('Invalid request body. Expected valid JSON.', 400);
   }
 
-  const urlToProcess = body.urlToProcess as string;
+  if (typeof body !== 'object' || body === null) {
+    logger.warn('Request body is not a valid JSON object for /api/extension/external:', body);
+    return createApiError('Invalid request body. Expected a JSON object.', 400);
+  }
+
+  try {
+    validateInput({ urlToProcess: body.urlToProcess, urls: body.urls }, externalApiSchema);
+  } catch (error) {
+    logger.warn('Validation error for external API:', error);
+    return createApiError('Invalid input provided.', 400);
+  }
+
+  // Normalizing to an array
+  const rawUrls: unknown[] = Array.isArray(body.urls)
+    ? body.urls
+    : body.urlToProcess
+      ? [body.urlToProcess]
+      : [];
+
+  const urls = rawUrls
+    .map((u) => (typeof u === 'string' ? u.trim() : ''))
+    .filter((u) => u.length > 0);
+
+  if (urls.length === 0) {
+    return createApiError('At least one URL is required', 400);
+  }
+  if (urls.length > API_LIMITS.MAX_BATCH_URLS) {
+    return createApiError(`Too many URLs. Max allowed is ${API_LIMITS.MAX_BATCH_URLS}.`, 400);
+  }
 
   const authResult: AuthResult = await validateApiKey(plainApiKey);
 
@@ -79,39 +87,53 @@ export const POST: RequestHandler = async ({ request }: RequestEvent): Promise<R
   }
 
   logger.info(
-    `API key validated for: ${authResult.keyInfo?.name} (ID: ${authResult.keyInfo?.id}). Forwarding URL: ${urlToProcess}`,
+    `API key validated for: ${authResult.keyInfo?.name} (ID: ${authResult.keyInfo?.id}). Processing ${urls.length} URL(s)`,
   );
 
-  try {
-    // Get site-specific CLI options
-    const siteCliOptions = await siteConfigManager.getCliOptionsForUrl(urlToProcess);
-    const optionsMap = new Map(siteCliOptions);
+  // Process each URL
+  const results: BatchUrlResult[] = [];
+  let overallSuccess = true;
 
-    // Build CLI arguments from site options
-    const cliArgs = validateAndBuildCliArgs(optionsMap);
+  for (const url of urls) {
+    try {
+      // Get site-rules
+      const siteCliOptions = await siteConfigManager.getCliOptionsForUrl(url);
+      const optionsMap = new Map(siteCliOptions);
 
-    // Execute command using shared utility
-    const result = await executeGalleryDlCommand(urlToProcess, cliArgs);
+      // Build CLI argument
+      const cliArgs = validateAndBuildCliArgs(optionsMap);
+      const result = await executeGalleryDlCommand(url, cliArgs);
 
-    if (result.success && result.jobId) {
-      const batchResult: BatchJobStartResult = {
-        overallSuccess: true,
-        results: [
-          {
-            jobId: result.jobId,
-            url: urlToProcess,
-            success: true,
-            message: 'Job started successfully',
-          },
-        ],
-      };
-
-      return createApiResponse(batchResult);
-    } else {
-      return handleApiError(new Error(result.error || 'Failed to start job'));
+      if (result.success && result.jobId) {
+        results.push({
+          jobId: result.jobId,
+          url,
+          success: true,
+          message: 'Job started successfully',
+        });
+      } else {
+        results.push({
+          url,
+          success: false,
+          error: result.error || 'Failed to start job',
+        });
+        overallSuccess = false;
+      }
+    } catch (error) {
+      logger.error(`Error processing URL ${url}:`, error);
+      results.push({
+        url,
+        success: false,
+        error: 'Unexpected error starting job',
+      });
+      overallSuccess = false;
     }
-  } catch (error) {
-    logger.error('Error creating job:', error);
-    return handleApiError(new Error('Failed to create job.'));
   }
+
+  const batchResult: BatchJobStartResult = {
+    overallSuccess,
+    results,
+  };
+
+  return createApiResponse(batchResult);
 };

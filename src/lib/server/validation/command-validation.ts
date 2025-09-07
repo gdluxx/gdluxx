@@ -9,6 +9,8 @@
  */
 
 import type { ValidationSchema } from './validation-utils';
+import { validateConfigArray } from './validation-utils';
+import { API_LIMITS } from '../constants';
 
 export const commandStreamSchema: ValidationSchema = {
   url: {
@@ -18,11 +20,25 @@ export const commandStreamSchema: ValidationSchema = {
   },
 };
 
+const URL_PATTERN = /^https?:\/\/.+/;
+
 export const externalApiSchema: ValidationSchema = {
+  // single URL
   urlToProcess: {
-    required: true,
+    required: false,
     minLength: 1,
-    pattern: /^https?:\/\/.+/,
+    pattern: URL_PATTERN,
+  },
+  // array of URLs
+  urls: {
+    required: false,
+    custom: (value: unknown) =>
+      Array.isArray(value) &&
+      validateConfigArray(
+        value,
+        API_LIMITS.MAX_BATCH_URLS,
+        (u: unknown) => typeof u === 'string' && URL_PATTERN.test(u.trim()),
+      ),
   },
 };
 
