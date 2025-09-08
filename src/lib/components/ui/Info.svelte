@@ -60,17 +60,17 @@
   };
 
   const variantClasses: Record<InfoVariant, string[]> = {
-    success: ['bg-success', 'text-on-success', 'border-success'],
-    warning: ['bg-warning', 'text-on-warning', 'border-warning'],
-    error: ['bg-error', 'text-on-error', 'border-error'],
-    info: ['bg-info', 'text-on-info', 'border-info'],
+    success: ['bg-success/10', 'text-foreground', 'border-success/30'],
+    warning: ['bg-warning/10', 'text-foreground', 'border-warning/30'],
+    error: ['bg-error/10', 'text-foreground', 'border-error/30'],
+    info: ['bg-info/10', 'text-foreground', 'border-info/30'],
   };
 
   const iconClasses: Record<InfoVariant, string[]> = {
-    success: ['text-on-success'],
-    warning: ['text-on-warning'],
-    error: ['text-on-error'],
-    info: ['text-on-info'],
+    success: ['text-foreground'],
+    warning: ['text-foreground'],
+    error: ['text-foreground'],
+    info: ['text-foreground'],
   };
 
   const defaultIcons: Record<InfoVariant, string> = {
