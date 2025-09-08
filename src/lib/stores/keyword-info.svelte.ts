@@ -156,21 +156,21 @@ const executeCommand = async (
       }),
     });
 
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    const payload = await response.json().catch(() => null);
+
+    if (!payload) {
+      throw new Error('Unable to communicate with server. Please try again.');
     }
 
-    const data: KeywordInfoResponse = await response.json();
-
-    if (!data.success) {
-      throw new Error(data.error ?? 'Unknown error occurred');
+    if (!payload.success) {
+      throw new Error(payload.error ?? 'Unknown error occurred');
     }
 
-    if (!data.data?.output) {
+    if (!payload.data?.output) {
       throw new Error('No output received from server');
     }
 
-    const output = data.data.output;
+    const output = payload.data.output;
 
     if (command === 'list-keywords') {
       keywordInfoState.listKeywordsOutput = output;

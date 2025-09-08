@@ -100,58 +100,11 @@
     return trimmed.length > 0 && /^https?:\/\/.+/.test(trimmed);
   });
 
-  const buttonsDisabled = $derived(keywordInfoStore.state.isLoading || !isValidUrl);
+  const buttonsDisabled = $derived(keywordInfoStore.state.isLoading || !isValidUrl());
 
-  const getErrorVariant = $derived(() => {
-    if (!keywordInfoStore.state.error) {
-      return 'danger';
-    }
-
-    const error = keywordInfoStore.state.error.toLowerCase();
-
-    if (error.includes('fetch') || error.includes('network') || error.includes('connection')) {
-      return 'warning';
-    }
-
-    if (error.includes('timeout')) {
-      return 'warning';
-    }
-
-    if (error.includes('url') || error.includes('invalid') || error.includes('unsupported')) {
-      return 'danger';
-    }
-
-    if (error.includes('binary') || error.includes('command') || error.includes('spawn')) {
-      return 'danger';
-    }
-
-    return 'danger';
-  });
-
-  const getErrorMessage = $derived(() => {
-    if (!keywordInfoStore.state.error) {
-      return '';
-    }
-
-    const error = keywordInfoStore.state.error.toLowerCase();
-
-    if (error.includes('timeout')) {
-      return `Request timed out. The URL might be slow to respond or temporarily unavailable. Please try again.`;
-    }
-
-    if (error.includes('network') || error.includes('fetch')) {
-      return `Network error occurred. Please check your connection and try again.`;
-    }
-
-    if (error.includes('unsupported') || error.includes('no extractor')) {
-      return `This URL is not supported by gallery-dl. Please check the supported sites list and try a different URL.`;
-    }
-
-    if (error.includes('binary') || error.includes('command not found')) {
-      return `Gallery-dl binary is not available. Please check the system configuration.`;
-    }
-
-    return keywordInfoStore.state.error;
+  const errorVariant = $derived(() => {
+    const error = keywordInfoStore.state.error?.toLowerCase() ?? '';
+    return error.includes('timeout') || error.includes('network') ? 'warning' : 'error';
   });
 </script>
 
@@ -266,11 +219,8 @@
     <!-- Error -->
     {#if keywordInfoStore.state.error}
       <div class="mx-4 cursor-default">
-        <Info
-          variant={getErrorVariant()}
-          dismissible
-        >
-          {getErrorMessage()}
+        <Info variant={errorVariant()}>
+          {keywordInfoStore.state.error}
         </Info>
       </div>
     {/if}
