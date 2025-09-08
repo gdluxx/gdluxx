@@ -232,7 +232,7 @@
   tabindex="-1"
 >
   <div
-    class="relative flex max-h-[90vh] w-full max-w-full flex-col overflow-hidden rounded-sm border-primary/35 bg-surface shadow-lg sm:max-w-2xl md:max-w-3xl lg:max-w-4xl"
+    class="relative flex max-h-[90vh] w-full max-w-full flex-col overflow-hidden rounded-sm border-strong bg-surface shadow-lg sm:max-w-2xl md:max-w-3xl lg:max-w-4xl"
     transition:scale={{ duration: 300, easing: quintOut, start: 0.95 }}
   >
     <!-- Header -->
