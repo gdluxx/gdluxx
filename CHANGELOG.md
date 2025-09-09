@@ -1,5 +1,18 @@
 # Changelog
 
+# [0.6.0](https://github.com/gdluxx/gdluxx/compare/v0.5.0...v0.6.0) (2025-09-09)
+
+
+### Bug Fixes
+
+* JobOutputModal was using an incorrect class style ([2f65292](https://github.com/gdluxx/gdluxx/commit/2f65292816337d0aee044acf875fe238cc3e9173))
+
+
+### Features
+
+* add batch URL processing support to external API endpoint ([db2f094](https://github.com/gdluxx/gdluxx/commit/db2f094314c95c290237513794c11e99e467c20a))
+* KeywordInfo component now utilizes user config file to accommodate potential custom extractors (`module-sources`) ([2f5ea3a](https://github.com/gdluxx/gdluxx/commit/2f5ea3ac2f223548de663296ac42b55cf1453e66))
+
 # [0.5.0](https://github.com/gdluxx/gdluxx/compare/v0.4.0...v0.5.0) (2025-09-03)
 
 
