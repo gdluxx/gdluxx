@@ -10,11 +10,7 @@
 
 <script lang="ts">
   import { onMount } from 'svelte';
-  import {
-    versionStore,
-    type StoreActionResult,
-    type VersionStoreState,
-  } from '../../../routes/settings/version/lib';
+  import { versionStore, type StoreActionResult, type VersionStoreState } from '$lib/version/versionStore';
   import { toastStore } from '$lib/stores/toast';
   import { clientLogger as logger } from '$lib/client/logger';
   import { Button, Info } from '$lib/components/ui';

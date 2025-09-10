@@ -16,5 +16,5 @@ export interface ILogger {
   error(message: string, ...args: unknown[]): void;
 }
 
-export { serverLogger } from '../server/logger.js';
-export { clientLogger } from '../client/logger.js';
+export { serverLogger } from '../server/logger';
+export { clientLogger } from '../client/logger';

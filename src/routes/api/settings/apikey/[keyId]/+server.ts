@@ -8,27 +8,27 @@
  * as published by the Free Software Foundation.
  */
 
-import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { serverLogger as logger } from '$lib/server/logger';
-import { deleteApiKey } from '../lib/apiKeyManager';
+import { deleteApiKey } from '$lib/server/apikey/apiKeyManager';
+import { createApiError, createApiResponse } from '$lib/server/api-utils';
 
 export const DELETE: RequestHandler = async ({ params }): Promise<Response> => {
   try {
     const { keyId } = params;
 
     if (!keyId) {
-      return json({ error: 'API key ID is required' }, { status: 400 });
+      return createApiError('API key ID is required', 400);
     }
 
     await deleteApiKey(keyId);
 
-    return json({
+    return createApiResponse({
       message: 'API key deleted successfully',
       deletedKeyId: keyId,
     });
   } catch (error) {
     logger.error('Error deleting API key:', error);
-    return json({ error: 'Failed to delete API key' }, { status: 500 });
+    return createApiError('Failed to delete API key', 500);
   }
 };

@@ -19,7 +19,7 @@ import {
   AVAILABLE_THEMES,
   DEFAULT_THEME,
   DEFAULT_MODE,
-} from './themeUtils.js';
+} from './themeUtils';
 import { clientLogger as logger } from '$lib/client/logger';
 
 const debugLog = (message: string, ...args: unknown[]) =>

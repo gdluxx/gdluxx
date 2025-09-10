@@ -10,9 +10,9 @@
 
 <script>
   import { page } from '$app/state';
-  import { Icon } from '$lib/components/index.js';
+  import { Icon } from '$lib/components/index';
   import { goto } from '$app/navigation';
-  import { Button, Info } from '$lib/components/ui/index.js';
+  import { Button, Info } from '$lib/components/ui/index';
 
   const is404 = $derived(page.status === 404);
   const isServerError = $derived(page.status >= 500);

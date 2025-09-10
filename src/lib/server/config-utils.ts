@@ -12,7 +12,7 @@ import { readFile, writeFile, stat } from 'fs/promises';
 import { join, dirname } from 'path';
 import { serverLogger as logger } from '$lib/server/logger';
 import { ensureDir } from '$lib/utils/fs';
-import { isRunningInDockerCached } from './environment.js';
+import { isRunningInDockerCached } from './environment';
 
 export const DATA_PATH = process.env.FILE_STORAGE_PATH ?? './data';
 export const CONFIG_FILE = 'config.json';

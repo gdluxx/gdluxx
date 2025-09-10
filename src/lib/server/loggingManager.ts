@@ -8,11 +8,11 @@
  * as published by the Free Software Foundation.
  */
 
-import { getCurrentTimestamp } from './settingsManager.js';
+import { getCurrentTimestamp } from './settingsManager';
 import Database from 'better-sqlite3';
-import { PATHS } from './constants.js';
+import { PATHS } from './constants';
 import path from 'path';
-import { transformLogPath } from './config-utils.js';
+import { transformLogPath } from './config-utils';
 
 const dbPath = path.join(PATHS.DATA_DIR, 'gdluxx.db');
 

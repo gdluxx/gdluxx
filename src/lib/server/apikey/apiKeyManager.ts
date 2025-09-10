@@ -10,7 +10,7 @@
 
 import { auth } from '$lib/server/auth/better-auth';
 import { serverLogger as logger } from '$lib/server/logger';
-import type { ApiKey } from './types';
+import type { ApiKey } from '$lib/apikey/types';
 import type BetterSqlite3 from 'better-sqlite3';
 import type { RunResult, Statement } from 'better-sqlite3';
 
@@ -76,8 +76,8 @@ export async function createApiKey(
       body: {
         name,
         userId,
-        prefix: 'sk_', // All the big dogs do it (may help with debugging)
-        expiresIn: expiresAt ? Math.floor((expiresAt.getTime() - Date.now()) / 1000) : undefined, // Convert to seconds from now
+        prefix: 'sk_',
+        expiresIn: expiresAt ? Math.floor((expiresAt.getTime() - Date.now()) / 1000) : undefined,
       },
     });
 

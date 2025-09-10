@@ -11,7 +11,7 @@
 import Database from 'better-sqlite3';
 import path from 'path';
 import { PATHS } from './constants';
-import type { ThemeName } from '$lib/themes/themeUtils.js';
+import type { ThemeName } from '$lib/themes/themeUtils';
 
 const dbPath = path.join(PATHS.DATA_DIR, 'gdluxx.db');
 

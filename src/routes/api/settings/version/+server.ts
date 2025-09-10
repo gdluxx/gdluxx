@@ -8,7 +8,6 @@
  * as published by the Free Software Foundation.
  */
 
-import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import {
   readVersionInfo,
@@ -17,8 +16,9 @@ import {
   getLatestVersionFromGithub,
   DEFAULT_VERSION_INFO,
   type VersionInfo,
-} from './lib/server-exports';
+} from '$lib/server/version/versionManager';
 import { serverLogger as logger } from '$lib/server/logger';
+import { createApiError, createApiResponse } from '$lib/server/api-utils';
 
 export const GET: RequestHandler = async (): Promise<Response> => {
   try {
@@ -40,13 +40,12 @@ export const GET: RequestHandler = async (): Promise<Response> => {
         versionInfo = newInfoToSave;
       }
     }
-    return json(versionInfo);
+    const resp = createApiResponse(versionInfo);
+    resp.headers.set('Cache-Control', 'no-store');
+    return resp;
   } catch (error) {
     logger.error('Error in version status:', error);
-    return json(
-      { ...DEFAULT_VERSION_INFO, error: 'Failed to get version status' },
-      { status: 500 },
-    );
+    return createApiError('Failed to get version status', 500);
   }
 };
 
@@ -66,9 +65,11 @@ export const POST: RequestHandler = async (): Promise<Response> => {
 
     await writeVersionInfo(versionInfo);
 
-    return json(versionInfo);
+    const resp = createApiResponse(versionInfo);
+    resp.headers.set('Cache-Control', 'no-store');
+    return resp;
   } catch (error) {
     logger.error('Error checking for updates:', error);
-    return json({ ...DEFAULT_VERSION_INFO, error: 'Failed to check for updates' }, { status: 500 });
+    return createApiError('Failed to check for updates', 500);
   }
 };

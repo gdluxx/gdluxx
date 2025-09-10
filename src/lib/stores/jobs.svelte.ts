@@ -73,11 +73,11 @@ async function loadJobs(): Promise<void> {
     return;
   }
   try {
-    const response: Response = await fetch('/jobs');
-    const data = await response.json();
-    if (data.success) {
+    const response: Response = await fetch('/api/jobs');
+    const payload = await response.json();
+    if (payload.success) {
       // Handle standardized API response format
-      const jobsArray = data.data?.jobs ?? data.jobs ?? [];
+      const jobsArray = payload.data?.jobs ?? payload.jobs ?? [];
       const jobMap: Record<string, ClientJob> = {};
       for (const job of jobsArray) {
         jobMap[job.id] = {
@@ -122,7 +122,7 @@ async function startJob(
   ]);
 
   try {
-    const response: Response = await fetch('/', {
+    const response: Response = await fetch('/api/command/start', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -131,12 +131,16 @@ async function startJob(
       }),
     });
 
-    const data: BatchJobStartResult = await response.json();
+    const payload = await response.json();
 
-    if (response.ok && data.results) {
+    if (response.ok && payload.success && payload.data?.results) {
+      const { overallSuccess, results } = payload.data as {
+        overallSuccess: boolean;
+        results: BatchUrlResult[];
+      };
       let firstJobMadeVisible = false;
 
-      for (const result of data.results) {
+      for (const result of results) {
         if (result.success && result.jobId) {
           const newJob: ClientJob = {
             id: result.jobId,
@@ -160,22 +164,22 @@ async function startJob(
 
       jobs = { ...jobs };
 
-      return { overallSuccess: data.overallSuccess, results: data.results };
+      return { overallSuccess, results };
     } else {
       const errorMsg: string =
-        data.error ??
+        payload.error ??
         (response.ok ? 'Batch job submission reported failure.' : `API Error: ${response.status}`);
-      logger.error('Failed to start one or more jobs:', data.results || errorMsg);
+      logger.error('Failed to start one or more jobs:', payload.data?.results || errorMsg);
       return {
         overallSuccess: false,
         results:
-          data.results ||
+          payload.data?.results ||
           urls.map((url) => ({
             url,
             success: false,
             error: errorMsg || 'Unknown API error for this URL',
           })),
-        error: data.error,
+        error: payload.error,
       };
     }
   } catch (error) {

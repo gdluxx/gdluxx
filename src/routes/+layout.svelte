@@ -25,7 +25,7 @@
     initializeThemeStore,
     initializeThemeStoreFallback,
     validateThemeSystem,
-  } from '$lib/themes/themeStore.js';
+  } from '$lib/themes/themeStore';
 
   const { children, data } = $props();
 
