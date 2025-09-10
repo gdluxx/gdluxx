@@ -15,7 +15,9 @@ import { createApiResponse, handleApiError } from '$lib/server/api-utils';
 export const GET: RequestHandler = async (): Promise<Response> => {
   try {
     const jobs: Job[] = await jobManager.getAllJobs();
-    return createApiResponse({ jobs });
+    const resp = createApiResponse({ jobs });
+    resp.headers.set('Cache-Control', 'no-store');
+    return resp;
   } catch (error) {
     return handleApiError(error as Error);
   }

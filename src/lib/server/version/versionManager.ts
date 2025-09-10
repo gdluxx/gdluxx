@@ -145,10 +145,10 @@ export function compareVersions(a: string | null, b: string | null): number {
   }
   if (a === null) {
     return -1;
-  } // a is older
+  }
   if (b === null) {
     return 1;
-  } // a is newer
+  }
 
   const parse: (v: string) => number[] = (v: string): number[] =>
     v.split('.').map((num) => parseInt(num, 10) || 0);

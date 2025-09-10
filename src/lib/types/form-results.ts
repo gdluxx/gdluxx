@@ -3,7 +3,7 @@
  * Following project TypeScript best practices: explicit interfaces over inline type assertions
  */
 
-import type { ApiKey } from '../../routes/settings/apikey/lib';
+import type { ApiKey } from '$lib/apikey';
 
 export interface ApiKeyCreateSuccessResult {
   success: boolean;

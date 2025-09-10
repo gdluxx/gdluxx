@@ -16,7 +16,7 @@ import { getClientSafeMessage } from '$lib/server/api-utils';
 import { writeConfigFile } from '$lib/server/config-utils';
 
 export const load = createPageLoad({
-  endpoint: '/config',
+  endpoint: '/api/config',
   fallback: { content: '{}', source: 'fallback' },
   errorMessage: 'Failed to load configuration',
 });

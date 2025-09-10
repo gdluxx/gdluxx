@@ -8,8 +8,6 @@
  * as published by the Free Software Foundation.
  */
 
-import { json } from '@sveltejs/kit';
-import { dev } from '$app/environment';
 import type { RequestHandler } from './$types';
 import fs from 'node:fs';
 import { serverLogger as logger } from '$lib/server/logger';
@@ -18,36 +16,15 @@ import type { BatchUrlResult } from '$lib/stores/jobs.svelte';
 import { siteConfigManager } from '$lib/server/siteConfigManager';
 import { validateAndBuildCliArgs } from '$lib/server/validation/option-validation';
 import { executeGalleryDlCommand } from '$lib/server/jobs/commandExecutor';
-
-const getClientSafeMessage = (error: Error) => {
-  if (dev) {
-    return error.message;
-  }
-
-  if (error.name === 'ValidationError') {
-    return 'Invalid input provided.';
-  }
-  if (error.name === 'NotFoundError') {
-    return 'Resource not found.';
-  }
-
-  return 'An unexpected error occurred.';
-};
+import { createApiError, createApiResponse, handleApiError } from '$lib/server/api-utils';
 
 export const POST: RequestHandler = async ({ request }) => {
   try {
     const requestData = await request.json();
-    const { urls, args } = requestData;
+    const { urls, args } = requestData ?? {};
 
     if (!urls || !Array.isArray(urls) || urls.length === 0) {
-      return json(
-        {
-          overallSuccess: false,
-          results: [],
-          error: 'URLs are required and cannot be empty',
-        },
-        { status: 400 },
-      );
+      return createApiError('URLs are required and cannot be empty', 400);
     }
 
     // Filter out empty URLs
@@ -56,14 +33,7 @@ export const POST: RequestHandler = async ({ request }) => {
       .filter((url: string) => url !== '');
 
     if (validUrls.length === 0) {
-      return json(
-        {
-          overallSuccess: false,
-          results: [],
-          error: 'At least one valid URL is required',
-        },
-        { status: 400 },
-      );
+      return createApiError('At least one valid URL is required', 400);
     }
 
     // Parse args
@@ -77,18 +47,7 @@ export const POST: RequestHandler = async ({ request }) => {
       fs.accessSync(PATHS.BIN_FILE, fs.constants.X_OK);
     } catch (_err) {
       logger.error('gallery-dl.bin not found or not executable');
-      return json(
-        {
-          overallSuccess: false,
-          results: validUrls.map((url: string) => ({
-            url,
-            success: false,
-            error: 'gallery-dl.bin not found or not executable',
-          })),
-          error: 'gallery-dl.bin not found or not executable',
-        },
-        { status: 500 },
-      );
+      return createApiError('gallery-dl.bin not found or not executable', 500);
     }
 
     const batchResults: BatchUrlResult[] = [];
@@ -97,7 +56,7 @@ export const POST: RequestHandler = async ({ request }) => {
     for (const url of validUrls) {
       if (typeof url !== 'string' || !url.trim()) {
         batchResults.push({
-          url: url || 'INVALID_URL_ENTRY',
+          url: (url as string) || 'INVALID_URL_ENTRY',
           success: false,
           error: 'Invalid URL entry provided in the list.',
         });
@@ -138,19 +97,14 @@ export const POST: RequestHandler = async ({ request }) => {
       }
     }
 
-    return json({
+    const resp = createApiResponse({
       overallSuccess,
       results: batchResults,
     });
+    resp.headers.set('Cache-Control', 'no-store');
+    return resp;
   } catch (error) {
-    logger.error('Error in POST endpoint:', error);
-    return json(
-      {
-        overallSuccess: false,
-        results: [],
-        error: getClientSafeMessage(error as Error),
-      },
-      { status: 500 },
-    );
+    logger.error('Error in POST /api/command/start:', error);
+    return handleApiError(error);
   }
 };

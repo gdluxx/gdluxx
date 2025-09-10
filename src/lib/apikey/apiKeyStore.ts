@@ -10,7 +10,7 @@
 
 import { writable } from 'svelte/store';
 import { toastStore } from '$lib/stores/toast';
-import type { ApiKey, NewApiKeyResponse, CreateApiKeyRequest } from './types';
+import type { ApiKey, NewApiKeyResponse, CreateApiKeyRequest } from '$lib/apikey/types';
 
 export interface ApiKeyStoreState {
   apiKeys: ApiKey[];
@@ -76,14 +76,14 @@ function createApiKeyStore() {
     load: async (): Promise<ApiKeyActionResult> => {
       setLoading(true);
       try {
-        const response = await fetch('/settings/apikey', {
+        const response = await fetch('/api/settings/apikey', {
           cache: 'no-store',
         });
         if (!response.ok) {
           return await handleApiError(response, 'Failed to load API keys');
         }
-        const data = await response.json();
-        const apiKeys = data.success ? data.apiKeys || [] : [];
+        const payload = await response.json();
+        const apiKeys = payload.success ? payload.data?.apiKeys || [] : [];
         setApiKeys(apiKeys);
         return {
           success: true,
@@ -101,7 +101,7 @@ function createApiKeyStore() {
     create: async (request: CreateApiKeyRequest): Promise<ApiKeyActionResult> => {
       setLoading(true);
       try {
-        const response = await fetch('/settings/apikey', {
+        const response = await fetch('/api/settings/apikey', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(request),
@@ -109,7 +109,15 @@ function createApiKeyStore() {
         if (!response.ok) {
           return await handleApiError(response, 'Failed to create API key');
         }
-        const data: NewApiKeyResponse = await response.json();
+        const payload = await response.json();
+        if (!payload.success) {
+          return {
+            success: false,
+            message: payload.error || 'Failed to create API key',
+            type: 'error',
+          };
+        }
+        const data: NewApiKeyResponse = payload.data;
 
         setNewlyCreatedKey(data.plainKey);
         update((s) => ({
@@ -137,7 +145,7 @@ function createApiKeyStore() {
     delete: async (keyId: string): Promise<ApiKeyActionResult> => {
       setLoading(true);
       try {
-        const response = await fetch(`/settings/apikey/${keyId}`, {
+        const response = await fetch(`/api/settings/apikey/${keyId}`, {
           method: 'DELETE',
         });
         if (!response.ok) {

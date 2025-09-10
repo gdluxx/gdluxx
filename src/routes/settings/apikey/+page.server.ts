@@ -22,7 +22,7 @@ import {
   validateExpirationDate,
   type ApiKey,
   type NewApiKeyResponse,
-} from './lib/server-exports';
+} from '$lib/server/apikey';
 
 const getClientSafeMessage = (error: Error) => {
   if (dev) {
@@ -40,7 +40,7 @@ const getClientSafeMessage = (error: Error) => {
 };
 
 export const load = createPageLoad({
-  endpoint: '/settings/apikey',
+  endpoint: '/api/settings/apikey',
   fallback: { apiKeys: [] },
   errorMessage: 'Failed to load API keys',
 });

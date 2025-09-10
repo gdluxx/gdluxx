@@ -19,7 +19,9 @@ import type { ConfigReadResult, ConfigWriteResult } from '$lib/server/config-uti
 export const GET: RequestHandler = async (): Promise<Response> => {
   try {
     const result: ConfigReadResult = await readConfigFile();
-    return createApiResponse(result);
+    const resp = createApiResponse(result);
+    resp.headers.set('Cache-Control', 'no-store');
+    return resp;
   } catch (error) {
     logger.error('Error reading config file:', error);
     return handleApiError(error as Error);
@@ -53,7 +55,9 @@ export const POST: RequestHandler = async ({ request }): Promise<Response> => {
     }
 
     const result: ConfigWriteResult = await writeConfigFile(content);
-    return createApiResponse(result);
+    const resp = createApiResponse(result);
+    resp.headers.set('Cache-Control', 'no-store');
+    return resp;
   } catch (error) {
     logger.error('Error saving file:', error);
     return handleApiError(error as Error);

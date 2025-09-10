@@ -21,14 +21,16 @@ import {
   type CreateApiKeyRequest,
   type NewApiKeyResponse,
   createApiKeySchema,
-} from './lib/server-exports';
+} from '$lib/server/apikey';
 import { createApiResponse, handleApiError } from '$lib/server/api-utils';
 import { validateInput } from '$lib/server/validation/validation-utils';
 
 export const GET: RequestHandler = async (): Promise<Response> => {
   try {
     const apiKeys: ApiKey[] = await listApiKeys();
-    return createApiResponse({ apiKeys });
+    const resp = createApiResponse({ apiKeys });
+    resp.headers.set('Cache-Control', 'no-store');
+    return resp;
   } catch (error) {
     logger.error('Error loading API keys:', error);
     return handleApiError(new Error(API_KEY_VALIDATION.SERVER.LOAD_FAILED));
@@ -73,7 +75,9 @@ export const POST: RequestHandler = async ({ request }): Promise<Response> => {
       plainKey: result.key,
     };
 
-    return createApiResponse(response);
+    const resp = createApiResponse(response);
+    resp.headers.set('Cache-Control', 'no-store');
+    return resp;
   } catch (error) {
     logger.error('Error creating API key:', error);
     return handleApiError(new Error(API_KEY_VALIDATION.SERVER.CREATION_FAILED));

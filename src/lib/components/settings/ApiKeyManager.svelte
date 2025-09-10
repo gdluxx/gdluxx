@@ -13,11 +13,7 @@
   import { SuccessIcon } from '$lib/components/icons';
   import { Button, Info, ConfirmModal, Toggle } from '$lib/components/ui';
   import { Icon } from '$lib/components/index';
-  import {
-    API_KEY_VALIDATION,
-    validateApiKeyInput,
-    type ApiKey,
-  } from '../../../routes/settings/apikey/lib';
+  import { API_KEY_VALIDATION, validateApiKeyInput, type ApiKey } from '$lib/apikey';
   import {
     type ApiKeyCreateSuccessResult,
     type ApiKeyDeleteSuccessResult,

@@ -9,7 +9,7 @@
  */
 
 import { writable } from 'svelte/store';
-import type { VersionInfo } from './versionManager';
+import type { VersionInfo } from '$lib/server/version/versionManager';
 
 export interface VersionStoreState extends VersionInfo {
   loading: boolean;
@@ -86,11 +86,15 @@ function createVersionStore() {
     loadStatus: async (): Promise<StoreActionResult> => {
       setLoading(true);
       try {
-        const response: Response = await fetch('/settings/version');
+        const response: Response = await fetch('/api/settings/version');
         if (!response.ok) {
           return await handleApiError(response, 'Failed to fetch status');
         }
-        const data: VersionInfo = await response.json();
+        const payload = await response.json();
+        if (!payload.success) {
+          return await handleApiError(response, payload.error || 'Failed to fetch status');
+        }
+        const data: VersionInfo = payload.data;
         setData(data);
         return { success: true, message: 'Version status loaded.', data, type: 'info' };
       } catch (e) {
@@ -104,15 +108,19 @@ function createVersionStore() {
     checkForUpdates: async (): Promise<StoreActionResult> => {
       setLoading(true);
       try {
-        const response = await fetch('/settings/version', { method: 'POST' });
+        const response = await fetch('/api/settings/version', { method: 'POST' });
         if (!response.ok) {
           return await handleApiError(response, 'Failed to check for updates');
         }
-        const data: VersionInfo & { message?: string } = await response.json();
+        const payload = await response.json();
+        if (!payload.success) {
+          return await handleApiError(response, payload.error || 'Failed to check for updates');
+        }
+        const data: VersionInfo & { message?: string } = payload.data;
         setData(data);
 
         if (data.message?.includes('Already up to date')) {
-          return { success: true, message: data.message, data, type: 'info' };
+          return { success: true, message: data.message!, data, type: 'info' };
         }
         return {
           success: true,
@@ -130,17 +138,18 @@ function createVersionStore() {
     performUpdate: async (): Promise<StoreActionResult> => {
       setUpdateInProgress(true);
       try {
-        const response: Response = await fetch('/settings/version/update', { method: 'POST' });
-        const result: VersionInfo & { message?: string; error?: string } = await response.json();
+        const response: Response = await fetch('/api/settings/version/update', { method: 'POST' });
+        const payload = await response.json();
 
-        if (!response.ok) {
-          return handleErrorResult(result.error, response, 'Update failed');
+        if (!response.ok || !payload.success) {
+          return handleErrorResult(payload.error, response, 'Update failed');
         }
 
+        const result: VersionInfo & { message?: string } = payload.data;
         setData(result);
 
         if (result.message?.includes('Already up to date')) {
-          return { success: true, message: result.message, data: result, type: 'info' };
+          return { success: true, message: result.message!, data: result, type: 'info' };
         }
         return {
           success: true,

@@ -8,7 +8,6 @@
  * as published by the Free Software Foundation.
  */
 
-import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import {
   readVersionInfo,
@@ -19,8 +18,9 @@ import {
   compareVersions,
   DEFAULT_VERSION_INFO,
   type VersionInfo,
-} from '../lib/server-exports';
+} from '$lib/server/version/versionManager';
 import { serverLogger as logger } from '$lib/server/logger';
+import { createApiError, createApiResponse } from '$lib/server/api-utils';
 
 export const POST: RequestHandler = async (): Promise<Response> => {
   try {
@@ -32,10 +32,7 @@ export const POST: RequestHandler = async (): Promise<Response> => {
       versionInfo.latestAvailable ?? (await getLatestVersionFromGithub());
 
     if (!latestVersionFromGithub) {
-      return json(
-        { ...versionInfo, error: 'Could not determine latest version from GitHub.' },
-        { status: 500 },
-      );
+      return createApiError('Could not determine latest version from GitHub.', 500);
     }
 
     if (
@@ -46,7 +43,7 @@ export const POST: RequestHandler = async (): Promise<Response> => {
       versionInfo.latestAvailable = latestVersionFromGithub;
       versionInfo.lastChecked = Date.now();
       await writeVersionInfo(versionInfo);
-      return json({ ...versionInfo, message: 'Already up to date.' });
+      return createApiResponse({ ...versionInfo, message: 'Already up to date.' });
     }
 
     logger.info(
@@ -55,10 +52,7 @@ export const POST: RequestHandler = async (): Promise<Response> => {
     const downloadSuccess: boolean = await downloadAndInstallBinary();
 
     if (!downloadSuccess) {
-      return json(
-        { ...versionInfo, error: 'Binary download or installation failed.' },
-        { status: 500 },
-      );
+      return createApiError('Binary download or installation failed.', 500);
     }
 
     const newlyInstalledVersion: string | null = await getCurrentVersionFromBinary();
@@ -67,7 +61,7 @@ export const POST: RequestHandler = async (): Promise<Response> => {
       versionInfo.current = null; // Mark as unknown
 
       await writeVersionInfo(versionInfo);
-      return json(versionInfo, { status: 500 });
+      return createApiError('Update completed but version could not be determined.', 500);
     }
 
     versionInfo.current = newlyInstalledVersion;
@@ -75,16 +69,13 @@ export const POST: RequestHandler = async (): Promise<Response> => {
     versionInfo.lastChecked = Date.now();
     await writeVersionInfo(versionInfo);
 
-    return json({ ...versionInfo, message: 'Update completed successfully.' });
+    return createApiResponse({ ...versionInfo, message: 'Update completed successfully.' });
   } catch (error) {
     logger.error('Error in update:', error);
     const currentInfo: VersionInfo = await readVersionInfo().catch(() => DEFAULT_VERSION_INFO);
-    return json(
-      {
-        ...currentInfo,
-        error: error instanceof Error ? error.message : 'Update failed due to an unknown error.',
-      },
-      { status: 500 },
+    return createApiError(
+      error instanceof Error ? error.message : 'Update failed due to an unknown error.',
+      500,
     );
   }
 };
