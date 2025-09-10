@@ -10,7 +10,7 @@
 
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { themeStore } from '$lib/themes/themeStore.js';
+  import { themeStore } from '$lib/themes/themeStore';
 
   const isDarkStore = themeStore.isDark;
   let isDark = $state(false);

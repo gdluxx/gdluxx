@@ -13,7 +13,7 @@
   import { Icon } from '$lib/components';
   import { SiteRules } from '$lib/components/site-rules';
   import { Info } from '$lib/components/ui';
-  import { toastStore } from '$lib/stores/toast.js';
+  import { toastStore } from '$lib/stores/toast';
   import type { PageData } from './$types';
   import type { SiteConfig } from '$lib/server/siteConfigManager';
 

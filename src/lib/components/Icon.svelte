@@ -9,7 +9,7 @@
   -->
 
 <script lang="ts">
-  import type { IconName } from '$lib/types/icons.js';
+  import type { IconName } from '$lib/types/icons';
   import spriteURL from '$lib/assets/sprite.svg?url';
 
   interface IconProps {

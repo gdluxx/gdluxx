@@ -9,7 +9,7 @@
   -->
 
 <script lang="ts">
-  import { toastStore } from '$lib/stores/toast.js';
+  import { toastStore } from '$lib/stores/toast';
   import { jobStore } from '$lib/stores/jobs.svelte';
   import { Toast } from '$lib/components/toast';
 

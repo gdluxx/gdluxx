@@ -26,6 +26,6 @@ export {
   validateTheme,
   validateThemeSystemHealth,
   getSemanticTokenValues,
-} from './themeUtils.js';
+} from './themeUtils';
 
-export * from './themeUtils.js';
+export * from './themeUtils';

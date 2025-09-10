@@ -13,8 +13,8 @@
   import { clientLogger as logger } from '$lib/client/logger';
   import { toastStore } from '$lib/stores/toast';
   import type { UserSettings } from '$lib/server/userSettingsManager';
-  import { AVAILABLE_THEMES, type ThemeName } from '$lib/themes/themeUtils.js';
-  import { themeStore } from '$lib/themes/themeStore.js';
+  import { AVAILABLE_THEMES, type ThemeName } from '$lib/themes/themeUtils';
+  import { themeStore } from '$lib/themes/themeStore';
   import { Icon } from '$lib/components';
 
   interface Props {

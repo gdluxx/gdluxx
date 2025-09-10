@@ -9,7 +9,7 @@
   -->
 
 <script lang="ts">
-  import { type Toast, toastStore } from '$lib/stores/toast.js';
+  import { type Toast, toastStore } from '$lib/stores/toast';
   import { fly } from 'svelte/transition';
 
   export let toast: Toast;

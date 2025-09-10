@@ -9,7 +9,7 @@
   -->
 
 <script lang="ts">
-  import { jobStore } from '$lib/stores/jobs.svelte.js';
+  import { jobStore } from '$lib/stores/jobs.svelte';
   import { Icon } from '$lib/components';
 
   const jobCount = $derived(jobStore.jobCount);

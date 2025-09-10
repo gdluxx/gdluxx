@@ -11,7 +11,7 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { userSettingsManager } from '$lib/server/userSettingsManager';
-import { AVAILABLE_THEMES, type ThemeName } from '$lib/themes/themeUtils.js';
+import { AVAILABLE_THEMES, type ThemeName } from '$lib/themes/themeUtils';
 import { z } from 'zod';
 
 // Validation schema for user settings
