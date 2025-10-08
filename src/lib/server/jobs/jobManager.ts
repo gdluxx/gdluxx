@@ -35,6 +35,7 @@ export interface Job {
   exitCode?: number;
   downloadCount: number;
   skipCount: number;
+  batchCount?: number;
   process?: IPty;
   subscribers: Set<ReadableStreamDefaultController<Uint8Array>>;
 }
@@ -87,6 +88,7 @@ class JobManager {
           exitCode: dbJob.exitCode,
           downloadCount: dbJob.downloadCount,
           skipCount: dbJob.skipCount,
+          batchCount: dbJob.batchCount,
           subscribers: new Set(),
         };
 
@@ -139,6 +141,37 @@ class JobManager {
 
     this.jobs.set(id, job);
     logger.info(`Job created: ${id} for URL: ${url}`);
+    return id;
+  }
+
+  async createBatchJob(urls: string[]): Promise<string> {
+    await this.initializationPromise;
+    const id = uuidv4();
+    const startTime = Date.now();
+    const job: Job = {
+      id,
+      url: 'directlink batch',
+      status: 'running',
+      output: [],
+      startTime,
+      downloadCount: 0,
+      skipCount: 0,
+      batchCount: urls.length,
+      subscribers: new Set(),
+    };
+
+    await dbCreateJob({
+      id,
+      url: 'directlink batch',
+      status: 'running',
+      startTime,
+      downloadCount: 0,
+      skipCount: 0,
+      batchCount: urls.length,
+    });
+
+    this.jobs.set(id, job);
+    logger.info(`Batch job created: ${id} for ${urls.length} URL(s)`);
     return id;
   }
 

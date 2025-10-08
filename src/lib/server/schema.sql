@@ -95,6 +95,7 @@ CREATE TABLE IF NOT EXISTS jobs (
     exitCode INTEGER,
     downloadCount INTEGER DEFAULT 0,
     skipCount INTEGER DEFAULT 0,
+    batchCount INTEGER DEFAULT NULL,
     useUserConfigPath INTEGER NOT NULL DEFAULT 0,
     createdAt INTEGER NOT NULL,
     updatedAt INTEGER NOT NULL
@@ -109,6 +110,15 @@ CREATE TABLE IF NOT EXISTS job_outputs (
     FOREIGN KEY (jobId) REFERENCES jobs(id) ON DELETE CASCADE
 );
 
+/* EXTENSION_PROFILE_BACKUPS */
+CREATE TABLE IF NOT EXISTS extension_profile_backups (
+    api_key_id TEXT PRIMARY KEY,
+    bundle_json TEXT NOT NULL,
+    profile_count INTEGER NOT NULL DEFAULT 0,
+    synced_by TEXT,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL
+);
 
 /* SITE_CONFIGS */
 CREATE TABLE IF NOT EXISTS site_configs (

@@ -12,7 +12,14 @@ import type { Handle } from '@sveltejs/kit';
 import { json, redirect } from '@sveltejs/kit';
 import { auth } from '$lib/server/auth/better-auth';
 
-const publicRoutes = ['/auth/login', '/auth/setup', '/api/auth', '/api/extension/external'];
+const publicRoutes = [
+  '/auth/login',
+  '/auth/setup',
+  '/api/auth',
+  '/api/extension/external',
+  '/api/extension/profiles',
+  '/api/extension/ping',
+];
 
 async function getUserCount(): Promise<number> {
   try {
@@ -87,24 +94,35 @@ export const handle: Handle = async ({ event, resolve }) => {
   }
 
   // CORS for browser extension endpoint
-  if (event.url.pathname === '/api/extension/external') {
+  if (
+    event.url.pathname === '/api/extension/external' ||
+    event.url.pathname === '/api/extension/profiles' ||
+    event.url.pathname === '/api/extension/ping'
+  ) {
     const origin = event.request.headers.get('origin');
 
-    const isExtensionOrigin =
-      origin && (origin.startsWith('moz-extension://') || origin.startsWith('chrome-extension://'));
+    // Determine appropriate Access-Control-Allow-Origin value
+    const allowOrigin = origin || '*';
 
     if (event.request.method === 'OPTIONS') {
       return json(null, {
         headers: {
-          'Access-Control-Allow-Origin': isExtensionOrigin ? origin : '*',
-          'Access-Control-Allow-Methods': 'POST, OPTIONS',
+          'Access-Control-Allow-Origin': allowOrigin,
+          // Two way comm between extension and gdluxx requires expanding methods allowed
+          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
           'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          'Access-Control-Allow-Private-Network': 'true',
+          ...(origin ? { Vary: 'Origin' } : {}),
         },
       });
     }
 
     const response = await resolve(event);
-    response.headers.set('Access-Control-Allow-Origin', isExtensionOrigin ? origin : '*');
+    response.headers.set('Access-Control-Allow-Origin', allowOrigin);
+    response.headers.set('Access-Control-Allow-Private-Network', 'true');
+    if (origin) {
+      response.headers.set('Vary', 'Origin');
+    }
 
     return response;
   }

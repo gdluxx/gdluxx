@@ -77,3 +77,62 @@ export async function executeGalleryDlCommand(
     };
   }
 }
+
+// batch jobs
+// added to handle multiple directlinks sent from the extension
+export async function executeGalleryDlBatchCommand(
+  urls: string[],
+  cliArgs: string[],
+): Promise<CommandExecutionResult> {
+  try {
+    const jobId = await jobManager.createBatchJob(urls);
+    const processArgs = [...cliArgs, '--config', PATHS.CONFIG_FILE, ...urls];
+
+    logger.info(`Starting gallery-dl batch process for job ${jobId} with ${urls.length} URL(s)`);
+
+    const ptyProcess: IPty = spawn(PATHS.BIN_FILE, processArgs, {
+      name: TERMINAL.NAME,
+      cols: TERMINAL.COLS,
+      rows: TERMINAL.ROWS,
+      cwd: process.cwd(),
+      env: { ...process.env, NO_COLOR: '0', TERM: TERMINAL.NAME },
+    });
+
+    await jobManager.setJobProcess(jobId, ptyProcess);
+    await jobManager.addOutput(
+      jobId,
+      'info',
+      `Batch process started with PID: ${ptyProcess.pid} for ${urls.length} URL(s)`,
+    );
+
+    ptyProcess.onData(async (data: string): Promise<void> => {
+      await jobManager.addOutput(jobId, 'stdout', data);
+    });
+
+    ptyProcess.onExit(
+      async ({
+        exitCode,
+        signal,
+      }: {
+        exitCode: number;
+        signal?: number | undefined;
+      }): Promise<void> => {
+        logger.info(
+          `Batch process for job ${jobId} exited with code ${exitCode}, signal ${signal}`,
+        );
+        await jobManager.completeJob(jobId, exitCode || 0);
+      },
+    );
+
+    return {
+      success: true,
+      jobId,
+    };
+  } catch (error) {
+    logger.error('Failed to execute gallery-dl batch command:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred',
+    };
+  }
+}

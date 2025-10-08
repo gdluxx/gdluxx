@@ -30,6 +30,7 @@ export interface DatabaseJob {
   exitCode?: number;
   downloadCount: number;
   skipCount: number;
+  batchCount?: number;
   outputs: JobOutput[];
 }
 
@@ -45,6 +46,7 @@ export async function readAllJobs(): Promise<DatabaseJob[]> {
       exitCode?: number;
       downloadCount: number;
       skipCount: number;
+      batchCount?: number;
     }>;
 
     const outputsStmt = db.prepare(`
@@ -94,6 +96,7 @@ export async function readAllJobs(): Promise<DatabaseJob[]> {
         exitCode: job.exitCode,
         downloadCount: job.downloadCount || 0,
         skipCount: job.skipCount || 0,
+        batchCount: job.batchCount || undefined,
         outputs: outputsByJobId.get(job.id) || [],
       };
     });
@@ -108,8 +111,8 @@ export async function createJob(job: Omit<DatabaseJob, 'outputs'>): Promise<void
     const now = getCurrentTimestamp();
 
     const stmt = db.prepare(`
-      INSERT INTO jobs (id, url, status, startTime, endTime, exitCode, downloadCount, skipCount, createdAt, updatedAt)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO jobs (id, url, status, startTime, endTime, exitCode, downloadCount, skipCount, batchCount, createdAt, updatedAt)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     stmt.run(
@@ -121,6 +124,7 @@ export async function createJob(job: Omit<DatabaseJob, 'outputs'>): Promise<void
       job.exitCode || null,
       job.downloadCount || 0,
       job.skipCount || 0,
+      job.batchCount || null,
       now,
       now,
     );

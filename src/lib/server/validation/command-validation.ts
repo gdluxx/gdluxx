@@ -40,6 +40,13 @@ export const externalApiSchema: ValidationSchema = {
         (u: unknown) => typeof u === 'string' && URL_PATTERN.test(u.trim()),
       ),
   },
+  // optional custom directory
+  customDirectory: {
+    required: false,
+    minLength: 1,
+    maxLength: 255,
+    pattern: /^[a-zA-Z0-9_\-. ]+$/,
+  },
 };
 
 export const jobIdSchema: ValidationSchema = {
