@@ -28,7 +28,8 @@ export default [
       'no-unused-vars': 'off',
       'no-undef': 'off',
       'no-console': 'off',
-      'prefer-const': 'error',
+      'prefer-const': 'off',
+      'svelte/prefer-const': 'error',
       '@typescript-eslint/no-unused-vars': [
         'error',
         {
