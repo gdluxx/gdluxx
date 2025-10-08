@@ -1,5 +1,18 @@
 # Changelog
 
+# [0.7.0](https://github.com/gdluxx/gdluxx/compare/v0.6.0...v0.7.0) (2025-10-08)
+
+
+### Bug Fixes
+
+* remove .js extensions from imports ([6c82589](https://github.com/gdluxx/gdluxx/commit/6c8258912896deafeecf54badb24635a5cb7e87b))
+
+
+### Features
+
+* accommodate new features of the browser extension ([331ad39](https://github.com/gdluxx/gdluxx/commit/331ad3979362c959e2462c0c6d84472e6321820e))
+* **extension:** add overlay UI ([4bdf244](https://github.com/gdluxx/gdluxx/commit/4bdf2447559a0a1c13d272f462b7583b9ab4f4b0))
+
 # [0.6.0](https://github.com/gdluxx/gdluxx/compare/v0.5.0...v0.6.0) (2025-09-09)
 
 
