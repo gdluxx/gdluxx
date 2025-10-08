@@ -1,0 +1,198 @@
+/*
+ * Copyright (C) 2025 jsouthgb
+ *
+ * This file is part of gdluxx.
+ *
+ * gdluxx is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 (GPL-2.0),
+ * as published by the Free Software Foundation.
+ */
+
+@import 'tailwindcss';
+@plugin "daisyui" {
+  themes:
+    light --default,
+    dark --prefersdark,
+    cupcake,
+    emerald,
+    corporate,
+    retro,
+    cyberpunk,
+    valentine,
+    halloween,
+    garden,
+    forest,
+    aqua,
+    pastel,
+    fantasy,
+    wireframe,
+    black,
+    luxury,
+    dracula,
+    business,
+    night,
+    coffee,
+    winter,
+    dim,
+    nord,
+    sunset,
+    cmyk,
+    autumn,
+    acid,
+    lemonade;
+  logs: false;
+}
+
+/*
+ * Due to DaisyUI using rem-based tokens, inheritance from the host page was
+ * causing issues with font and component sizing. The below overrides are to
+ * compensate.
+ *
+ * There may be need to address margin/padding/border-width/box-sizing in the
+ * future, but 'let sleeping dogs lie'.
+*/
+
+@theme {
+  --text-xs: 12px;
+  --text-xs--line-height: 18px;
+
+  --text-sm: 14px;
+  --text-sm--line-height: 20px;
+
+  --text-base: 16px;
+  --text-base--line-height: 24px;
+
+  --text-lg: 18px;
+  --text-lg--line-height: 26px;
+
+  --text-xl: 20px;
+  --text-xl--line-height: 28px;
+
+  --size-field: 4px;
+  --size-selector: 4px;
+  --spacing: 4px;
+}
+
+@layer base {
+  :host,
+  :where([data-theme]) {
+    --size-field: 4px !important;
+    --size-selector: 4px !important;
+    --spacing: 4px !important;
+    font-size: 16px !important;
+  }
+
+  /* Force all elements to use explicit sizes, not rem-based inheritance */
+  * {
+    font-size: inherit !important;
+  }
+
+  /* Override DaisyUI rem-based text utilities */
+  .text-xs {
+    font-size: 12px !important;
+  }
+  .text-sm {
+    font-size: 14px !important;
+  }
+  .text-base {
+    font-size: 16px !important;
+  }
+  .text-lg {
+    font-size: 18px !important;
+  }
+  .text-xl {
+    font-size: 20px !important;
+  }
+
+  /* Override select and form elements specifically */
+  select,
+  .select {
+    font-size: 16px !important;
+  }
+
+  p,
+  span,
+  div,
+  label {
+    font-size: inherit !important;
+  }
+}
+
+@layer components {
+  .btn {
+    font-size: var(--text-sm) !important;
+    padding-inline: 16px !important;
+    --size: 40px !important;
+    min-height: 40px !important;
+    height: 40px !important;
+  }
+
+  .btn-lg {
+    --fontsize: var(--text-lg) !important;
+    --btn-p: 20px !important;
+    font-size: var(--text-lg) !important;
+    --size: 48px !important;
+    min-height: 48px !important;
+    height: 48px !important;
+  }
+
+  .btn-md {
+    --fontsize: var(--text-sm) !important;
+    --btn-p: 16px !important;
+    font-size: var(--text-sm) !important;
+    --size: 40px !important;
+    min-height: 40px !important;
+    height: 40px !important;
+  }
+
+  .btn-sm {
+    --fontsize: 13px !important;
+    --btn-p: 12px !important;
+    font-size: 13px !important;
+    --size: 32px !important;
+    min-height: 32px !important;
+    height: 32px !important;
+  }
+
+  .btn-xs {
+    --fontsize: 12px !important;
+    --btn-p: 10px !important;
+    font-size: 12px !important;
+    --size: 28px !important;
+    min-height: 28px !important;
+    height: 28px !important;
+  }
+
+  .input,
+  .select,
+  .textarea {
+    font-size: var(--text-base) !important;
+    padding-inline: 12px !important;
+    --size: 40px !important;
+    min-height: 40px !important;
+  }
+
+  .input-sm,
+  .select-sm,
+  .textarea-sm {
+    font-size: var(--text-sm) !important;
+    padding-inline: 10px !important;
+    --size: 32px !important;
+    min-height: 32px !important;
+    height: 32px !important;
+  }
+
+  .input-lg,
+  .select-lg,
+  .textarea-lg {
+    font-size: var(--text-lg) !important;
+    padding-inline: 14px !important;
+    --size: 48px !important;
+    min-height: 48px !important;
+    height: 48px !important;
+  }
+}
+
+@utility border-b-primary {
+  border-bottom: 1px solid var(--color-primary);
+}

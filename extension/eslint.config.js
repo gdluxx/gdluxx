@@ -1,5 +1,6 @@
 import eslint from '@eslint/js';
 import tseslint from 'typescript-eslint';
+import svelte from 'eslint-plugin-svelte';
 import prettierConfig from 'eslint-config-prettier';
 
 export default [
@@ -9,6 +10,7 @@ export default [
 
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
+  ...svelte.configs['flat/recommended'],
   prettierConfig,
 
   {
@@ -25,8 +27,8 @@ export default [
     rules: {
       'no-unused-vars': 'off',
       'no-undef': 'off',
+      'no-console': 'off',
       'prefer-const': 'error',
-      'no-console': 'warn',
       '@typescript-eslint/no-unused-vars': [
         'error',
         {
@@ -35,6 +37,28 @@ export default [
         },
       ],
       '@typescript-eslint/no-explicit-any': 'warn',
+      'svelte/no-navigation-without-resolve': [
+        'error',
+        {
+          ignoreLinks: true,
+        },
+      ],
+    },
+  },
+
+  {
+    files: ['**/*.svelte'],
+    languageOptions: {
+      parserOptions: {
+        parser: tseslint.parser,
+      },
+    },
+  },
+
+  {
+    files: ['**/*.ts', '**/*.tsx'],
+    languageOptions: {
+      parser: tseslint.parser,
     },
   },
 ];

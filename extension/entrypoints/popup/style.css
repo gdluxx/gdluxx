@@ -8,4 +8,38 @@
  * as published by the Free Software Foundation.
  */
 
-@import '../../assets/theme.css';
+@import 'tailwindcss';
+@plugin "daisyui" {
+  themes:
+    light,
+    dark --prefersdark,
+    cupcake,
+    emerald,
+    corporate,
+    retro,
+    cyberpunk,
+    valentine,
+    halloween,
+    garden,
+    forest,
+    aqua,
+    lofi,
+    pastel,
+    fantasy,
+    wireframe,
+    black,
+    luxury,
+    dracula --default,
+    cmyk,
+    autumn,
+    business,
+    acid,
+    lemonade,
+    night,
+    coffee,
+    winter,
+    dim,
+    nord,
+    sunset;
+  logs: false;
+}

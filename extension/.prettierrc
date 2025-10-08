@@ -1,12 +1,31 @@
 {
+  "printWidth": 100,
+  "useTabs": false,
+  "tabWidth": 2,
   "semi": true,
   "singleQuote": true,
-  "tabWidth": 2,
-  "trailingComma": "es5",
-  "printWidth": 80,
-  "arrowParens": "avoid",
-  "plugins": ["prettier-plugin-tailwindcss"],
+  "quoteProps": "as-needed",
+  "trailingComma": "all",
+  "bracketSpacing": true,
+  "bracketSameLine": false,
+  "singleAttributePerLine": true,
+  "htmlWhitespaceSensitivity": "css",
+  "arrowParens": "always",
+  "endOfLine": "lf",
+  "embeddedLanguageFormatting": "auto",
+  "plugins": ["prettier-plugin-svelte", "prettier-plugin-tailwindcss"],
+  "tailwindConfig": "./tailwind.config.ts",
   "overrides": [
+    {
+      "files": "*.svelte",
+      "options": {
+        "parser": "svelte",
+        "bracketSameLine": false,
+        "svelteStrictMode": false,
+        "svelteIndentScriptAndStyle": true,
+        "svelteAllowShorthand": true
+      }
+    },
     {
       "files": "*.md",
       "options": {

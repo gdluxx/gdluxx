@@ -8,6 +8,17 @@
  * as published by the Free Software Foundation.
  */
 
+import { ensureOrigins, syncOverlayRegistrationFromPermissions } from '#src/background/permissions';
+import type { ProfilesBundle } from '#src/content/lib/utils/storageProfiles';
+import {
+  proxyPing,
+  proxyCommand,
+  proxyProfilesGet,
+  proxyProfilesPut,
+  proxyProfilesDelete,
+  type ProxyApiResult,
+} from '#src/background/apiProxy';
+
 interface SendUrlMessage {
   action: 'sendUrl';
   apiUrl: string;
@@ -16,21 +27,97 @@ interface SendUrlMessage {
   tabTitle?: string;
 }
 
+interface SyncOverlayRegistrationMessage {
+  action: 'syncOverlayRegistration';
+}
+
+interface PingMessage {
+  action: 'ping';
+  serverUrl: string;
+  apiKey: string;
+}
+
+interface SendCommandMessage {
+  action: 'sendCommand';
+  serverUrl: string;
+  apiKey: string;
+  urls: string[];
+  customDirectory?: string;
+}
+
+interface GetProfilesMessage {
+  action: 'getProfiles';
+  serverUrl: string;
+  apiKey: string;
+}
+
+interface SaveProfilesMessage {
+  action: 'saveProfiles';
+  serverUrl: string;
+  apiKey: string;
+  bundle: ProfilesBundle;
+  syncedBy?: string;
+}
+
+interface DeleteProfilesMessage {
+  action: 'deleteProfiles';
+  serverUrl: string;
+  apiKey: string;
+}
+
 interface ApiResponse {
   success: boolean;
   message: string;
   data?: Record<string, unknown>;
 }
 
-type MessageType = SendUrlMessage | Record<string, unknown>;
+type ProxyMessage =
+  | PingMessage
+  | SendCommandMessage
+  | GetProfilesMessage
+  | SaveProfilesMessage
+  | DeleteProfilesMessage;
 
-type SendResponseType = (response?: ApiResponse) => void;
+type MessageType = SendUrlMessage | SyncOverlayRegistrationMessage | ProxyMessage;
+
+type BackgroundResponse = ApiResponse | ProxyApiResult<unknown>;
 
 export default defineBackground((): void => {
-  const urlBuilder = {
-    secureScheme: 'https://',
-    endpoint: 'api/extension/external',
-  };
+  function formatOriginPattern(url: string): string | null {
+    try {
+      const { origin } = new URL(url);
+      return `${origin}/*`;
+    } catch {
+      return null;
+    }
+  }
+
+  async function toggleOverlayInTab(tabId: number): Promise<void> {
+    try {
+      await browser.tabs.sendMessage(tabId, { action: 'toggleOverlay' });
+    } catch {
+      await browser.scripting.executeScript({
+        target: { tabId },
+        files: ['content-scripts/overlay.js'],
+      });
+      await browser.tabs.sendMessage(tabId, { action: 'toggleOverlay' });
+    }
+  }
+
+  browser.runtime.onInstalled.addListener(async () => {
+    await syncOverlayRegistrationFromPermissions();
+  });
+
+  browser.permissions.onAdded.addListener(async (perms) => {
+    if (!perms.origins?.length) return;
+    await syncOverlayRegistrationFromPermissions();
+  });
+
+  browser.contextMenus.create({
+    id: 'open-overlay-panel',
+    title: 'Open gdluxx overlay',
+    contexts: ['page'],
+  });
 
   browser.contextMenus.create({
     id: 'send-image-to-gdluxx',
@@ -39,76 +126,121 @@ export default defineBackground((): void => {
   });
 
   function isSendUrlMessage(message: MessageType): message is SendUrlMessage {
-    return (
-      message && typeof message === 'object' && message.action === 'sendUrl'
-    );
+    return message && typeof message === 'object' && message.action === 'sendUrl';
   }
 
   browser.runtime.onMessage.addListener(
     (
       message: MessageType,
       _sender,
-      sendResponse: SendResponseType
+      sendResponse: (response?: BackgroundResponse) => void,
     ): true | undefined => {
       if (isSendUrlMessage(message)) {
         (async (): Promise<void> => {
-          try {
-            let baseApiUrl: string = message.apiUrl;
-            if (
-              !baseApiUrl.startsWith('https://') &&
-              !baseApiUrl.startsWith('http://')
-            ) {
-              baseApiUrl = urlBuilder.secureScheme + baseApiUrl;
-            }
-            const fullApiUrl: string = new URL(
-              urlBuilder.endpoint,
-              baseApiUrl
-            ).toString();
-
-            const requestBody = {
-              urlToProcess: message.tabUrl,
-            };
-
-            const fetchResponse: Response = await fetch(fullApiUrl, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${message.apiKey}`,
-              },
-              body: JSON.stringify(requestBody),
+          const result = await proxyCommand(message.apiUrl, message.apiKey, [message.tabUrl]);
+          if (result.success) {
+            sendResponse({
+              success: true,
+              message: result.message ?? 'URL sent successfully!',
+              data: (result.data ?? undefined) as Record<string, unknown> | undefined,
             });
-
-            if (fetchResponse.ok) {
-              const result: Record<string, unknown> =
-                await fetchResponse.json();
-              sendResponse({
-                success: true,
-                message: 'URL sent successfully!',
-                data: result,
-              });
-            } else {
-              const errorText: string = await fetchResponse.text();
-              sendResponse({
-                success: false,
-                message: `Error: ${fetchResponse.status} ${fetchResponse.statusText} - ${errorText}`,
-              });
-            }
-          } catch (error) {
-            const errorMessage: string =
-              error instanceof Error ? error.message : 'Unknown error occurred';
+          } else {
             sendResponse({
               success: false,
-              message: `Network error: ${errorMessage}`,
+              message: result.error ?? 'Failed to send URL',
             });
           }
         })();
 
         return true;
       }
-    }
+
+      if (message.action === 'syncOverlayRegistration') {
+        (async () => {
+          await syncOverlayRegistrationFromPermissions();
+          sendResponse({ success: true, message: 'Overlay registration synced' });
+        })();
+
+        return true;
+      }
+
+      switch (message.action) {
+        case 'ping':
+          (async () => {
+            sendResponse(await proxyPing(message.serverUrl, message.apiKey));
+          })();
+          return true;
+        case 'sendCommand':
+          (async () => {
+            const urls = Array.isArray(message.urls) ? message.urls : [];
+            sendResponse(
+              await proxyCommand(message.serverUrl, message.apiKey, urls, message.customDirectory),
+            );
+          })();
+          return true;
+        case 'getProfiles':
+          (async () => {
+            sendResponse(await proxyProfilesGet(message.serverUrl, message.apiKey));
+          })();
+          return true;
+        case 'saveProfiles':
+          (async () => {
+            sendResponse(
+              await proxyProfilesPut(
+                message.serverUrl,
+                message.apiKey,
+                message.bundle,
+                message.syncedBy,
+              ),
+            );
+          })();
+          return true;
+        case 'deleteProfiles':
+          (async () => {
+            sendResponse(await proxyProfilesDelete(message.serverUrl, message.apiKey));
+          })();
+          return true;
+        default:
+          break;
+      }
+
+      return undefined;
+    },
   );
 
-  browser.contextMenus.onClicked.addListener(async (info, _tab) => {
+  browser.contextMenus.onClicked.addListener(async (info, tab) => {
+    if (info.menuItemId === 'open-overlay-panel') {
+      if (!tab?.id || !tab.url) {
+        return;
+      }
+
+      const originPattern = formatOriginPattern(tab.url);
+      if (!originPattern) {
+        browser.notifications.create({
+          type: 'basic',
+          iconUrl: 'icon/48.png',
+          title: 'gdluxx Extension',
+          message: 'Unable to determine origin for this page.',
+        });
+        return;
+      }
+
+      const granted = await ensureOrigins([originPattern]);
+      if (!granted) {
+        browser.notifications.create({
+          type: 'basic',
+          iconUrl: 'icon/48.png',
+          title: 'gdluxx Extension',
+          message: 'Permission denied. Overlay remains disabled for this site.',
+        });
+        return;
+      }
+
+      await syncOverlayRegistrationFromPermissions();
+      await toggleOverlayInTab(tab.id);
+      return;
+    }
+
     if (info.menuItemId === 'send-image-to-gdluxx' && info.srcUrl) {
       try {
         const result = await browser.storage.local.get(['apiUrl', 'apiKey']);
@@ -118,51 +250,26 @@ export default defineBackground((): void => {
             type: 'basic',
             iconUrl: 'icon/48.png',
             title: 'gdluxx Extension',
-            message:
-              'Please configure API URL and API Key in extension settings first.',
+            message: 'Please configure API URL and API Key in extension settings first.',
           });
           return;
         }
 
-        let baseApiUrl: string = result.apiUrl;
-        if (
-          !baseApiUrl.startsWith('https://') &&
-          !baseApiUrl.startsWith('http://')
-        ) {
-          baseApiUrl = urlBuilder.secureScheme + baseApiUrl;
-        }
-        const fullApiUrl: string = new URL(
-          urlBuilder.endpoint,
-          baseApiUrl
-        ).toString();
+        const sendResult = await proxyCommand(result.apiUrl, result.apiKey, [info.srcUrl]);
 
-        const requestBody = {
-          urlToProcess: info.srcUrl,
-        };
-
-        const fetchResponse: Response = await fetch(fullApiUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${result.apiKey}`,
-          },
-          body: JSON.stringify(requestBody),
-        });
-
-        if (fetchResponse.ok) {
+        if (sendResult.success) {
           browser.notifications.create({
             type: 'basic',
             iconUrl: 'icon/48.png',
             title: 'gdluxx Extension',
-            message: 'Image URL sent successfully to gdluxx!',
+            message: sendResult.message ?? 'Image URL sent successfully to gdluxx!',
           });
         } else {
-          const errorText: string = await fetchResponse.text();
           browser.notifications.create({
             type: 'basic',
             iconUrl: 'icon/48.png',
             title: 'gdluxx Extension',
-            message: `Error: ${fetchResponse.status} ${fetchResponse.statusText}${errorText ? ' - ' + errorText : ''}`,
+            message: sendResult.error ?? 'Failed to send image URL to gdluxx.',
           });
         }
       } catch (error) {
