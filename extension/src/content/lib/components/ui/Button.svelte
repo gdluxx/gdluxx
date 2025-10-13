@@ -12,7 +12,7 @@
   import type { Snippet } from 'svelte';
   import type { HTMLButtonAttributes } from 'svelte/elements';
 
-  type ButtonVariant =
+  type BaseButtonVariant =
     | 'primary'
     | 'secondary'
     | 'accent'
@@ -23,6 +23,11 @@
     | 'success'
     | 'warning'
     | 'error';
+
+  type OutlineButtonVariant = `${BaseButtonVariant}-outline`;
+
+  type ButtonVariant = BaseButtonVariant | OutlineButtonVariant;
+
   type ButtonSize = 'lg' | 'md' | 'sm' | 'xs';
 
   interface ButtonProps extends Omit<HTMLButtonAttributes, 'type' | 'class'> {
@@ -58,15 +63,24 @@
     ...restProps
   }: ButtonProps = $props();
 
+  const resolvedVariant = $derived(() => {
+    if (variant.endsWith('-outline')) {
+      return variant.replace('-outline', '') as BaseButtonVariant;
+    }
+    return variant as BaseButtonVariant;
+  });
+
+  const isOutline = $derived(outline || variant.endsWith('-outline'));
+
   const classes = $derived(
     [
       'btn',
-      `btn-${variant}`,
+      `btn-${resolvedVariant()}`,
       `btn-${size}`,
       loading && 'loading',
       wide && 'btn-wide',
       block && 'btn-block',
-      outline && 'btn-outline',
+      isOutline && 'btn-outline',
       circle && 'btn-circle',
       square && 'btn-square',
       glass && 'glass',
