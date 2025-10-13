@@ -1232,6 +1232,7 @@
         {active}
         imageCount={filteredImages.length}
         linkCount={filteredLinks.length}
+        selectionCount={selected.size}
         onchange={(tab) => (active = tab)}
       />
     {/if}

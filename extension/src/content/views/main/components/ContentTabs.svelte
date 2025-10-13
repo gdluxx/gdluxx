@@ -11,15 +11,17 @@
 <script lang="ts">
   import Icon from '#components/ui/Icon.svelte';
   import type { AppTab } from '#src/content/types';
+  import Badge from '#components/ui/Badge.svelte';
 
   interface ContentTabsProps {
     active: AppTab;
     imageCount: number;
     linkCount: number;
+    selectionCount: number;
     onchange?: (tab: AppTab) => void;
   }
 
-  const { active, imageCount, linkCount, onchange }: ContentTabsProps = $props();
+  const { active, imageCount, linkCount, selectionCount, onchange }: ContentTabsProps = $props();
 
   function select(tab: AppTab): void {
     if (tab === active) return;
@@ -29,27 +31,37 @@
 
 <div class="border-base-300 border-b">
   <div class="px-6">
-    <div class="flex">
-      <button
-        class="tab tab-active text-base-content/70 hover:text-base-content flex cursor-pointer items-center gap-2 border-b-2 border-transparent px-4 py-3 text-sm transition-all duration-200"
-        class:border-b-primary={active === 'images'}
-        class:text-primary={active === 'images'}
-        class:font-semibold={active === 'images'}
-        onclick={() => select('images')}
-      >
-        <Icon iconName="image" />
-        Images ({imageCount})
-      </button>
-      <button
-        class="text-base-content/70 hover:text-base-content flex cursor-pointer items-center gap-2 border-b-2 border-transparent px-4 py-3 text-sm transition-all duration-200"
-        class:border-b-primary={active === 'links'}
-        class:text-primary={active === 'links'}
-        class:font-semibold={active === 'links'}
-        onclick={() => select('links')}
-      >
-        <Icon iconName="link" />
-        URLs ({linkCount})
-      </button>
+    <div class="flex flex-row items-center justify-between">
+      <div class="flex">
+        <button
+          class="tab tab-active text-base-content/70 hover:text-base-content flex cursor-pointer items-center gap-2 border-b-2 border-transparent px-4 py-3 text-sm transition-all duration-200"
+          class:border-b-primary={active === 'images'}
+          class:text-primary={active === 'images'}
+          class:font-semibold={active === 'images'}
+          onclick={() => select('images')}
+        >
+          <Icon iconName="image" />
+          Images ({imageCount})
+        </button>
+        <button
+          class="text-base-content/70 hover:text-base-content flex cursor-pointer items-center gap-2 border-b-2 border-transparent px-4 py-3 text-sm transition-all duration-200"
+          class:border-b-primary={active === 'links'}
+          class:text-primary={active === 'links'}
+          class:font-semibold={active === 'links'}
+          onclick={() => select('links')}
+        >
+          <Icon iconName="link" />
+          URLs ({linkCount})
+        </button>
+      </div>
+      <div class="flex cursor-default">
+        <Badge
+          label="{selectionCount} selected"
+          dismissible={false}
+          variant={selectionCount > 0 ? 'accent' : 'outline-accent'}
+          class="mr-4"
+        />
+      </div>
     </div>
   </div>
 </div>

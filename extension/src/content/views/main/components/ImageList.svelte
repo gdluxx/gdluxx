@@ -32,19 +32,35 @@
     onToggle: (url: string) => void;
     showImagePreviews?: boolean;
   } = $props();
+
+  let imageErrors = $state<Set<string>>(new Set());
+
+  function handleImageError(url: string) {
+    imageErrors.add(url);
+    imageErrors = imageErrors; // Trigger reactivity
+  }
 </script>
 
 <div class="mt-2">
   {#if images.length > 0}
-    <div class="rounded-box border-accent/50 bg-base-200 overflow-hidden border">
+    <div class="rounded-box border-secondary bg-base-200 overflow-hidden border">
       <table
         class="table"
         class:table-xs={compact}
       >
+        <thead>
+          <tr class="sr-only">
+            <th>Select</th>
+            <th>URL</th>
+            <th>Duplicates</th>
+          </tr>
+        </thead>
         <tbody>
           {#each images as url (url)}
             <tr
-              class="hover:bg-base-300 cursor-pointer"
+              class="hover:bg-base-300 cursor-pointer border-r-4"
+              class:border-r-transparent={!selected.has(url)}
+              class:border-r-accent={selected.has(url)}
               onclick={() => onToggle(url)}
               onmouseenter={(event) => showHoverPreview(url, event)}
               onmousemove={updateHoverPosition}
@@ -82,7 +98,8 @@
                     loading="lazy"
                     decoding="async"
                     referrerpolicy="no-referrer"
-                    onerror={(event) => ((event.target as HTMLImageElement).style.display = 'none')}
+                    style:display={imageErrors.has(url) ? 'none' : 'block'}
+                    onerror={() => handleImageError(url)}
                   />
                 </td>
               {/if}
@@ -98,7 +115,7 @@
     </div>
   {:else}
     <Info
-      variant="error"
+      variant="info"
       class="mt-4"
     >
       <span class="text-lg"> No images found </span>

@@ -28,15 +28,24 @@
 
 <div class="mt-2">
   {#if links.length > 0}
-    <div class="rounded-box border-accent/50 bg-base-200 overflow-hidden border">
+    <div class="rounded-box border-secondary bg-base-200 overflow-hidden border">
       <table
         class="table"
         class:table-xs={compact}
       >
+        <thead>
+          <tr class="sr-only">
+            <th>Select</th>
+            <th>URL</th>
+            <th>Duplicates</th>
+          </tr>
+        </thead>
         <tbody>
           {#each links as url (url)}
             <tr
-              class="hover:bg-base-300 cursor-pointer"
+              class="hover:bg-base-300 cursor-pointer border-r-4"
+              class:border-r-transparent={!selected.has(url)}
+              class:border-r-accent={selected.has(url)}
               onclick={() => onToggle(url)}
             >
               <th
@@ -55,7 +64,7 @@
                   href={url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  class="link link-hover link-primary"
+                  class="link link-hover link-primary break-all"
                   class:text-sm={compact}
                   onclick={(e) => e.stopPropagation()}
                 >
@@ -74,7 +83,7 @@
     </div>
   {:else}
     <Info
-      variant="error"
+      variant="info"
       class="mt-4"
     >
       <span class="text-lg"> No URLs found </span>
