@@ -53,13 +53,10 @@
 
   $effect(() => {
     if (show && modalElement) {
-      // Store the currently focused element
       previousActiveElement = document.activeElement;
 
-      // Focus the modal
       modalElement.focus();
 
-      // Return cleanup function
       return () => {
         // Restore focus when modal closes
         if (previousActiveElement instanceof HTMLElement) {
@@ -76,7 +73,6 @@
   }
 
   function handleModalKeydown(event: KeyboardEvent) {
-    // Handle Escape key
     if (event.key === 'Escape' && closeOnEscape && onClose) {
       event.preventDefault();
       onClose();
@@ -117,7 +113,7 @@
   }
 </script>
 
-<!-- DaisyUI Modal -->
+<!-- Modal -->
 {#if show}
   <div
     bind:this={modalElement}
@@ -154,7 +150,7 @@
               aria-label="Close modal"
             >
               <Icon
-                iconName="close "
+                iconName="close"
                 class="h-4 w-4"
               />
             </button>
@@ -162,14 +158,14 @@
         </div>
       {/if}
 
-      <!-- Modal Content -->
+      <!-- content -->
       <div class={title || onClose ? 'mt-2' : ''}>
         {#if children}
           {@render children()}
         {/if}
       </div>
 
-      <!-- Modal Actions -->
+      <!-- actions -->
       {#if actions}
         <div class="modal-action">
           {@render actions()}
