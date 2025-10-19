@@ -9,7 +9,7 @@
   -->
 
 <script lang="ts">
-  import type { Settings } from '#src/content/lib/settings';
+  import type { Settings } from '#utils/settings';
 
   const { settings }: { settings: Settings } = $props();
   let isEditing = $state(false);

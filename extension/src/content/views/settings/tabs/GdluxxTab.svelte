@@ -10,7 +10,7 @@
 
 <script lang="ts">
   import { Button } from '#components/ui';
-  import type { Settings } from '#src/content/lib/settings';
+  import type { Settings } from '#utils/settings';
 
   interface GdluxxTabProps {
     settings: Settings;
