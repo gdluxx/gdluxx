@@ -28,7 +28,7 @@
     | 'outline-warning'
     | 'outline-danger'
     | 'outline-info';
-  type BadgeSize = 'sm' | 'default' | 'lg';
+  type BadgeSize = 'xs' | 'sm' | 'md' | 'lg';
 
   interface BadgeProps extends Omit<HTMLAttributes<HTMLDivElement>, 'class'> {
     label: string;
@@ -48,9 +48,9 @@
     label,
     value,
     editable = false,
-    dismissible = true,
+    dismissible = false,
     variant = 'primary',
-    size = 'default',
+    size = 'md',
     icon,
     class: className = '',
     onEdit,
@@ -115,9 +115,10 @@
   ];
 
   const sizeClasses: Record<BadgeSize, string[]> = {
+    xs: ['badge-xs', 'gap-1', 'text-xs'],
     sm: ['badge-sm', 'gap-1.5', 'text-xs'],
-    default: [],
-    lg: ['badge-lg', 'gap-2', 'text-sm'],
+    md: ['badge-md', 'gap-2', 'text-sm'],
+    lg: ['badge-lg', 'gap-2.5', 'text-base'],
   };
 
   const variantClasses: Record<BadgeVariant, string[]> = {
@@ -151,8 +152,9 @@
   );
 
   const inputSizeClasses: Record<BadgeSize, string> = {
+    xs: 'input-xs',
     sm: 'input-xs',
-    default: 'input-sm',
+    md: 'input-sm',
     lg: 'input-md',
   };
 
@@ -170,13 +172,14 @@
       'min-h-0',
       'bg-transparent',
       'px-1',
-      size === 'sm' ? 'w-16' : size === 'lg' ? 'w-28' : 'w-20',
+      size === 'xs' ? 'w-12' : size === 'sm' ? 'w-16' : size === 'lg' ? 'w-28' : 'w-20',
     ].join(' '),
   );
 
   const dismissButtonSizeClasses: Record<BadgeSize, string> = {
-    sm: 'btn-xs h-6 w-6',
-    default: 'btn-xs h-6 w-6',
+    xs: 'btn-xs h-4 w-4',
+    sm: 'btn-xs h-5 w-5',
+    md: 'btn-xs h-6 w-6',
     lg: 'btn-sm h-7 w-7',
   };
 
@@ -249,7 +252,7 @@
       >
         <Icon
           iconName="close"
-          size={size === 'sm' ? 10 : size === 'lg' ? 14 : 12}
+          size={size === 'xs' ? 8 : size === 'sm' ? 10 : size === 'lg' ? 14 : 12}
         />
       </button>
     {/if}
