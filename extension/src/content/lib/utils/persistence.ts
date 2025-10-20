@@ -16,6 +16,7 @@ import type { DisplayMode } from '#src/content/types';
 const THEME_KEY = 'gdluxx_us_theme';
 const DISPLAY_MODE_KEY = 'gdluxx_us_display_mode';
 const IGNORE_SESSION_KEY = 'gdluxx_us_ignore_profiles';
+const IGNORE_SUB_KEY = 'gdluxx_ignored_sub_profiles';
 
 export async function readThemePreference(defaultTheme: string): Promise<string> {
   try {
@@ -59,5 +60,27 @@ export function persistIgnoredProfileIds(ids: Set<string>): void {
     window.sessionStorage.setItem(IGNORE_SESSION_KEY, JSON.stringify(Array.from(ids)));
   } catch {
     // Silently fail to avoid breaking overlay flow
+  }
+}
+
+export function readIgnoredSubProfileIds(): ReadonlySet<string> {
+  if (typeof window === 'undefined') return new Set();
+  try {
+    const raw = window.localStorage.getItem(IGNORE_SUB_KEY);
+    if (!raw) return new Set();
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return new Set();
+    return new Set(parsed.filter((value) => typeof value === 'string'));
+  } catch {
+    return new Set();
+  }
+}
+
+export function persistIgnoredSubProfileIds(ids: ReadonlySet<string>): void {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(IGNORE_SUB_KEY, JSON.stringify(Array.from(ids)));
+  } catch (error) {
+    console.error('Failed to persist ignored substitution profiles', error);
   }
 }

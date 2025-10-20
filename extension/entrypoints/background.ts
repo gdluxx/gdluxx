@@ -10,12 +10,16 @@
 
 import { ensureOrigins, syncOverlayRegistrationFromPermissions } from '#src/background/permissions';
 import type { ProfilesBundle } from '#src/content/lib/utils/storageProfiles';
+import type { SubsBundle } from '#src/content/lib/utils/storageSubstitution';
 import {
   proxyPing,
   proxyCommand,
   proxyProfilesGet,
   proxyProfilesPut,
   proxyProfilesDelete,
+  proxySubsGet,
+  proxySubsPut,
+  proxySubsDelete,
   type ProxyApiResult,
 } from '#src/background/apiProxy';
 
@@ -65,6 +69,26 @@ interface DeleteProfilesMessage {
   apiKey: string;
 }
 
+interface GetSubsMessage {
+  action: 'getSubs';
+  serverUrl: string;
+  apiKey: string;
+}
+
+interface SaveSubsMessage {
+  action: 'saveSubs';
+  serverUrl: string;
+  apiKey: string;
+  bundle: SubsBundle;
+  syncedBy?: string;
+}
+
+interface DeleteSubsMessage {
+  action: 'deleteSubs';
+  serverUrl: string;
+  apiKey: string;
+}
+
 interface ApiResponse {
   success: boolean;
   message: string;
@@ -76,7 +100,10 @@ type ProxyMessage =
   | SendCommandMessage
   | GetProfilesMessage
   | SaveProfilesMessage
-  | DeleteProfilesMessage;
+  | DeleteProfilesMessage
+  | GetSubsMessage
+  | SaveSubsMessage
+  | DeleteSubsMessage;
 
 type MessageType = SendUrlMessage | SyncOverlayRegistrationMessage | ProxyMessage;
 
@@ -198,6 +225,28 @@ export default defineBackground((): void => {
         case 'deleteProfiles':
           (async () => {
             sendResponse(await proxyProfilesDelete(message.serverUrl, message.apiKey));
+          })();
+          return true;
+        case 'getSubs':
+          (async () => {
+            sendResponse(await proxySubsGet(message.serverUrl, message.apiKey));
+          })();
+          return true;
+        case 'saveSubs':
+          (async () => {
+            sendResponse(
+              await proxySubsPut(
+                message.serverUrl,
+                message.apiKey,
+                message.bundle,
+                message.syncedBy,
+              ),
+            );
+          })();
+          return true;
+        case 'deleteSubs':
+          (async () => {
+            sendResponse(await proxySubsDelete(message.serverUrl, message.apiKey));
           })();
           return true;
         default:

@@ -9,6 +9,7 @@
  */
 
 import type { SavedSelectorProfile } from './storageProfiles';
+import type { SavedSubProfile } from './storageSubstitution';
 
 export function formatTimestamp(value?: number): string {
   if (!value) return '—';
@@ -25,4 +26,16 @@ export function describeProfile(profile: SavedSelectorProfile): string {
   if (profile.scope === 'path' && profile.path) return `${profile.host}${profile.path}`;
   if (profile.scope === 'origin' && profile.origin) return profile.origin;
   return profile.host;
+}
+
+export function describeSubProfile(profile: SavedSubProfile): string {
+  const base = profile.name?.trim()
+    ? profile.name.trim()
+    : profile.scope === 'path' && profile.path
+      ? `${profile.host}${profile.path}`
+      : profile.scope === 'origin' && profile.origin
+        ? profile.origin
+        : profile.host;
+  const ruleCount = profile.rules.length;
+  return `${base} (${ruleCount} ${ruleCount === 1 ? 'rule' : 'rules'})`;
 }

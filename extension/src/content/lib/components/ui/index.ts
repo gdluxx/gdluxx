@@ -9,7 +9,9 @@
  */
 
 export { default as AdvancedSection } from './AdvancedSection.svelte';
+export { default as Badge } from './Badge.svelte';
 export { default as Button } from './Button.svelte';
+export { default as Dropdown } from './Dropdown.svelte';
 export { default as Icon } from './Icon.svelte';
 export { default as Info } from './Info.svelte';
 export { default as Modal } from './Modal.svelte';

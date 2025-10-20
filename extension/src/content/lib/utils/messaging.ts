@@ -15,6 +15,10 @@ export {
   saveProfileBackup,
   deleteProfileBackup,
   type ProfileBackupPayload,
+  fetchSubBackup,
+  saveSubBackup,
+  deleteSubBackup,
+  type SubBackupPayload,
   type ApiResult,
 } from './gdluxxApi';
 

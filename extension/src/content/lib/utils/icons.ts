@@ -25,6 +25,7 @@ export type IconName =
   | 'log'
   | 'loading'
   | 'chevron-right'
+  | 'chevron-down'
   | 'plus'
   | 'user'
   | 'minimize'
@@ -72,4 +73,8 @@ export type IconName =
   | 'preview'
   | 'menu-open'
   | 'menu-close'
-  | 'folder-plus';
+  | 'folder-plus'
+  | 'move-up'
+  | 'move-down'
+  | 'mdi-delete'
+  | 'box-add';

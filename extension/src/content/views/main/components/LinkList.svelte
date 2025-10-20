@@ -9,7 +9,8 @@
   -->
 
 <script lang="ts">
-  import { Info } from '#components/ui';
+  import { Badge, Info } from '#components/ui';
+  import type { SubResult } from '#utils/substitution';
 
   const {
     links = [],
@@ -17,12 +18,16 @@
     selected = new Set(),
     compact = false,
     onToggle,
+    modifiedUrls = new Set<string>(),
+    urlModifications = new Map<string, SubResult>(),
   }: {
     links?: string[];
     counts?: Record<string, number>;
     selected?: Set<string>;
     compact?: boolean;
     onToggle: (url: string) => void;
+    modifiedUrls?: ReadonlySet<string>;
+    urlModifications?: ReadonlyMap<string, SubResult>;
   } = $props();
 </script>
 
@@ -60,16 +65,29 @@
                 />
               </th>
               <td class="pl-2 text-left">
-                <a
-                  href={url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="link link-hover link-primary break-all"
-                  class:text-sm={compact}
-                  onclick={(e) => e.stopPropagation()}
-                >
-                  {url}
-                </a>
+                <div class="flex items-center gap-2">
+                  <a
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="link link-hover link-primary break-all"
+                    class:text-sm={compact}
+                    onclick={(e) => e.stopPropagation()}
+                  >
+                    {url}
+                  </a>
+                  {#if modifiedUrls.has(url)}
+                    {#if urlModifications.has(url)}
+                      <Badge
+                        label="Modified"
+                        dismissible={false}
+                        variant="accent"
+                        size={compact ? 'xs' : 'sm'}
+                        title={`Original: ${urlModifications.get(url)?.initialUrl ?? ''}`}
+                      />
+                    {/if}
+                  {/if}
+                </div>
               </td>
               <td class="text-right">
                 {#if counts[url] > 1}

@@ -14,12 +14,20 @@
   interface HelpModalsProps {
     showSelectorHelp: boolean;
     showScopeHelp: boolean;
+    showSubRegexHelp?: boolean;
     oncloseselector?: () => void;
     onclosescope?: () => void;
+    onclosesubregex?: () => void;
   }
 
-  const { showSelectorHelp, showScopeHelp, oncloseselector, onclosescope }: HelpModalsProps =
-    $props();
+  const {
+    showSelectorHelp,
+    showScopeHelp,
+    showSubRegexHelp = false,
+    oncloseselector,
+    onclosescope,
+    onclosesubregex,
+  }: HelpModalsProps = $props();
 
   function handleCloseSelector(): void {
     oncloseselector?.();
@@ -27,6 +35,10 @@
 
   function handleCloseScope(): void {
     onclosescope?.();
+  }
+
+  function handleCloseRegex(): void {
+    onclosesubregex?.();
   }
 </script>
 
@@ -349,6 +361,133 @@
     <button
       class="btn btn-primary"
       onclick={handleCloseScope}
+    >
+      Got it!
+    </button>
+  {/snippet}
+</Modal>
+
+<Modal
+  show={showSubRegexHelp}
+  title="Regex Substitution Guide"
+  size="lg"
+  onClose={handleCloseRegex}
+>
+  <div class="prose-sm prose max-w-none">
+    <p class="text-base-content/80 mb-4">
+      Regular expressions let you transform URLs using pattern matching. Rules run from top to
+      bottom and support capture groups for substitutions. You're not limited to the examples below.
+    </p>
+
+    <div class="space-y-5">
+      <section>
+        <h3 class="text-base-content mb-2 text-lg font-semibold">Common Patterns</h3>
+        <div class="bg-base-200 rounded-lg p-3">
+          <ul class="list-inside list-disc space-y-2 text-sm">
+            <li>
+              <code class="!bg-primary/20 !text-base-content !rounded-sm px-1">https?://</code> →
+              matches either
+              <code class="!bg-primary/20 !text-base-content !rounded-sm px-1">http://</code>
+              or <code class="!bg-primary/20 !text-base-content !rounded-sm px-1">https://</code>
+            </li>
+            <li>
+              <code class="!bg-primary/20 !text-base-content !rounded-sm px-1">(\\d+)</code> →
+              capture one or more digits (use
+              <code class="!bg-primary/20 !text-base-content !rounded-sm px-1">$1</code> in the substitution)
+            </li>
+            <li>
+              <code class="!bg-primary/20 !text-base-content !rounded-sm px-1">[a-z]+</code> → match
+              one or more lowercase letters
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <section>
+        <h3 class="text-base-content mb-2 text-lg font-semibold">Example Substitutions</h3>
+        <div class="space-y-3">
+          <div class="border-success/20 bg-success/10 rounded-lg border p-3">
+            <p class="font-medium">Force HTTPS</p>
+            <p>
+              Pattern: <code class="!bg-primary/20 !text-base-content !rounded-sm px-1"
+                >^http://</code
+              ><br />
+              Replacement:
+              <code class="!bg-primary/20 !text-base-content !rounded-sm px-1">https://</code>
+            </p>
+          </div>
+          <div class="border-success/20 bg-success/10 rounded-lg border p-3">
+            <p class="font-medium">Swap subdomains</p>
+            <p>
+              Pattern: <code class="!bg-primary/20 !text-base-content !rounded-sm px-1"
+                >https://media\.example\.com/(.*)</code
+              ><br />
+              Replacement:
+              <code class="!bg-primary/20 !text-base-content !rounded-sm px-1"
+                >https://cdn.example.com/$1</code
+              >
+            </p>
+          </div>
+          <div class="border-success/20 bg-success/10 rounded-lg border p-3">
+            <p class="font-medium">Add zero padding</p>
+            <p>
+              Pattern: <code class="!bg-primary/20 !text-base-content !rounded-sm px-1"
+                >episode-(\\d)</code
+              ><br />
+              Replacement:
+              <code class="!bg-primary/20 !text-base-content !rounded-sm px-1">episode-0$1</code>
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h3 class="text-base-content mb-2 text-lg font-semibold">Flags</h3>
+        <div class="bg-base-200 rounded-lg p-3 text-sm">
+          <ul class="list-inside list-disc space-y-1">
+            <li>
+              <code class="!bg-primary/20 !text-base-content !rounded-sm px-1">g</code> — Replace
+              <strong>all</strong> matches (enabled by default)
+            </li>
+            <li>
+              <code class="!bg-primary/20 !text-base-content !rounded-sm px-1">i</code> —
+              Case-insensitive matching (treat
+              <code class="!bg-primary/20 !text-base-content !rounded-sm px-1">A</code>
+              and <code class="!bg-primary/20 !text-base-content !rounded-sm px-1">a</code> equally)
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <section>
+        <h3 class="text-base-content mb-2 text-lg font-semibold">Tips</h3>
+        <div class="border-info/20 bg-info/10 rounded-lg border p-3 text-sm">
+          <ul class="list-inside list-disc space-y-1">
+            <li>Test your pattern on a sample URL before applying to all items.</li>
+            <li>
+              Use parentheses to capture parts you want to reuse in the substitution (<code
+                class="!bg-primary/20 !text-base-content !rounded-sm px-1">$1</code
+              >, <code class="!bg-primary/20 !text-base-content !rounded-sm px-1">$2</code>, ...).
+            </li>
+            <li>Combine multiple rules to apply transformations step by step.</li>
+          </ul>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  {#snippet actions()}
+    <a
+      class="btn btn-ghost"
+      href="https://developer.mozilla.org/docs/Web/JavaScript/Guide/Regular_expressions/Cheatsheet"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      MDN regex cheatsheet
+    </a>
+    <button
+      class="btn btn-primary"
+      onclick={handleCloseRegex}
     >
       Got it!
     </button>

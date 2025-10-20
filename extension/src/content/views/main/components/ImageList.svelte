@@ -9,7 +9,8 @@
   -->
 
 <script lang="ts">
-  import { Info } from '#components/ui';
+  import { Badge, Info } from '#components/ui';
+  import type { SubResult } from '#utils/substitution';
 
   const {
     images = [],
@@ -21,6 +22,9 @@
     hideHoverPreview,
     onToggle,
     showImagePreviews = false,
+    modifiedUrls = new Set<string>(),
+    urlModifications = new Map<string, SubResult>(),
+    applyToPreview = false,
   }: {
     images?: string[];
     counts?: Record<string, number>;
@@ -31,6 +35,9 @@
     hideHoverPreview: () => void;
     onToggle: (url: string) => void;
     showImagePreviews?: boolean;
+    modifiedUrls?: ReadonlySet<string>;
+    urlModifications?: ReadonlyMap<string, SubResult>;
+    applyToPreview?: boolean;
   } = $props();
 
   let imageErrors = $state<Set<string>>(new Set());
@@ -38,6 +45,12 @@
   function handleImageError(url: string) {
     imageErrors.add(url);
     imageErrors = imageErrors; // Trigger reactivity
+  }
+
+  function getDisplayUrl(url: string): string {
+    const modification = urlModifications.get(url);
+    if (!modification) return url;
+    return applyToPreview ? modification.modifiedUrl : modification.initialUrl;
   }
 </script>
 
@@ -77,22 +90,35 @@
                 />
               </th>
               <td class="pl-2 text-left">
-                <a
-                  href={url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="link link-hover link-primary break-all"
-                  class:text-sm={compact}
-                  onclick={(e) => e.stopPropagation()}
-                >
-                  {url}
-                </a>
+                <div class="flex items-center gap-2">
+                  <a
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="link link-hover link-primary break-all"
+                    class:text-sm={compact}
+                    onclick={(e) => e.stopPropagation()}
+                  >
+                    {url}
+                  </a>
+                  {#if modifiedUrls.has(url)}
+                    {#if urlModifications.has(url)}
+                      <Badge
+                        label="Modified"
+                        dismissible={false}
+                        variant="accent"
+                        size={compact ? 'xs' : 'sm'}
+                        title={`Original: ${urlModifications.get(url)?.initialUrl ?? ''}`}
+                      />
+                    {/if}
+                  {/if}
+                </div>
               </td>
 
               {#if showImagePreviews}
                 <td>
                   <img
-                    src={url}
+                    src={getDisplayUrl(url)}
                     alt="Preview"
                     class="max-h-40 rounded-2xl object-contain object-right"
                     loading="lazy"

@@ -56,6 +56,10 @@
     <symbol id="chevron-right" viewBox="0 0 24 24">
         <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
     </symbol>
+    <!-- si-chevron-down-alt-line -->
+    <symbol id="chevron-down" viewBox="0 0 24 24">
+        <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 9l7 7 7-7"/>
+    </symbol>
     <!-- iconoir:plus -->
     <symbol id="plus" viewBox="0 0 24 24">
         <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4.5v15m7.5-7.5h-15"/>
@@ -255,5 +259,21 @@
     <!-- mdi:folder-plus -->
     <symbol id="folder-plus" viewBox="0 0 24 24">
         <path fill="currentColor" d="M13 19c0 .34.04.67.09 1H4a2 2 0 0 1-2-2V6c0-1.11.89-2 2-2h6l2 2h8a2 2 0 0 1 2 2v5.81c-.88-.51-1.9-.81-3-.81c-3.31 0-6 2.69-6 6m7-1v-3h-2v3h-3v2h3v3h2v-3h3v-2z"/>
+    </symbol>
+    <!-- tabler:arrow-move-up -->
+    <symbol id="move-up" viewBox="0 0 24 24">
+        ><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 13V3M9 6l3-3l3 3m-3 11a2 2 0 1 1 0 4a2 2 0 0 1 0-4"/
+    </symbol>
+    <!-- tabler:arrow-move-down -->
+    <symbol id="move-down" viewBox="0 0 24 24">
+        <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11v10m-3-3l3 3l3-3M10 5a2 2 0 1 0 4 0a2 2 0 1 0-4 0"/>
+    </symbol>
+    <!-- mdi:delete -->
+    <symbol id="mdi-delete" viewBox="0 0 24 24">
+        <path fill="currentColor" d="M19 4h-3.5l-1-1h-5l-1 1H5v2h14M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6z"/>
+    </symbol>
+    <!-- material-symbols:add-box-sharp -->
+    <symbol id="box-add" viewBox="0 0 24 24">
+        <path fill="currentColor" d="M11 17h2v-4h4v-2h-4V7h-2v4H7v2h4zm-8 4V3h18v18z"/>
     </symbol>
 </svg>

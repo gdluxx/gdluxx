@@ -8,12 +8,14 @@
  * as published by the Free Software Foundation.
  */
 
-import type { ProfileBackupData, ProxyApiResult } from '#src/background/apiProxy';
+import type { ProfileBackupData, SubBackupData, ProxyApiResult } from '#src/background/apiProxy';
 import { loadSettings, validateServerUrl } from '#utils/persistence';
 import type { ProfilesBundle } from './storageProfiles';
+import type { SubsBundle } from './storageSubstitution';
 
 export type ApiResult<T = unknown> = ProxyApiResult<T>;
 export type ProfileBackupPayload = ProfileBackupData;
+export type SubBackupPayload = SubBackupData;
 
 type DeletePayload = { deleted: boolean };
 
@@ -144,6 +146,70 @@ export async function deleteProfileBackup(
 
   return sendBackgroundRequest<DeletePayload>({
     action: 'deleteProfiles',
+    serverUrl,
+    apiKey,
+  });
+}
+
+export async function fetchSubBackup(
+  serverUrl: string,
+  apiKey: string,
+): Promise<ApiResult<SubBackupPayload>> {
+  if (!serverUrl || !apiKey) {
+    return { success: false, error: 'Server URL and API key are required' };
+  }
+
+  const validation = validateServerUrl(serverUrl);
+  if (!validation.valid) {
+    return { success: false, error: validation.error };
+  }
+
+  return sendBackgroundRequest<SubBackupPayload>({
+    action: 'getSubs',
+    serverUrl,
+    apiKey,
+  });
+}
+
+export async function saveSubBackup(
+  serverUrl: string,
+  apiKey: string,
+  bundle: SubsBundle,
+  syncedBy?: string,
+): Promise<ApiResult<SubBackupPayload>> {
+  if (!serverUrl || !apiKey) {
+    return { success: false, error: 'Server URL and API key are required' };
+  }
+
+  const validation = validateServerUrl(serverUrl);
+  if (!validation.valid) {
+    return { success: false, error: validation.error };
+  }
+
+  return sendBackgroundRequest<SubBackupPayload>({
+    action: 'saveSubs',
+    serverUrl,
+    apiKey,
+    bundle,
+    syncedBy,
+  });
+}
+
+export async function deleteSubBackup(
+  serverUrl: string,
+  apiKey: string,
+): Promise<ApiResult<DeletePayload>> {
+  if (!serverUrl || !apiKey) {
+    return { success: false, error: 'Server URL and API key are required' };
+  }
+
+  const validation = validateServerUrl(serverUrl);
+  if (!validation.valid) {
+    return { success: false, error: validation.error };
+  }
+
+  return sendBackgroundRequest<DeletePayload>({
+    action: 'deleteSubs',
     serverUrl,
     apiKey,
   });

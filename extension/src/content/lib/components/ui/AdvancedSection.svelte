@@ -10,6 +10,7 @@
 
 <script lang="ts">
   import type { Snippet } from 'svelte';
+  import { Badge } from '#components/ui/index.ts';
 
   let {
     expanded = $bindable(false),
@@ -37,7 +38,10 @@
     <div class="flex items-center gap-3">
       <span>{title}</span>
       {#if hasActiveFilters && !expanded}
-        <span class="badge badge-sm badge-primary">Active</span>
+        <Badge
+          label="Active"
+          variant="primary"
+        />
       {/if}
     </div>
   </div>
