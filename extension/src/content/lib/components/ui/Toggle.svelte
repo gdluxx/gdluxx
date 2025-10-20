@@ -11,7 +11,14 @@
 <script lang="ts">
   import type { HTMLInputAttributes } from 'svelte/elements';
 
-  type ToggleVariant = 'primary' | 'secondary' | 'accent' | 'success' | 'warning' | 'info' | 'error';
+  type ToggleVariant =
+    | 'primary'
+    | 'secondary'
+    | 'accent'
+    | 'success'
+    | 'warning'
+    | 'info'
+    | 'error';
   type ToggleSize = 'xs' | 'sm' | 'md' | 'lg';
 
   interface Props extends Omit<HTMLInputAttributes, 'type' | 'size' | 'class' | 'onchange'> {
@@ -48,23 +55,14 @@
   const toggleId = $derived(id ?? `toggle-${Math.random().toString(36).slice(2, 9)}`);
 
   const toggleClasses = $derived(
-    [
-      'toggle',
-      variant && `toggle-${variant}`,
-      `toggle-${size}`,
-      className,
-    ]
+    ['toggle', variant && `toggle-${variant}`, `toggle-${size}`, className]
       .filter(Boolean)
       .join(' '),
   );
 
-  const containerClasses = $derived(
-    ['form-control', containerClass].filter(Boolean).join(' '),
-  );
+  const containerClasses = $derived(['form-control', containerClass].filter(Boolean).join(' '));
 
-  const labelClasses = $derived(
-    ['label cursor-pointer', labelClass].filter(Boolean).join(' '),
-  );
+  const labelClasses = $derived(['label cursor-pointer', labelClass].filter(Boolean).join(' '));
 
   function handleChange(event: Event) {
     const target = event.target as HTMLInputElement;
