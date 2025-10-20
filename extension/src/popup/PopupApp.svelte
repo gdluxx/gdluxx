@@ -44,7 +44,7 @@
     }
   });
 
-  let statusTimeout: ReturnType<typeof setTimeout> | null = null;
+  let statusTimeout: number | null = null;
   let pendingConfirm: (() => Promise<void> | void) | null = null;
 
   function showStatus(message: string, kind: StatusKind): void {
