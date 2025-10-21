@@ -35,8 +35,8 @@ export default defineConfig({
       gecko: {
         id: 'gdluxx@gdluxx.app',
         data_collection_permissions: {
-          required: [false],
-          optional: [false],
+          required: [],
+          optional: [],
         },
       },
     },
