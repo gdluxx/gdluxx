@@ -292,9 +292,9 @@ export default defineBackground((): void => {
 
     if (info.menuItemId === 'send-image-to-gdluxx' && info.srcUrl) {
       try {
-        const result = await browser.storage.local.get(['apiUrl', 'apiKey']);
+        const result = await browser.storage.local.get(['gdluxx_server_url', 'gdluxx_api_key']);
 
-        if (!result.apiUrl || !result.apiKey) {
+        if (!result.gdluxx_server_url || !result.gdluxx_api_key) {
           browser.notifications.create({
             type: 'basic',
             iconUrl: 'icon/48.png',
@@ -304,7 +304,7 @@ export default defineBackground((): void => {
           return;
         }
 
-        const sendResult = await proxyCommand(result.apiUrl, result.apiKey, [info.srcUrl]);
+        const sendResult = await proxyCommand(result.gdluxx_server_url, result.gdluxx_api_key, [info.srcUrl]);
 
         if (sendResult.success) {
           browser.notifications.create({

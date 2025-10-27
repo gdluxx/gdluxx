@@ -33,9 +33,17 @@ export interface SubBackupData {
   syncedBy: string | null;
   updatedAt: number | null;
 }
+interface BatchUrlResult {
+  jobId?: string;
+  url: string;
+  success: boolean;
+  message?: string;
+  error?: string;
+}
+
 interface ExternalSendResponse {
-  results?: Array<{ success?: boolean }>;
-  [key: string]: unknown;
+  overallSuccess: boolean;
+  results: BatchUrlResult[];
 }
 
 interface DeleteResponse {
@@ -146,7 +154,13 @@ export async function proxyCommand(
       body: JSON.stringify(body),
     });
 
-    const payload = (await parseJsonSafe<ExternalSendResponse>(response)) ?? {};
+    type ApiEnvelope = {
+      success?: boolean;
+      error?: string;
+      data?: ExternalSendResponse;
+    };
+
+    const payload = (await parseJsonSafe<ApiEnvelope>(response)) ?? {};
 
     if (!response.ok) {
       if (response.status === 401 || response.status === 403) {
@@ -158,14 +172,15 @@ export async function proxyCommand(
       };
     }
 
-    const successCount = Array.isArray(payload.results)
-      ? payload.results.filter((item) => item?.success).length
+    const batchResult = payload.data;
+    const successCount = Array.isArray(batchResult?.results)
+      ? batchResult.results.filter((item) => item?.success).length
       : urls.length;
 
     return {
       success: true,
       message: `Successfully sent ${successCount} URL${successCount === 1 ? '' : 's'} to gdluxx`,
-      data: payload,
+      data: batchResult ?? { overallSuccess: false, results: [] },
     };
   } catch (error) {
     return networkError(error);

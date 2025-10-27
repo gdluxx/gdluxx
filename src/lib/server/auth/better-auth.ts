@@ -208,6 +208,9 @@ export const auth = betterAuth({
   plugins: [
     apiKey({
       defaultPrefix: 'sk_',
+      rateLimit: {
+        enabled: false,
+      },
     }),
   ],
   advanced: {
