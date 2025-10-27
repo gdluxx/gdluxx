@@ -14,6 +14,8 @@
   import { SvelteSet } from 'svelte/reactivity';
 
   const ALL_URLS = '<all_urls>';
+  const SUPPORTED_PERMISSION_PROTOCOLS = new Set(['http:', 'https:', 'ws:', 'wss:', 'ftp:']);
+  const UNSUPPORTED_PAGE_MESSAGE = 'Overlay not supported on this page';
 
   type StatusKind = 'success' | 'error' | 'info';
 
@@ -106,8 +108,11 @@
 
   function formatOriginPattern(url: string): string | null {
     try {
-      const { origin } = new URL(url);
-      return `${origin}/*`;
+      const parsed = new URL(url);
+      if (!SUPPORTED_PERMISSION_PROTOCOLS.has(parsed.protocol) || parsed.origin === 'null') {
+        return null;
+      }
+      return `${parsed.origin}/*`;
     } catch {
       return null;
     }
@@ -212,7 +217,7 @@
 
     const pattern = formatOriginPattern(tab.url);
     if (!pattern) {
-      showStatus('Unsupported URL for overlay', 'error');
+      showStatus(UNSUPPORTED_PAGE_MESSAGE, 'error');
       return;
     }
 
@@ -237,7 +242,7 @@
 
     const pattern = formatOriginPattern(tab.url);
     if (!pattern) {
-      showStatus('Unsupported URL pattern for this tab', 'error');
+      showStatus(UNSUPPORTED_PAGE_MESSAGE, 'error');
       return;
     }
 
@@ -311,7 +316,7 @@
 
     const pattern = formatOriginPattern(tab.url);
     if (!pattern) {
-      showStatus('Unsupported URL pattern for this tab', 'error');
+      showStatus(UNSUPPORTED_PAGE_MESSAGE, 'error');
       return;
     }
 
