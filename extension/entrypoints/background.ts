@@ -152,14 +152,20 @@ export default defineBackground((): void => {
 
   browser.contextMenus.create({
     id: 'open-overlay-panel',
-    title: 'Open gdluxx overlay',
+    title: 'Open gdluxx',
     contexts: ['page'],
   });
 
   browser.contextMenus.create({
     id: 'send-image-to-gdluxx',
-    title: 'Send to gdluxx',
+    title: 'gdluxx: send image',
     contexts: ['image'],
+  });
+
+  browser.contextMenus.create({
+    id: 'send-link-to-gdluxx',
+    title: 'gdluxx: send URL',
+    contexts: ['link'],
   });
 
   function isSendUrlMessage(message: MessageType): message is SendUrlMessage {
@@ -303,6 +309,57 @@ export default defineBackground((): void => {
     },
   );
 
+  async function sendUrlToGdluxx(url: string, urlType: 'image' | 'link'): Promise<void> {
+    try {
+      const result = await browser.storage.local.get(['gdluxx_server_url', 'gdluxx_api_key']);
+
+      if (!result.gdluxx_server_url || !result.gdluxx_api_key) {
+        browser.notifications.create({
+          type: 'basic',
+          iconUrl: 'icon/48.png',
+          title: 'gdluxx Extension',
+          message: 'Configure gdluxx URL and API Key in extension settings.',
+        });
+        return;
+      }
+
+      const cleanedUrl = url.replace(/\/+$/, '');
+
+      const sendResult = await proxyCommand(result.gdluxx_server_url, result.gdluxx_api_key, [
+        cleanedUrl,
+      ]);
+
+      if (sendResult.success) {
+        browser.notifications.create({
+          type: 'basic',
+          iconUrl: 'icon/48.png',
+          title: 'gdluxx Extension',
+          message:
+            sendResult.message ??
+            `${urlType === 'image' ? 'Image URL' : 'URL'} sent successfully to gdluxx!`,
+        });
+      } else {
+        browser.notifications.create({
+          type: 'basic',
+          iconUrl: 'icon/48.png',
+          title: 'gdluxx Extension',
+          message:
+            sendResult.error ??
+            `Failed to send ${urlType === 'image' ? 'image URL' : 'URL'} to gdluxx.`,
+        });
+      }
+    } catch (error) {
+      const errorMessage: string =
+        error instanceof Error ? error.message : 'Unknown error occurred';
+      browser.notifications.create({
+        type: 'basic',
+        iconUrl: 'icon/48.png',
+        title: 'gdluxx Extension',
+        message: `Network error: ${errorMessage}`,
+      });
+    }
+  }
+
   browser.contextMenus.onClicked.addListener(async (info, tab) => {
     if (info.menuItemId === 'open-overlay-panel') {
       if (!tab?.id || !tab.url) {
@@ -337,48 +394,42 @@ export default defineBackground((): void => {
     }
 
     if (info.menuItemId === 'send-image-to-gdluxx' && info.srcUrl) {
-      try {
-        let cleanedSrcUrl = '';
-        const result = await browser.storage.local.get(['gdluxx_server_url', 'gdluxx_api_key']);
+      await sendUrlToGdluxx(info.srcUrl, 'image');
+      return;
+    }
 
-        if (!result.gdluxx_server_url || !result.gdluxx_api_key) {
-          browser.notifications.create({
-            type: 'basic',
-            iconUrl: 'icon/48.png',
-            title: 'gdluxx Extension',
-            message: 'Please configure API URL and API Key in extension settings first.',
-          });
-          return;
-        }
-
-        cleanedSrcUrl = info.srcUrl.replace(/\/+$/, '');
-        const sendResult = await proxyCommand(result.gdluxx_server_url, result.gdluxx_api_key, [
-          cleanedSrcUrl,
-        ]);
-
-        if (sendResult.success) {
-          browser.notifications.create({
-            type: 'basic',
-            iconUrl: 'icon/48.png',
-            title: 'gdluxx Extension',
-            message: sendResult.message ?? 'Image URL sent successfully to gdluxx!',
-          });
-        } else {
-          browser.notifications.create({
-            type: 'basic',
-            iconUrl: 'icon/48.png',
-            title: 'gdluxx Extension',
-            message: sendResult.error ?? 'Failed to send image URL to gdluxx.',
-          });
-        }
-      } catch (error) {
-        const errorMessage: string =
-          error instanceof Error ? error.message : 'Unknown error occurred';
+    if (info.menuItemId === 'send-link-to-gdluxx' && info.linkUrl) {
+      if (!tab?.url) {
         browser.notifications.create({
           type: 'basic',
           iconUrl: 'icon/48.png',
           title: 'gdluxx Extension',
-          message: `Network error: ${errorMessage}`,
+          message: 'Unable to resolve the link because the page URL is unavailable.',
+        });
+        return;
+      }
+
+      try {
+        const urlObject = new URL(info.linkUrl, tab.url);
+
+        if (urlObject.protocol !== 'http:' && urlObject.protocol !== 'https:') {
+          browser.notifications.create({
+            type: 'basic',
+            iconUrl: 'icon/48.png',
+            title: 'gdluxx Extension',
+            message: 'Only HTTP/HTTPS URLs can be sent to gdluxx.',
+          });
+          return;
+        }
+
+        await sendUrlToGdluxx(urlObject.href, 'link');
+      } catch (_error) {
+        // Invalid URL format
+        browser.notifications.create({
+          type: 'basic',
+          iconUrl: 'icon/48.png',
+          title: 'gdluxx Extension',
+          message: 'Invalid URL format.',
         });
       }
     }
