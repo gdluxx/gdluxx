@@ -1,5 +1,21 @@
 # Changelog
 
+# [1.3.0](https://github.com/gdluxx/gdluxx/compare/extension-v1.2.0...extension-v1.3.0) (2025-11-04)
+
+
+### Bug Fixes
+
+* **extension:** context menu feature for sending individual images to gdluxx needed reworked for updated external endpoint ([2425bed](https://github.com/gdluxx/gdluxx/commit/2425bed51fdc2ea74273bd0790aa5bbbef227cca))
+* **extension:** fix data_collection_permissions property for firefox takes a string not a boolean ([b1c3c8b](https://github.com/gdluxx/gdluxx/commit/b1c3c8be31545148098a7517fbf1217e9742d3d6))
+* **extension:** gallery-dl was failing for image urls sent via context menu when they contained a trailing slash ([15b3cc4](https://github.com/gdluxx/gdluxx/commit/15b3cc484259d68580041161343ce965b7cc5bd7))
+* **extension:** handle (prettify) raw browser API error messages ([56deaa8](https://github.com/gdluxx/gdluxx/commit/56deaa89dba123912aca233834af4dadc2c457c4))
+
+
+### Features
+
+* **extension:** add button to extension popup allowing to send active tab URL to gdluxx ([dba6baf](https://github.com/gdluxx/gdluxx/commit/dba6bafc306afaa9862e4d0460f5a011e9958d8d))
+* **extension:** add optional hotkey to send active tab URL to gdluxx ([d2e2634](https://github.com/gdluxx/gdluxx/commit/d2e2634e16003232ce0f25c7cc72200c49653570))
+
 # [1.2.0](https://github.com/gdluxx/gdluxx/compare/extension-v1.1.5...extension-v1.2.0) (2025-10-20)
 
 
