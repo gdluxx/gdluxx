@@ -338,6 +338,7 @@ export default defineBackground((): void => {
 
     if (info.menuItemId === 'send-image-to-gdluxx' && info.srcUrl) {
       try {
+        let cleanedSrcUrl = '';
         const result = await browser.storage.local.get(['gdluxx_server_url', 'gdluxx_api_key']);
 
         if (!result.gdluxx_server_url || !result.gdluxx_api_key) {
@@ -350,8 +351,9 @@ export default defineBackground((): void => {
           return;
         }
 
+        cleanedSrcUrl = info.srcUrl.replace(/\/+$/, '');
         const sendResult = await proxyCommand(result.gdluxx_server_url, result.gdluxx_api_key, [
-          info.srcUrl,
+          cleanedSrcUrl,
         ]);
 
         if (sendResult.success) {
