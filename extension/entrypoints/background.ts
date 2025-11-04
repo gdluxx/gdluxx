@@ -423,8 +423,7 @@ export default defineBackground((): void => {
         }
 
         await sendUrlToGdluxx(urlObject.href, 'link');
-      } catch (_error) {
-        // Invalid URL format
+      } catch {
         browser.notifications.create({
           type: 'basic',
           iconUrl: 'icon/48.png',
