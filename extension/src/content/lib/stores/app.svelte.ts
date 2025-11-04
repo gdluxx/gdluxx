@@ -27,6 +27,8 @@ const DEFAULT_SETTINGS: Settings = {
   apiKey: '',
   hotkey: 'Alt+L',
   hotkeyEnabled: true,
+  sendTabHotkey: '',
+  sendTabHotkeyEnabled: false,
   showImagePreviews: false,
   showImageHoverPreview: 'off',
 };

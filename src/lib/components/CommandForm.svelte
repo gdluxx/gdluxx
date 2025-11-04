@@ -459,6 +459,7 @@
   </form>
 
   <!-- OptionsManager -->
+  <!--
   <OptionsManager
     bind:selectedOptions
     bind:conflicts={detectedConflicts}
@@ -475,4 +476,5 @@
       // Handle site rule saved
     }}
   />
+  -->
 </div>

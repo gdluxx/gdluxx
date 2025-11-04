@@ -1820,6 +1820,56 @@
     }
   }
 
+  async function onToggleHotkey(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const previous = settings.hotkeyEnabled;
+    const next = input.checked;
+    settings.hotkeyEnabled = next;
+    try {
+      await saveSettings({ hotkeyEnabled: next });
+    } catch (error) {
+      console.error('Failed to save hotkeyEnabled', error);
+      settings.hotkeyEnabled = previous;
+      input.checked = previous;
+    }
+  }
+
+  async function onHotkeyChange(newHotkey: string): Promise<void> {
+    const previous = settings.hotkey;
+    settings.hotkey = newHotkey;
+    try {
+      await saveSettings({ hotkey: newHotkey });
+    } catch (error) {
+      console.error('Failed to save hotkey', error);
+      settings.hotkey = previous;
+    }
+  }
+
+  async function onToggleSendTabHotkey(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const previous = settings.sendTabHotkeyEnabled;
+    const next = input.checked;
+    settings.sendTabHotkeyEnabled = next;
+    try {
+      await saveSettings({ sendTabHotkeyEnabled: next });
+    } catch (error) {
+      console.error('Failed to save sendTabHotkeyEnabled', error);
+      settings.sendTabHotkeyEnabled = previous;
+      input.checked = previous;
+    }
+  }
+
+  async function onSendTabHotkeyChange(newHotkey: string): Promise<void> {
+    const previous = settings.sendTabHotkey;
+    settings.sendTabHotkey = newHotkey;
+    try {
+      await saveSettings({ sendTabHotkey: newHotkey });
+    } catch (error) {
+      console.error('Failed to save sendTabHotkey', error);
+      settings.sendTabHotkey = previous;
+    }
+  }
+
   function setImportProfilesText(value: string) {
     importProfilesText = value;
     importProfilesError = null;
@@ -2233,7 +2283,13 @@
           />
         {/if}
         {#if activeSettingsTab === 'keyboard'}
-          <KeyboardTab {settings} />
+          <KeyboardTab
+            {settings}
+            {onToggleHotkey}
+            {onHotkeyChange}
+            {onToggleSendTabHotkey}
+            {onSendTabHotkeyChange}
+          />
         {/if}
       </div>
     {/if}

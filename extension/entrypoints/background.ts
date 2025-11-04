@@ -31,6 +31,12 @@ interface SendUrlMessage {
   tabTitle?: string;
 }
 
+interface ShowNotificationMessage {
+  action: 'showNotification';
+  title: string;
+  message: string;
+}
+
 interface SyncOverlayRegistrationMessage {
   action: 'syncOverlayRegistration';
 }
@@ -105,7 +111,11 @@ type ProxyMessage =
   | SaveSubsMessage
   | DeleteSubsMessage;
 
-type MessageType = SendUrlMessage | SyncOverlayRegistrationMessage | ProxyMessage;
+type MessageType =
+  | SendUrlMessage
+  | ShowNotificationMessage
+  | SyncOverlayRegistrationMessage
+  | ProxyMessage;
 
 type BackgroundResponse = ApiResponse | ProxyApiResult<unknown>;
 
@@ -156,6 +166,19 @@ export default defineBackground((): void => {
     return message && typeof message === 'object' && message.action === 'sendUrl';
   }
 
+  function isShowNotificationMessage(message: MessageType): message is ShowNotificationMessage {
+    return (
+      typeof message === 'object' &&
+      message !== null &&
+      'action' in message &&
+      message.action === 'showNotification' &&
+      'title' in message &&
+      typeof message.title === 'string' &&
+      'message' in message &&
+      typeof message.message === 'string'
+    );
+  }
+
   browser.runtime.onMessage.addListener(
     (
       message: MessageType,
@@ -178,6 +201,29 @@ export default defineBackground((): void => {
             });
           }
         })();
+
+        return true;
+      }
+
+      if (isShowNotificationMessage(message)) {
+        const notificationPromise = browser.notifications.create({
+          type: 'basic',
+          iconUrl: 'icon/48.png',
+          title: message.title,
+          message: message.message,
+        });
+
+        notificationPromise
+          .then(() => {
+            sendResponse({ success: true });
+          })
+          .catch((error) => {
+            console.error('Failed to show notification', error);
+            sendResponse({
+              success: false,
+              message: error instanceof Error ? error.message : String(error),
+            });
+          });
 
         return true;
       }
@@ -304,7 +350,9 @@ export default defineBackground((): void => {
           return;
         }
 
-        const sendResult = await proxyCommand(result.gdluxx_server_url, result.gdluxx_api_key, [info.srcUrl]);
+        const sendResult = await proxyCommand(result.gdluxx_server_url, result.gdluxx_api_key, [
+          info.srcUrl,
+        ]);
 
         if (sendResult.success) {
           browser.notifications.create({

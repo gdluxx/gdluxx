@@ -15,6 +15,8 @@ export interface Settings {
   apiKey: string;
   hotkey: string;
   hotkeyEnabled: boolean;
+  sendTabHotkey: string;
+  sendTabHotkeyEnabled: boolean;
   showImagePreviews: boolean;
   showImageHoverPreview: 'off' | 'small' | 'medium' | 'large';
 }
@@ -24,6 +26,8 @@ const DEFAULTS: Settings = {
   apiKey: '',
   hotkey: 'Alt+L',
   hotkeyEnabled: true,
+  sendTabHotkey: '',
+  sendTabHotkeyEnabled: false,
   showImagePreviews: false,
   showImageHoverPreview: 'off',
 };
@@ -34,26 +38,40 @@ const KEYS = {
   apiKey: `${KEY_PREFIX}api_key`,
   hotkey: `${KEY_PREFIX}hotkey`,
   hotkeyEnabled: `${KEY_PREFIX}hotkey_enabled`,
+  sendTabHotkey: `${KEY_PREFIX}send_tab_hotkey`,
+  sendTabHotkeyEnabled: `${KEY_PREFIX}send_tab_hotkey_enabled`,
   showImagePreviews: `${KEY_PREFIX}show_image_previews`,
   showImageHoverPreview: `${KEY_PREFIX}show_image_hover_preview`,
 };
 
 export async function loadSettings(): Promise<Settings> {
-  const [serverUrl, apiKey, hotkey, hotkeyEnabled, showImagePreviews, showImageHoverPreview] =
-    await Promise.all([
-      getValue(KEYS.serverUrl, DEFAULTS.serverUrl),
-      getValue(KEYS.apiKey, DEFAULTS.apiKey),
-      getValue(KEYS.hotkey, DEFAULTS.hotkey),
-      getValue(KEYS.hotkeyEnabled, DEFAULTS.hotkeyEnabled),
-      getValue(KEYS.showImagePreviews, DEFAULTS.showImagePreviews),
-      getValue(KEYS.showImageHoverPreview, DEFAULTS.showImageHoverPreview),
-    ]);
+  const [
+    serverUrl,
+    apiKey,
+    hotkey,
+    hotkeyEnabled,
+    sendTabHotkey,
+    sendTabHotkeyEnabled,
+    showImagePreviews,
+    showImageHoverPreview,
+  ] = await Promise.all([
+    getValue(KEYS.serverUrl, DEFAULTS.serverUrl),
+    getValue(KEYS.apiKey, DEFAULTS.apiKey),
+    getValue(KEYS.hotkey, DEFAULTS.hotkey),
+    getValue(KEYS.hotkeyEnabled, DEFAULTS.hotkeyEnabled),
+    getValue(KEYS.sendTabHotkey, DEFAULTS.sendTabHotkey),
+    getValue(KEYS.sendTabHotkeyEnabled, DEFAULTS.sendTabHotkeyEnabled),
+    getValue(KEYS.showImagePreviews, DEFAULTS.showImagePreviews),
+    getValue(KEYS.showImageHoverPreview, DEFAULTS.showImageHoverPreview),
+  ]);
 
   return {
     serverUrl,
     apiKey,
     hotkey,
     hotkeyEnabled,
+    sendTabHotkey,
+    sendTabHotkeyEnabled,
     showImagePreviews,
     showImageHoverPreview,
   };
@@ -65,6 +83,10 @@ export async function saveSettings(settings: Partial<Settings>): Promise<void> {
   if (settings.hotkey !== undefined) await setValue(KEYS.hotkey, settings.hotkey);
   if (settings.hotkeyEnabled !== undefined)
     await setValue(KEYS.hotkeyEnabled, settings.hotkeyEnabled);
+  if (settings.sendTabHotkey !== undefined)
+    await setValue(KEYS.sendTabHotkey, settings.sendTabHotkey);
+  if (settings.sendTabHotkeyEnabled !== undefined)
+    await setValue(KEYS.sendTabHotkeyEnabled, settings.sendTabHotkeyEnabled);
   if (settings.showImagePreviews !== undefined)
     await setValue(KEYS.showImagePreviews, settings.showImagePreviews);
   if (settings.showImageHoverPreview !== undefined)
