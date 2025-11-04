@@ -12,6 +12,7 @@
   import browser, { Tabs } from 'webextension-polyfill';
   import { onDestroy, onMount } from 'svelte';
   import { SvelteSet } from 'svelte/reactivity';
+  import { loadSettings } from '#utils/settings';
 
   const ALL_URLS = '<all_urls>';
   const SUPPORTED_PERMISSION_PROTOCOLS = new Set(['http:', 'https:', 'ws:', 'wss:', 'ftp:']);
@@ -35,6 +36,11 @@
   let revokeAllVisible = $state(false);
   let managePermissionsVisible = $state(false);
 
+  // Send current tab state
+  let serverUrl = $state<string>('');
+  let apiKey = $state<string>('');
+  let isSending = $state(false);
+
   const statusClasses = $derived(() => {
     switch (statusKind) {
       case 'success':
@@ -45,6 +51,8 @@
         return 'bg-secondary-100 text-secondary-700 border border-secondary-200';
     }
   });
+
+  const isConfigured = $derived(serverUrl.trim() !== '' && apiKey.trim() !== '');
 
   let statusTimeout: number | null = null;
   let pendingConfirm: (() => Promise<void> | void) | null = null;
@@ -233,6 +241,58 @@
     showStatus('Overlay command sent', 'success');
   }
 
+  async function handleSendCurrentTab(): Promise<void> {
+    if (isSending) return;
+
+    const tab = await getActiveTab();
+    if (!tab?.url) {
+      showStatus('No active tab detected', 'error');
+      return;
+    }
+
+    // Validate the tab URL is HTTP(S)
+    const pattern = formatOriginPattern(tab.url);
+    if (!pattern) {
+      showStatus(UNSUPPORTED_PAGE_MESSAGE, 'error');
+      return;
+    }
+
+    if (!isConfigured) {
+      showStatus('Configure gdluxx URL and API key in the overlay settings first', 'info');
+      return;
+    }
+
+    isSending = true;
+
+    try {
+      const response = (await browser.runtime.sendMessage({
+        action: 'sendUrl',
+        apiUrl: serverUrl,
+        apiKey: apiKey,
+        tabUrl: tab.url,
+        tabTitle: tab.title,
+      })) as { success: boolean; message: string };
+
+      if (response && response.success) {
+        showStatus(response.message, 'success');
+      } else if (response) {
+        showStatus(response.message || 'Failed to send URL', 'error');
+      } else {
+        showStatus('Extension error: No response from background script', 'error');
+      }
+    } catch (error) {
+      let errorMessage = 'Failed to send URL';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
+      showStatus(`Error: ${errorMessage}`, 'error');
+    } finally {
+      isSending = false;
+    }
+  }
+
   async function handleAllowCurrent(): Promise<void> {
     const tab = await getActiveTab();
     if (!tab?.url) {
@@ -369,6 +429,36 @@
 
   onMount(() => {
     void updatePermissionStatus();
+
+    void (async () => {
+      try {
+        const settings = await loadSettings();
+        serverUrl = settings.serverUrl;
+        apiKey = settings.apiKey;
+      } catch (error) {
+        console.error('Failed to load settings', error);
+      }
+    })();
+
+    const handleStorageChange: Parameters<
+      typeof browser.storage.onChanged.addListener
+    >[0] = (changes, area) => {
+      if (area !== 'local') return;
+      const serverUrlChange = changes.gdluxx_server_url;
+      if (serverUrlChange) {
+        serverUrl = typeof serverUrlChange.newValue === 'string' ? serverUrlChange.newValue : '';
+      }
+      const apiKeyChange = changes.gdluxx_api_key;
+      if (apiKeyChange) {
+        apiKey = typeof apiKeyChange.newValue === 'string' ? apiKeyChange.newValue : '';
+      }
+    };
+
+    browser.storage.onChanged.addListener(handleStorageChange);
+
+    return () => {
+      browser.storage.onChanged.removeListener(handleStorageChange);
+    };
   });
 
   onDestroy(() => {
@@ -401,6 +491,21 @@
         >
           Open overlay in this tab
         </button>
+
+        <button
+          class="btn btn-secondary w-full"
+          type="button"
+          disabled={isSending || !isConfigured}
+          onclick={() => void handleSendCurrentTab()}
+        >
+          {isSending ? 'Sending...' : 'Send current tab to gdluxx'}
+        </button>
+
+        {#if !isConfigured}
+          <div class="text-secondary-600 bg-secondary-100 rounded-lg p-2 text-xs">
+            Configure gdluxx server URL and API key in the overlay settings to use this feature.
+          </div>
+        {/if}
 
         {#if allowCurrentVisible}
           <button
