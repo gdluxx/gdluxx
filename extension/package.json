@@ -2,7 +2,7 @@
   "name": "gdluxx-extension",
   "description": "companion browser extension for gdluxx, a self-hosted browser GUI for gallery-dl",
   "private": true,
-  "version": "1.3.0",
+  "version": "1.4.0",
   "type": "module",
   "scripts": {
     "compile": "tsc --noEmit",
