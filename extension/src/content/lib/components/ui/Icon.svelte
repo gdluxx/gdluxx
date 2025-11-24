@@ -9,9 +9,8 @@
   -->
 
 <script lang="ts">
-  import { onMount } from 'svelte';
   import type { IconName } from '#utils/icons';
-  import { ensureSpriteForNode, ensureSpriteMounted, getSpriteHref } from '#utils/spriteRegistry';
+  import { iconMap } from '#utils/icons';
 
   interface IconProps {
     iconName: IconName;
@@ -25,96 +24,33 @@
     iconName,
     size = 24,
     color = 'currentColor',
-    ariaLabel = `${iconName} icon`,
-    class: className = '',
+    ariaLabel,
+    class: className,
   }: IconProps = $props();
 
-  // Special handling for loading icon
-  // Animation wasn't working otherwise
-  const isLoadingIcon = iconName === 'loading';
-
-  let svgEl = $state<SVGSVGElement | null>(null);
-
-  $effect(() => {
-    const node = svgEl;
-    if (!node) return;
-    ensureSpriteForNode(node);
-  });
-
-  onMount(() => {
-    if (typeof document === 'undefined') return;
-    ensureSpriteMounted(document);
-    if (svgEl) {
-      ensureSpriteForNode(svgEl);
+  const iconData = $derived.by(() => {
+    const resolvedIcon = iconMap[iconName];
+    if (!resolvedIcon && import.meta.env.DEV) {
+      console.error(`[Icon] Unknown icon name: "${iconName}"`);
+      return iconMap['question']; // Fallback icon
     }
+    return resolvedIcon;
   });
 </script>
 
-{#if isLoadingIcon}
-  <!-- Render loading icon directly because it's special -->
+{#if iconData}
   <svg
-    bind:this={svgEl}
+    xmlns="http://www.w3.org/2000/svg"
     width={size}
     height={size}
-    viewBox="0 0 24 24"
+    viewBox={`0 0 ${iconData.width} ${iconData.height}`}
     role="img"
-    aria-label={ariaLabel}
-    class={`icon icon-${iconName} ${className}`}
+    aria-label={ariaLabel ?? `${iconName} icon`}
+    class={`icon icon-${iconName} ${className ?? ''}`}
+    style={`color: ${color}; fill: ${color}; width: ${size}px; height: ${size}px; min-width: ${size}px; min-height: ${size}px;`}
   >
-    <g
-      fill="none"
-      stroke={color}
-      stroke-linecap="round"
-      stroke-linejoin="round"
-      stroke-width="2"
-    >
-      <path
-        stroke-dasharray="16"
-        stroke-dashoffset="16"
-        d="M12 3c4.97 0 9 4.03 9 9"
-      >
-        <animate
-          fill="freeze"
-          attributeName="stroke-dashoffset"
-          dur="0.3s"
-          values="16;0"
-        />
-        <animateTransform
-          attributeName="transform"
-          dur="1.5s"
-          repeatCount="indefinite"
-          type="rotate"
-          values="0 12 12;360 12 12"
-        />
-      </path>
-      <path
-        stroke-dasharray="64"
-        stroke-dashoffset="64"
-        stroke-opacity="0.3"
-        d="M12 3c4.97 0 9 4.03 9 9c0 4.97 -4.03 9 -9 9c-4.97 0 -9 -4.03 -9 -9c0 -4.97 4.03 -9 9 -9Z"
-      >
-        <animate
-          fill="freeze"
-          attributeName="stroke-dashoffset"
-          dur="1.2s"
-          values="64;0"
-        />
-      </path>
-    </g>
-  </svg>
-{:else}
-  <!-- And sprite for all other icons -->
-  <svg
-    bind:this={svgEl}
-    width={size}
-    height={size}
-    fill={color}
-    viewBox="0 0 24 24"
-    role="img"
-    aria-label={ariaLabel}
-    class={`icon icon-${iconName} ${className}`}
-  >
-    <use href={getSpriteHref(iconName)} />
+    <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+    {@html iconData.body}
   </svg>
 {/if}
 

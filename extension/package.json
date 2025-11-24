@@ -54,6 +54,7 @@
     "wxt": "^0.20.6"
   },
   "dependencies": {
+    "@iconify-icons/mdi": "^1.2.48",
     "webextension-polyfill": "^0.12.0"
   }
 }

@@ -86,7 +86,6 @@
   import { applyThemeToShadowRoot } from '#src/content/overlayHost';
   import { createAppStore } from '#stores/app.svelte';
   import type { AppTab, SettingsTab, RemoteBackupMeta } from '#src/content/types';
-  import { ensureSpriteMounted } from '#utils/spriteRegistry';
   import { applySubRules, createSubRule, type SubResult, type SubRule } from '#utils/substitution';
   import * as subStorage from '#utils/storageSubstitution';
   import type { SavedSubProfile, SaveSubProfileInput } from '#utils/storageSubstitution';
@@ -729,7 +728,6 @@
       isFullscreen = appStore.isFullscreen;
       if (shadowContainer) {
         const shadowRoot = shadowContainer.getRootNode() as ShadowRoot;
-        ensureSpriteMounted(shadowRoot);
         applyThemeToShadowRoot(shadowRoot, currentTheme);
       }
       await initializeSelectorProfiles();

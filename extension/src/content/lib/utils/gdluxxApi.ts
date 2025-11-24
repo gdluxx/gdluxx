@@ -69,7 +69,7 @@ export async function sendUrls(urls: string[], customDirectory?: string): Promis
     return { success: false, error: 'No URLs to send' };
   }
 
-  if (urls.length > 25) {
+  if (urls.length > 2500) {
     return { success: false, error: 'Too many URLs. Maximum 25 allowed.' };
   }
 
