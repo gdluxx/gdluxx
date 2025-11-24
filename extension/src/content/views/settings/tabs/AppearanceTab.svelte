@@ -70,7 +70,7 @@
 </script>
 
 <div class="mx-2 my-4">
-  <div class="card bg-base-100 border-base-200 mb-4 max-w-[640px] border shadow-xl">
+  <div class="card bg-base-200 mb-4 max-w-[640px] shadow-xl">
     <div class="card-body">
       <div class="card-title">Display Mode</div>
       <p>Modal view or fullscreen overlay for maximum space.</p>
@@ -85,7 +85,7 @@
     </div>
   </div>
 
-  <div class="card bg-base-100 border-base-200 mb-4 border shadow-xl">
+  <div class="card bg-base-200 border-base-200 mb-4 max-w-[900px] border shadow-xl">
     <div class="card-body">
       <div class="card-title">Theme Selection</div>
       <ThemePreview
@@ -94,10 +94,10 @@
         onThemeSelect={handleThemeSelect}
       />
 
-      <p class="text-base-content/70 text-right text-sm">
+      <p class="text-base-content text-right text-sm">
         Props to <a
           href="https://daisyui.com"
-          class="link-accent">daisyUI</a
+          class="link">daisyUI</a
         >
       </p>
     </div>
