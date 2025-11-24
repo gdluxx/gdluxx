@@ -1,5 +1,14 @@
 # Changelog
 
+# [1.4.0](https://github.com/gdluxx/gdluxx/compare/extension-v1.3.0...extension-v1.4.0) (2025-11-04)
+
+
+### Bug Fixes
+
+* **extension:** data_collection_permissions cannot be empty ([6840d04](https://github.com/gdluxx/gdluxx/commit/6840d04d0d0dc4d472b77347d4d9ef47d3257598))
+* **extension:** forgot file. reworded context menu items ([99ae0af](https://github.com/gdluxx/gdluxx/commit/99ae0afd834c4868bdc36d312853f81792cce52a))
+* **extension:** linting error preventing action from completing ([4d33883](https://github.com/gdluxx/gdluxx/commit/4d33883490251594e2126440bb5ebd12ff26dd75))
+
 # [1.3.0](https://github.com/gdluxx/gdluxx/compare/extension-v1.2.0...extension-v1.3.0) (2025-11-04)
 
 
