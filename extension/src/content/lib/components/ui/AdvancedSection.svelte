@@ -17,15 +17,17 @@
     title,
     hasActiveFilters = false,
     children,
+    class: className = '',
   }: {
     expanded?: boolean;
     title: string;
     hasActiveFilters?: boolean;
     children?: Snippet;
+    class?: string;
   } = $props();
 </script>
 
-<div class="collapse-arrow border-base-300 bg-base-300 collapse border">
+<div class="collapse-arrow border-base-300 bg-base-300 collapse border {className}">
   <input
     type="checkbox"
     bind:checked={expanded}

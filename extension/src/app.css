@@ -163,6 +163,13 @@
     height: 28px !important;
   }
 
+  /* Allow dropdowns to overflow collapse containers */
+  .collapse.overflow-visible {
+    overflow: visible !important;
+    position: relative;
+    z-index: 10;
+  }
+
   .input,
   .select,
   .textarea {

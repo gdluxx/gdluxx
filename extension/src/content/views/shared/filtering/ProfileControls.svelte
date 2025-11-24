@@ -9,7 +9,7 @@
   -->
 
 <script lang="ts">
-  import { Button } from '#components/ui';
+  import { Button, Dropdown, type DropdownOption } from '#components/ui';
   import Icon from '#components/ui/Icon.svelte';
   import type { ProfileScope } from '#utils/storageProfiles';
 
@@ -41,6 +41,12 @@
     onshowscopehelp?: () => void;
   } = $props();
 
+  const scopeOptions: DropdownOption<ProfileScope>[] = [
+    { value: 'host', label: 'Host' },
+    { value: 'origin', label: 'Origin' },
+    { value: 'path', label: 'Path' },
+  ];
+
   function handleSaveProfile() {
     onsaveprofile?.({});
   }
@@ -53,8 +59,7 @@
     onignoreprofile?.();
   }
 
-  function handleScopeChange(e: Event) {
-    const scope = (e.target as HTMLSelectElement).value as ProfileScope;
+  function handleScopeChange(scope: ProfileScope) {
     profileScope = scope;
     onscopechange?.(scope);
   }
@@ -66,30 +71,33 @@
 
 <div class="space-y-3">
   <div class="flex flex-wrap items-center gap-2">
-    <label class="text-base-content/70 flex items-center gap-1 text-xs">
-      Scope
-      <button
-        class="btn btn-circle btn-ghost btn-xs"
+    <div class="join">
+      <Button
+        variant="neutral"
         onclick={showScopeHelp}
         title="Scope Help"
         aria-label="Show scope help"
+        class="join-item w-4"
+        size="sm"
       >
         <Icon
           iconName="question"
-          class="h-3 w-3"
+          class="h-4 w-4"
         />
-      </button>
-      <select
-        class="select-bordered select focus:select-primary ml-2"
-        bind:value={profileScope}
-        onchange={handleScopeChange}
-      >
-        <option value="host">Host</option>
-        <option value="origin">Origin</option>
-        <option value="path">Path</option>
-      </select>
-    </label>
+      </Button>
+      <Dropdown
+        options={scopeOptions}
+        selected={profileScope}
+        onSelect={(value) => handleScopeChange(value as ProfileScope)}
+        width="w-30"
+        size="sm"
+        placeholder="Scope"
+        class="join-item"
+        variant="neutral"
+      />
+    </div>
     <Button
+      size="sm"
       class="whitespace-nowrap"
       variant="primary"
       onclick={handleSaveProfile}
@@ -98,6 +106,7 @@
       {hasActiveProfile ? (activeProfileDiffers ? 'Update Saved Range' : 'Saved') : 'Save Range'}
     </Button>
     <Button
+      size="sm"
       class="whitespace-nowrap"
       variant="ghost"
       onclick={handleDeleteProfile}
@@ -106,6 +115,7 @@
       Delete
     </Button>
     <Button
+      size="sm"
       class="whitespace-nowrap"
       onclick={handleIgnoreProfile}
       disabled={!hasActiveProfile}

@@ -182,7 +182,7 @@
     id={listboxId}
     role="listbox"
     tabindex="-1"
-    class="dropdown-content menu rounded-box bg-base-100 z-[1] w-full p-2 shadow-lg"
+    class="dropdown-content menu rounded-box bg-base-100 z-[9999] w-full p-2 shadow-lg"
   >
     {#each options as option (option.value)}
       <li class:disabled={option.disabled}>
