@@ -63,8 +63,8 @@
     class: className = '',
   }: DropdownProps = $props();
 
+  let detailsRef = $state<HTMLDetailsElement | null>(null);
   let isOpen = $state(false);
-  let dropdownRef = $state<HTMLDivElement | null>(null);
 
   const listboxId = $derived(`dropdown-listbox-${Math.random().toString(36).slice(2, 11)}`);
 
@@ -87,12 +87,10 @@
   function handleSelect(value: typeof selected) {
     if (disabled) return;
     onSelect(value);
-    isOpen = false;
-  }
-
-  function handleToggle() {
-    if (disabled) return;
-    isOpen = !isOpen;
+    if (detailsRef) {
+      detailsRef.open = false;
+      isOpen = false;
+    }
   }
 
   function handleKeydown(event: KeyboardEvent) {
@@ -101,19 +99,15 @@
     switch (event.key) {
       case 'Escape':
         event.preventDefault();
-        isOpen = false;
-        break;
-      case 'Enter':
-      case ' ':
-        event.preventDefault();
-        isOpen = !isOpen;
+        if (detailsRef) {
+          detailsRef.open = false;
+          isOpen = false;
+        }
         break;
       case 'ArrowDown':
         event.preventDefault();
-        if (!isOpen) {
-          isOpen = true;
-        } else {
-          const items = dropdownRef?.querySelectorAll('button[role="option"]');
+        if (detailsRef && detailsRef.open) {
+          const items = detailsRef.querySelectorAll('button[role="option"]');
           const activeIndex = Array.from(items || []).findIndex(
             (el) => el === document.activeElement,
           );
@@ -123,8 +117,8 @@
         break;
       case 'ArrowUp':
         event.preventDefault();
-        if (isOpen) {
-          const items = dropdownRef?.querySelectorAll('button[role="option"]');
+        if (detailsRef && detailsRef.open) {
+          const items = detailsRef.querySelectorAll('button[role="option"]');
           const activeIndex = Array.from(items || []).findIndex(
             (el) => el === document.activeElement,
           );
@@ -136,47 +130,49 @@
   }
 
   $effect(() => {
-    if (!isOpen) return;
+    if (!isOpen || !detailsRef) return;
 
-    function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef && !dropdownRef.contains(event.target as Node)) {
+    function handleClickOutside(event: Event) {
+      if (detailsRef && !detailsRef.contains(event.target as Node)) {
+        detailsRef.open = false;
         isOpen = false;
       }
     }
 
-    document.addEventListener('click', handleClickOutside);
-    return () => document.removeEventListener('click', handleClickOutside);
+    const shadowRoot = detailsRef.getRootNode();
+    const eventTarget = shadowRoot instanceof ShadowRoot ? shadowRoot : document;
+
+    const timeoutId = setTimeout(() => {
+      eventTarget.addEventListener('click', handleClickOutside, { capture: true });
+    }, 10);
+
+    return () => {
+      clearTimeout(timeoutId);
+      eventTarget.removeEventListener('click', handleClickOutside, { capture: true });
+    };
   });
 </script>
 
-<div
-  bind:this={dropdownRef}
-  class="dropdown {isOpen ? 'dropdown-open' : ''} {isCustomWidth ? '' : width}"
+<details
+  bind:this={detailsRef}
+  class="dropdown {isCustomWidth ? '' : width}"
   class:opacity-50={disabled}
   style={isCustomWidth ? `width: ${width}` : ''}
+  ontoggle={() => (isOpen = !!detailsRef?.open)}
 >
-  <button
-    type="button"
-    tabindex="0"
-    role="combobox"
-    aria-expanded={isOpen}
-    aria-controls={listboxId}
-    aria-haspopup="listbox"
-    aria-disabled={disabled}
+  <summary
     class="btn btn-{size} {resolvedVariant() ? `btn-${resolvedVariant()}` : ''} {isOutline
       ? 'btn-outline'
       : ''} w-full justify-between gap-2 {className}"
-    onclick={handleToggle}
     onkeydown={handleKeydown}
-    {disabled}
   >
     <span class="truncate">{selectedOption?.label ?? placeholder}</span>
     <Icon
       iconName="chevron-down"
       size={16}
-      class="flex-shrink-0 transition-transform {isOpen ? 'rotate-180' : ''}"
+      class="flex-shrink-0 transition-transform"
     />
-  </button>
+  </summary>
 
   <ul
     id={listboxId}
@@ -205,4 +201,4 @@
       </li>
     {/each}
   </ul>
-</div>
+</details>
