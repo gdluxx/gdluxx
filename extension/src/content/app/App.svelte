@@ -2004,11 +2004,11 @@
   class="border-base-300 bg-base-200 text-base-content fixed z-[2147483647] box-border flex flex-col border text-left font-sans text-base {isFullscreen
     ? 'inset-0 h-full w-full rounded-none shadow-none'
     : 'inset-5 mx-auto max-w-[1200px] rounded-md shadow-xl'}"
-  style="font-size: 16px !important; line-height: 1.5 !important; text-align: left !important; font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif !important;"
+  style="font-size: 12px !important; line-height: 1.5 !important; text-align: left !important; font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif !important;"
 >
   <div class="{isFullscreen ? '' : 'rounded-t-md'} bg-base-100">
     <!-- Header Section -->
-    <div class="border-base-300 border-b px-6 py-4">
+    <div class="border-base-300 border-b px-6 py-2">
       <div class="flex items-center justify-between">
         <ContentHeader
           {active}
@@ -2026,7 +2026,8 @@
             >
               <Icon
                 iconName={active === 'settings' ? 'home' : 'settings'}
-                class="text-base-content h-5 w-5"
+                class="text-base-content"
+                size={16}
               />
             </button>
           </li>
@@ -2038,7 +2039,8 @@
             >
               <Icon
                 iconName="close"
-                class="text-base-content h-5 w-5"
+                class="text-base-content"
+                size={16}
               />
             </button>
           </li>
@@ -2048,7 +2050,7 @@
 
     <!-- Controls Section -->
     {#if active !== 'settings'}
-      <div class="border-base-300 bg-base-200 space-y-4 border-b px-6 py-4">
+      <div class="border-base-300 bg-base-200 space-y-6 border-b px-6 py-6">
         <!-- Filter Input -->
         <FilterControls
           bind:value={filter}
@@ -2120,9 +2122,6 @@
       <ActionControls
         {isConfigured}
         selectionCount={selected.size}
-        onSelectAll={selectAll}
-        onSelectNone={selectNone}
-        onInvertSelection={invertSelection}
         onCopySelected={copySelected}
         onDownloadSelected={downloadSelected}
         onSendSelected={sendSelected}
@@ -2142,6 +2141,9 @@
         linkCount={filteredLinks.length}
         selectionCount={selected.size}
         onchange={(tab) => (active = tab)}
+        onSelectAll={selectAll}
+        onSelectNone={selectNone}
+        onInvertSelection={invertSelection}
       />
     {/if}
   </div>

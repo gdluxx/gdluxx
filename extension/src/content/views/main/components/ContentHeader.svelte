@@ -28,12 +28,12 @@
   const count = $derived(active === 'links' ? linkCount : active === 'images' ? imageCount : 0);
 </script>
 
-<div class="bg-base-200 rounded-box flex h-12 cursor-default items-center gap-4 px-4">
+<div class="bg-base-200 rounded-box flex h-11 cursor-default items-center gap-4 px-4">
   <span class="font-medium">
     {headerTitle}
   </span>
   {#if headerTitle !== 'Settings'}
-    <span class="badge badge-accent font-semibold">
+    <span class="badge badge-neutral font-semibold">
       {count}
     </span>
   {/if}

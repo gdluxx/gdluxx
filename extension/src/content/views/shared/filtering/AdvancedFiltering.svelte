@@ -85,7 +85,7 @@
     />
 
     {#if rangeHint}
-      <Info>
+      <Info soft>
         {rangeHint}
       </Info>
     {/if}

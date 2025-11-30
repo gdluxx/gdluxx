@@ -114,6 +114,15 @@
       </Info>
     {/if}
 
+    <div class="pt-2">
+      <SubInputs
+        bind:rules
+        {onapply}
+        {onreset}
+        {onshowregexhelp}
+      />
+    </div>
+
     <SubProfileControls
       bind:profileScope
       bind:applyToPreview
@@ -137,13 +146,6 @@
     <SubQuickApply
       {hostProfiles}
       {onapplyprofile}
-    />
-
-    <SubInputs
-      bind:rules
-      {onapply}
-      {onreset}
-      {onshowregexhelp}
     />
 
     <SubPreview

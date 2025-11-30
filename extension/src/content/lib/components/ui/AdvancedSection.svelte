@@ -27,22 +27,21 @@
   } = $props();
 </script>
 
-<div class="collapse-arrow border-base-300 bg-base-300 collapse border {className}">
+<div class="collapse-arrow border-base-300/50 bg-base-100 collapse border {className}">
   <input
     type="checkbox"
     bind:checked={expanded}
   />
   <div
-    class="collapse-title flex items-center justify-between text-xl font-medium {expanded
-      ? 'bg-accent text-accent-content'
-      : ''}"
+    class="collapse-title flex items-center justify-between text-lg font-medium"
+    class:bg-base-200={expanded}
   >
     <div class="flex items-center gap-3">
       <span>{title}</span>
       {#if hasActiveFilters && !expanded}
         <Badge
           label="Active"
-          variant="primary"
+          variant="neutral"
         />
       {/if}
     </div>

@@ -32,6 +32,7 @@
   let validationErrors = $state<Record<string, string>>({});
   const touchedRules = new SvelteSet<string>();
   const canAddMoreRules = $derived(rules.length < MAX_RULES_PER_PROFILE);
+  let hoveredRuleId = $state<string | null>(null);
 
   const FLAG_OPTIONS = [
     { flag: 'g', label: 'global' },
@@ -230,24 +231,24 @@
   }
 </script>
 
-<div class="space-y-4">
+<div class="space-y-6">
   <div class="flex items-center justify-between">
     <p class="text-base-content/70 text-sm">
       Apply regex-based substitutions to selected URLs. Rules run in order from top to bottom.
     </p>
-    <button
-      class="btn btn-ghost btn-sm gap-2"
-      type="button"
+    <Button
+      size="sm"
+      variant="ghost"
       onclick={showRegexHelp}
-      title="Show regex help"
-      aria-label="Show regex help"
+      title="CSS Selector Help"
+      aria-label="Show CSS selector help"
     >
       <Icon
         iconName="question"
         class="h-4 w-4"
       />
       Regex help
-    </button>
+    </Button>
   </div>
 
   <div class="space-y-3">
@@ -260,12 +261,16 @@
             checked
             aria-label="Toggle rule {index + 1} visibility"
           />
-          <div class="collapse-title flex flex-wrap items-center justify-between gap-2 pr-12">
-            <div class="card-title">
-              <span>Rule {index + 1}</span>
+          <div
+            class="collapse-title flex flex-wrap items-center justify-between gap-2 pr-12"
+            onmouseenter={() => (hoveredRuleId = rule.id)}
+            onmouseleave={() => (hoveredRuleId = null)}
+          >
+            <div class="flex items-baseline gap-2">
+              <span class="text-sm font-medium">Rule {index + 1}</span>
               {#if rule.pattern}
-                <span class="text-base-content/50 text-sm font-normal">
-                  - {rule.pattern.slice(0, 30)}{rule.pattern.length > 30 ? '...' : ''}
+                <span class="text-base-content/50 text-xs font-normal">
+                  {rule.pattern.slice(0, 30)}{rule.pattern.length > 30 ? '...' : ''}
                 </span>
               {/if}
             </div>
@@ -286,40 +291,42 @@
                   />
                 </label>
               </div>
-              <div class="btn-group join">
-                <Button
-                  size="sm"
-                  disabled={index === 0}
-                  onclick={(e) => {
-                    e.stopPropagation();
-                    moveRule(rule.id, 'up');
-                  }}
-                  type="button"
-                  title="Move rule up"
-                  aria-label="Move rule up"
-                  class="join-item"
-                  square
-                >
-                  <Icon iconName="move-up" />
-                </Button>
-                <Button
-                  size="sm"
-                  disabled={index === rules.length - 1}
-                  onclick={(e) => {
-                    e.stopPropagation();
-                    moveRule(rule.id, 'down');
-                  }}
-                  type="button"
-                  title="Move rule down"
-                  aria-label="Move rule down"
-                  class="join-item"
-                  square
-                >
-                  <Icon iconName="move-down" />
-                </Button>
-              </div>
+              {#if hoveredRuleId === rule.id || rules.length === 1}
+                <div class="btn-group join">
+                  <Button
+                    size="sm"
+                    disabled={index === 0}
+                    onclick={(e) => {
+                      e.stopPropagation();
+                      moveRule(rule.id, 'up');
+                    }}
+                    type="button"
+                    title="Move rule up"
+                    aria-label="Move rule up"
+                    class="join-item"
+                    square
+                  >
+                    <Icon iconName="move-up" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    disabled={index === rules.length - 1}
+                    onclick={(e) => {
+                      e.stopPropagation();
+                      moveRule(rule.id, 'down');
+                    }}
+                    type="button"
+                    title="Move rule down"
+                    aria-label="Move rule down"
+                    class="join-item"
+                    square
+                  >
+                    <Icon iconName="move-down" />
+                  </Button>
+                </div>
+              {/if}
               <Button
-                variant="error-outline"
+                variant="ghost"
                 type="button"
                 onclick={(e) => {
                   e.stopPropagation();
@@ -330,7 +337,10 @@
                 size="sm"
                 square
               >
-                <Icon iconName="mdi-delete" />
+                <Icon
+                  iconName="mdi-delete"
+                  class="text-error"
+                />
               </Button>
             </div>
           </div>
@@ -385,7 +395,8 @@
   <div class="flex flex-wrap items-center justify-between gap-2">
     <div class="flex flex-wrap items-center gap-2">
       <Button
-        variant="primary"
+        variant="neutral"
+        size="sm"
         onclick={handleApply}
         class="whitespace-nowrap"
       >
@@ -393,6 +404,7 @@
       </Button>
       <Button
         variant="neutral"
+        size="sm"
         onclick={handleReset}
         class="whitespace-nowrap"
       >
@@ -400,7 +412,8 @@
       </Button>
     </div>
     <Button
-      variant="neutral"
+      variant="ghost"
+      size="sm"
       onclick={addRule}
       class="gap-2"
       disabled={!canAddMoreRules}

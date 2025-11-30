@@ -66,8 +66,9 @@
     <div class="text-base-content/70 text-sm">
       Restrict extraction to content between CSS selectors. Leave empty to scan the entire page.
     </div>
-    <button
-      class="btn btn-circle btn-ghost btn-sm"
+    <Button
+      size="sm"
+      variant="ghost"
       onclick={showSelectorHelp}
       title="CSS Selector Help"
       aria-label="Show CSS selector help"
@@ -76,53 +77,77 @@
         iconName="question"
         class="h-4 w-4"
       />
-    </button>
+      Selector help
+    </Button>
   </div>
 
-  <div class="flex items-stretch gap-2">
-    <div class="flex-1">
-      <input
-        class={`input-bordered input focus:ring-primary/20 focus:input-primary w-full transition-all focus:ring-2 ${startSelectorError ? 'input-error focus:input-error' : ''}`}
-        placeholder="Start selector (e.g. #content)"
-        aria-label="Start CSS selector"
-        list="common-selectors"
-        bind:value={startSelector}
-        oninput={handleStartInput}
-        onkeydown={handleKeydown}
-      />
-      {#if startSelectorError}
-        <p class="text-error mt-1 text-sm">{startSelectorError}</p>
-      {/if}
+  <div class="space-y-3">
+    <div class="flex items-stretch gap-2">
+      <div class="flex-1">
+        <input
+          class={`input-bordered input focus:ring-primary/20 focus:input-primary w-full transition-all focus:ring-2 ${startSelectorError ? 'input-error focus:input-error' : ''}`}
+          placeholder="Start selector (e.g. #content)"
+          aria-label="Start CSS selector"
+          list="common-selectors"
+          bind:value={startSelector}
+          oninput={handleStartInput}
+          onkeydown={handleKeydown}
+        />
+        {#if startSelectorError}
+          <p class="text-error mt-1 text-sm">{startSelectorError}</p>
+        {/if}
+      </div>
+      <div class="flex-1">
+        <input
+          class={`input-bordered input focus:ring-primary/20 focus:input-primary w-full transition-all focus:ring-2 ${endSelectorError ? 'input-error focus:input-error' : ''}`}
+          placeholder="End selector (e.g. #footer)"
+          aria-label="End CSS selector"
+          list="common-selectors"
+          bind:value={endSelector}
+          oninput={handleEndInput}
+          onkeydown={handleKeydown}
+        />
+        {#if endSelectorError}
+          <p class="text-error mt-1 text-sm">{endSelectorError}</p>
+        {/if}
+      </div>
+      <Button
+        class="whitespace-nowrap"
+        variant="neutral"
+        onclick={handleApply}
+        title="Apply selectors (Ctrl+Enter)"
+      >
+        Apply
+      </Button>
+      <Button
+        class="whitespace-nowrap"
+        variant="ghost"
+        onclick={handleReset}
+      >
+        Reset
+      </Button>
     </div>
-    <div class="flex-1">
-      <input
-        class={`input-bordered input focus:ring-primary/20 focus:input-primary w-full transition-all focus:ring-2 ${endSelectorError ? 'input-error focus:input-error' : ''}`}
-        placeholder="End selector (e.g. #footer)"
-        aria-label="End CSS selector"
-        list="common-selectors"
-        bind:value={endSelector}
-        oninput={handleEndInput}
-        onkeydown={handleKeydown}
-      />
-      {#if endSelectorError}
-        <p class="text-error mt-1 text-sm">{endSelectorError}</p>
-      {/if}
-    </div>
-    <Button
-      class="whitespace-nowrap"
-      variant="primary"
-      onclick={handleApply}
-      title="Apply selectors (Ctrl+Enter)"
-    >
-      Apply
-    </Button>
-    <Button
-      class="whitespace-nowrap"
-      variant="neutral"
-      onclick={handleReset}
-    >
-      Reset
-    </Button>
+
+    <!-- Buttons row -->
+    <!--    <div class="flex items-center gap-2">-->
+    <!--      <Button-->
+    <!--        class="whitespace-nowrap"-->
+    <!--        variant="neutral"-->
+    <!--        size="sm"-->
+    <!--        onclick={handleApply}-->
+    <!--        title="Apply selectors (Ctrl+Enter)"-->
+    <!--      >-->
+    <!--        Apply-->
+    <!--      </Button>-->
+    <!--      <Button-->
+    <!--        class="whitespace-nowrap"-->
+    <!--        variant="ghost"-->
+    <!--        size="sm"-->
+    <!--        onclick={handleReset}-->
+    <!--      >-->
+    <!--        Reset-->
+    <!--      </Button>-->
+    <!--    </div>-->
   </div>
 
   <!-- Autocomplete datalist for common selectors -->

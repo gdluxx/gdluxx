@@ -12,6 +12,7 @@
   import Icon from '#components/ui/Icon.svelte';
   import type { AppTab } from '#src/content/types';
   import Badge from '#components/ui/Badge.svelte';
+  import { Dropdown } from '#components/ui';
 
   interface ContentTabsProps {
     active: AppTab;
@@ -19,13 +20,43 @@
     linkCount: number;
     selectionCount: number;
     onchange?: (tab: AppTab) => void;
+    onSelectAll: () => void;
+    onSelectNone: () => void;
+    onInvertSelection: () => void;
   }
 
-  const { active, imageCount, linkCount, selectionCount, onchange }: ContentTabsProps = $props();
+  const {
+    active,
+    imageCount,
+    linkCount,
+    selectionCount,
+    onchange,
+    onSelectAll,
+    onSelectNone,
+    onInvertSelection,
+  }: ContentTabsProps = $props();
 
   function select(tab: AppTab): void {
     if (tab === active) return;
     onchange?.(tab);
+  }
+
+  let selectionAction = $state<string>('');
+
+  function handleSelectionAction(action: string) {
+    switch (action) {
+      case 'all':
+        onSelectAll();
+        break;
+      case 'none':
+        onSelectNone();
+        break;
+      case 'invert':
+        onInvertSelection();
+        break;
+    }
+    // Reset to force dropdown to show placeholder again
+    selectionAction = '';
   }
 </script>
 
@@ -54,12 +85,24 @@
           URLs ({linkCount})
         </button>
       </div>
-      <div class="flex cursor-default">
+      <div class="flex items-center gap-3">
         <Badge
           label="{selectionCount} selected"
           dismissible={false}
           variant={selectionCount > 0 ? 'accent' : 'outline-accent'}
-          class="mr-4"
+        />
+
+        <Dropdown
+          options={[
+            { value: 'all', label: 'All', disabled: false },
+            { value: 'none', label: 'None', disabled: selectionCount === 0 },
+            { value: 'invert', label: 'Invert', disabled: selectionCount === 0 },
+          ]}
+          selected={selectionAction}
+          onSelect={handleSelectionAction}
+          placeholder="Selection"
+          size="sm"
+          width="w-40"
         />
       </div>
     </div>
