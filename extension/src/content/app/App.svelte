@@ -11,7 +11,7 @@
 <script lang="ts">
   /* eslint-env browser */
   /* global Event, HTMLSelectElement */
-  import { Icon, Badge } from '#components/ui';
+  import { Icon } from '#components/ui';
   import { ToastContainer } from '#components/ui';
   import type { ProfileScope } from '#utils/storageProfiles';
   import { registerGlobalEffects, focusElementOnce } from '#utils/globalEffects';
@@ -639,7 +639,7 @@
           linkCount={filteredLinks.length}
           imageCount={filteredImages.length}
         />
-        <ul class="menu menu-horizontal bg-base-200 rounded-box">
+        <ul class="menu menu-horizontal bg-base-200 rounded-box gap-1">
           <!-- Only show accordion toggles when not in settings -->
           {#if active !== 'settings'}
             <li>
@@ -659,11 +659,7 @@
                   size={16}
                 />
                 {#if hasActiveFilters && !advancedExpanded}
-                  <Badge
-                    label="Active"
-                    variant="info"
-                    class="absolute -top-1 -right-1 scale-75"
-                  />
+                  <span class="bg-info absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full"></span>
                 {/if}
               </button>
             </li>
@@ -682,11 +678,7 @@
                   size={16}
                 />
                 {#if substitution.hasActiveSubs && !subExpanded}
-                  <Badge
-                    label="Active"
-                    variant="info"
-                    class="absolute -top-1 -right-1 scale-75"
-                  />
+                  <span class="bg-info absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full"></span>
                 {/if}
               </button>
             </li>
