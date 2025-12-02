@@ -27,6 +27,8 @@ import cogIcon from '@iconify-icons/mdi/cog';
 import eyeIcon from '@iconify-icons/mdi/eye';
 import keyboardIcon from '@iconify-icons/mdi/keyboard';
 import homeIcon from '@iconify-icons/mdi/home';
+import filterIcon from '@iconify-icons/mdi/filter-outline';
+import replaceIcon from '@iconify-icons/mdi/find-replace';
 
 export type IconName =
   | 'box-add'
@@ -34,6 +36,8 @@ export type IconName =
   | 'close'
   | 'copy'
   | 'download-arrow'
+  | 'filter-outline'
+  | 'find-replace'
   | 'folder-plus'
   | 'home'
   | 'hotkey'
@@ -59,6 +63,8 @@ export const iconMap: Record<IconName, IconifyIconData> = {
   'download-arrow': downloadIcon,
   send: sendIcon,
   'folder-plus': folderPlusIcon,
+  'filter-outline': filterIcon,
+  'find-replace': replaceIcon,
   image: imageIcon,
   link: linkIcon,
   'magnifying-glass': magnifyIcon,

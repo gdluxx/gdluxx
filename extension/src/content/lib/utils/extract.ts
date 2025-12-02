@@ -8,7 +8,7 @@
  * as published by the Free Software Foundation.
  */
 
-import { isValidUrl } from './url';
+import { normalizeUrl } from './url';
 
 export interface ExtractMeta {
   rangeApplied: boolean;
@@ -30,6 +30,8 @@ export interface ExtractResult {
 export function extractAll(startSelector = '', endSelector = ''): ExtractResult {
   let hrefs: string[] = [];
   let imgs: string[] = [];
+  const linkCounts: Record<string, number> = {};
+  const imageCounts: Record<string, number> = {};
 
   const meta: ExtractMeta = {
     rangeApplied: !!(startSelector || endSelector),
@@ -47,7 +49,7 @@ export function extractAll(startSelector = '', endSelector = ''): ExtractResult 
     if (endSelector) meta.endFound = !!end;
 
     const anchors = Array.from(document.querySelectorAll<HTMLAnchorElement>('a[href]'));
-    const images = Array.from(document.querySelectorAll<HTMLImageElement>('img[src]'));
+    const images = Array.from(document.querySelectorAll<HTMLImageElement>('img'));
 
     if (start && end) {
       const startPrecedesEnd = !!(
@@ -72,7 +74,7 @@ export function extractAll(startSelector = '', endSelector = ''): ExtractResult 
         });
 
         hrefs = inRangeAnchors.map((anchor) => anchor.href);
-        imgs = inRangeImages.map((image) => image.src);
+        imgs = collectImageUrls(inRangeImages);
         meta.inRangeAnchors = inRangeAnchors.length;
         meta.inRangeImages = inRangeImages.length;
       }
@@ -85,7 +87,7 @@ export function extractAll(startSelector = '', endSelector = ''): ExtractResult 
         (image) => (start.compareDocumentPosition(image) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0,
       );
       hrefs = inRangeAnchors.map((anchor) => anchor.href);
-      imgs = inRangeImages.map((image) => image.src);
+      imgs = collectImageUrls(inRangeImages);
       meta.inRangeAnchors = inRangeAnchors.length;
       meta.inRangeImages = inRangeImages.length;
     } else if (end) {
@@ -96,35 +98,73 @@ export function extractAll(startSelector = '', endSelector = ''): ExtractResult 
         (image) => (image.compareDocumentPosition(end) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0,
       );
       hrefs = inRangeAnchors.map((anchor) => anchor.href);
-      imgs = inRangeImages.map((image) => image.src);
+      imgs = collectImageUrls(inRangeImages);
       meta.inRangeAnchors = inRangeAnchors.length;
       meta.inRangeImages = inRangeImages.length;
     }
   }
 
-  if (!meta.rangeApplied || (!hrefs.length && !imgs.length && !meta.startFound && !meta.endFound)) {
+  const needsFallback =
+    !meta.rangeApplied ||
+    !hrefs.length && !imgs.length ||
+    (meta.rangeApplied && (!meta.startFound || !meta.endFound || meta.startBeforeEnd === false));
+
+  if (needsFallback) {
     hrefs = Array.from(document.querySelectorAll<HTMLAnchorElement>('a[href]')).map(
       (anchor) => anchor.href,
     );
-    imgs = Array.from(document.querySelectorAll<HTMLImageElement>('img[src]')).map(
-      (image) => image.src,
-    );
+    imgs = collectImageUrls(Array.from(document.querySelectorAll<HTMLImageElement>('img')));
     meta.inRangeAnchors = hrefs.length;
     meta.inRangeImages = imgs.length;
   }
 
-  const linkCounts: Record<string, number> = {};
-  const imageCounts: Record<string, number> = {};
+  const normalizedLinks: string[] = [];
+  const normalizedImages: string[] = [];
 
   for (const url of hrefs) {
-    linkCounts[url] = (linkCounts[url] ?? 0) + 1;
+    const normalized = normalizeUrl(url);
+    if (!normalized) continue;
+    linkCounts[normalized] = (linkCounts[normalized] ?? 0) + 1;
+    normalizedLinks.push(normalized);
   }
   for (const url of imgs) {
-    imageCounts[url] = (imageCounts[url] ?? 0) + 1;
+    const normalized = normalizeUrl(url);
+    if (!normalized) continue;
+    imageCounts[normalized] = (imageCounts[normalized] ?? 0) + 1;
+    normalizedImages.push(normalized);
   }
 
-  const links = Array.from(new Set(hrefs)).filter(isValidUrl).sort();
-  const images = Array.from(new Set(imgs)).filter(isValidUrl).sort();
+  const links = Array.from(new Set(normalizedLinks)).sort();
+  const images = Array.from(new Set(normalizedImages)).sort();
 
   return { links, images, linkCounts, imageCounts, meta };
+}
+
+function collectImageUrls(images: HTMLImageElement[]): string[] {
+  const urls: string[] = [];
+  for (const image of images) {
+    if (image.src) urls.push(image.src);
+    if (image.currentSrc && image.currentSrc !== image.src) urls.push(image.currentSrc);
+    if (image.srcset) {
+      urls.push(...parseSrcSet(image.srcset));
+    }
+    const dataSrc = image.getAttribute('data-src') ?? image.dataset.src;
+    if (dataSrc) urls.push(dataSrc);
+    const dataSrcSet = image.getAttribute('data-srcset') ?? image.dataset.srcset;
+    if (dataSrcSet) {
+      urls.push(...parseSrcSet(dataSrcSet));
+    }
+    const dataLazy = image.getAttribute('data-lazy');
+    if (dataLazy) urls.push(dataLazy);
+    const dataOriginal = image.getAttribute('data-original');
+    if (dataOriginal) urls.push(dataOriginal);
+  }
+  return urls;
+}
+
+function parseSrcSet(srcset: string): string[] {
+  return srcset
+    .split(',')
+    .map((entry) => entry.trim().split(/\s+/)[0])
+    .filter(Boolean);
 }

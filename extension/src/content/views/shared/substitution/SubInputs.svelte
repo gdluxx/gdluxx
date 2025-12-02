@@ -265,6 +265,8 @@
             class="collapse-title flex flex-wrap items-center justify-between gap-2 pr-12"
             onmouseenter={() => (hoveredRuleId = rule.id)}
             onmouseleave={() => (hoveredRuleId = null)}
+            role="group"
+            aria-label="Substitution rule {index + 1}"
           >
             <div class="flex items-baseline gap-2">
               <span class="text-sm font-medium">Rule {index + 1}</span>

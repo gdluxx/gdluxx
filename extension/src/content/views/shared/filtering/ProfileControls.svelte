@@ -9,7 +9,8 @@
   -->
 
 <script lang="ts">
-  import { Button, Dropdown, type DropdownOption } from '#components/ui';
+  import { Button, Dropdown } from '#components/ui';
+  import type { DropdownOption } from '#components/ui/Dropdown.svelte';
   import Icon from '#components/ui/Icon.svelte';
   import type { ProfileScope } from '#utils/storageProfiles';
 

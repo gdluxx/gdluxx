@@ -17,6 +17,8 @@ const THEME_KEY = 'gdluxx_us_theme';
 const DISPLAY_MODE_KEY = 'gdluxx_us_display_mode';
 const IGNORE_SESSION_KEY = 'gdluxx_us_ignore_profiles';
 const IGNORE_SUB_KEY = 'gdluxx_ignored_sub_profiles';
+const CUSTOM_DIR_ENABLED_KEY = 'customDirectory_enabled';
+const CUSTOM_DIR_VALUE_KEY = 'customDirectory_value';
 
 export async function readThemePreference(defaultTheme: string): Promise<string> {
   try {
@@ -83,4 +85,19 @@ export function persistIgnoredSubProfileIds(ids: ReadonlySet<string>): void {
   } catch (error) {
     console.error('Failed to persist ignored substitution profiles', error);
   }
+}
+
+export async function loadCustomDirectory(): Promise<{ enabled: boolean; value: string }> {
+  try {
+    const enabled = await getValue<boolean>(CUSTOM_DIR_ENABLED_KEY, false);
+    const value = await getValue<string>(CUSTOM_DIR_VALUE_KEY, '');
+    return { enabled, value };
+  } catch {
+    return { enabled: false, value: '' };
+  }
+}
+
+export async function saveCustomDirectory(enabled: boolean, value: string): Promise<void> {
+  await setValue(CUSTOM_DIR_ENABLED_KEY, enabled);
+  await setValue(CUSTOM_DIR_VALUE_KEY, value);
 }

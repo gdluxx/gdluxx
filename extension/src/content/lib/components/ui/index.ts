@@ -17,3 +17,4 @@ export { default as Info } from './Info.svelte';
 export { default as Modal } from './Modal.svelte';
 export { default as Toast } from './Toast.svelte';
 export { default as ToastContainer } from './ToastContainer.svelte';
+export { default as Toggle } from './Toggle.svelte';

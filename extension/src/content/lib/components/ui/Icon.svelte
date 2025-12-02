@@ -30,7 +30,8 @@
 
   const iconData = $derived.by(() => {
     const resolvedIcon = iconMap[iconName];
-    if (!resolvedIcon && import.meta.env.DEV) {
+    const envAny = import.meta as unknown as { env?: { DEV?: boolean } };
+    if (!resolvedIcon && envAny.env?.DEV) {
       console.error(`[Icon] Unknown icon name: "${iconName}"`);
       return iconMap['question']; // Fallback icon
     }

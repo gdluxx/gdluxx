@@ -18,15 +18,15 @@
     apiKeyError: boolean;
     isSavingSettings: boolean;
     isTestingConnection: boolean;
-    onServerUrlInput: (event: Event) => void;
-    onApiKeyInput: (event: Event) => void;
+    onServerUrlInput: (value: string) => void;
+    onApiKeyInput: (value: string) => void;
     onTest: () => void | Promise<void>;
     onSave: () => void | Promise<void>;
     onReset: () => void | Promise<void>;
   }
 
   const {
-    settings,
+    settings = $bindable<Settings>(),
     serverUrlError,
     apiKeyError,
     isSavingSettings,
@@ -57,8 +57,8 @@
             class={`input-bordered input focus:ring-primary/20 w-full pr-10 transition-all focus:ring-2 ${serverUrlError ? 'input-error focus:input-error' : 'focus:input-primary'} ${isSavingSettings || isTestingConnection ? 'input-disabled' : ''}`}
             placeholder="http://localhost:5173 or https://gdluxx.example.com"
             disabled={isSavingSettings || isTestingConnection}
-            bind:value={settings.serverUrl}
-            oninput={onServerUrlInput}
+            value={settings.serverUrl}
+            oninput={(event) => onServerUrlInput((event.target as HTMLInputElement).value)}
           />
           {#if isSavingSettings || isTestingConnection}
             <div class="absolute inset-y-0 right-0 flex items-center pr-3">
@@ -88,13 +88,13 @@
           <div class="relative">
             <input
               id="api-key"
-              class={`input-bordered input focus:ring-primary/20 w-full pr-10 transition-all focus:ring-2 ${apiKeyError ? 'input-error focus:input-error' : 'focus:input-primary'} ${isSavingSettings || isTestingConnection ? 'input-disabled' : ''}`}
-              type="password"
-              placeholder="Enter your gdluxx API key"
-              disabled={isSavingSettings || isTestingConnection}
-              bind:value={settings.apiKey}
-              oninput={onApiKeyInput}
-            />
+            class={`input-bordered input focus:ring-primary/20 w-full pr-10 transition-all focus:ring-2 ${apiKeyError ? 'input-error focus:input-error' : 'focus:input-primary'} ${isSavingSettings || isTestingConnection ? 'input-disabled' : ''}`}
+            type="password"
+            placeholder="Enter your gdluxx API key"
+            disabled={isSavingSettings || isTestingConnection}
+            value={settings.apiKey}
+            oninput={(event) => onApiKeyInput((event.target as HTMLInputElement).value)}
+          />
             {#if isSavingSettings || isTestingConnection}
               <div class="absolute inset-y-0 right-0 flex items-center pr-3">
                 <span class="loading loading-sm loading-spinner"></span>

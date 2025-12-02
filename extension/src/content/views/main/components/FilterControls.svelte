@@ -14,9 +14,11 @@
   let {
     value = $bindable(''),
     inputEl = $bindable(null),
+    onchange,
   }: {
     value: string;
     inputEl: HTMLInputElement | null;
+    onchange?: (value: string) => void;
   } = $props();
 </script>
 
@@ -29,13 +31,21 @@
     class="input-bordered input focus:ring-primary/20 focus:input-primary w-full pr-10 pl-10 transition-all focus:ring-2"
     placeholder="Filter by keyword..."
     aria-label="Filter results by keyword"
-    bind:value
+    {value}
+    oninput={(e) => {
+      const newValue = e.currentTarget.value;
+      value = newValue;
+      onchange?.(newValue);
+    }}
     bind:this={inputEl}
   />
   {#if value}
     <button
       class="text-base-content/50 hover:text-base-content absolute inset-y-0 right-0 flex items-center pr-3 transition-colors"
-      onclick={() => (value = '')}
+      onclick={() => {
+        value = '';
+        onchange?.('');
+      }}
       aria-label="Clear filter"
       type="button"
     >

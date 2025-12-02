@@ -41,7 +41,7 @@
       {#if hasActiveFilters && !expanded}
         <Badge
           label="Active"
-          variant="neutral"
+          variant="info"
         />
       {/if}
     </div>

@@ -9,11 +9,16 @@
  */
 
 export function isValidUrl(str: string): boolean {
+  return normalizeUrl(str) !== null;
+}
+
+export function normalizeUrl(str: string): string | null {
   try {
-    const u = new URL(str);
-    return u.protocol === 'http:' || u.protocol === 'https:';
+    const base = typeof window !== 'undefined' ? window.location.href : undefined;
+    const u = base ? new URL(str, base) : new URL(str);
+    return u.protocol === 'http:' || u.protocol === 'https:' ? u.href : null;
   } catch {
-    return false;
+    return null;
   }
 }
 

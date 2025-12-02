@@ -11,58 +11,11 @@
 <script lang="ts">
   /* eslint-env browser */
   /* global Event, HTMLSelectElement */
-  import { onMount } from 'svelte';
-  import { extractAll } from '#utils/extract';
-  import { setClipboard } from '#utils/clipboard';
-  import {
-    saveSettings,
-    validateServerUrl,
-    readIgnoredProfileIds,
-    persistIgnoredProfileIds,
-    readIgnoredSubProfileIds,
-    persistIgnoredSubProfileIds,
-  } from '#utils/persistence';
-  import {
-    sendUrls,
-    testConnection,
-    fetchProfileBackup,
-    saveProfileBackup,
-    deleteProfileBackup,
-    type ProfileBackupPayload,
-    fetchSubBackup,
-    saveSubBackup,
-    deleteSubBackup,
-    type SubBackupPayload,
-  } from '#utils/messaging';
-  import { Icon } from '#components/ui';
+  import { Icon, Badge } from '#components/ui';
   import { ToastContainer } from '#components/ui';
-  import { toastStore } from '#stores/toast';
-  import {
-    getProfileForUrl,
-    saveSelectorProfile,
-    deleteSelectorProfile,
-    getProfilesForHost,
-    getSelectorStorageStatus,
-    getPreferredScope,
-    setPreferredScope,
-    loadSelectorProfiles,
-    exportSelectorProfiles,
-    importSelectorProfiles,
-    clearSelectorProfiles,
-    renameSelectorProfile,
-    type ProfileScope,
-    type SavedSelectorProfile,
-  } from '#utils/storageProfiles';
+  import type { ProfileScope } from '#utils/storageProfiles';
   import { registerGlobalEffects, focusElementOnce } from '#utils/globalEffects';
-  import { formatTimestamp, describeProfile, describeSubProfile } from '#utils/formatters';
-  import {
-    toggleSelection as toggleSelectionItem,
-    selectAll as selectAllItems,
-    clearSelection as clearSelectionItems,
-    invertSelection as invertSelectionItems,
-  } from '#utils/selection';
-  import { computeHoverPreviewPosition } from '#utils/display';
-  import { isValidDirectoryName } from '#utils/validation';
+  import { formatTimestamp, describeSubProfile } from '#utils/formatters';
   import HoverPreview from '#views/shared/overlays/HoverPreview.svelte';
   import HelpModals from '#views/shared/modals/HelpModals.svelte';
   import {
@@ -74,45 +27,55 @@
     SettingsTabs,
   } from '#views/settings/tabs';
   import {
-    FilterControls,
     ActionControls,
     ContentTabs,
-    ContentHeader,
     LinkList,
     ImageList,
+    ContentHeader,
+    FilterControls,
   } from '#views/main/components';
   import { AdvancedFiltering } from '#views/shared/filtering';
   import { SubSection } from '#views/shared/substitution';
+  import StatusBar from '#views/main/StatusBar.svelte';
   import { applyThemeToShadowRoot } from '#src/content/overlayHost';
   import { createAppStore } from '#stores/app.svelte';
-  import type { AppTab, SettingsTab, RemoteBackupMeta } from '#src/content/types';
-  import { applySubRules, createSubRule, type SubResult, type SubRule } from '#utils/substitution';
-  import * as subStorage from '#utils/storageSubstitution';
-  import type { SavedSubProfile, SaveSubProfileInput } from '#utils/storageSubstitution';
-  import { SvelteMap, SvelteSet } from 'svelte/reactivity';
+  import { createSelectionStore } from '#stores/selectionStore.svelte';
+  import { createHoverPreviewStore } from '#stores/hoverPreviewStore.svelte';
+  import { createSelectorProfileStore } from '#stores/selectorProfileStore.svelte';
+  import { createSubstitutionStore } from '#stores/substitutionStore.svelte';
+  import { createSettingsViewModel } from '#stores/settingsViewModel.svelte';
+  import { createExtractionController } from '../lib/controllers/extractionController.svelte';
+  import type { AppTab, SettingsTab } from '#src/content/types';
+  import type { SubRule } from '#utils/substitution';
 
   const { onclose, shadowContainer } = $props();
 
   // Tabs and filters
   let active: AppTab = $state('images');
-  let filter = $state('');
-
-  // Settings tabs
-  let activeSettingsTab: SettingsTab = $state('preview');
-  let startSel = $state('');
-  let endSel = $state('');
-
-  // Data
-  let links = $state<string[]>([]);
-  let images = $state<string[]>([]);
-  let linkCounts = $state<Record<string, number>>({});
-  let imageCounts = $state<Record<string, number>>({});
-  let compact = $state(true);
-  const selected = new SvelteSet<string>();
 
   const appStore = createAppStore();
+  const selection = createSelectionStore();
+  const hoverPreview = createHoverPreviewStore();
+  const selectorProfiles = createSelectorProfileStore();
+  const substitution = createSubstitutionStore();
+  const settingsVM = createSettingsViewModel(appStore, appStore.settings);
+  // Settings tabs
+  let activeSettingsTab: SettingsTab = $state('preview');
+  let startSel = $state(selectorProfiles.startSelector);
+  let endSel = $state(selectorProfiles.endSelector);
+  const extraction = createExtractionController(
+    selection,
+    substitution.clearModifications,
+    () => active as AppTab,
+    () => ({ startSel, endSel }),
+  );
   const settings = appStore.settings;
   const isConfigured = $derived(appStore.isConfigured);
+
+  const links = $derived(extraction.links);
+  const images = $derived(extraction.images);
+  const linkCounts = $derived(extraction.linkCounts);
+  const imageCounts = $derived(extraction.imageCounts);
 
   // Theme preferences
   let currentTheme = $state(appStore.theme);
@@ -120,51 +83,45 @@
   // Display preference
   let isFullscreen = $state(appStore.isFullscreen);
 
-  // filtering profiles
-  let profileScope = $state<ProfileScope>('host');
-  let activeProfileId = $state<string | null>(null);
-  let activeProfile = $state<SavedSelectorProfile | null>(null);
-  let profileStatusMessage = $state<string | null>(null);
-  let storageWarning = $state<string | null>(null);
-  let hostProfiles = $state<SavedSelectorProfile[]>([]);
-  let autoAppliedProfile = $state(false);
-  const ignoredProfileIds = new SvelteSet<string>();
-  let isSavingProfile = $state(false);
-  let allProfiles = $state<SavedSelectorProfile[]>([]);
-  let importProfilesText = $state('');
-  let importProfilesError = $state<string | null>(null);
-  let isImportingProfiles = $state(false);
-  let isClearingProfiles = $state(false);
-  let isExportingProfiles = $state(false);
-  let profileNameDrafts = $state<Record<string, string>>({});
-  let profileSearch = $state('');
-
-  const EMPTY_REMOTE_PAYLOAD: ProfileBackupPayload = {
-    hasBackup: false,
-    profileCount: 0,
-    syncedBy: null,
-    updatedAt: null,
-    bundle: { version: 1, profiles: {} },
-  };
-
-  let remoteBackupMeta = $state<RemoteBackupMeta | null>(null);
-  let isLoadingRemoteBackup = $state(false);
-  let isSavingRemoteBackup = $state(false);
-  let isRestoringRemoteBackup = $state(false);
-  let isDeletingRemoteBackup = $state(false);
-
-  let subRemoteBackupMeta = $state<RemoteBackupMeta | null>(null);
-  let isLoadingSubRemoteBackup = $state(false);
-  let isSavingSubRemoteBackup = $state(false);
-  let isRestoringSubRemoteBackup = $state(false);
-  let isDeletingSubRemoteBackup = $state(false);
-
-  // Custom directory
-  let customDirectoryEnabled = $state(false);
-  let customDirectoryValue = $state('');
-
   // Range feedback
-  let rangeHint = $state('');
+  const rangeHint = $derived(extraction.rangeHint);
+
+  let lastStartSel = selectorProfiles.startSelector;
+  let lastEndSel = selectorProfiles.endSelector;
+
+  $effect(() => {
+    const next = selectorProfiles.startSelector;
+    if (next !== lastStartSel) {
+      lastStartSel = next;
+      startSel = next;
+    }
+  });
+
+  $effect(() => {
+    if (startSel !== lastStartSel) {
+      lastStartSel = startSel;
+      selectorProfiles.setStartSelector(startSel);
+    }
+  });
+
+  $effect(() => {
+    const next = selectorProfiles.endSelector;
+    if (next !== lastEndSel) {
+      lastEndSel = next;
+      endSel = next;
+    }
+  });
+
+  $effect(() => {
+    if (endSel !== lastEndSel) {
+      lastEndSel = endSel;
+      selectorProfiles.setEndSelector(endSel);
+    }
+  });
+
+  $effect(() => {
+    selectorProfiles.setRangeHint(rangeHint);
+  });
 
   // Advanced section state
   let advancedExpanded = $state(false);
@@ -174,556 +131,165 @@
   let showSubRegexHelp = $state(false);
 
   // Substitution profiles and rules
-  let subRules = $state<SubRule[]>([]);
-  let subExpanded = $state(false);
-  let subProfileScope = $state<ProfileScope>('host');
-  let activeSubProfileId = $state<string | null>(null);
-  let activeSubProfile = $state<SavedSubProfile | null>(null);
-  let subProfileStatusMessage = $state<string | null>(null);
-  let autoAppliedSubProfile = $state(false);
-  let applySubToPreview = $state(false);
-  let applyDefaultSub = $state(true);
-  let isSavingSubProfile = $state(false);
-  let hostSubProfiles = $state<SavedSubProfile[]>([]);
-  let allSubProfiles = $state<SavedSubProfile[]>([]);
-  let subProfileNameDrafts = $state<Record<string, string>>({});
-  let subProfileSearch = $state('');
-  let importSubProfilesText = $state('');
-  let importSubProfilesError = $state<string | null>(null);
-  let isImportingSubs = $state(false);
-  let isClearingSubs = $state(false);
-  let isExportingSubs = $state(false);
-  let subStorageWarning = $state<string | null>(null);
-  const ignoredSubProfileIds = new SvelteSet<string>();
-  const urlModifications = new SvelteMap<string, SubResult>();
-  const modifiedUrls = new SvelteSet<string>();
-  const hasActiveSubs = $derived(
-    subRules.some((rule) => rule.enabled && rule.pattern.trim().length > 0),
-  );
-  const hasSubRules = $derived(subRules.length > 0);
+  let subRules = $state<SubRule[]>(substitution.rules);
+  let subExpanded = $state(substitution.expanded);
+  let subProfileScope = $state<ProfileScope>(substitution.scope);
+  let applySubToPreview = $state(substitution.applyToPreview);
+  let applyDefaultSub = $state(substitution.applyDefaultSub);
 
-  function cloneSubRulesForEditing(source: SubRule[]): SubRule[] {
-    return source.map((rule, index) => ({
-      ...rule,
-      order: index,
-    }));
-  }
-
-  function rulesDifferFromProfile(profileRules: SubRule[], currentRules: SubRule[]): boolean {
-    if (profileRules.length !== currentRules.length) {
-      return true;
-    }
-    for (let index = 0; index < profileRules.length; index += 1) {
-      const a = profileRules[index];
-      const b = currentRules[index];
-      if (
-        a.pattern !== b.pattern ||
-        a.replacement !== b.replacement ||
-        a.flags !== b.flags ||
-        a.enabled !== b.enabled ||
-        index !== (b.order ?? index)
-      ) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  const activeSubProfileDiffers = $derived(
-    activeSubProfile
-      ? rulesDifferFromProfile(activeSubProfile.rules, subRules) ||
-          activeSubProfile.applyToPreview !== applySubToPreview
-      : false,
-  );
-
-  let subPreviewCount = $state(0);
+  // sync substitution store bindings with directional guards
+  let lastSubRules = substitution.rules;
+  let lastSubScope = substitution.scope;
+  let lastApplyPreview = substitution.applyToPreview;
+  let lastApplyDefault = substitution.applyDefaultSub;
+  let lastSubExpanded = substitution.expanded;
 
   $effect(() => {
-    if (!hasActiveSubs) {
-      subPreviewCount = 0;
-      return;
-    }
-    const targets = Array.from(selected);
-    if (!targets.length) {
-      subPreviewCount = 0;
-      return;
-    }
-    let count = 0;
-    for (const url of targets) {
-      if (applySubRules(url, subRules).modified) {
-        count += 1;
-      }
-    }
-    subPreviewCount = count;
-  });
-
-  const filteredSubProfiles = $derived(
-    !subProfileSearch.trim()
-      ? allSubProfiles
-      : allSubProfiles.filter((profile) => {
-          const query = subProfileSearch.trim().toLowerCase();
-          const parts = [
-            profile.host,
-            profile.origin ?? '',
-            profile.path ?? '',
-            profile.name ?? '',
-            profile.scope,
-            `${profile.rules.length}`,
-          ]
-            .join(' ')
-            .toLowerCase();
-          return parts.includes(query);
-        }),
-  );
-
-  // Hover preview state
-  let hoverPreviewUrl = $state<string | null>(null);
-  let hoverPreviewVisible = $state(false);
-  let hoverPreviewPosition = $state({ x: 0, y: 0 });
-  let hoverPreviewImageError = $state(false);
-
-  // Input validation state
-  let serverUrlError = $state(false);
-  let apiKeyError = $state(false);
-  let isTestingConnection = $state(false);
-  let isSavingSettings = $state(false);
-
-  // Derived filtered arrays
-  const filteredLinks = $derived(
-    !filter ? links : links.filter((u) => u.toLowerCase().includes(filter.toLowerCase())),
-  );
-  const filteredImages = $derived(
-    !filter ? images : images.filter((u) => u.toLowerCase().includes(filter.toLowerCase())),
-  );
-  const visible = $derived(
-    (active as AppTab) === 'links'
-      ? filteredLinks
-      : (active as AppTab) === 'images'
-        ? filteredImages
-        : [],
-  );
-
-  const hasActiveProfile = $derived(!!activeProfileId);
-  const activeProfileDiffers = $derived(
-    activeProfile
-      ? activeProfile.startSelector !== startSel.trim() ||
-          activeProfile.endSelector !== endSel.trim()
-      : false,
-  );
-  const hasSelectors = $derived(!!(startSel.trim() || endSel.trim()));
-  const filteredProfiles = $derived(
-    !profileSearch.trim()
-      ? allProfiles
-      : allProfiles.filter((profile) => {
-          const query = profileSearch.trim().toLowerCase();
-          const parts = [
-            profile.host,
-            profile.origin ?? '',
-            profile.path ?? '',
-            profile.name ?? '',
-            profile.startSelector,
-            profile.endSelector,
-            profile.scope,
-          ]
-            .join(' ')
-            .toLowerCase();
-          return parts.includes(query);
-        }),
-  );
-
-  let subRulesLoaded = false;
-
-  onMount(async () => {
-    try {
-      const storedRules = await subStorage.loadActiveSubRules();
-      if (storedRules.length) {
-        subRules = cloneSubRulesForEditing(storedRules.sort((a, b) => a.order - b.order));
-      } else {
-        subRules = [createSubRule('', '', 'g', 0)];
-      }
-    } catch (error) {
-      console.error('Failed to load replacement rules', error);
-      subRules = [createSubRule('', '', 'g', 0)];
-    } finally {
-      subRulesLoaded = true;
+    const nextRules = substitution.rules;
+    if (nextRules !== lastSubRules) {
+      lastSubRules = nextRules;
+      subRules = nextRules;
     }
   });
 
   $effect(() => {
-    if (!subRulesLoaded) return;
-    subStorage.persistActiveSubRules(subRules).catch((error) => {
-      console.error('Failed to persist replacement rules', error);
-    });
+    if (subRules !== lastSubRules) {
+      lastSubRules = subRules;
+      substitution.setRules(subRules);
+    }
   });
 
-  if (typeof window !== 'undefined') {
-    setIgnoredProfileIds(readIgnoredProfileIds());
-    setIgnoredSubProfileIds(readIgnoredSubProfileIds());
-  }
+  $effect(() => {
+    const nextScope = substitution.scope;
+    if (nextScope !== lastSubScope) {
+      lastSubScope = nextScope;
+      subProfileScope = nextScope;
+    }
+  });
+
+  $effect(() => {
+    if (subProfileScope !== lastSubScope) {
+      lastSubScope = subProfileScope;
+      substitution.setScope(subProfileScope);
+    }
+  });
+
+  $effect(() => {
+    const nextApplyPreview = substitution.applyToPreview;
+    if (nextApplyPreview !== lastApplyPreview) {
+      lastApplyPreview = nextApplyPreview;
+      applySubToPreview = nextApplyPreview;
+    }
+  });
+
+  $effect(() => {
+    if (applySubToPreview !== lastApplyPreview) {
+      lastApplyPreview = applySubToPreview;
+      substitution.setApplyToPreview(applySubToPreview);
+    }
+  });
+
+  $effect(() => {
+    const nextApplyDefault = substitution.applyDefaultSub;
+    if (nextApplyDefault !== lastApplyDefault) {
+      lastApplyDefault = nextApplyDefault;
+      applyDefaultSub = nextApplyDefault;
+    }
+  });
+
+  $effect(() => {
+    if (applyDefaultSub !== lastApplyDefault) {
+      lastApplyDefault = applyDefaultSub;
+      substitution.setApplyDefault(applyDefaultSub);
+    }
+  });
+
+  $effect(() => {
+    const nextExpanded = substitution.expanded;
+    if (nextExpanded !== lastSubExpanded) {
+      lastSubExpanded = nextExpanded;
+      subExpanded = nextExpanded;
+    }
+  });
+
+  $effect(() => {
+    if (subExpanded !== lastSubExpanded) {
+      lastSubExpanded = subExpanded;
+      substitution.setExpanded(subExpanded);
+    }
+  });
+
+  const activeSubProfileDiffers = $derived(substitution.activeProfileDiffers);
+
+  $effect(() => {
+    substitution.calculatePreviewCount(Array.from(selection.selected));
+  });
+
+  const filteredSubProfiles = $derived(substitution.filteredProfiles);
+
+  const serverUrlError = $derived(settingsVM.serverUrlError);
+  const apiKeyError = $derived(settingsVM.apiKeyError);
+  const isTestingConnection = $derived(settingsVM.isTestingConnection);
+  const isSavingSettings = $derived(settingsVM.isSavingSettings);
+
+  // derived filtered arrays
+  const filteredLinks = $derived(extraction.filteredLinks);
+  const filteredImages = $derived(extraction.filteredImages);
+  const visible = $derived(extraction.visible);
+
+  // Using selector profile store's derived values
+  const hasActiveProfile = $derived(selectorProfiles.hasActiveProfile);
+  const activeProfileDiffers = $derived(selectorProfiles.activeProfileDiffers);
+  const hasSelectors = $derived(selectorProfiles.hasSelectors);
+  const filteredProfiles = $derived(selectorProfiles.filteredProfiles);
 
   function populate() {
-    const {
-      links: l,
-      images: i,
-      linkCounts: lc,
-      imageCounts: ic,
-      meta,
-    } = extractAll(startSel.trim(), endSel.trim());
-    links = l;
-    images = i;
-    linkCounts = lc;
-    imageCounts = ic;
-    setSelected(new SvelteSet<string>());
-    urlModifications.clear();
-    modifiedUrls.clear();
-    if (meta.rangeApplied) {
-      if (!meta.startFound && !meta.endFound) {
-        rangeHint = 'Range: selectors not found';
-      } else if (!meta.startFound) {
-        rangeHint = 'Range: start selector not found';
-      } else if (!meta.endFound) {
-        rangeHint = 'Range: end selector not found';
-      } else if (meta.startBeforeEnd === false) {
-        rangeHint = 'Range: start appears after end';
-      } else {
-        rangeHint = `Range: ${meta.inRangeAnchors} links, ${meta.inRangeImages} images scanned`;
-      }
-    } else {
-      rangeHint = '';
-    }
-  }
-
-  function setSelected(next: ReadonlySet<string>) {
-    selected.clear();
-    for (const value of next) {
-      selected.add(value);
-    }
-  }
-
-  function setIgnoredProfileIds(next: ReadonlySet<string>) {
-    ignoredProfileIds.clear();
-    for (const value of next) {
-      ignoredProfileIds.add(value);
-    }
-  }
-
-  function setIgnoredSubProfileIds(next: ReadonlySet<string>) {
-    ignoredSubProfileIds.clear();
-    for (const value of next) {
-      ignoredSubProfileIds.add(value);
-    }
-  }
-
-  function toggleSelect(url: string) {
-    setSelected(toggleSelectionItem(selected, url));
-  }
-
-  function selectAll() {
-    setSelected(selectAllItems(selected, visible));
-  }
-
-  function selectNone() {
-    setSelected(clearSelectionItems());
-  }
-
-  function invertSelection() {
-    setSelected(invertSelectionItems(selected, visible));
-  }
-
-  function copySelected() {
-    const list = Array.from(selected);
-    if (!list.length) {
-      toastStore.warning('Please select URLs to copy.');
-      return;
-    }
-    setClipboard(list.join('\n'))
-      .then(() => {
-        toastStore.success(
-          `Copied ${list.length} URL${list.length === 1 ? '' : 's'} to clipboard!`,
-        );
-      })
-      .catch((e) => {
-        console.error('Clipboard error', e);
-        toastStore.error('Failed to copy to clipboard.');
-      });
-  }
-
-  function downloadSelected() {
-    const list = Array.from(selected);
-    if (!list.length) {
-      toastStore.warning('Please select URLs to download.');
-      return;
-    }
-    try {
-      const blob = new Blob([list.join('\n')], { type: 'text/plain;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${active}_export.txt`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      toastStore.success(`Downloaded ${list.length} URL${list.length === 1 ? '' : 's'} to file!`);
-    } catch (error) {
-      console.error('Download error', error);
-      toastStore.error('Failed to download file.');
-    }
-  }
-
-  async function sendSelected() {
-    const list = Array.from(selected);
-    if (!list.length) {
-      toastStore.warning('No URLs to send. Please select URLs/images to send to gdluxx.');
-      return;
-    }
-    if (!confirm(`Send ${list.length} URL(s) to gdluxx for processing?`)) return;
-
-    // Get custom directory if enabled and valid
-    const trimmed = customDirectoryValue.trim();
-    const customDir =
-      customDirectoryEnabled && trimmed && isValidDirectoryName(trimmed) ? trimmed : undefined;
-
-    try {
-      const res = await sendUrls(list, customDir);
-      if (res.success) {
-        toastStore.success(
-          res.message ||
-            `Successfully sent ${list.length} URL${list.length === 1 ? '' : 's'} to gdluxx!`,
-        );
-      } else {
-        toastStore.error(`Failed to send: ${res.error}`);
-      }
-    } catch (error) {
-      console.error('Send error', error);
-      toastStore.error('Failed to send URLs to gdluxx.');
-    }
-  }
-
-  function updateModificationTracking(url: string, result: SubResult | null) {
-    if (result === null) {
-      urlModifications.delete(url);
-      modifiedUrls.delete(url);
-      return;
-    }
-
-    urlModifications.set(url, result);
-    modifiedUrls.add(url);
+    extraction.populate();
   }
 
   function applySubs() {
-    if (!hasActiveSubs) {
-      toastStore.info('Add an active substitution rule before applying.');
-      return;
-    }
-
-    const itemsToModify = Array.from(selected);
-    if (!itemsToModify.length) {
-      toastStore.warning('No items selected. Please select URLs/images to apply substitutions.');
-      return;
-    }
-
-    const nextSelected = new SvelteSet(selected);
-    const pendingModifications = new SvelteMap<string, SubResult>();
-    const pendingModifiedUrls = new SvelteSet<string>();
-
-    let linksChanged = false;
-    let imagesChanged = false;
-    let linkCountsChanged = false;
-    let imageCountsChanged = false;
-
-    const nextLinks = [...links];
-    const nextImages = [...images];
-    const nextLinkCounts = { ...linkCounts };
-    const nextImageCounts = { ...imageCounts };
-
-    for (const url of itemsToModify) {
-      const result = applySubRules(url, subRules);
-      if (!result.modified) {
-        continue;
-      }
-
-      const existingModification = urlModifications.get(url);
-      if (existingModification) {
-        result.initialUrl = existingModification.initialUrl;
-        updateModificationTracking(url, null);
-      }
-
-      const revertedToInitial =
-        existingModification && result.modifiedUrl === existingModification.initialUrl;
-
-      const imageIndex = images.indexOf(url);
-      if (imageIndex !== -1) {
-        nextImages[imageIndex] = result.modifiedUrl;
-        imagesChanged = true;
-        if (nextImageCounts[url]) {
-          nextImageCounts[result.modifiedUrl] = nextImageCounts[url];
-          delete nextImageCounts[url];
-          imageCountsChanged = true;
-        }
-      }
-
-      const linkIndex = links.indexOf(url);
-      if (linkIndex !== -1) {
-        nextLinks[linkIndex] = result.modifiedUrl;
-        linksChanged = true;
-        if (nextLinkCounts[url]) {
-          nextLinkCounts[result.modifiedUrl] = nextLinkCounts[url];
-          delete nextLinkCounts[url];
-          linkCountsChanged = true;
-        }
-      }
-
-      nextSelected.delete(url);
-      nextSelected.add(result.modifiedUrl);
-
-      if (!revertedToInitial) {
-        pendingModifications.set(result.modifiedUrl, result);
-        pendingModifiedUrls.add(result.modifiedUrl);
-      } else {
-        updateModificationTracking(result.modifiedUrl, null);
-      }
-    }
-
-    if (linksChanged) {
-      links = nextLinks;
-    }
-    if (imagesChanged) {
-      images = nextImages;
-    }
-    if (linkCountsChanged) {
-      linkCounts = nextLinkCounts;
-    }
-    if (imageCountsChanged) {
-      imageCounts = nextImageCounts;
-    }
-
-    setSelected(nextSelected);
-
-    if (!pendingModifications.size && !pendingModifiedUrls.size) {
-      toastStore.info('No URLs were modified by the substitution rules');
-      return;
-    }
-
-    for (const [key, value] of pendingModifications) {
-      updateModificationTracking(key, value);
-    }
-
-    const modifiedCount = pendingModifiedUrls.size;
-    toastStore.success(
-      `Applied substitutions to ${modifiedCount} URL${modifiedCount === 1 ? '' : 's'}`,
+    const result = substitution.applyToSelected(
+      Array.from(selection.selected),
+      links,
+      images,
+      linkCounts,
+      imageCounts,
     );
+    extraction.setData({
+      links: result.links,
+      images: result.images,
+      linkCounts: result.linkCounts,
+      imageCounts: result.imageCounts,
+    });
+    selection.replace(result.newSelection);
   }
 
   function resetSubs() {
-    if (modifiedUrls.size === 0) {
-      toastStore.info('No modifications to reset');
-      return;
-    }
-
     if (
+      substitution.modifiedUrls.size > 0 &&
       !confirm(
-        `Reset all URL modifications (${modifiedUrls.size} URL${modifiedUrls.size === 1 ? '' : 's'})? This cannot be undone.`,
+        `Reset all URL modifications (${substitution.modifiedUrls.size} URL${substitution.modifiedUrls.size === 1 ? '' : 's'})? This cannot be undone.`,
       )
     ) {
       return;
     }
 
-    const nextSelected = new SvelteSet(selected);
-    let linksChanged = false;
-    let imagesChanged = false;
-    let linkCountsChanged = false;
-    let imageCountsChanged = false;
+    const result = substitution.resetModifications(links, images, linkCounts, imageCounts);
+    if (!result) return;
 
-    const nextLinks = [...links];
-    const nextImages = [...images];
-    const nextLinkCounts = { ...linkCounts };
-    const nextImageCounts = { ...imageCounts };
-
-    for (const [currentUrl, result] of urlModifications) {
-      const imageIndex = images.indexOf(currentUrl);
-      if (imageIndex !== -1) {
-        nextImages[imageIndex] = result.initialUrl;
-        imagesChanged = true;
-        if (nextImageCounts[currentUrl]) {
-          nextImageCounts[result.initialUrl] = nextImageCounts[currentUrl];
-          delete nextImageCounts[currentUrl];
-          imageCountsChanged = true;
-        }
-      }
-
-      const linkIndex = links.indexOf(currentUrl);
-      if (linkIndex !== -1) {
-        nextLinks[linkIndex] = result.initialUrl;
-        linksChanged = true;
-        if (nextLinkCounts[currentUrl]) {
-          nextLinkCounts[result.initialUrl] = nextLinkCounts[currentUrl];
-          delete nextLinkCounts[currentUrl];
-          linkCountsChanged = true;
-        }
-      }
-
-      nextSelected.delete(currentUrl);
-      nextSelected.add(result.initialUrl);
-    }
-
-    if (linksChanged) {
-      links = nextLinks;
-    }
-    if (imagesChanged) {
-      images = nextImages;
-    }
-    if (linkCountsChanged) {
-      linkCounts = nextLinkCounts;
-    }
-    if (imageCountsChanged) {
-      imageCounts = nextImageCounts;
-    }
-
-    setSelected(nextSelected);
-
-    urlModifications.clear();
-    modifiedUrls.clear();
-
-    toastStore.info('All modifications reset');
-  }
-
-  async function initCustomDirectory() {
-    try {
-      const result = await browser.storage.local.get([
-        'customDirectory_enabled',
-        'customDirectory_value',
-      ]);
-      customDirectoryEnabled = result.customDirectory_enabled ?? false;
-      customDirectoryValue = result.customDirectory_value ?? '';
-    } catch (error) {
-      console.error('Failed to load custom directory settings', error);
-    }
-  }
-
-  function handleCustomDirectoryToggle() {
-    customDirectoryEnabled = !customDirectoryEnabled;
-    browser.storage.local.set({ customDirectory_enabled: customDirectoryEnabled });
-  }
-
-  function handleCustomDirectoryChange(value: string) {
-    customDirectoryValue = value;
-    browser.storage.local.set({ customDirectory_value: value });
-  }
-
-  function handleCustomDirectoryClear() {
-    customDirectoryEnabled = false;
-    customDirectoryValue = '';
-    browser.storage.local.set({
-      customDirectory_enabled: false,
-      customDirectory_value: '',
+    extraction.setData({
+      links: result.links,
+      images: result.images,
+      linkCounts: result.linkCounts,
+      imageCounts: result.imageCounts,
     });
+    selection.replace(result.newSelection);
   }
 
   async function init() {
     try {
       await appStore.hydrate();
-      await initCustomDirectory();
+      await selection.initialize();
       currentTheme = appStore.theme;
       isFullscreen = appStore.isFullscreen;
       if (shadowContainer) {
@@ -742,1000 +308,158 @@
 
   async function initializeSelectorProfiles() {
     if (typeof window === 'undefined') return;
-    try {
-      const pref = await getPreferredScope();
-      if (pref) profileScope = pref;
-    } catch {
-      /* ignore */
-    }
-
-    try {
-      const status = await getSelectorStorageStatus();
-      storageWarning = status.degraded ? (status.error ?? 'Selector storage degraded') : null;
-    } catch {
-      storageWarning = 'Selector storage unavailable';
-    }
-
-    await refreshHostProfiles();
-    await loadAllProfiles();
-
-    const ignored = ignoredProfileIds;
-    try {
-      const match = await getProfileForUrl(window.location.href);
-      if (match && !ignored.has(match.id)) {
-        activeProfileId = match.id;
-        activeProfile = match.profile;
-        startSel = match.profile.startSelector;
-        endSel = match.profile.endSelector;
-        profileStatusMessage = buildProfileMessage(match.profile);
-        autoAppliedProfile = true;
-      }
-    } catch {
-      /* ignore */
-    }
+    await selectorProfiles.initialize(window.location.href);
+    // Force sync after initializing
+    const newStart = selectorProfiles.startSelector;
+    const newEnd = selectorProfiles.endSelector;
+    startSel = newStart;
+    endSel = newEnd;
+    lastStartSel = newStart;
+    lastEndSel = newEnd;
   }
 
   async function initializeSubProfiles() {
     if (typeof window === 'undefined') return;
-    try {
-      const pref = await subStorage.getPreferredSubScope();
-      if (pref) subProfileScope = pref;
-    } catch {
-      // ignore
-    }
-
-    try {
-      const status = await subStorage.getSubStorageStatus();
-      subStorageWarning = status.degraded
-        ? (status.error ?? 'Substitution profile storage degraded')
-        : null;
-    } catch {
-      subStorageWarning = 'Substitution profile storage unavailable';
-    }
-
-    try {
-      const shouldAutoApply = await subStorage.getAutoApplySubDefault();
-      applyDefaultSub = shouldAutoApply;
-    } catch {
-      applyDefaultSub = true;
-    }
-
-    await refreshHostReplacementProfiles();
-    await loadAllSubProfiles();
-
-    if (!applyDefaultSub) return;
-
-    const ignored = ignoredSubProfileIds;
-    try {
-      const match = await subStorage.getSubProfileForUrl(window.location.href);
-      if (match && !ignored.has(match.id)) {
-        activeSubProfileId = match.id;
-        activeSubProfile = match.profile;
-        subRules = cloneSubRulesForEditing(
-          match.profile.rules.slice().sort((a, b) => a.order - b.order),
-        );
-        applySubToPreview = match.profile.applyToPreview;
-        subProfileStatusMessage = buildReplacementProfileMessage(match.profile);
-        autoAppliedSubProfile = true;
-      }
-    } catch (error) {
-      console.error('Failed to auto-apply substitution profile', error);
-    }
-  }
-
-  function buildReplacementProfileMessage(profile: SavedSubProfile): string {
-    const ruleCount = profile.rules.length;
-    const ruleText = ruleCount === 1 ? 'rule' : 'rules';
-    if (profile.scope === 'path' && profile.path) {
-      return `Using substitution (${ruleCount} ${ruleText}) for ${profile.host}${profile.path}`;
-    }
-    if (profile.scope === 'origin' && profile.origin) {
-      return `Using substitution (${ruleCount} ${ruleText}) for ${profile.origin}`;
-    }
-    return `Using substitution (${ruleCount} ${ruleText}) for ${profile.host}`;
-  }
-
-  async function refreshHostReplacementProfiles() {
-    if (typeof window === 'undefined') return;
-    try {
-      const list = await subStorage.getSubProfilesForHost(window.location.hostname);
-      hostSubProfiles = list;
-    } catch {
-      hostSubProfiles = [];
-    }
-  }
-
-  async function loadAllSubProfiles() {
-    try {
-      const list = await subStorage.loadSubProfiles();
-      const sorted = [...list].sort((a, b) => {
-        if (a.host !== b.host) return a.host.localeCompare(b.host);
-        if (a.scope !== b.scope) return a.scope.localeCompare(b.scope);
-        const aKey = a.path ?? a.origin ?? '';
-        const bKey = b.path ?? b.origin ?? '';
-        return aKey.localeCompare(bKey);
-      });
-      allSubProfiles = sorted;
-      const drafts: Record<string, string> = {};
-      for (const profile of sorted) {
-        drafts[profile.id] = profile.name ?? '';
-      }
-      subProfileNameDrafts = drafts;
-    } catch (error) {
-      console.error('Failed to load replacement profiles', error);
-      allSubProfiles = [];
-      subProfileNameDrafts = {};
-    }
+    await substitution.initialize(window.location.href);
   }
 
   async function onSaveReplacementProfile(scopeOverride?: ProfileScope) {
-    if (!hasSubRules) {
-      toastStore.warning('Add at least one substitution rule before saving.');
-      return;
-    }
-    if (isSavingSubProfile) return;
-    isSavingSubProfile = true;
-    const scope = scopeOverride ?? subProfileScope;
-    try {
-      const payload = getCurrentReplacementScopeInput(scope);
-      const { profile, id } = await subStorage.saveSubProfile(payload);
-      activeSubProfileId = id;
-      activeSubProfile = profile;
-      subProfileScope = scope;
-      subRules = cloneSubRulesForEditing(profile.rules.slice().sort((a, b) => a.order - b.order));
-      applySubToPreview = profile.applyToPreview;
-      subProfileStatusMessage = buildReplacementProfileMessage(profile);
-      autoAppliedSubProfile = false;
-      const nextIgnored = new SvelteSet(ignoredSubProfileIds);
-      if (nextIgnored.has(id)) {
-        nextIgnored.delete(id);
-        setIgnoredSubProfileIds(nextIgnored);
-        persistIgnoredSubProfileIds(nextIgnored);
-      }
-      await subStorage.setPreferredSubScope(scope);
-      await refreshHostReplacementProfiles();
-      await loadAllSubProfiles();
-      toastStore.success('Saved substitution profile for this site.');
-    } catch (error) {
-      console.error('Failed to save substitution profile', error);
-      toastStore.error('Failed to save replacement profile.');
-    } finally {
-      isSavingSubProfile = false;
-    }
+    await substitution.saveProfile(scopeOverride);
   }
 
   async function onDeleteReplacementProfile() {
-    if (!activeSubProfileId) return;
-    if (!confirm('Remove the saved substitution profile for this site?')) return;
-    try {
-      await subStorage.deleteSubProfile(activeSubProfileId);
-      const nextIgnored = new SvelteSet(ignoredSubProfileIds);
-      nextIgnored.delete(activeSubProfileId);
-      setIgnoredSubProfileIds(nextIgnored);
-      persistIgnoredSubProfileIds(nextIgnored);
-      activeSubProfileId = null;
-      activeSubProfile = null;
-      subProfileStatusMessage = null;
-      autoAppliedSubProfile = false;
-      toastStore.success('Substitution profile removed.');
-      await refreshHostReplacementProfiles();
-      await loadAllSubProfiles();
-    } catch (error) {
-      console.error('Failed to delete substitution profile', error);
-      toastStore.error('Failed to delete replacement profile.');
-    }
+    await substitution.deleteProfile();
   }
 
   function onIgnoreReplacementProfile() {
-    if (!activeSubProfileId) return;
-    const next = new SvelteSet(ignoredSubProfileIds);
-    next.add(activeSubProfileId);
-    setIgnoredSubProfileIds(next);
-    persistIgnoredSubProfileIds(next);
-    subProfileStatusMessage = 'Saved substitution profile ignored for this session.';
-    activeSubProfileId = null;
-    activeSubProfile = null;
-    autoAppliedSubProfile = false;
-    toastStore.info('Saved substitution profile will be ignored until you reload the page.');
+    substitution.ignoreProfile();
   }
 
   async function onApplyReplacementProfile(id: string) {
-    const profile =
-      hostSubProfiles.find((p) => p.id === id) ?? allSubProfiles.find((p) => p.id === id);
-    if (!profile) return;
-    subRules = cloneSubRulesForEditing(profile.rules.slice().sort((a, b) => a.order - b.order));
-    applySubToPreview = profile.applyToPreview;
-    activeSubProfileId = profile.id;
-    activeSubProfile = profile;
-    subProfileScope = profile.scope;
-    subProfileStatusMessage = buildReplacementProfileMessage(profile);
-    autoAppliedSubProfile = false;
-    const next = new SvelteSet(ignoredSubProfileIds);
-    if (next.has(profile.id)) {
-      next.delete(profile.id);
-      setIgnoredSubProfileIds(next);
-      persistIgnoredSubProfileIds(next);
-    }
-    toastStore.success('Applied substitution profile.');
-    await refreshHostReplacementProfiles();
-    await loadAllSubProfiles();
+    await substitution.applyProfile(id);
   }
 
   async function onReplacementScopeChange(scope: ProfileScope) {
-    subProfileScope = scope;
-    try {
-      await subStorage.setPreferredSubScope(scope);
-    } catch {
-      /* ignore */
-    }
-  }
-
-  function getCurrentReplacementScopeInput(scope: ProfileScope): SaveSubProfileInput {
-    if (typeof window === 'undefined') {
-      return {
-        scope,
-        host: '',
-        origin: '',
-        path: '/',
-        rules: subRules,
-        applyToPreview: applySubToPreview,
-      };
-    }
-    const { hostname, origin, pathname } = window.location;
-    return {
-      scope,
-      host: hostname,
-      origin,
-      path: pathname,
-      rules: subRules,
-      applyToPreview: applySubToPreview,
-    };
+    substitution.setScope(scope);
   }
 
   async function onAutoApplyPreferenceChange(next: boolean) {
-    applyDefaultSub = next;
-    try {
-      await subStorage.setAutoApplySubDefault(next);
-    } catch (error) {
-      console.error('Failed to persist replacement auto-apply preference', error);
-    }
+    substitution.setApplyDefault(next);
   }
 
-  function buildProfileMessage(profile: SavedSelectorProfile): string {
-    if (profile.scope === 'path' && profile.path) {
-      return `Using saved range for ${profile.host}${profile.path}`;
-    }
-    if (profile.scope === 'origin' && profile.origin) {
-      return `Using saved range for ${profile.origin}`;
-    }
-    return `Using saved range for ${profile.host}`;
-  }
-
-  async function refreshHostProfiles() {
-    if (typeof window === 'undefined') return;
-    try {
-      const list = await getProfilesForHost(window.location.hostname);
-      hostProfiles = list;
-    } catch {
-      hostProfiles = [];
-    }
-  }
-
-  async function loadAllProfiles() {
-    try {
-      const list = await loadSelectorProfiles();
-      const sorted = [...list].sort((a, b) => {
-        if (a.host !== b.host) return a.host.localeCompare(b.host);
-        if (a.scope !== b.scope) return a.scope.localeCompare(b.scope);
-        const aKey = a.path ?? a.origin ?? '';
-        const bKey = b.path ?? b.origin ?? '';
-        return aKey.localeCompare(bKey);
-      });
-      allProfiles = sorted;
-      const drafts: Record<string, string> = {};
-      for (const profile of sorted) {
-        drafts[profile.id] = profile.name ?? '';
-      }
-      profileNameDrafts = drafts;
-    } catch (error) {
-      console.error('Failed to load saved selector profiles', error);
-      allProfiles = [];
-      profileNameDrafts = {};
-    }
-  }
-
-  function getCurrentScopeInput(scope: ProfileScope) {
-    if (typeof window === 'undefined') {
-      return {
-        scope,
-        host: '',
-        origin: '',
-        path: '/',
-        startSelector: startSel,
-        endSelector: endSel,
-      };
-    }
-    const { hostname, origin, pathname } = window.location;
-    return {
-      scope,
-      host: hostname,
-      origin,
-      path: pathname,
-      startSelector: startSel,
-      endSelector: endSel,
-    };
-  }
-
+  // Wrapper for selector profiles
   async function onSaveProfile(scopeOverride?: ProfileScope) {
-    if (!hasSelectors) {
-      toastStore.warning('Enter a start or end selector before saving.');
-      return;
-    }
-    if (isSavingProfile) return;
-    isSavingProfile = true;
-    const scope = scopeOverride ?? profileScope;
-    try {
-      const payload = getCurrentScopeInput(scope);
-      const { profile, id } = await saveSelectorProfile(payload);
-      activeProfileId = id;
-      activeProfile = profile;
-      profileScope = scope;
-      profileStatusMessage = buildProfileMessage(profile);
-      autoAppliedProfile = false;
-      const nextIgnored = new SvelteSet(ignoredProfileIds);
-      if (nextIgnored.has(id)) {
-        nextIgnored.delete(id);
-        setIgnoredProfileIds(nextIgnored);
-        persistIgnoredProfileIds(nextIgnored);
-      }
-      await setPreferredScope(scope);
-      await refreshHostProfiles();
-      await loadAllProfiles();
-      populate();
-      toastStore.success('Saved range selectors for this site.');
-    } catch (error) {
-      console.error('Failed to save selector profile', error);
-      toastStore.error('Failed to save selectors.');
-    } finally {
-      isSavingProfile = false;
-    }
+    await selectorProfiles.saveProfile(scopeOverride);
+    populate();
   }
 
   async function onDeleteProfile() {
-    if (!activeProfileId) return;
-    if (!confirm('Remove the saved selectors for this site?')) return;
-    try {
-      await deleteSelectorProfile(activeProfileId);
-      const nextIgnored = new SvelteSet(ignoredProfileIds);
-      nextIgnored.delete(activeProfileId);
-      setIgnoredProfileIds(nextIgnored);
-      persistIgnoredProfileIds(nextIgnored);
-      startSel = '';
-      endSel = '';
-      activeProfileId = null;
-      activeProfile = null;
-      profileStatusMessage = null;
-      autoAppliedProfile = false;
-      toastStore.success('Saved selectors removed.');
-      await refreshHostProfiles();
-      await loadAllProfiles();
-      populate();
-    } catch (error) {
-      console.error('Failed to delete selector profile', error);
-      toastStore.error('Failed to delete saved selectors.');
-    }
+    await selectorProfiles.deleteProfile();
+    populate();
   }
 
   function onIgnoreProfile() {
-    if (!activeProfileId) return;
-    const next = new SvelteSet(ignoredProfileIds);
-    next.add(activeProfileId);
-    setIgnoredProfileIds(next);
-    persistIgnoredProfileIds(next);
-    profileStatusMessage = 'Saved selectors ignored for this session.';
-    activeProfileId = null;
-    activeProfile = null;
-    autoAppliedProfile = false;
-    toastStore.info('Saved selectors will be ignored until you reload the page.');
+    selectorProfiles.ignoreProfile();
   }
 
   async function onApplyProfile(id: string) {
-    const profile = hostProfiles.find((p) => p.id === id);
-    if (!profile) return;
-    startSel = profile.startSelector;
-    endSel = profile.endSelector;
-    activeProfileId = profile.id;
-    activeProfile = profile;
-    profileScope = profile.scope;
-    profileStatusMessage = buildProfileMessage(profile);
-    autoAppliedProfile = false;
-    const next = new SvelteSet(ignoredProfileIds);
-    if (next.has(profile.id)) {
-      next.delete(profile.id);
-      setIgnoredProfileIds(next);
-      persistIgnoredProfileIds(next);
-    }
-    toastStore.success('Applied saved selectors.');
+    await selectorProfiles.applyProfile(id);
     populate();
-    await refreshHostProfiles();
-    await loadAllProfiles();
   }
 
   async function onScopeChange(scope: ProfileScope) {
-    profileScope = scope;
-    try {
-      await setPreferredScope(scope);
-    } catch {
-      /* ignore */
-    }
-  }
-
-  function setRemoteMeta(payload: ProfileBackupPayload | null) {
-    if (!payload) {
-      remoteBackupMeta = null;
-      return;
-    }
-    remoteBackupMeta = {
-      hasBackup: payload.hasBackup,
-      profileCount: payload.profileCount,
-      syncedBy: payload.syncedBy,
-      updatedAt: payload.updatedAt,
-    };
-  }
-
-  function setReplacementRemoteMeta(payload: SubBackupPayload | null) {
-    if (!payload) {
-      subRemoteBackupMeta = null;
-      return;
-    }
-    subRemoteBackupMeta = {
-      hasBackup: payload.hasBackup,
-      profileCount: payload.profileCount,
-      syncedBy: payload.syncedBy,
-      updatedAt: payload.updatedAt,
-    };
-  }
-
-  function ensureConfiguredForRemote(showToast = true): boolean {
-    const hasUrl = !!settings.serverUrl;
-    const hasKey = !!settings.apiKey;
-    if (!hasUrl || !hasKey) {
-      if (showToast) {
-        toastStore.error('Configure your gdluxx server URL and API key first.');
-      }
-      return false;
-    }
-    const { valid, error } = validateServerUrl(settings.serverUrl);
-    if (!valid) {
-      if (showToast) {
-        toastStore.error(error ?? 'Invalid server URL');
-      }
-      return false;
-    }
-    return true;
+    selectorProfiles.setScope(scope);
   }
 
   async function refreshRemoteBackupMeta(showToast = false) {
-    if (!ensureConfiguredForRemote(showToast)) {
-      remoteBackupMeta = null;
-      return;
-    }
-    if (isLoadingRemoteBackup) return;
-    isLoadingRemoteBackup = true;
-    try {
-      const res = await fetchProfileBackup(settings.serverUrl, settings.apiKey);
-      if (res.success && res.data) {
-        setRemoteMeta(res.data);
-        if (showToast && res.message) {
-          toastStore.info(res.message);
-        }
-      } else {
-        setRemoteMeta(null);
-        if (showToast) {
-          toastStore.error(res.error ?? 'Failed to load remote backup');
-        }
-      }
-    } catch (error) {
-      console.error('Failed to fetch remote backup metadata', error);
-      setRemoteMeta(null);
-      if (showToast) {
-        toastStore.error('Failed to reach gdluxx for backup status.');
-      }
-    } finally {
-      isLoadingRemoteBackup = false;
-    }
+    await selectorProfiles.refreshRemoteBackupMeta(settings.serverUrl, settings.apiKey, showToast);
   }
 
   async function refreshSubRemoteBackupMeta(showToast = false) {
-    if (!ensureConfiguredForRemote(showToast)) {
-      subRemoteBackupMeta = null;
-      return;
-    }
-    if (isLoadingSubRemoteBackup) return;
-    isLoadingSubRemoteBackup = true;
-    try {
-      const res = await fetchSubBackup(settings.serverUrl, settings.apiKey);
-      if (res.success && res.data) {
-        setReplacementRemoteMeta(res.data);
-        if (showToast && res.message) {
-          toastStore.info(res.message);
-        }
-      } else {
-        setReplacementRemoteMeta(null);
-        if (showToast) {
-          toastStore.error(res.error ?? 'Failed to load substitution backup');
-        }
-      }
-    } catch (error) {
-      console.error('Failed to fetch substitution remote backup metadata', error);
-      setReplacementRemoteMeta(null);
-      if (showToast) {
-        toastStore.error('Failed to reach gdluxx for substitution backup status.');
-      }
-    } finally {
-      isLoadingSubRemoteBackup = false;
-    }
+    await substitution.refreshRemoteBackupMeta(settings.serverUrl, settings.apiKey, showToast);
   }
 
   async function onBackupProfiles() {
-    if (isSavingRemoteBackup) return;
-    if (!ensureConfiguredForRemote()) return;
-    isSavingRemoteBackup = true;
-    try {
-      const bundle = await exportSelectorProfiles();
-      const res = await saveProfileBackup(settings.serverUrl, settings.apiKey, bundle);
-      if (res.success && res.data) {
-        setRemoteMeta(res.data);
-        if (res.message) {
-          toastStore.success(res.message);
-        } else {
-          toastStore.success('Backed up selector profiles to gdluxx.');
-        }
-      } else {
-        toastStore.error(res.error ?? 'Failed to backup profiles to gdluxx.');
-      }
-    } catch (error) {
-      console.error('Failed to backup selector profiles to gdluxx', error);
-      toastStore.error('Failed to backup profiles to gdluxx.');
-    } finally {
-      isSavingRemoteBackup = false;
-    }
+    await selectorProfiles.backupToRemote(settings.serverUrl, settings.apiKey);
   }
 
   async function onBackupReplacementProfiles() {
-    if (isSavingSubRemoteBackup) return;
-    if (!ensureConfiguredForRemote()) return;
-    isSavingSubRemoteBackup = true;
-    try {
-      const bundle = await subStorage.exportSubProfiles();
-      const res = await saveSubBackup(settings.serverUrl, settings.apiKey, bundle);
-      if (res.success && res.data) {
-        setReplacementRemoteMeta(res.data);
-        if (res.message) {
-          toastStore.success(res.message);
-        } else {
-          toastStore.success('Backed up substitution profiles to gdluxx.');
-        }
-      } else {
-        toastStore.error(res.error ?? 'Failed to backup substitution profiles to gdluxx.');
-      }
-    } catch (error) {
-      console.error('Failed to backup replacement profiles to gdluxx', error);
-      toastStore.error('Failed to backup substitution profiles to gdluxx.');
-    } finally {
-      isSavingSubRemoteBackup = false;
-    }
+    await substitution.backupToRemote(settings.serverUrl, settings.apiKey);
   }
 
   async function onRestoreProfiles() {
-    if (isRestoringRemoteBackup) return;
-    if (!ensureConfiguredForRemote()) return;
-    isRestoringRemoteBackup = true;
-    try {
-      const res = await fetchProfileBackup(settings.serverUrl, settings.apiKey);
-      if (!res.success || !res.data) {
-        toastStore.error(res.error ?? 'Failed to load remote backup.');
-        return;
-      }
-      setRemoteMeta(res.data);
-      if (!res.data.hasBackup) {
-        toastStore.info('No remote backup found for this API key.');
-        return;
-      }
-      await importSelectorProfiles(res.data.bundle);
-      toastStore.success(res.message ?? 'Restored selector profiles from gdluxx.');
-      await refreshHostProfiles();
-      await loadAllProfiles();
-    } catch (error) {
-      console.error('Failed to restore selector profiles from gdluxx', error);
-      toastStore.error('Failed to restore profiles from gdluxx.');
-    } finally {
-      isRestoringRemoteBackup = false;
-    }
+    await selectorProfiles.restoreFromRemote(settings.serverUrl, settings.apiKey);
   }
 
   async function onRestoreReplacementProfiles() {
-    if (isRestoringSubRemoteBackup) return;
-    if (!ensureConfiguredForRemote()) return;
-    isRestoringSubRemoteBackup = true;
-    try {
-      const res = await fetchSubBackup(settings.serverUrl, settings.apiKey);
-      if (!res.success || !res.data) {
-        toastStore.error(res.error ?? 'Failed to load substitution backup.');
-        return;
-      }
-      setReplacementRemoteMeta(res.data);
-      if (!res.data.hasBackup) {
-        toastStore.info('No remote substitution backup found for this API key.');
-        return;
-      }
-      await subStorage.importSubProfiles(res.data.bundle);
-      toastStore.success('Restored substitution profiles from gdluxx.');
-      await refreshHostReplacementProfiles();
-      await loadAllSubProfiles();
-    } catch (error) {
-      console.error('Failed to restore replacement profiles from gdluxx', error);
-      toastStore.error('Failed to restore replacement profiles from gdluxx.');
-    } finally {
-      isRestoringSubRemoteBackup = false;
-    }
+    await substitution.restoreFromRemote(settings.serverUrl, settings.apiKey);
   }
 
   async function onDeleteRemoteBackup() {
-    if (isDeletingRemoteBackup) return;
-    if (!ensureConfiguredForRemote()) return;
-    if (!confirm('Remove the remote range profile backup from gdluxx?')) return;
-    isDeletingRemoteBackup = true;
-    try {
-      const res = await deleteProfileBackup(settings.serverUrl, settings.apiKey);
-      if (res.success && res.data) {
-        if (res.data.deleted) {
-          setRemoteMeta(EMPTY_REMOTE_PAYLOAD);
-        }
-        if (res.message) {
-          toastStore.success(res.message);
-        } else if (res.data.deleted) {
-          toastStore.success('Removed remote backup.');
-        } else {
-          toastStore.info('No remote backup to delete.');
-        }
-      } else {
-        toastStore.error(res.error ?? 'Failed to delete remote backup.');
-      }
-    } catch (error) {
-      console.error('Failed to delete remote selector profile backup', error);
-      toastStore.error('Failed to delete remote backup.');
-    } finally {
-      isDeletingRemoteBackup = false;
-    }
+    await selectorProfiles.deleteRemoteBackup(settings.serverUrl, settings.apiKey);
   }
 
   async function onDeleteSubRemoteBackup() {
-    if (isDeletingSubRemoteBackup) return;
-    if (!ensureConfiguredForRemote()) return;
-    isDeletingSubRemoteBackup = true;
-    try {
-      const res = await deleteSubBackup(settings.serverUrl, settings.apiKey);
-      if (res.success && res.data) {
-        if (res.data.deleted) {
-          toastStore.success('Removed remote substitution backup.');
-        } else {
-          toastStore.info('No remote substitution backup to delete.');
-        }
-        setReplacementRemoteMeta(null);
-      } else {
-        toastStore.error(res.error ?? 'Failed to delete remote substitution backup.');
-      }
-    } catch (error) {
-      console.error('Failed to delete remote replacement profile backup', error);
-      toastStore.error('Failed to delete remote substitution backup.');
-    } finally {
-      isDeletingSubRemoteBackup = false;
-    }
+    await substitution.deleteRemoteBackup(settings.serverUrl, settings.apiKey);
   }
 
   async function onExportProfiles() {
-    if (isExportingProfiles) return;
-    isExportingProfiles = true;
-    try {
-      const bundle = await exportSelectorProfiles();
-      const json = JSON.stringify(bundle, null, 2);
-      const blob = new Blob([json], { type: 'application/json;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      const stamp = new Date().toISOString().replace(/[:]/g, '-');
-      a.download = `gdluxx-saved-selectors-${stamp}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      toastStore.success('Exported saved selector profiles.');
-    } catch (error) {
-      console.error('Failed to export selector profiles', error);
-      toastStore.error('Failed to export profiles.');
-    } finally {
-      isExportingProfiles = false;
-    }
+    await selectorProfiles.exportProfiles();
   }
 
   async function onImportProfiles() {
-    if (!importProfilesText.trim()) {
-      importProfilesError = 'Paste exported JSON before importing.';
-      return;
-    }
-    if (isImportingProfiles) return;
-    isImportingProfiles = true;
-    importProfilesError = null;
-    try {
-      const payload = JSON.parse(importProfilesText);
-      await importSelectorProfiles(payload);
-      toastStore.success('Imported selector profiles.');
-      importProfilesText = '';
-      await refreshHostProfiles();
-      await loadAllProfiles();
-    } catch (error) {
-      console.error('Failed to import selector profiles', error);
-      importProfilesError =
-        error instanceof Error ? error.message : 'Unknown error while importing profiles';
-      toastStore.error('Failed to import profiles.');
-    } finally {
-      isImportingProfiles = false;
-    }
+    await selectorProfiles.importProfiles();
   }
 
   async function onClearProfiles() {
-    if (isClearingProfiles) return;
-    if (!confirm('Clear all saved selector profiles?')) return;
-    isClearingProfiles = true;
-    try {
-      await clearSelectorProfiles();
-      activeProfileId = null;
-      activeProfile = null;
-      profileStatusMessage = null;
-      autoAppliedProfile = false;
-      const cleared = new SvelteSet<string>();
-      setIgnoredProfileIds(cleared);
-      persistIgnoredProfileIds(cleared);
-      toastStore.success('Cleared all saved selector profiles.');
-      await refreshHostProfiles();
-      await loadAllProfiles();
-    } catch (error) {
-      console.error('Failed to clear selector profiles', error);
-      toastStore.error('Failed to clear profiles.');
-    } finally {
-      isClearingProfiles = false;
-    }
+    await selectorProfiles.clearProfiles();
   }
 
   async function onRenameProfile(id: string, name: string) {
-    const trimmed = name.trim();
-    const existing = allProfiles.find((p) => p.id === id);
-    if (existing && (existing.name ?? '') === trimmed) return;
-    try {
-      await renameSelectorProfile(id, trimmed);
-      await refreshHostProfiles();
-      await loadAllProfiles();
-    } catch (error) {
-      console.error('Failed to rename selector profile', error);
-      toastStore.error('Failed to rename profile.');
-    }
+    await selectorProfiles.renameProfile(id, name);
   }
 
   async function onDeleteProfileById(id: string) {
-    if (!confirm('Delete this saved selector profile?')) return;
-    try {
-      await deleteSelectorProfile(id);
-      if (activeProfileId === id) {
-        startSel = '';
-        endSel = '';
-        activeProfileId = null;
-        activeProfile = null;
-        profileStatusMessage = null;
-        autoAppliedProfile = false;
-      }
-      const next = new SvelteSet(ignoredProfileIds);
-      if (next.delete(id)) {
-        setIgnoredProfileIds(next);
-        persistIgnoredProfileIds(next);
-      }
-      toastStore.success('Deleted saved selector profile.');
-      await refreshHostProfiles();
-      await loadAllProfiles();
-      populate();
-    } catch (error) {
-      console.error('Failed to delete selector profile', error);
-      toastStore.error('Failed to delete profile.');
-    }
+    await selectorProfiles.deleteProfileById(id);
+    populate();
   }
 
   async function onExportSubProfiles() {
-    if (isExportingSubs) return;
-    isExportingSubs = true;
-    try {
-      const bundle = await subStorage.exportSubProfiles();
-      const json = JSON.stringify(bundle, null, 2);
-      const blob = new Blob([json], { type: 'application/json;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      const stamp = new Date().toISOString().replace(/[:]/g, '-');
-      a.download = `gdluxx-substitution-profiles-${stamp}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      toastStore.success('Exported substitution profiles.');
-    } catch (error) {
-      console.error('Failed to export replacement profiles', error);
-      toastStore.error('Failed to export replacement profiles.');
-    } finally {
-      isExportingSubs = false;
-    }
+    await substitution.exportProfiles();
   }
 
   async function onImportSubProfiles() {
-    if (!importSubProfilesText.trim()) {
-      importSubProfilesError = 'Paste exported JSON before importing.';
-      return;
-    }
-    if (isImportingSubs) return;
-    isImportingSubs = true;
-    importSubProfilesError = null;
-    try {
-      const payload = JSON.parse(importSubProfilesText);
-      await subStorage.importSubProfiles(payload);
-      toastStore.success('Imported substitution profiles.');
-      importSubProfilesText = '';
-      await refreshHostReplacementProfiles();
-      await loadAllSubProfiles();
-    } catch (error) {
-      console.error('Failed to import replacement profiles', error);
-      importSubProfilesError =
-        error instanceof Error ? error.message : 'Unknown error while importing profiles';
-      toastStore.error('Failed to import replacement profiles.');
-    } finally {
-      isImportingSubs = false;
-    }
+    await substitution.importProfiles();
   }
 
   async function onClearSubProfiles() {
-    if (isClearingSubs) return;
-    if (!confirm('Clear all saved substitution profiles?')) return;
-    isClearingSubs = true;
-    try {
-      await subStorage.clearSubProfiles();
-      activeSubProfileId = null;
-      activeSubProfile = null;
-      subProfileStatusMessage = null;
-      autoAppliedSubProfile = false;
-      const cleared = new SvelteSet<string>();
-      setIgnoredSubProfileIds(cleared);
-      persistIgnoredSubProfileIds(cleared);
-      toastStore.success('Cleared all saved substitution profiles.');
-      await refreshHostReplacementProfiles();
-      await loadAllSubProfiles();
-    } catch (error) {
-      console.error('Failed to clear replacement profiles', error);
-      toastStore.error('Failed to clear replacement profiles.');
-    } finally {
-      isClearingSubs = false;
-    }
+    await substitution.clearProfiles();
   }
 
   async function onRenameSubProfile(id: string, name: string) {
-    const trimmed = name.trim();
-    const existing = allSubProfiles.find((p) => p.id === id);
-    if (existing && (existing.name ?? '') === trimmed) return;
-    try {
-      await subStorage.renameSubProfile(id, trimmed);
-      await refreshHostReplacementProfiles();
-      await loadAllSubProfiles();
-    } catch (error) {
-      console.error('Failed to rename replacement profile', error);
-      toastStore.error('Failed to rename replacement profile.');
-    }
+    await substitution.renameProfile(id, name);
   }
 
   async function onDeleteSubProfileById(id: string) {
-    if (!confirm('Delete this saved substitution profile?')) return;
-    try {
-      await subStorage.deleteSubProfile(id);
-      if (activeSubProfileId === id) {
-        activeSubProfileId = null;
-        activeSubProfile = null;
-        subProfileStatusMessage = null;
-        autoAppliedSubProfile = false;
-      }
-      const next = new SvelteSet(ignoredSubProfileIds);
-      if (next.delete(id)) {
-        setIgnoredSubProfileIds(next);
-        persistIgnoredSubProfileIds(next);
-      }
-      toastStore.success('Deleted saved substitution profile.');
-      await refreshHostReplacementProfiles();
-      await loadAllSubProfiles();
-    } catch (error) {
-      console.error('Failed to delete substitution profile', error);
-      toastStore.error('Failed to delete replacement profile.');
-    }
+    await substitution.deleteProfileById(id);
   }
 
   async function onApplySubProfileFromSettings(id: string) {
-    await onApplyReplacementProfile(id);
+    await substitution.applyProfile(id);
+  }
+
+  async function refreshSubProfiles() {
+    if (typeof window === 'undefined') return;
+    await substitution.refreshHostProfiles(window.location.href);
+    await substitution.refreshAllProfiles();
   }
 
   async function onTest() {
-    if (isTestingConnection) return;
-
-    // Clear previous errors
-    serverUrlError = false;
-    apiKeyError = false;
-    isTestingConnection = true;
-
-    const missingUrl = !settings.serverUrl;
-    const missingKey = !settings.apiKey;
-
-    if (missingUrl || missingKey) {
-      serverUrlError = missingUrl;
-      apiKeyError = missingKey;
-      toastStore.error('Please enter both Server URL and API Key');
-      isTestingConnection = false;
-      return;
-    }
-
-    try {
-      const res = await testConnection(settings.serverUrl, settings.apiKey);
-      if (res.success) {
-        toastStore.success(res.message || 'Connection test successful!');
-      } else {
-        toastStore.error(res.error || 'Connection test failed');
-      }
-    } catch (error) {
-      console.error('Connection test error:', error);
-      toastStore.error('Failed to test connection');
-    } finally {
-      isTestingConnection = false;
-    }
+    await settingsVM.test();
   }
 
   async function onSave() {
-    if (isSavingSettings) return;
-
-    // Clear previous errors
-    serverUrlError = false;
-    apiKeyError = false;
-    isSavingSettings = true;
-
-    const missingUrl = !settings.serverUrl;
-    const missingKey = !settings.apiKey;
-
-    if (missingUrl || missingKey) {
-      serverUrlError = missingUrl;
-      apiKeyError = missingKey;
-      toastStore.error('Please enter both Server URL and API Key');
-      isSavingSettings = false;
-      return;
-    }
-
-    // Validate URL
-    const v = validateServerUrl(settings.serverUrl);
-    if (!v.valid) {
-      serverUrlError = true;
-      toastStore.error(v.error ?? 'Invalid Server URL');
-      isSavingSettings = false;
-      return;
-    }
-
-    try {
-      await saveSettings(settings);
-      toastStore.success('Settings saved successfully!');
-    } catch (error) {
-      console.error('Save settings error:', error);
-      toastStore.error('Failed to save settings');
-    } finally {
-      isSavingSettings = false;
-    }
+    await settingsVM.save();
   }
 
   async function onThemeChange(e: Event) {
@@ -1743,198 +467,91 @@
     const value = target.value;
     currentTheme = value;
 
-    // Apply theme to shadow root
     if (shadowContainer) {
       const shadowRoot = shadowContainer.getRootNode() as ShadowRoot;
       applyThemeToShadowRoot(shadowRoot, value);
     }
 
-    try {
-      await appStore.applyTheme(value);
-    } catch (error) {
-      console.error('Failed to persist theme preference', error);
-    }
+    await settingsVM.setTheme(value);
   }
 
   async function onToggleDisplayMode() {
-    isFullscreen = !isFullscreen;
-    try {
-      await appStore.applyDisplayMode(isFullscreen ? 'fullscreen' : 'modal');
-    } catch (error) {
-      console.error('Failed to persist display mode preference', error);
-    }
-  }
-
-  function onServerUrlInput() {
-    serverUrlError = false;
-  }
-
-  function onApiKeyInput() {
-    apiKeyError = false;
+    await settingsVM.toggleDisplayMode();
   }
 
   async function onReset() {
-    if (!confirm('Are you sure you want to reset all gdluxx settings?')) return;
-
-    try {
-      settings.serverUrl = '';
-      settings.apiKey = '';
-      await saveSettings({ serverUrl: '', apiKey: '' });
-      toastStore.success('Settings reset successfully!');
-    } catch (error) {
-      console.error('Reset settings error:', error);
-      toastStore.error('Failed to reset settings');
-    }
+    await settingsVM.reset();
   }
 
   async function onToggleImagePreviews(event: Event) {
     const input = event.target as HTMLInputElement;
-    const previous = settings.showImagePreviews;
-    const next = input.checked;
-    settings.showImagePreviews = next;
-    try {
-      await saveSettings({ showImagePreviews: next });
-    } catch (error) {
-      console.error('Failed to update image preview preference', error);
-      settings.showImagePreviews = previous;
-      input.checked = previous;
-      toastStore.error('Could not update image preview preference.');
-    }
+    await settingsVM.setImagePreviews(input.checked, input);
   }
 
   async function onToggleImageHoverPreview(event: Event) {
     const select = event.target as HTMLSelectElement | null;
     if (!select) return;
-    const previous = settings.showImageHoverPreview;
     const next = select.value as 'off' | 'small' | 'medium' | 'large';
-    settings.showImageHoverPreview = next;
-    try {
-      await saveSettings({ showImageHoverPreview: next });
-    } catch (error) {
-      console.error('Failed to update hover preview preference', error);
-      settings.showImageHoverPreview = previous;
-      select.value = previous;
-      toastStore.error('Could not update hover preview preference.');
-    }
+    await settingsVM.setHoverPreview(next, select);
   }
 
   async function onToggleHotkey(event: Event): Promise<void> {
     const input = event.target as HTMLInputElement;
-    const previous = settings.hotkeyEnabled;
-    const next = input.checked;
-    settings.hotkeyEnabled = next;
-    try {
-      await saveSettings({ hotkeyEnabled: next });
-    } catch (error) {
-      console.error('Failed to save hotkeyEnabled', error);
-      settings.hotkeyEnabled = previous;
-      input.checked = previous;
-    }
+    await settingsVM.toggleHotkey(input.checked, input);
   }
 
   async function onHotkeyChange(newHotkey: string): Promise<void> {
-    const previous = settings.hotkey;
-    settings.hotkey = newHotkey;
-    try {
-      await saveSettings({ hotkey: newHotkey });
-    } catch (error) {
-      console.error('Failed to save hotkey', error);
-      settings.hotkey = previous;
-    }
+    await settingsVM.setHotkey(newHotkey);
   }
 
   async function onToggleSendTabHotkey(event: Event): Promise<void> {
     const input = event.target as HTMLInputElement;
-    const previous = settings.sendTabHotkeyEnabled;
-    const next = input.checked;
-    settings.sendTabHotkeyEnabled = next;
-    try {
-      await saveSettings({ sendTabHotkeyEnabled: next });
-    } catch (error) {
-      console.error('Failed to save sendTabHotkeyEnabled', error);
-      settings.sendTabHotkeyEnabled = previous;
-      input.checked = previous;
-    }
+    await settingsVM.toggleSendTabHotkey(input.checked, input);
   }
 
   async function onSendTabHotkeyChange(newHotkey: string): Promise<void> {
-    const previous = settings.sendTabHotkey;
-    settings.sendTabHotkey = newHotkey;
-    try {
-      await saveSettings({ sendTabHotkey: newHotkey });
-    } catch (error) {
-      console.error('Failed to save sendTabHotkey', error);
-      settings.sendTabHotkey = previous;
-    }
+    await settingsVM.setSendTabHotkey(newHotkey);
+  }
+
+  function onServerUrlChange(value: string) {
+    settingsVM.setServerUrl(value);
+    settingsVM.clearServerUrlError();
+  }
+
+  function onApiKeyChange(value: string) {
+    settingsVM.setApiKey(value);
+    settingsVM.clearApiKeyError();
   }
 
   function setImportProfilesText(value: string) {
-    importProfilesText = value;
-    importProfilesError = null;
+    selectorProfiles.setImportText(value);
   }
 
   function setProfileSearch(value: string) {
-    profileSearch = value;
+    selectorProfiles.setProfileSearch(value);
   }
 
   function updateProfileNameDraft(id: string, value: string) {
-    const next = { ...profileNameDrafts };
-    next[id] = value;
-    profileNameDrafts = next;
+    selectorProfiles.updateNameDraft(id, value);
   }
 
   function setSubImportProfilesText(value: string) {
-    importSubProfilesText = value;
-    importSubProfilesError = null;
+    substitution.setImportText(value);
   }
 
   function setSubProfileSearch(value: string) {
-    subProfileSearch = value;
+    substitution.setProfileSearch(value);
   }
 
   function updateSubProfileNameDraft(id: string, value: string) {
-    const next = { ...subProfileNameDrafts };
-    next[id] = value;
-    subProfileNameDrafts = next;
-  }
-
-  function updateHoverPreviewPositionFromPoint(x: number, y: number) {
-    if (settings.showImageHoverPreview === 'off') return;
-    hoverPreviewPosition = computeHoverPreviewPosition(settings.showImageHoverPreview, x, y);
+    substitution.updateNameDraft(id, value);
   }
 
   function getPreviewDisplayUrl(url: string | null): string | null {
     if (!url) return null;
-    const modification = urlModifications.get(url);
+    const modification = substitution.urlModifications.get(url);
     if (!modification) return url;
     return applySubToPreview ? modification.modifiedUrl : modification.initialUrl;
-  }
-
-  function showHoverPreview(url: string, event: MouseEvent | FocusEvent) {
-    if (settings.showImageHoverPreview === 'off') return;
-    hoverPreviewUrl = url;
-    hoverPreviewVisible = true;
-    hoverPreviewImageError = false;
-
-    if (event instanceof MouseEvent) {
-      updateHoverPreviewPositionFromPoint(event.clientX, event.clientY);
-    } else {
-      const target = event.target as HTMLElement | null;
-      if (target) {
-        const rect = target.getBoundingClientRect();
-        updateHoverPreviewPositionFromPoint(rect.right, rect.top);
-      }
-    }
-  }
-
-  function updateHoverPreviewPositionFromEvent(event: MouseEvent) {
-    if (!hoverPreviewVisible || settings.showImageHoverPreview === 'off') return;
-    updateHoverPreviewPositionFromPoint(event.clientX, event.clientY);
-  }
-
-  function hideHoverPreview() {
-    hoverPreviewVisible = false;
-    hoverPreviewUrl = null;
   }
   // Accesibility focus on filter, Esc to close
   let filterEl = $state<HTMLInputElement | null>(null);
@@ -1949,7 +566,11 @@
     registerGlobalEffects({
       onClose: onclose,
       canSaveProfile: () =>
-        !(isSavingProfile || !hasSelectors || (hasActiveProfile && !activeProfileDiffers)),
+        !(
+          selectorProfiles.isSaving ||
+          !hasSelectors ||
+          (hasActiveProfile && !activeProfileDiffers)
+        ),
       saveProfile: () => onSaveProfile(),
     }),
   );
@@ -1958,6 +579,13 @@
     const nextTheme = appStore.theme;
     if (currentTheme !== nextTheme) {
       currentTheme = nextTheme;
+    }
+  });
+
+  $effect(() => {
+    const nextFullscreen = appStore.isFullscreen;
+    if (isFullscreen !== nextFullscreen) {
+      isFullscreen = nextFullscreen;
     }
   });
 
@@ -1977,11 +605,7 @@
   });
 
   $effect(() => {
-    if (settings.showImageHoverPreview === 'off' && hoverPreviewVisible) {
-      hoverPreviewVisible = false;
-      hoverPreviewUrl = null;
-      hoverPreviewImageError = false;
-    }
+    hoverPreview.hideIfDisabled(settings);
   });
 </script>
 
@@ -2016,6 +640,58 @@
           imageCount={filteredImages.length}
         />
         <ul class="menu menu-horizontal bg-base-200 rounded-box">
+          <!-- Only show accordion toggles when not in settings -->
+          {#if active !== 'settings'}
+            <li>
+              <button
+                title={advancedExpanded ? 'Hide Advanced Filtering' : 'Show Advanced Filtering'}
+                aria-label={advancedExpanded
+                  ? 'Hide Advanced Filtering'
+                  : 'Show Advanced Filtering'}
+                class="relative {advancedExpanded ? 'bg-primary text-primary-content' : ''}"
+                onclick={() => {
+                  advancedExpanded = !advancedExpanded;
+                }}
+              >
+                <Icon
+                  iconName="filter-outline"
+                  class={advancedExpanded ? 'text-primary-content' : 'text-base-content'}
+                  size={16}
+                />
+                {#if hasActiveFilters && !advancedExpanded}
+                  <Badge
+                    label="Active"
+                    variant="info"
+                    class="absolute -top-1 -right-1 scale-75"
+                  />
+                {/if}
+              </button>
+            </li>
+            <li>
+              <button
+                title={subExpanded ? 'Hide String Substitution' : 'Show String Substitution'}
+                aria-label={subExpanded ? 'Hide String Substitution' : 'Show String Substitution'}
+                class="relative {subExpanded ? 'bg-primary text-primary-content' : ''}"
+                onclick={() => {
+                  subExpanded = !subExpanded;
+                }}
+              >
+                <Icon
+                  iconName="find-replace"
+                  class={subExpanded ? 'text-primary-content' : 'text-base-content'}
+                  size={16}
+                />
+                {#if substitution.hasActiveSubs && !subExpanded}
+                  <Badge
+                    label="Active"
+                    variant="info"
+                    class="absolute -top-1 -right-1 scale-75"
+                  />
+                {/if}
+              </button>
+            </li>
+          {/if}
+
           <li>
             <button
               title={active === 'settings' ? 'Home' : 'Settings'}
@@ -2048,102 +724,113 @@
       </div>
     </div>
 
-    <!-- Controls Section -->
+    <!-- Expandable Sections when not in settings -->
     {#if active !== 'settings'}
-      <div class="border-base-300 bg-base-200 space-y-6 border-b px-6 py-6">
-        <!-- Filter Input -->
+      <!-- Advanced Filtering -->
+      {#if advancedExpanded}
+        <div class="border-base-300 bg-base-200 border-b px-6 py-6">
+          <AdvancedFiltering
+            bind:expanded={advancedExpanded}
+            {hasActiveFilters}
+            bind:startSelector={startSel}
+            bind:endSelector={endSel}
+            profileScope={selectorProfiles.scope}
+            {hasSelectors}
+            {hasActiveProfile}
+            {activeProfileDiffers}
+            profileStatusMessage={selectorProfiles.statusMessage}
+            autoAppliedProfile={selectorProfiles.autoAppliedProfile}
+            isSavingProfile={selectorProfiles.isSaving}
+            hostProfiles={selectorProfiles.hostProfiles}
+            {rangeHint}
+            storageWarning={selectorProfiles.storageWarning}
+            onapply={populate}
+            onreset={() => {
+              startSel = '';
+              endSel = '';
+              populate();
+            }}
+            onsaveprofile={() => onSaveProfile()}
+            ondeleteprofile={onDeleteProfile}
+            onignoreprofile={onIgnoreProfile}
+            onscopechange={(scope) => onScopeChange(scope)}
+            onapplyprofile={(profileId) => onApplyProfile(profileId)}
+            onshowselectorhelp={() => (showSelectorHelp = true)}
+            onshowscopehelp={() => (showScopeHelp = true)}
+          />
+        </div>
+      {/if}
+
+      <!-- String Substitution -->
+      {#if subExpanded}
+        <div class="border-base-300 bg-base-200 border-b px-6 py-6">
+          <SubSection
+            bind:expanded={subExpanded}
+            bind:rules={subRules}
+            bind:profileScope={subProfileScope}
+            bind:applyToPreview={applySubToPreview}
+            bind:applyDefaultSub
+            hasActiveSubs={substitution.hasActiveSubs}
+            hasSubRules={substitution.hasSubRules}
+            activeSubProfileId={substitution.activeProfileId}
+            activeProfileDiffers={activeSubProfileDiffers}
+            subProfileStatusMessage={substitution.statusMessage}
+            autoAppliedProfile={substitution.autoAppliedProfile}
+            isSavingProfile={substitution.isSaving}
+            hostProfiles={substitution.hostProfiles}
+            storageWarning={substitution.storageWarning}
+            modifiedUrls={substitution.modifiedUrls}
+            selectedItems={selection.selected}
+            previewCount={substitution.previewCount}
+            onapply={applySubs}
+            onreset={resetSubs}
+            onsaveprofile={() => onSaveReplacementProfile()}
+            ondeleteprofile={onDeleteReplacementProfile}
+            onignoreprofile={onIgnoreReplacementProfile}
+            onscopechange={(scope) => onReplacementScopeChange(scope)}
+            onapplyprofile={(profileId) => onApplyReplacementProfile(profileId)}
+            onshowscopehelp={() => (showScopeHelp = true)}
+            onapplydefaultchange={onAutoApplyPreferenceChange}
+            onshowregexhelp={() => (showSubRegexHelp = true)}
+          />
+        </div>
+      {/if}
+
+      <!-- FilterControls, always visible when not settings -->
+      <div class="border-base-300 bg-base-200 border-b px-6 py-4">
         <FilterControls
-          bind:value={filter}
+          value={selection.filter}
+          onchange={(value) => selection.setFilter(value)}
           bind:inputEl={filterEl}
-        />
-
-        <!-- Range Selectors -->
-        <AdvancedFiltering
-          bind:expanded={advancedExpanded}
-          {hasActiveFilters}
-          bind:startSelector={startSel}
-          bind:endSelector={endSel}
-          bind:profileScope
-          {hasSelectors}
-          {hasActiveProfile}
-          {activeProfileDiffers}
-          {profileStatusMessage}
-          {autoAppliedProfile}
-          {isSavingProfile}
-          {hostProfiles}
-          {rangeHint}
-          {storageWarning}
-          onapply={populate}
-          onreset={() => {
-            startSel = '';
-            endSel = '';
-            populate();
-          }}
-          onsaveprofile={() => onSaveProfile()}
-          ondeleteprofile={onDeleteProfile}
-          onignoreprofile={onIgnoreProfile}
-          onscopechange={(scope) => onScopeChange(scope)}
-          onapplyprofile={(profileId) => onApplyProfile(profileId)}
-          onshowselectorhelp={() => (showSelectorHelp = true)}
-          onshowscopehelp={() => (showScopeHelp = true)}
-        />
-
-        <SubSection
-          bind:expanded={subExpanded}
-          bind:rules={subRules}
-          bind:profileScope={subProfileScope}
-          bind:applyToPreview={applySubToPreview}
-          bind:applyDefaultSub
-          {hasActiveSubs}
-          {hasSubRules}
-          {activeSubProfileId}
-          activeProfileDiffers={activeSubProfileDiffers}
-          {subProfileStatusMessage}
-          autoAppliedProfile={autoAppliedSubProfile}
-          isSavingProfile={isSavingSubProfile}
-          hostProfiles={hostSubProfiles}
-          storageWarning={subStorageWarning}
-          {modifiedUrls}
-          selectedItems={selected}
-          previewCount={subPreviewCount}
-          onapply={applySubs}
-          onreset={resetSubs}
-          onsaveprofile={() => onSaveReplacementProfile()}
-          ondeleteprofile={onDeleteReplacementProfile}
-          onignoreprofile={onIgnoreReplacementProfile}
-          onscopechange={onReplacementScopeChange}
-          onapplyprofile={onApplyReplacementProfile}
-          onshowscopehelp={() => (showScopeHelp = true)}
-          onapplydefaultchange={onAutoApplyPreferenceChange}
-          onshowregexhelp={() => (showSubRegexHelp = true)}
         />
       </div>
 
       <ActionControls
         {isConfigured}
-        selectionCount={selected.size}
-        onCopySelected={copySelected}
-        onDownloadSelected={downloadSelected}
-        onSendSelected={sendSelected}
-        {customDirectoryEnabled}
-        {customDirectoryValue}
-        onCustomDirectoryToggle={handleCustomDirectoryToggle}
-        onCustomDirectoryChange={handleCustomDirectoryChange}
-        onCustomDirectoryClear={handleCustomDirectoryClear}
+        selectionCount={selection.selected.size}
+        onCopySelected={() => selection.copyToClipboard([...selection.selected])}
+        onDownloadSelected={() =>
+          selection.downloadAsFile([...selection.selected], `${active}_export.txt`)}
+        onSendSelected={() => selection.sendToServer([...selection.selected])}
+        customDirectoryEnabled={selection.customDirectoryEnabled}
+        customDirectoryValue={selection.customDirectoryValue}
+        onCustomDirectoryToggle={() =>
+          selection.setCustomDirectory(!selection.customDirectoryEnabled)}
+        onCustomDirectoryChange={(value) =>
+          selection.setCustomDirectory(selection.customDirectoryEnabled, value)}
+        onCustomDirectoryClear={() => selection.setCustomDirectory(false, '')}
       />
-    {/if}
 
-    <!-- Tabs -->
-    {#if active !== 'settings'}
+      <!-- ContentTabs -->
       <ContentTabs
         {active}
         imageCount={filteredImages.length}
         linkCount={filteredLinks.length}
-        selectionCount={selected.size}
+        selectionCount={selection.selected.size}
         onchange={(tab) => (active = tab)}
-        onSelectAll={selectAll}
-        onSelectNone={selectNone}
-        onInvertSelection={invertSelection}
+        onSelectAll={() => selection.selectAll(visible)}
+        onSelectNone={() => selection.selectNone()}
+        onInvertSelection={() => selection.invertSelection(visible)}
       />
     {/if}
   </div>
@@ -2153,25 +840,25 @@
       <LinkList
         links={filteredLinks}
         counts={linkCounts}
-        {selected}
-        {compact}
-        onToggle={toggleSelect}
-        {modifiedUrls}
-        {urlModifications}
+        selected={selection.selected}
+        compact={selection.compact}
+        onToggle={(url) => selection.toggle(url)}
+        modifiedUrls={substitution.modifiedUrls}
+        urlModifications={substitution.urlModifications}
       />
     {:else if active === 'images'}
       <ImageList
         images={filteredImages}
         counts={imageCounts}
-        {selected}
-        {compact}
-        {showHoverPreview}
-        updateHoverPosition={updateHoverPreviewPositionFromEvent}
-        {hideHoverPreview}
-        onToggle={toggleSelect}
+        selected={selection.selected}
+        compact={selection.compact}
+        showHoverPreview={(url, event) => hoverPreview.show(url, event, settings)}
+        updateHoverPosition={(event) => hoverPreview.updatePosition(event, settings)}
+        hideHoverPreview={() => hoverPreview.hide()}
+        onToggle={(url) => selection.toggle(url)}
         showImagePreviews={settings.showImagePreviews}
-        {modifiedUrls}
-        {urlModifications}
+        modifiedUrls={substitution.modifiedUrls}
+        urlModifications={substitution.urlModifications}
         applyToPreview={applySubToPreview}
       />
     {:else}
@@ -2188,8 +875,8 @@
             {apiKeyError}
             {isSavingSettings}
             {isTestingConnection}
-            {onServerUrlInput}
-            {onApiKeyInput}
+            onServerUrlInput={onServerUrlChange}
+            onApiKeyInput={onApiKeyChange}
             {onTest}
             {onSave}
             {onReset}
@@ -2199,24 +886,24 @@
             {isConfigured}
             {isSavingSettings}
             {isTestingConnection}
-            {isSavingRemoteBackup}
-            {isRestoringRemoteBackup}
-            {isLoadingRemoteBackup}
-            {isDeletingRemoteBackup}
-            {isExportingProfiles}
-            {isImportingProfiles}
-            {isClearingProfiles}
-            {allProfiles}
+            isSavingRemoteBackup={selectorProfiles.isSavingRemoteBackup}
+            isRestoringRemoteBackup={selectorProfiles.isRestoringRemoteBackup}
+            isLoadingRemoteBackup={selectorProfiles.isLoadingRemoteBackup}
+            isDeletingRemoteBackup={selectorProfiles.isDeletingRemoteBackup}
+            isExportingProfiles={selectorProfiles.isExporting}
+            isImportingProfiles={selectorProfiles.isImporting}
+            isClearingProfiles={selectorProfiles.isClearing}
+            allProfiles={selectorProfiles.allProfiles}
             {filteredProfiles}
-            {profileNameDrafts}
-            {profileSearch}
-            {importProfilesText}
-            {importProfilesError}
-            {remoteBackupMeta}
+            profileNameDrafts={selectorProfiles.profileNameDrafts}
+            profileSearch={selectorProfiles.profileSearch}
+            importProfilesText={selectorProfiles.importText}
+            importProfilesError={selectorProfiles.importError}
+            remoteBackupMeta={selectorProfiles.remoteBackupMeta}
             {formatTimestamp}
-            {describeProfile}
+            describeProfile={(profile) => profile.name || `${profile.host} (${profile.scope})`}
             {describeSubProfile}
-            onRefreshProfiles={loadAllProfiles}
+            onRefreshProfiles={() => selectorProfiles.refreshHostProfiles(window.location.href)}
             {onExportProfiles}
             {onImportProfiles}
             {onClearProfiles}
@@ -2232,16 +919,16 @@
             onImportTextChange={setImportProfilesText}
             onProfileSearchChange={setProfileSearch}
             onProfileDraftChange={updateProfileNameDraft}
-            subProfiles={allSubProfiles}
+            subProfiles={substitution.allProfiles}
             {filteredSubProfiles}
-            {subProfileNameDrafts}
-            {subProfileSearch}
-            {importSubProfilesText}
-            {importSubProfilesError}
-            {isExportingSubs}
-            {isImportingSubs}
-            {isClearingSubs}
-            onRefreshSubProfiles={loadAllSubProfiles}
+            subProfileNameDrafts={substitution.profileNameDrafts}
+            subProfileSearch={substitution.profileSearch}
+            importSubProfilesText={substitution.importText}
+            importSubProfilesError={substitution.importError}
+            isExportingSubs={substitution.isExporting}
+            isImportingSubs={substitution.isImporting}
+            isClearingSubs={substitution.isClearing}
+            onRefreshSubProfiles={refreshSubProfiles}
             {onExportSubProfiles}
             {onImportSubProfiles}
             {onClearSubProfiles}
@@ -2251,11 +938,11 @@
             onSubImportTextChange={setSubImportProfilesText}
             onSubProfileSearchChange={setSubProfileSearch}
             onSubProfileDraftChange={updateSubProfileNameDraft}
-            subRemoteMeta={subRemoteBackupMeta}
-            {isSavingSubRemoteBackup}
-            {isRestoringSubRemoteBackup}
-            {isLoadingSubRemoteBackup}
-            {isDeletingSubRemoteBackup}
+            subRemoteMeta={substitution.remoteBackupMeta}
+            isSavingSubRemoteBackup={substitution.isSavingRemoteBackup}
+            isRestoringSubRemoteBackup={substitution.isRestoringRemoteBackup}
+            isLoadingSubRemoteBackup={substitution.isLoadingRemoteBackup}
+            isDeletingSubRemoteBackup={substitution.isDeletingRemoteBackup}
             onRefreshSubRemoteStatus={() => refreshSubRemoteBackupMeta(true)}
             {onDeleteSubRemoteBackup}
           />
@@ -2295,35 +982,23 @@
     {/if}
   </div>
 
-  <div class="flex h-12 items-center justify-between gap-3 px-6">
-    {#if active !== 'settings'}
-      <div class="text-base-content/50 flex gap-3">
-        <span>
-          Visible: {visible.length} / {active === 'links'
-            ? links.length
-            : active === 'images'
-              ? images.length
-              : 0}
-        </span>
-        <span>Selected: {Array.from(selected).length}</span>
-      </div>
-      <label class="text-base-content/50 text-sm">
-        <input
-          type="checkbox"
-          class="toggle toggle-accent toggle-xs"
-          bind:checked={compact}
-        /> Compact rows
-      </label>
-    {/if}
-  </div>
+  <StatusBar
+    activeTab={active}
+    visibleCount={visible.length}
+    totalLinks={links.length}
+    totalImages={images.length}
+    selectedCount={selection.selected.size}
+    compact={selection.compact}
+    onCompactChange={(checked) => selection.setCompact(checked)}
+  />
 
   <HoverPreview
-    visible={settings.showImageHoverPreview !== 'off' && hoverPreviewVisible}
-    url={getPreviewDisplayUrl(hoverPreviewUrl)}
-    position={hoverPreviewPosition}
+    visible={settings.showImageHoverPreview !== 'off' && hoverPreview.visible}
+    url={getPreviewDisplayUrl(hoverPreview.url)}
+    position={hoverPreview.position}
     mode={settings.showImageHoverPreview}
-    hasError={hoverPreviewImageError}
-    onerror={() => (hoverPreviewImageError = true)}
+    hasError={hoverPreview.imageError}
+    onerror={() => hoverPreview.setImageError(true)}
   />
 </div>
 
