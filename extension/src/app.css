@@ -82,6 +82,13 @@
     font-size: 16px !important;
   }
 
+  #gdluxx-overlay-container,
+  #gdluxx-overlay-container * {
+    --tw-border-style: solid;
+    --tw-border-color: currentColor;
+    --tw-border-opacity: 1;
+  }
+
   /* Force all elements to use explicit sizes, not rem-based inheritance */
   * {
     font-size: inherit !important;
