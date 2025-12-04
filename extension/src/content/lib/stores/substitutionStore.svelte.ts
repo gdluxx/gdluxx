@@ -905,7 +905,9 @@ export function createSubstitutionStore() {
     try {
       const pref = await getPreferredSubScope();
       if (pref) scope = pref;
-    } catch {}
+    } catch {
+      // Ignore
+    }
 
     try {
       const status = await getSubStorageStatus();

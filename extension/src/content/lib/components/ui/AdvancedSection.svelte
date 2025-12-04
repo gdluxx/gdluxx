@@ -17,13 +17,11 @@
     title,
     hasActiveFilters = false,
     children,
-    class: className = '',
   }: {
     expanded?: boolean;
     title: string;
     hasActiveFilters?: boolean;
     children?: Snippet;
-    class?: string;
   } = $props();
 </script>
 
