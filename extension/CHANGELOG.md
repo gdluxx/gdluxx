@@ -1,5 +1,21 @@
 # Changelog
 
+# [1.5.0](https://github.com/gdluxx/gdluxx/compare/extension-v1.4.0...extension-v1.5.0) (2025-12-04)
+
+
+### Bug Fixes
+
+* **extension:** borders not displaying ([5a0ad7b](https://github.com/gdluxx/gdluxx/commit/5a0ad7bdd4c5579f68396dbca5347678bbc64e9b))
+* **extension:** cards and shadow not working correctly on Appearance tab of settings ([6ea1d11](https://github.com/gdluxx/gdluxx/commit/6ea1d119a7b8e61ae8ec662d985e8236920ea01b))
+* **extension:** Dropdown component wasn't closing with outside click or upon selection ([10f8a8b](https://github.com/gdluxx/gdluxx/commit/10f8a8b0c981a097f3ead95e107123d1426826bb))
+* **extension:** remove unused prop and add empty catch comment ([686c129](https://github.com/gdluxx/gdluxx/commit/686c129ffdbe807c66b49b3993f24d8cd486957a))
+
+
+### Features
+
+* **extension:** add soft variant and size to Info component ([556c88d](https://github.com/gdluxx/gdluxx/commit/556c88dd32b9f17d284be514966f7960f0446c7a))
+* **extension:** updated some styling and button locations to better accommodate lower resolution (HD/1080) screens ([f192de4](https://github.com/gdluxx/gdluxx/commit/f192de43e05b8485490149c3f57819e6b1061b3f))
+
 # [1.4.0](https://github.com/gdluxx/gdluxx/compare/extension-v1.3.0...extension-v1.4.0) (2025-11-04)
 
 
