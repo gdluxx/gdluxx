@@ -59,7 +59,7 @@
               >
                 <input
                   type="checkbox"
-                  class="checkbox checkbox-sm checkbox-secondary pointer-events-none"
+                  class="checkbox checkbox-sm checkbox-secondary pointer-events-none rounded-sm"
                   class:checkbox-xs={compact}
                   checked={selected.has(url)}
                 />

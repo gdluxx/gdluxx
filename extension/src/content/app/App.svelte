@@ -720,7 +720,7 @@
     {#if active !== 'settings'}
       <!-- Advanced Filtering -->
       {#if advancedExpanded}
-        <div class="border-base-300 bg-base-200 border-b px-6 py-6">
+        <div class="border-base-300 bg-base-200 px-4 py-2">
           <AdvancedFiltering
             bind:expanded={advancedExpanded}
             {hasActiveFilters}
@@ -755,7 +755,7 @@
 
       <!-- String Substitution -->
       {#if subExpanded}
-        <div class="border-base-300 bg-base-200 border-b px-6 py-6">
+        <div class="border-base-300 bg-base-200 max-h-[500px] overflow-y-auto border-b px-4 py-2">
           <SubSection
             bind:expanded={subExpanded}
             bind:rules={subRules}
@@ -789,7 +789,7 @@
       {/if}
 
       <!-- FilterControls, always visible when not settings -->
-      <div class="border-base-300 bg-base-200 border-b px-6 py-4">
+      <div class="border-base-300 bg-base-200 border-b px-6 py-2">
         <FilterControls
           value={selection.filter}
           onchange={(value) => selection.setFilter(value)}

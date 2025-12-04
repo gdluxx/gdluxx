@@ -155,9 +155,15 @@
     />
 
     {#if modifiedCount > 0}
-      <Info>
-        {modifiedCount} URL{modifiedCount === 1 ? '' : 's'} currently show modified values. Use “Reset
-        URLs” to restore the originals.
+      <Info
+        variant="info"
+        size="sm"
+        soft
+      >
+        <span class="text-lg">
+          {modifiedCount} URL{modifiedCount === 1 ? '' : 's'} currently show modified values. Use “Reset
+          URLs” to restore the originals.
+        </span>
       </Info>
     {/if}
   </div>

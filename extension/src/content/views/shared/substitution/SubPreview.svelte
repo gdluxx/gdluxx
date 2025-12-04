@@ -42,17 +42,25 @@
         <span class="text-lg">Select one or more URLs to see substitution preview</span>
       </Info>
     {:else if !previewCount}
-      <Info variant="warning">
+      <Info
+        variant="warning"
+        size="sm"
+        soft
+      >
         <span class="text-lg">No matches detected with the current rules</span>
       </Info>
     {:else if hasItems}
       <div class="space-y-3">
         {#each items as item (item.original)}
-          <div class="rounded-box border-base-300 bg-base-200 space-y-2 border p-3">
-            <div class="text-base-content/70 text-xs font-semibold uppercase">Before</div>
-            <div class="font-mono text-sm leading-snug break-all">{item.original}</div>
-            <div class="text-base-content/70 text-xs font-semibold uppercase">After</div>
-            <div class="text-success font-mono text-sm leading-snug break-all">{item.modified}</div>
+          <div class="rounded-box border-base-300 bg-base-200 border p-3">
+            <div class="grid grid-cols-[auto_1fr] items-baseline gap-x-2 gap-y-2">
+              <span class="text-base-content/70 text-xs font-semibold uppercase">Before:</span>
+              <span class="font-mono text-sm leading-snug break-all">{item.original}</span>
+              <span class="text-base-content/70 text-xs font-semibold uppercase">After:</span>
+              <span class="text-accent font-mono text-sm leading-snug break-all"
+                >{item.modified}</span
+              >
+            </div>
           </div>
         {/each}
         {#if previewCount > items.length}

@@ -56,7 +56,7 @@
 
 <div class="mt-2">
   {#if images.length > 0}
-    <div class="rounded-box border-secondary bg-base-200 overflow-hidden border">
+    <div class="rounded-box border-secondary bg-base-200 overflow-hidden border py-1">
       <table
         class="table"
         class:table-xs={compact}

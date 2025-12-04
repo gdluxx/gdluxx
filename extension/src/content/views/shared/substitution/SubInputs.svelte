@@ -32,7 +32,6 @@
   let validationErrors = $state<Record<string, string>>({});
   const touchedRules = new SvelteSet<string>();
   const canAddMoreRules = $derived(rules.length < MAX_RULES_PER_PROFILE);
-  let hoveredRuleId = $state<string | null>(null);
 
   const FLAG_OPTIONS = [
     { flag: 'g', label: 'global' },
@@ -214,24 +213,9 @@
     return rule.flags.includes(flag);
   }
 
-  function preventCollapsePropagation(node: HTMLElement) {
-    const stop = (event: Event) => {
-      event.stopPropagation();
-    };
-
-    node.addEventListener('click', stop);
-    node.addEventListener('keydown', stop);
-
-    return {
-      destroy() {
-        node.removeEventListener('click', stop);
-        node.removeEventListener('keydown', stop);
-      },
-    };
-  }
 </script>
 
-<div class="space-y-6">
+<div class="space-y-2">
   <div class="flex items-center justify-between">
     <p class="text-base-content/70 text-sm">
       Apply regex-based substitutions to selected URLs. Rules run in order from top to bottom.
@@ -253,50 +237,73 @@
 
   <div class="space-y-3">
     {#each rules as rule, index (rule.id)}
-      {#key rule.id}
-        <div class="collapse-arrow bg-base-200 card-border collapse">
-          <input
-            type="checkbox"
-            name="collapse-rule-{rule.id}"
-            checked
-            aria-label="Toggle rule {index + 1} visibility"
-          />
-          <div
-            class="collapse-title flex flex-wrap items-center justify-between gap-2 pr-12"
-            onmouseenter={() => (hoveredRuleId = rule.id)}
-            onmouseleave={() => (hoveredRuleId = null)}
-            role="group"
-            aria-label="Substitution rule {index + 1}"
+      <div class="collapse-arrow bg-base-200 card-border collapse">
+        <input
+          type="checkbox"
+          id="collapse-rule-{rule.id}"
+          name="collapse-rule-{rule.id}"
+          checked
+          aria-label="Toggle rule {index + 1} visibility"
+        />
+        <div
+          class="collapse-title border-accent flex flex-wrap items-center justify-between gap-2 py-3 pr-12"
+          role="group"
+          aria-label="Substitution rule {index + 1}"
+        >
+          <label
+            for="collapse-rule-{rule.id}"
+            class="flex cursor-pointer items-baseline gap-2"
           >
-            <div class="flex items-baseline gap-2">
-              <span class="text-sm font-medium">Rule {index + 1}</span>
-              {#if rule.pattern}
-                <span class="text-base-content/50 text-xs font-normal">
-                  {rule.pattern.slice(0, 30)}{rule.pattern.length > 30 ? '...' : ''}
-                </span>
-              {/if}
-            </div>
-            <div
-              class="relative z-10 flex flex-wrap items-center gap-2"
-              role="group"
-              aria-label="Rule {index + 1} controls"
-              use:preventCollapsePropagation
-            >
-              <div class="flex items-center">
-                <label
-                  class="text-base-content/70 mx-1 flex w-30 items-center justify-between gap-1"
-                >
-                  <span>{rule.enabled ? 'Enabled' : 'Disabled'}</span>
-                  <Toggle
-                    bind:checked={rule.enabled}
-                    variant="secondary"
-                  />
-                </label>
+            <span class="text-sm font-medium">Rule {index + 1}</span>
+            {#if rule.pattern}
+              <span class="text-base-content/50 text-xs font-normal">
+                {rule.pattern.slice(0, 30)}{rule.pattern.length > 30 ? '...' : ''}
+              </span>
+            {/if}
+          </label>
+        </div>
+
+        <div class="collapse-content space-y-3">
+          <div class="flex flex-wrap items-start gap-3">
+            <!-- Inputs section -->
+            <div class="flex min-w-0 flex-1 gap-3">
+              <div class="min-w-0 flex-1 space-y-1">
+                <input
+                  class={`input-bordered input focus:ring-primary/20 focus:input-primary w-full transition-all focus:ring-2 ${touchedRules.has(rule.id) && validationErrors[rule.id] ? 'input-error focus:input-error' : ''}`}
+                  placeholder="Regular expression pattern"
+                  aria-label="Regex pattern"
+                  value={rule.pattern}
+                  oninput={(event) => handlePatternInput(rule.id, event)}
+                />
+                <p class="text-error ml-2 h-4 text-sm">
+                  {#if touchedRules.has(rule.id) && validationErrors[rule.id]}
+                    {validationErrors[rule.id]}
+                  {/if}
+                </p>
               </div>
-              {#if hoveredRuleId === rule.id || rules.length === 1}
+              <div class="min-w-0 flex-1">
+                <input
+                  class="input-bordered input focus:ring-primary/20 focus:input-primary w-full transition-all focus:ring-2"
+                  placeholder="Substitution text (use $1, $2 for capture groups)"
+                  aria-label="Substitution text"
+                  value={rule.replacement}
+                  oninput={(event) => handleReplacementInput(rule.id, event)}
+                />
+              </div>
+            </div>
+
+            <!-- Actions section -->
+            <div class="flex shrink-0 items-center gap-2">
+              <label class="text-base-content/70 flex items-center gap-1">
+                <span class="text-xs">{rule.enabled ? 'On' : 'Off'}</span>
+                <Toggle
+                  bind:checked={rule.enabled}
+                  variant="secondary"
+                />
+              </label>
+              {#if rules.length > 1}
                 <div class="btn-group join">
                   <Button
-                    size="sm"
                     disabled={index === 0}
                     onclick={(e) => {
                       e.stopPropagation();
@@ -311,13 +318,11 @@
                     <Icon iconName="move-up" />
                   </Button>
                   <Button
-                    size="sm"
                     disabled={index === rules.length - 1}
                     onclick={(e) => {
                       e.stopPropagation();
                       moveRule(rule.id, 'down');
                     }}
-                    type="button"
                     title="Move rule down"
                     aria-label="Move rule down"
                     class="join-item"
@@ -336,7 +341,6 @@
                 }}
                 title="Delete rule"
                 aria-label="Delete rule"
-                size="sm"
                 square
               >
                 <Icon
@@ -346,58 +350,31 @@
               </Button>
             </div>
           </div>
+          <!-- end actions -->
 
-          <div class="collapse-content space-y-3">
-            <div class="grid gap-3 md:grid-cols-2">
-              <div class="space-y-2">
+          <div class="ml-2 flex flex-wrap items-center gap-3">
+            <div class="join">
+              {#each FLAG_OPTIONS as { flag, label } (flag)}
                 <input
-                  class={`input-bordered input focus:ring-primary/20 focus:input-primary w-full transition-all focus:ring-2 ${touchedRules.has(rule.id) && validationErrors[rule.id] ? 'input-error focus:input-error' : ''}`}
-                  placeholder="Regular expression pattern"
-                  aria-label="Regex pattern"
-                  value={rule.pattern}
-                  oninput={(event) => handlePatternInput(rule.id, event)}
+                  class="join-item btn btn-xs"
+                  type="checkbox"
+                  name="flags-{rule.id}"
+                  aria-label="{flag}/{label}"
+                  checked={flagChecked(rule, flag)}
+                  onchange={() => toggleFlag(rule.id, flag)}
                 />
-                <p class="text-error ml-2 h-4 text-sm">
-                  {#if touchedRules.has(rule.id) && validationErrors[rule.id]}
-                    {validationErrors[rule.id]}
-                  {/if}
-                </p>
-              </div>
-              <div class="space-y-2">
-                <input
-                  class="input-bordered input focus:ring-primary/20 focus:input-primary w-full transition-all focus:ring-2"
-                  placeholder="Substitution text (use $1, $2 for capture groups)"
-                  aria-label="Substitution text"
-                  value={rule.replacement}
-                  oninput={(event) => handleReplacementInput(rule.id, event)}
-                />
-              </div>
-            </div>
-
-            <div class="ml-2 flex flex-wrap items-center gap-3">
-              <div class="join">
-                {#each FLAG_OPTIONS as { flag, label } (flag)}
-                  <input
-                    class="join-item btn btn-xs"
-                    type="checkbox"
-                    name="flags-{rule.id}"
-                    aria-label="{flag}/{label}"
-                    checked={flagChecked(rule, flag)}
-                    onchange={() => toggleFlag(rule.id, flag)}
-                  />
-                {/each}
-              </div>
+              {/each}
             </div>
           </div>
         </div>
-      {/key}
+      </div>
     {/each}
   </div>
 
   <div class="flex flex-wrap items-center justify-between gap-2">
     <div class="flex flex-wrap items-center gap-2">
       <Button
-        variant="neutral"
+        variant="primary-outline"
         size="sm"
         onclick={handleApply}
         class="whitespace-nowrap"
@@ -405,7 +382,7 @@
         Apply substitutions
       </Button>
       <Button
-        variant="neutral"
+        variant="secondary-outline"
         size="sm"
         onclick={handleReset}
         class="whitespace-nowrap"
@@ -430,3 +407,9 @@
     {/if}
   </div>
 </div>
+
+<style>
+  .collapse-arrow > input ~ .collapse-title::after {
+    top: 1.4rem;
+  }
+</style>

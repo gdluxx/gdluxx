@@ -41,7 +41,7 @@
 </script>
 
 {#if isConfigured}
-  <div class="m-4 flex flex-row items-center gap-3">
+  <div class="mx-4 my-2 flex flex-row items-center gap-3">
     <!-- Primary Action Button -->
     <Button
       size="sm"

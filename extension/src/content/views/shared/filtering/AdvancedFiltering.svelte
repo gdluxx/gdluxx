@@ -73,7 +73,6 @@
   title="Advanced Filtering"
   bind:expanded
   {hasActiveFilters}
-  class="overflow-visible"
 >
   <div class="space-y-4">
     <SelectorInputs

@@ -193,7 +193,7 @@
     <label class="flex items-center gap-2">
       <input
         type="checkbox"
-        class="checkbox checkbox-xs checkbox-secondary"
+        class="checkbox checkbox-xs checkbox-secondary rounded-sm"
         bind:checked={applyToPreview}
         aria-label="Apply substitution results to previews"
       />
@@ -202,7 +202,7 @@
     <label class="flex items-center gap-2">
       <input
         type="checkbox"
-        class="checkbox checkbox-xs checkbox-secondary"
+        class="checkbox checkbox-xs checkbox-secondary rounded-sm"
         checked={applyDefaultSub}
         onchange={handleDefaultToggle}
         aria-label="Automatically apply saved substitution profile"
