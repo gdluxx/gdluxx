@@ -212,7 +212,6 @@
   function flagChecked(rule: SubRule, flag: string): boolean {
     return rule.flags.includes(flag);
   }
-
 </script>
 
 <div class="space-y-2">

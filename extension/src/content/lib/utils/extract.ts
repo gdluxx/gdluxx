@@ -106,7 +106,7 @@ export function extractAll(startSelector = '', endSelector = ''): ExtractResult 
 
   const needsFallback =
     !meta.rangeApplied ||
-    !hrefs.length && !imgs.length ||
+    (!hrefs.length && !imgs.length) ||
     (meta.rangeApplied && (!meta.startFound || !meta.endFound || meta.startBeforeEnd === false));
 
   if (needsFallback) {

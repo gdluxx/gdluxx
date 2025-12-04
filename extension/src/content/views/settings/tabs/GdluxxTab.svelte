@@ -88,13 +88,13 @@
           <div class="relative">
             <input
               id="api-key"
-            class={`input-bordered input focus:ring-primary/20 w-full pr-10 transition-all focus:ring-2 ${apiKeyError ? 'input-error focus:input-error' : 'focus:input-primary'} ${isSavingSettings || isTestingConnection ? 'input-disabled' : ''}`}
-            type="password"
-            placeholder="Enter your gdluxx API key"
-            disabled={isSavingSettings || isTestingConnection}
-            value={settings.apiKey}
-            oninput={(event) => onApiKeyInput((event.target as HTMLInputElement).value)}
-          />
+              class={`input-bordered input focus:ring-primary/20 w-full pr-10 transition-all focus:ring-2 ${apiKeyError ? 'input-error focus:input-error' : 'focus:input-primary'} ${isSavingSettings || isTestingConnection ? 'input-disabled' : ''}`}
+              type="password"
+              placeholder="Enter your gdluxx API key"
+              disabled={isSavingSettings || isTestingConnection}
+              value={settings.apiKey}
+              oninput={(event) => onApiKeyInput((event.target as HTMLInputElement).value)}
+            />
             {#if isSavingSettings || isTestingConnection}
               <div class="absolute inset-y-0 right-0 flex items-center pr-3">
                 <span class="loading loading-sm loading-spinner"></span>

@@ -440,9 +440,10 @@
       }
     })();
 
-    const handleStorageChange: Parameters<
-      typeof browser.storage.onChanged.addListener
-    >[0] = (changes, area) => {
+    const handleStorageChange: Parameters<typeof browser.storage.onChanged.addListener>[0] = (
+      changes,
+      area,
+    ) => {
       if (area !== 'local') return;
       const serverUrlChange = changes.gdluxx_server_url;
       if (serverUrlChange) {
