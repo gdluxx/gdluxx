@@ -13,11 +13,13 @@
   import type { HTMLAttributes } from 'svelte/elements';
 
   type InfoVariant = 'success' | 'warning' | 'error' | 'info';
+  type InfoSize = 'sm' | 'default' | 'lg';
 
   interface InfoProps extends Omit<HTMLAttributes<HTMLDivElement>, 'class'> {
     children?: Snippet;
     class?: string;
     variant?: InfoVariant;
+    size?: InfoSize;
     soft?: boolean;
     dismissible?: boolean;
     title?: string;
@@ -29,6 +31,7 @@
     children,
     class: className = '',
     variant = 'info',
+    size = 'default',
     soft = false,
     dismissible = false,
     title,
@@ -39,8 +42,33 @@
 
   let dismissed = $state(false);
 
+  const sizeClasses: Record<InfoSize, string[]> = {
+    sm: ['text-sm', 'py-2', 'px-3'],
+    default: ['text-base', 'py-3', 'px-4'],
+    lg: ['text-lg', 'py-4', 'px-5'],
+  };
+
+  const iconSizeClasses: Record<InfoSize, string> = {
+    sm: 'h-4 w-4',
+    default: 'h-6 w-6',
+    lg: 'h-7 w-7',
+  };
+
+  const contentTextClasses: Record<InfoSize, string> = {
+    sm: 'text-xs',
+    default: 'text-xs',
+    lg: 'text-sm',
+  };
+
   const classes = $derived(
-    ['alert', `alert-${variant}`, soft && 'alert-soft', dismissed && 'hidden', className]
+    [
+      'alert',
+      `alert-${variant}`,
+      ...sizeClasses[size],
+      soft && 'alert-soft',
+      dismissed && 'hidden',
+      className,
+    ]
       .filter(Boolean)
       .join(' '),
   );
@@ -68,7 +96,7 @@
       xmlns="http://www.w3.org/2000/svg"
       fill="none"
       viewBox="0 0 24 24"
-      class="h-6 w-6 shrink-0 stroke-current"
+      class="{iconSizeClasses[size]} shrink-0 stroke-current"
     >
       {#if variant === 'success'}
         <path
@@ -105,7 +133,7 @@
       {#if title}
         <h3 class="font-bold">{title}</h3>
       {/if}
-      <div class="text-xs">
+      <div class={contentTextClasses[size]}>
         {@render children?.()}
       </div>
     </div>
