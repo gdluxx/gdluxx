@@ -2,11 +2,6 @@ name: Release Extension
 
 on:
   workflow_dispatch:
-  push:
-    paths:
-        - 'extension/**'
-    tags:
-        - 'extension-v*'
 
 permissions:
   contents: write
