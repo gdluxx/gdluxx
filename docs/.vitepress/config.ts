@@ -32,21 +32,24 @@ export default defineConfig({
           { text: 'The Jobs List', link: '/user-guide/jobs-page' },
           { text: 'The Config Editor', link: '/user-guide/config-page' },
           { text: 'The App Settings', link: '/user-guide/settings-page' },
+          { text: 'Site Rules', link: '/user-guide/site-rules' },
+          { text: 'Keyword Info', link: '/user-guide/keyword-info' },
+          { text: 'Themes', link: '/user-guide/themes' },
+        ],
+      },
+      {
+        text: 'Browser Extension',
+        items: [
+          { text: 'Overview & Installation', link: '/extension/index' },
+          { text: 'Setup & Configuration', link: '/extension/setup' },
+          { text: 'Features', link: '/extension/features' },
         ],
       },
       {
         text: 'Advanced Usage',
         items: [
-          { text: 'Browser Extension', link: '/advanced/browser-extension' },
           { text: 'Using the API', link: '/advanced/api-usage' },
           { text: 'Reverse Proxy Guide', link: '/advanced/reverse-proxy' },
-        ],
-      },
-      {
-        text: 'Troubleshooting',
-        items: [
-          { text: 'Common Errors', link: '/troubleshooting/common-errors' },
-          { text: 'FAQ', link: '/troubleshooting/faq' },
         ],
       },
     ],

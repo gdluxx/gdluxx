@@ -10,7 +10,7 @@ redirected to the setup page.
 
 ### 2. Create Admin User
 
-Fill in the form with your desired username, email, and password; click **Create
+Fill in the form with your desired email and password; click **Create
 Account**. This will be the only user account, there's currently no multi-user
 support.
 

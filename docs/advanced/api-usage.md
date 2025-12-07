@@ -1,31 +1,46 @@
 # API Usage
 
-If you have interest in using the API endpoint outside the companion browser
-extension, create an API key in the settings, then send `POST` requests to
-`https://my-cool-domain.com/api/extension/external`.
+The gdluxx API lets you send download jobs from anywhere—scripts, applications, mobile apps, etc.
 
-### Authentication
+## Getting Started
 
-The API uses Bearer token authentication exclusively:
+### Step 1: Create an API Key
+
+1. In gdluxx, go to **Settings > API Key Manager**
+2. Click **Create New Key**
+3. Give it a name (e.g., "My Script")
+4. Click **Create**
+5. **Copy the key immediately** - you won't see it again
+
+### Step 2: Send a Request
+
+Use your API key to send URLs to the `/api/extension/external` endpoint:
 
 ```bash
 curl -X POST \
- -H "Authorization: Bearer your-api-key-here" \
- -H "Content-Type: application/json" \
- -d '{"urlToProcess": "https://example.com/image-gallery"}' \
- https://my-cool-domain/api/extension/external
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"urlToProcess": "https://example.com/gallery"}' \
+  https://your-gdluxx-url/api/extension/external
 ```
 
-### Request Requirements
+Replace:
+- `YOUR_API_KEY` with your actual key
+- `https://your-gdluxx-url` with your gdluxx server address
 
-- **Authorization Header**: Must include `Authorization: Bearer <api-key>`
-- **URL Format**: Must be a valid HTTP or HTTPS URL (validated with pattern
-  `/^https?:\/\/.+/`)
-- **Content-Type**: Must be `application/json`
+## Sending Single URLs
 
-### Response Format
+### Basic Request
 
-A successful request will return a JSON response and queue the job in _gdluxx_:
+```bash
+curl -X POST \
+  -H "Authorization: Bearer YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"urlToProcess": "https://example.com"}' \
+  https://localhost:7755/api/extension/external
+```
+
+### Success Response
 
 ```json
 {
@@ -34,35 +49,201 @@ A successful request will return a JSON response and queue the job in _gdluxx_:
     "overallSuccess": true,
     "results": [
       {
-        "jobId": "generated-job-id",
-        "url": "https://example.com/image-gallery",
+        "url": "https://example.com",
+        "jobId": "abc123xyz",
         "success": true,
         "message": "Job started successfully"
       }
     ]
-  },
-  "timestamp": "2025-07-16T12:34:56.789Z"
+  }
 }
 ```
 
-### Error Handling
+The `jobId` lets you track the job in gdluxx.
 
-If the request fails, you'll receive an error response:
+## Batch Processing (Multiple URLs)
+
+Send multiple URLs in a single request:
+
+```bash
+curl -X POST \
+  -H "Authorization: Bearer YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "urls": [
+      "https://example.com/gallery1",
+      "https://example.com/gallery2",
+      "https://example.com/gallery3"
+    ]
+  }' \
+  https://localhost:7755/api/extension/external
+```
+
+### Batch Response
 
 ```json
 {
-  "success": false,
-  "error": "Invalid API key",
-  "timestamp": "2025-07-16T12:34:56.789Z"
+  "success": true,
+  "data": {
+    "overallSuccess": true,
+    "results": [
+      {
+        "url": "https://example.com/gallery1",
+        "jobId": "job1",
+        "success": true
+      },
+      {
+        "url": "https://example.com/gallery2",
+        "jobId": "job2",
+        "success": true
+      },
+      {
+        "url": "https://example.com/gallery3",
+        "jobId": "job3",
+        "success": true
+      }
+    ]
+  }
 }
 ```
 
-Common error responses (all return HTTP 500):
+Each URL becomes a separate job.
 
-- **Missing Authorization Header**:
-  `"Authorization header with Bearer token is required"`
-- **Empty Bearer Token**: `"Bearer token cannot be empty"`
-- **Invalid API Key**: `"Invalid API key"`
-- **Invalid URL**: URL validation error message
-- **Invalid JSON**: `"Invalid request body. Expected valid JSON."`
-- **Process Failure**: `"Failed to start process: <details>"`
+### URL Limits
+
+- **Maximum URLs per request**: 200
+
+## Error Responses
+
+### Authentication Errors
+
+**Missing Authorization Header**:
+```json
+{
+  "success": false,
+  "error": "Authorization header with Bearer token is required"
+}
+```
+
+**Invalid API Key**:
+```json
+{
+  "success": false,
+  "error": "Invalid API key"
+}
+```
+
+**Empty Bearer Token**:
+```json
+{
+  "success": false,
+  "error": "Bearer token cannot be empty"
+}
+```
+
+### Validation Errors
+
+**Invalid URL Format**:
+```json
+{
+  "success": false,
+  "error": "Invalid URL format. Must be HTTP or HTTPS"
+}
+```
+
+**Invalid JSON**:
+```json
+{
+  "success": false,
+  "error": "Invalid request body. Expected valid JSON."
+}
+```
+
+**Missing Required Field**:
+```json
+{
+  "success": false,
+  "error": "Missing required field: urlToProcess or urls"
+}
+```
+
+## Request Format
+
+### Required Headers
+
+- `Authorization: Bearer <your-api-key>` - Your API key (required)
+- `Content-Type: application/json` - JSON data format (required)
+
+### Request Body
+
+Single URL:
+```json
+{
+  "urlToProcess": "https://example.com/gallery"
+}
+```
+
+Multiple URLs:
+```json
+{
+  "urls": [
+    "https://example.com/gallery1",
+    "https://example.com/gallery2"
+  ]
+}
+```
+
+## Examples
+
+### Python
+
+```python
+import requests
+
+api_key = "YOUR_API_KEY"
+server = "http://localhost:7755"
+
+url = "https://example.com/gallery"
+
+response = requests.post(
+    f"{server}/api/extension/external",
+    headers={
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    },
+    json={"urlToProcess": url}
+)
+
+if response.json()["success"]:
+    print("Job created successfully!")
+    print(f"Job ID: {response.json()['data']['results'][0]['jobId']}")
+else:
+    print(f"Error: {response.json()['error']}")
+```
+
+### nodejs
+
+```javascript
+const fetch = require('node-fetch');
+
+const apiKey = "YOUR_API_KEY";
+const server = "http://localhost:7755";
+const url = "https://example.com/gallery";
+
+fetch(`${server}/api/extension/external`, {
+  method: "POST",
+  headers: {
+    "Authorization": `Bearer ${apiKey}`,
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({ urlToProcess: url })
+})
+  .then(r => r.json())
+  .then(data => {
+    if (data.success) {
+      console.log("Job created:", data.data.results[0].jobId);
+    } else {
+      console.error("Error:", data.error);
+    }
+  });
+```

@@ -10,23 +10,27 @@ gdluxx is nothing more than a self-hosted browser based gui for
 It gives you a simple web interface to manage downloads, edit your configuration
 file, and monitor jobs without touching the command line.
 
-### 30,000 foot view
+### Features
 
-- **GUI** An interface for _gallery-dl_ to act upon one or more URLs. Paste
-  links into a web page instead of typing commands.
-- **Config file editor**: Built-in JSON editor to create/modify your
-  configuration file. The editor provides visual indicators when syntax errors
-  are present.
-- **See What's Happening**: View active and past jobs. "Running", "Error", and
-  "Completed" indicators.
-- **Updater**: Download _gallery-dl_ and keep it updated without leaving the
-  app.
-- **Browser Extension Support**: Companion browser extension that sends the
-  current tab's URL to _gdluxx_. You don't even have to return to the app to
-  download the galleries.
-- **Fully Self Contained**: Privacy oriented, there are no unwanted outbound
-  calls to "phone home", retrieve fonts, stylesheets, icons, etc. The only time
-  _gdluxx_ reaches out to the internet is when **YOU** initiate it.
+- **GUI**: Paste one or more URLs to download. No CLI
+- **Batch Processing**: Submit multiple URLs at once.
+- **Site Rules**: Automatically apply specific gallery-dl options based on URL
+  patterns.
+- **Config Editor**: Built-in JSON editor with syntax highlighting, validation,
+  and file upload support.
+- **Keyword Info**: Test what metadata is available for supported sites.
+- **Themes**: Some different themes to choose, light and dark modes.
+- **Job Management**: Track running, completed, and failed jobs.
+- **Browser Extension**: Send URLs directly from your browser. Available for
+  both Chrome and Firefox.
+- **Overlay UI**: Extension provides an overlay for sending URLs without leaving
+  your current page.
+- **API Access**: Endpoint available if you want to write your own scripts.
+  - Yes, I understand you don't need gdluxx for this.
+- **Version Management**: Update the gallery-dl binary from the app.
+- **Self-Contained**: No external dependencies for fonts, styles, or icons.
+  There are no external calls to the internet except when you explicitly request
+  it.
 
 ### Why?
 

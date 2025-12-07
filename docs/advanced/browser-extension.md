@@ -1,46 +1,32 @@
 # Browser Extension
 
-The browser extension sends the URL of the current tab from your browser to
-_gdluxx_.
+> **For complete extension documentation, visit the [Extension section](../extension/).**
 
-## Installation
+The browser extension lets you send URLs to gdluxx directly from your browser without leaving the page.
 
-The extension isn't available on browser stores yet (hopefully soon). You'll
-need to install it manually.
+## Quick Start
 
-### Chrome (and Chromium based variants)
+1. **Install**: [Chrome Web Store](https://chromewebstore.google.com/detail/gdluxx-extension/cbhdooiekcodjfckmgemblgikbdipgmc) or [Firefox Add-ons](https://addons.mozilla.org/en-US/firefox/addon/gdluxx-extension/)
+2. **Configure**: Open the popup and enter your gdluxx server URL + API key
+3. **Send URLs**: Click the extension icon or press Alt+L
 
-1. Download the latest `gdluxx-browser-chrome.zip` from the
-   [releases page](https://github.com/gdluxx/gdluxx-browser/releases)
-2. Extract the zip file to a folder on your computer
-3. Open Chrome and go to `chrome://extensions/`
-4. Enable "Developer mode" (toggle in the top right)
-5. Click "Load unpacked" and select the extracted folder
-6. The extension should now appear in your browser toolbar
+## Full Documentation
 
-### Firefox (and variants)
+The extension has grown significantly with new features. See the [Extension section](../extension/) for:
 
-1. Download the latest `gdluxx-browser-firefox.zip` from the
-   [releases page](https://github.com/gdluxx/gdluxx-browser/releases)
-2. Open Firefox and go to `about:debugging`
-3. Click "This Firefox" in the left sidebar
-4. Click "Load Temporary Add-on"
-5. Select the downloaded zip file (don't extract it)
-6. The extension will be loaded temporarily until you restart Firefox
+- **[Overview & Installation](../extension/index.md)** - Detailed installation for all browsers
+- **[Setup & Configuration](../extension/setup.md)** - Configure hotkeys and permissions
+- **[Feature Guide](../extension/features.md)** - Overlay UI, batch sending, image sending, URL substitution
+- **[Troubleshooting](../extension/troubleshooting.md)** - Solve connection and permission issues
 
-Note: For permanent installation in Firefox, you'll need to
-[sign the extension](https://support.mozilla.org/en-US/kb/add-on-signing-in-firefox)
-or use Firefox Developer Edition.
+## Available Features
 
-## How to Use
+- **Quick sending**: Click icon or press hotkey (Alt+L)
+- **Overlay UI**: Send without leaving your current page
+- **Image context menu**: Right-click images to send directly
+- **Batch URLs**: Send multiple URLs at once
+- **URL substitution**: Auto-convert mobile URLs to desktop, etc.
+- **Keyboard shortcuts**: Fully customizable hotkeys
+- **Themes**: 30+ theme options
 
-1. Make sure you have _gdluxx_ running and accessible
-2. Click the extension icon in your browser toolbar
-3. In the popup, enter:
-   - Your _gdluxx_ server URL (e.g., `https://my-cool-domain.com` or
-     `http://localhost:7755`)
-   - Your API key from _gdluxx_
-4. Click "Save Settings"
-5. Navigate to any webpage you want to download with _gallery-dl_
-6. Click the extension icon and hit "Send URL"
-7. _gdluxx_ will receive the URL and start downloading
+For detailed information on each feature, see the [Feature Guide](../extension/features.md).

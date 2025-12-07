@@ -4,13 +4,13 @@ Only Docker installation is supported.
 
 ### Quick Start
 
-:::danger ⚠️ **Critical: Directory Permissions** ⚠️ You **MUST** create the bind
-mount directory (`data`) before starting the container. The container runs as
-user `1000:1000`, not root, and _cannot modify host directory permissions_ for
-you.
+:::danger ⚠️ **Critical: Directory Permissions** ⚠️  
+You **MUST** create the bind mount directory (`data`) before starting the
+container. The container runs as user `1000:1000`, not root, and _cannot modify
+host directory permissions_ for you.
 
 If you skip step 1, Docker will create the directory as `root`, and the
-container will fail to start with permission errors.  
+container will fail to start because of permission errors.  
 :::
 
 ::: tip Custom paths: Want your data elsewhere?
@@ -31,6 +31,7 @@ Then update your compose `volumes` to: `- ~/Documents/gdluxx:/app/data`
     ```
 
 2.  Copy environment file.
+    - Or you can [copy it from here](https://github.com/gdluxx/gdluxx/blob/main/.env.example)
 
     ```bash
     cp .env.example .env
@@ -50,19 +51,20 @@ Then update your compose `volumes` to: `- ~/Documents/gdluxx:/app/data`
 
 5.  Configure your `ORIGIN`.
 
-    The `ORIGIN` environment variable is a **critical security setting** that tells
-    *gdluxx* what domain to expect for all requests. This helps prevent CSRF attacks.
+    The `ORIGIN` environment variable is **mandatory**. It
+    tells _gdluxx_ what domain to expect for all requests. This helps prevent
+    CSRF issues.
 
     In your `.env` file, set `ORIGIN` to the URL you will use to access the
     application.
 
-    - **Most common:** If you're accessing the app via `http://localhost:7755`, you
-      don't need to do anything. The `docker-compose.yml` file already sets a
-      default `ORIGIN` of `http://localhost:7755`.
-    - **Network access:** If you're accessing the app from another device on your
-      network, set `ORIGIN` to your server's IP address.
-    - **Reverse proxy:** If you're using a reverse proxy with HTTPS, set `ORIGIN`
-      to your domain.
+    - **Most common:** If you're accessing the app via `http://localhost:7755`,
+      you don't need to do anything. The `docker-compose.yml` file already sets
+      a default `ORIGIN` of `http://localhost:7755`.
+    - **Network access:** If you're accessing the app from another device on
+      your network, set `ORIGIN` to your server's IP address so it's exposed.
+    - **Reverse proxy:** If you're using a reverse proxy with HTTPS, set
+      `ORIGIN` to your domain.
 
     For more specifics, see the comments in the `.env.example` file.
 
@@ -105,8 +107,8 @@ Subsystem for Linux (WSL), Git Bash, or an alternative tool like
 secret.
 
 Also, I know nothing about Windows these days. I've never used WSL, Git Bash, or
-Docker on Windows. Unfortunately, I won't be able to assist with troubleshooting
-any issues that may arise.
+Docker on Windows. Maybe you do have `openssl`. Unfortunately, I won't be able
+to assist with troubleshooting any issues that may arise if you're on Windows.
 
 This also means I've not tested any of this on Windows.  
 :::
