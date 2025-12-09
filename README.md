@@ -60,13 +60,25 @@ Only Docker installation is supported.
 > To avoid permissions issue, the bind mount directory must not be created by
 > the container.
 
-1. `git clone https://github.com/gdluxx/gdluxx.git`
-2. `cd gdluxx`
-3. `mkdir data`
-4. `cp .env.example .env`
-5. `openssl rand -hex 32 | xargs -I{} sed -i'' "s/^AUTH_SECRET=.*/AUTH_SECRET={}/" .env`
+1. ```shell
+    git clone https://github.com/gdluxx/gdluxx.git
+    ```
+2. ```shell
+    cd gdluxx
+    ```
+3. ```shell
+    mkdir data
+    ```
+4. ```shell
+    cp .env.example .env
+    ```
+5. ```shell
+    openssl rand -hex 32 | xargs -I{} sed -i'' "s/^AUTH_SECRET=.*/AUTH_SECRET={}/" .env
+    ```
    - This will generate an AUTH_SECRET token and update the `.env` file with it
-6. `docker compose up -d`
+6. ```shell
+    docker compose up -d
+    ```
 7. Navigate to [http://localhost:7755](http://localhost:7755) in your browser
 
 > [!TIP]  
