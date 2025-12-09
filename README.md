@@ -11,9 +11,9 @@ gdluxx is nothing more than a self-hosted browser based gui for
 |:------------------------------------------------------------:|:--------------------------------------------------------------:|
 | ![gdluxx main interface](docs/screenshots/gdluxx/1.home.png) | ![gdluxx job output](docs/screenshots/gdluxx/6.job-output.png) |
 
-|                        Extension - Main                         |                      Extension - Advanced Filtering                       |
-|:---------------------------------------------------------------:|:-------------------------------------------------------------------------:|
-| ![gdluxx main interface](docs/screenshots/extension/1.main.png) | ![gdluxx job output](docs/screenshots/extension/2.advanced-filtering.png) |
+|                          Extension - Main                          |                        Extension - Advanced Filtering                        |
+|:------------------------------------------------------------------:|:----------------------------------------------------------------------------:|
+| ![extension main interface](docs/screenshots/extension/1.main.png) | ![extension job output](docs/screenshots/extension/2.advanced-filtering.png) |
 
 ##### Additional screenshots
 
@@ -67,15 +67,7 @@ storage space very soon.
 
 ## Quick Start Install
 
-<details>
-
-<summary><h3>Get started</h3></summary>
-
-<br>
-
 Only Docker installation is supported.
-
-<br>
 
 > [!WARNING]  
 > To avoid permissions issue, the bind mount directory must not be created by
@@ -112,8 +104,6 @@ The extension is available on both the Chrome Web Store and Firefox Add-ons.
 
 - [Chrome](https://chromewebstore.google.com/detail/gdluxx-extension/cbhdooiekcodjfckmgemblgikbdipgmc)
 - [Firefox](https://addons.mozilla.org/en-US/firefox/addon/gdluxx-extension/)
-
-</details>
 
 ## What's in a name?
 
