@@ -3,11 +3,24 @@
 gdluxx is nothing more than a self-hosted browser based gui for
 [_gallery-dl_](https://github.com/mikf/gallery-dl)
 
-| Main Interface                                               | Job Output                                                     |
-|:-------------------------------------------------------------|:---------------------------------------------------------------|
+<details>
+
+<summary><h3>Screenshots</h3></summary>
+
+|                        gdluxx - Main                         |                      gdluxx - Job Output                       |
+|:------------------------------------------------------------:|:--------------------------------------------------------------:|
 | ![gdluxx main interface](docs/screenshots/gdluxx/1.home.png) | ![gdluxx job output](docs/screenshots/gdluxx/6.job-output.png) |
 
-[See some screenshots](https://gdluxx.app/screenshots)
+|                        Extension - Main                         |                      Extension - Advanced Filtering                       |
+|:---------------------------------------------------------------:|:-------------------------------------------------------------------------:|
+| ![gdluxx main interface](docs/screenshots/extension/1.main.png) | ![gdluxx job output](docs/screenshots/extension/2.advanced-filtering.png) |
+
+##### Additional screenshots
+
+- [gdluxx screenshots](https://gdluxx.app/screenshots/gdluxx)
+- [extension screenshots](https://gdluxx.app/screenshots/extension)
+
+</details>
 
 ## What's it about?
 
@@ -48,38 +61,46 @@ storage space very soon.
 
 ## Docs
 
-- [Main](https://gdluxx.app)
+- [Overview](https://gdluxx.app)
 - [gdluxx install](https://gdluxx.app/getting-started/installation)
 - [extension install](https://gdluxx.app/extension/index)
 
 ## Quick Start Install
 
+<details>
+
+<summary><h3>Get started</h3></summary>
+
+<br>
+
 Only Docker installation is supported.
+
+<br>
 
 > [!WARNING]  
 > To avoid permissions issue, the bind mount directory must not be created by
 > the container.
 
-1. ```shell
+1.  ```shell
     git clone https://github.com/gdluxx/gdluxx.git
     ```
-2. ```shell
+2.  ```shell
     cd gdluxx
     ```
-3. ```shell
+3.  ```shell
     mkdir data
     ```
-4. ```shell
+4.  ```shell
     cp .env.example .env
     ```
-5. ```shell
+5.  ```shell
     openssl rand -hex 32 | xargs -I{} sed -i'' "s/^AUTH_SECRET=.*/AUTH_SECRET={}/" .env
     ```
-   - This will generate an AUTH_SECRET token and update the `.env` file with it
-6. ```shell
+    - This will generate an AUTH_SECRET token and update the `.env` file with it
+6.  ```shell
     docker compose up -d
     ```
-7. Navigate to [http://localhost:7755](http://localhost:7755) in your browser
+7.  Navigate to [http://localhost:7755](http://localhost:7755) in your browser
 
 > [!TIP]  
 > See [install guide](https://gdluxx.app/getting-started/installation) for
@@ -91,6 +112,8 @@ The extension is available on both the Chrome Web Store and Firefox Add-ons.
 
 - [Chrome](https://chromewebstore.google.com/detail/gdluxx-extension/cbhdooiekcodjfckmgemblgikbdipgmc)
 - [Firefox](https://addons.mozilla.org/en-US/firefox/addon/gdluxx-extension/)
+
+</details>
 
 ## What's in a name?
 
