@@ -255,16 +255,3 @@ Once configured, the extension remembers everything:
 - Substitution rules
 
 You only configure it once.
-
-## Troubleshooting Features
-
-If something isn't working:
-
-- **Can't send URLs?** See
-  [Setup troubleshooting](./setup.md#troubleshooting-setup)
-- **Overlay not appearing?** See
-  [Overlay issues](./troubleshooting.md#overlay-not-appearing)
-- **Images won't send?** See
-  [Context menu missing](./troubleshooting.md#context-menu-missing)
-
-For more help, check the full [Troubleshooting guide](./troubleshooting.md).
