@@ -17,7 +17,6 @@ The extension has grown significantly with new features. See the [Extension sect
 - **[Overview & Installation](../extension/index.md)** - Detailed installation for all browsers
 - **[Setup & Configuration](../extension/setup.md)** - Configure hotkeys and permissions
 - **[Feature Guide](../extension/features.md)** - Overlay UI, batch sending, image sending, URL substitution
-- **[Troubleshooting](../extension/troubleshooting.md)** - Solve connection and permission issues
 
 ## Available Features
 
@@ -27,6 +26,6 @@ The extension has grown significantly with new features. See the [Extension sect
 - **Batch URLs**: Send multiple URLs at once
 - **URL substitution**: Auto-convert mobile URLs to desktop, etc.
 - **Keyboard shortcuts**: Fully customizable hotkeys
-- **Themes**: 30+ theme options
+- **Themes**: Theme options available thanks to [daisyUI](https://daisyui.com/)
 
 For detailed information on each feature, see the [Feature Guide](../extension/features.md).
