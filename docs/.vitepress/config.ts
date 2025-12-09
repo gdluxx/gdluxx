@@ -52,6 +52,13 @@ export default defineConfig({
           { text: 'Reverse Proxy Guide', link: '/advanced/reverse-proxy' },
         ],
       },
+      {
+        text: 'Screenshots',
+        items: [
+          { text: 'App', link: '/screenshots/gdluxx' },
+          { text: 'Extension', link: '/screenshots/extension' },
+        ],
+      },
     ],
 
     lastUpdated: {
