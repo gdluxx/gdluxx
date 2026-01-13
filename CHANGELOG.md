@@ -1,5 +1,44 @@
 # Changelog
 
+# [0.8.0](https://github.com/gdluxx/gdluxx/compare/v0.7.0...v0.8.0) (2026-01-13)
+
+
+### Bug Fixes
+
+* add data_collection_permissions to wxt.config for firefox ([347d630](https://github.com/gdluxx/gdluxx/commit/347d6303fdf28fb3c70a9d8d1b8a1ab7d26a7b3e))
+* disable eslint prefer-const and add svelte/prefer-const. it was breaking ci pipeline ([03db827](https://github.com/gdluxx/gdluxx/commit/03db8278fdaf159386005f1191a316d7202f5afa))
+* **extension/component:** import paths ([e674820](https://github.com/gdluxx/gdluxx/commit/e674820ce6a81fadf3d96407942765e14a49c691))
+* **extension:** borders not displaying ([5a0ad7b](https://github.com/gdluxx/gdluxx/commit/5a0ad7bdd4c5579f68396dbca5347678bbc64e9b))
+* **extension:** cards and shadow not working correctly on Appearance tab of settings ([6ea1d11](https://github.com/gdluxx/gdluxx/commit/6ea1d119a7b8e61ae8ec662d985e8236920ea01b))
+* **extension:** context menu feature for sending individual images to gdluxx needed reworked for updated external endpoint ([2425bed](https://github.com/gdluxx/gdluxx/commit/2425bed51fdc2ea74273bd0790aa5bbbef227cca))
+* **extension:** data_collection_permissions cannot be empty ([6840d04](https://github.com/gdluxx/gdluxx/commit/6840d04d0d0dc4d472b77347d4d9ef47d3257598))
+* **extension:** Dropdown component wasn't closing with outside click or upon selection ([10f8a8b](https://github.com/gdluxx/gdluxx/commit/10f8a8b0c981a097f3ead95e107123d1426826bb))
+* **extension:** fix closing bracket for icon ([4003c93](https://github.com/gdluxx/gdluxx/commit/4003c93420cb1e950b42e1f8fb456af7ccc07319))
+* **extension:** fix data_collection_permissions property for firefox takes a string not a boolean ([b1c3c8b](https://github.com/gdluxx/gdluxx/commit/b1c3c8be31545148098a7517fbf1217e9742d3d6))
+* **extension:** forgot file. reworded context menu items ([99ae0af](https://github.com/gdluxx/gdluxx/commit/99ae0afd834c4868bdc36d312853f81792cce52a))
+* **extension:** gallery-dl was failing for image urls sent via context menu when they contained a trailing slash ([15b3cc4](https://github.com/gdluxx/gdluxx/commit/15b3cc484259d68580041161343ce965b7cc5bd7))
+* **extension:** handle (prettify) raw browser API error messages ([56deaa8](https://github.com/gdluxx/gdluxx/commit/56deaa89dba123912aca233834af4dadc2c457c4))
+* **extension:** linting error preventing action from completing ([4d33883](https://github.com/gdluxx/gdluxx/commit/4d33883490251594e2126440bb5ebd12ff26dd75))
+* **extension:** remove circular workflow trigger ([6a1869f](https://github.com/gdluxx/gdluxx/commit/6a1869f596e38fa8406f0ca703b5e51dee5a8592))
+* **extension:** remove unused prop and add empty catch comment ([686c129](https://github.com/gdluxx/gdluxx/commit/686c129ffdbe807c66b49b3993f24d8cd486957a))
+* **extension:** svelte type error ([146b888](https://github.com/gdluxx/gdluxx/commit/146b888a794fba90d9aa53713643f4483ab999b4))
+* typo in iconName ([dc5f655](https://github.com/gdluxx/gdluxx/commit/dc5f6552ffc529f6805ff5c522ea2a5b1254bcea))
+
+
+### Features
+
+* add arm64 support for gallery-dl binary ([#2](https://github.com/gdluxx/gdluxx/issues/2)) ([97d18f2](https://github.com/gdluxx/gdluxx/commit/97d18f2c1a697391ad9e9ed56debd45f3c78815a)), closes [#1](https://github.com/gdluxx/gdluxx/issues/1)
+* **component:** add Badge component ([a65cf8e](https://github.com/gdluxx/gdluxx/commit/a65cf8e5b68d33e6ce715de8d7b7573f5b293f8c))
+* **extension/component:** add reusable Dropdown component ([6d7082e](https://github.com/gdluxx/gdluxx/commit/6d7082e1c5a08e8025a008c6b2900ce784e0656e))
+* **extension/component:** add reusable Toggle component ([d5309c2](https://github.com/gdluxx/gdluxx/commit/d5309c263256a3b6e4339e753462e2b0dc84a94c))
+* **extension/component:** adjusted tailwind classes of Badge component for sizing ([4bda8b5](https://github.com/gdluxx/gdluxx/commit/4bda8b5a4fe3d09d1f8288902107517c537fa842))
+* **extension/ui:** add -outline variant to Button component ([6b7a912](https://github.com/gdluxx/gdluxx/commit/6b7a9124efb2850c0f85c8b985499d47cf7fd388))
+* **extension:** add button to extension popup allowing to send active tab URL to gdluxx ([dba6baf](https://github.com/gdluxx/gdluxx/commit/dba6bafc306afaa9862e4d0460f5a011e9958d8d))
+* **extension:** add optional hotkey to send active tab URL to gdluxx ([d2e2634](https://github.com/gdluxx/gdluxx/commit/d2e2634e16003232ce0f25c7cc72200c49653570))
+* **extension:** add soft variant and size to Info component ([556c88d](https://github.com/gdluxx/gdluxx/commit/556c88dd32b9f17d284be514966f7960f0446c7a))
+* **extension:** add url substitution feature ([3bf67e1](https://github.com/gdluxx/gdluxx/commit/3bf67e1167efbe5c16b36525484584e031c658c2))
+* **extension:** updated some styling and button locations to better accommodate lower resolution (HD/1080) screens ([f192de4](https://github.com/gdluxx/gdluxx/commit/f192de43e05b8485490149c3f57819e6b1061b3f))
+
 # [0.7.0](https://github.com/gdluxx/gdluxx/compare/v0.6.0...v0.7.0) (2025-10-08)
 
 
