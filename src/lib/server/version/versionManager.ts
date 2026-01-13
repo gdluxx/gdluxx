@@ -15,6 +15,20 @@ import { serverLogger as logger } from '$lib/server/logger';
 import { PATHS, GITHUB } from '$lib/server/constants';
 import { createSettingsManager } from '$lib/server/settingsManager';
 
+export interface SourceInfo {
+  user: string;
+  repo: string;
+  isArm64: boolean;
+}
+
+export function getSourceInfo(): SourceInfo {
+  return {
+    user: GITHUB.ACTIVE_USER,
+    repo: GITHUB.ACTIVE_REPO,
+    isArm64: GITHUB.IS_ARM64,
+  };
+}
+
 const execAsync = promisify(exec);
 
 export interface VersionInfo {

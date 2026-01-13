@@ -9,8 +9,9 @@
  */
 
 import path from 'path';
+import { arch } from 'node:os';
 
-// Common variables
+const isArm64 = arch() === 'arm64';
 
 function getCwd(): string {
   if (typeof process === 'undefined' || !process.cwd) {
@@ -62,11 +63,23 @@ export const TERMINAL = {
 export const GITHUB = {
   USER: 'mikf',
   REPO: 'gallery-dl',
+  ARM64_USER: 'gdluxx',
+  ARM64_REPO: 'gdl-arm',
+
+  get IS_ARM64() {
+    return isArm64;
+  },
+  get ACTIVE_USER() {
+    return isArm64 ? this.ARM64_USER : this.USER;
+  },
+  get ACTIVE_REPO() {
+    return isArm64 ? this.ARM64_REPO : this.REPO;
+  },
   get LATEST_RELEASE_URL() {
-    return `https://api.github.com/repos/${this.USER}/${this.REPO}/releases/latest`;
+    return `https://api.github.com/repos/${this.ACTIVE_USER}/${this.ACTIVE_REPO}/releases/latest`;
   },
   get BINARY_DOWNLOAD_URL() {
-    return `https://github.com/${this.USER}/${this.REPO}/releases/latest/download/gallery-dl.bin`;
+    return `https://github.com/${this.ACTIVE_USER}/${this.ACTIVE_REPO}/releases/latest/download/gallery-dl.bin`;
   },
 } as const;
 
