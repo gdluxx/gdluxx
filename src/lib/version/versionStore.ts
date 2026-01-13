@@ -9,12 +9,13 @@
  */
 
 import { writable } from 'svelte/store';
-import type { VersionInfo } from '$lib/server/version/versionManager';
+import type { VersionInfo, SourceInfo } from '$lib/server/version/versionManager';
 
 export interface VersionStoreState extends VersionInfo {
   loading: boolean;
   updateInProgress: boolean;
   error: string | null;
+  source: SourceInfo | null;
 }
 
 const initialState: VersionStoreState = {
@@ -24,6 +25,7 @@ const initialState: VersionStoreState = {
   loading: false,
   updateInProgress: false,
   error: null,
+  source: null,
 };
 
 export interface StoreActionResult {
@@ -69,12 +71,13 @@ function createVersionStore() {
       loading: false,
       updateInProgress: false,
     }));
-  const setData: (data: VersionInfo) => void = (data: VersionInfo): void =>
+  const setData = (data: VersionInfo & { source?: SourceInfo }): void =>
     update((s) => ({
       ...s,
       current: data.current,
       latestAvailable: data.latestAvailable,
       lastChecked: data.lastChecked,
+      source: data.source ?? s.source,
       loading: false,
       updateInProgress: false,
       error: null,

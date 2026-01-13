@@ -10,7 +10,11 @@
 
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { versionStore, type StoreActionResult, type VersionStoreState } from '$lib/version/versionStore';
+  import {
+    versionStore,
+    type StoreActionResult,
+    type VersionStoreState,
+  } from '$lib/version/versionStore';
   import { toastStore } from '$lib/stores/toast';
   import { clientLogger as logger } from '$lib/client/logger';
   import { Button, Info } from '$lib/components/ui';
@@ -134,6 +138,27 @@
       <span class="font-medium text-foreground">Latest Available:</span>
       <span class="text-foreground">
         {versionState.latestAvailable}
+      </span>
+    </div>
+  {/if}
+
+  {#if versionState?.source}
+    <div class="flex justify-between">
+      <span class="font-medium text-foreground">Source:</span>
+      <span class="text-foreground">
+        <a
+          href="https://github.com/{versionState.source.user}/{versionState.source.repo}"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="text-link hover:underline"
+        >
+          {versionState.source.user}/{versionState.source.repo}
+        </a>
+        {#if versionState.source.isArm64}
+          <span class="bg-muted ml-2 rounded px-1.5 py-0.5 text-xs text-muted-foreground">
+            ARM64
+          </span>
+        {/if}
       </span>
     </div>
   {/if}

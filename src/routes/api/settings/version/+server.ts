@@ -14,7 +14,7 @@ import {
   writeVersionInfo,
   getCurrentVersionFromBinary,
   getLatestVersionFromGithub,
-  DEFAULT_VERSION_INFO,
+  getSourceInfo,
   type VersionInfo,
 } from '$lib/server/version/versionManager';
 import { serverLogger as logger } from '$lib/server/logger';
@@ -40,7 +40,7 @@ export const GET: RequestHandler = async (): Promise<Response> => {
         versionInfo = newInfoToSave;
       }
     }
-    const resp = createApiResponse(versionInfo);
+    const resp = createApiResponse({ ...versionInfo, source: getSourceInfo() });
     resp.headers.set('Cache-Control', 'no-store');
     return resp;
   } catch (error) {
@@ -65,7 +65,7 @@ export const POST: RequestHandler = async (): Promise<Response> => {
 
     await writeVersionInfo(versionInfo);
 
-    const resp = createApiResponse(versionInfo);
+    const resp = createApiResponse({ ...versionInfo, source: getSourceInfo() });
     resp.headers.set('Cache-Control', 'no-store');
     return resp;
   } catch (error) {
