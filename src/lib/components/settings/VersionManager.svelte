@@ -118,6 +118,18 @@
   </Info>
 {/if}
 
+{#if versionState?.binaryExists === false && !versionState?.loading && !versionState?.updateInProgress}
+  <Info
+    variant="warning"
+    size="default"
+    title="Binary Not Found"
+    class="my-4"
+  >
+    The gallery-dl binary is missing from the filesystem. Use "Update gallery-dl" below to download
+    and install it.
+  </Info>
+{/if}
+
 <section class="content-panel">
   <div class="flex justify-between">
     <span class="font-medium text-foreground">Current Version:</span>

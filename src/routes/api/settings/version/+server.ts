@@ -13,6 +13,7 @@ import {
   readVersionInfo,
   writeVersionInfo,
   getCurrentVersionFromBinary,
+  checkBinaryExists,
   getLatestVersionFromGithub,
   getSourceInfo,
   type VersionInfo,
@@ -23,9 +24,16 @@ import { createApiError, createApiResponse } from '$lib/server/api-utils';
 export const GET: RequestHandler = async (): Promise<Response> => {
   try {
     let versionInfo: VersionInfo = await readVersionInfo();
+    const binaryExists: boolean = await checkBinaryExists();
+
+    // If the binary isn't found, clear the stored version
+    if (!binaryExists && versionInfo.current !== null) {
+      versionInfo.current = null;
+      await writeVersionInfo(versionInfo);
+    }
 
     // If no current version, get it from binary
-    if (versionInfo.current === null) {
+    if (versionInfo.current === null && binaryExists) {
       const currentActualVersion = await getCurrentVersionFromBinary();
       if (currentActualVersion) {
         versionInfo.current = currentActualVersion;
@@ -40,7 +48,8 @@ export const GET: RequestHandler = async (): Promise<Response> => {
         versionInfo = newInfoToSave;
       }
     }
-    const resp = createApiResponse({ ...versionInfo, source: getSourceInfo() });
+
+    const resp = createApiResponse({ ...versionInfo, source: getSourceInfo(), binaryExists });
     resp.headers.set('Cache-Control', 'no-store');
     return resp;
   } catch (error) {
@@ -52,8 +61,12 @@ export const GET: RequestHandler = async (): Promise<Response> => {
 export const POST: RequestHandler = async (): Promise<Response> => {
   try {
     const versionInfo: VersionInfo = await readVersionInfo();
+    const binaryExists: boolean = await checkBinaryExists();
 
-    if (versionInfo.current === null) {
+    // If the binary has been deleted, clear the stored version info
+    if (!binaryExists) {
+      versionInfo.current = null;
+    } else if (versionInfo.current === null) {
       const currentActual: string | null = await getCurrentVersionFromBinary();
       if (currentActual) {
         versionInfo.current = currentActual;
@@ -65,7 +78,7 @@ export const POST: RequestHandler = async (): Promise<Response> => {
 
     await writeVersionInfo(versionInfo);
 
-    const resp = createApiResponse({ ...versionInfo, source: getSourceInfo() });
+    const resp = createApiResponse({ ...versionInfo, source: getSourceInfo(), binaryExists });
     resp.headers.set('Cache-Control', 'no-store');
     return resp;
   } catch (error) {

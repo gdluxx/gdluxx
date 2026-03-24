@@ -97,6 +97,15 @@ export async function getCurrentVersionFromBinary(): Promise<string | null> {
   }
 }
 
+export async function checkBinaryExists(): Promise<boolean> {
+  try {
+    await stat(PATHS.BIN_FILE);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function getLatestVersionFromGithub(): Promise<string | null> {
   try {
     const response = await fetch(GITHUB.LATEST_RELEASE_URL, {

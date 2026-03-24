@@ -16,6 +16,7 @@ export interface VersionStoreState extends VersionInfo {
   updateInProgress: boolean;
   error: string | null;
   source: SourceInfo | null;
+  binaryExists: boolean;
 }
 
 const initialState: VersionStoreState = {
@@ -26,6 +27,7 @@ const initialState: VersionStoreState = {
   updateInProgress: false,
   error: null,
   source: null,
+  binaryExists: true,
 };
 
 export interface StoreActionResult {
@@ -71,13 +73,14 @@ function createVersionStore() {
       loading: false,
       updateInProgress: false,
     }));
-  const setData = (data: VersionInfo & { source?: SourceInfo }): void =>
+  const setData = (data: VersionInfo & { source?: SourceInfo; binaryExists?: boolean }): void =>
     update((s) => ({
       ...s,
       current: data.current,
       latestAvailable: data.latestAvailable,
       lastChecked: data.lastChecked,
       source: data.source ?? s.source,
+      binaryExists: data.binaryExists ?? s.binaryExists,
       loading: false,
       updateInProgress: false,
       error: null,
@@ -123,7 +126,7 @@ function createVersionStore() {
         setData(data);
 
         if (data.message?.includes('Already up to date')) {
-          return { success: true, message: data.message!, data, type: 'info' };
+          return { success: true, message: data.message, data, type: 'info' };
         }
         return {
           success: true,
@@ -152,7 +155,7 @@ function createVersionStore() {
         setData(result);
 
         if (result.message?.includes('Already up to date')) {
-          return { success: true, message: result.message!, data: result, type: 'info' };
+          return { success: true, message: result.message, data: result, type: 'info' };
         }
         return {
           success: true,

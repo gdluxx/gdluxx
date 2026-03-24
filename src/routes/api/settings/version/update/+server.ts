@@ -14,6 +14,7 @@ import {
   writeVersionInfo,
   getLatestVersionFromGithub,
   getCurrentVersionFromBinary,
+  checkBinaryExists,
   downloadAndInstallBinary,
   compareVersions,
   DEFAULT_VERSION_INFO,
@@ -25,8 +26,11 @@ import { createApiError, createApiResponse } from '$lib/server/api-utils';
 export const POST: RequestHandler = async (): Promise<Response> => {
   try {
     const versionInfo: VersionInfo = await readVersionInfo();
-    const currentVersionOnServer: string | null =
-      versionInfo.current ?? (await getCurrentVersionFromBinary());
+    const binaryExists: boolean = await checkBinaryExists();
+
+    const currentVersionOnServer: string | null = binaryExists
+      ? (versionInfo.current ?? (await getCurrentVersionFromBinary()))
+      : null;
 
     const latestVersionFromGithub: string | null =
       versionInfo.latestAvailable ?? (await getLatestVersionFromGithub());
@@ -35,7 +39,9 @@ export const POST: RequestHandler = async (): Promise<Response> => {
       return createApiError('Could not determine latest version from GitHub.', 500);
     }
 
+    // Only skip the download if the binary actually exists on disk AND the version is already current
     if (
+      binaryExists &&
       currentVersionOnServer &&
       compareVersions(latestVersionFromGithub, currentVersionOnServer) <= 0
     ) {
@@ -43,7 +49,11 @@ export const POST: RequestHandler = async (): Promise<Response> => {
       versionInfo.latestAvailable = latestVersionFromGithub;
       versionInfo.lastChecked = Date.now();
       await writeVersionInfo(versionInfo);
-      return createApiResponse({ ...versionInfo, message: 'Already up to date.' });
+      return createApiResponse({
+        ...versionInfo,
+        binaryExists: true,
+        message: 'Already up to date.',
+      });
     }
 
     logger.info(
@@ -69,10 +79,14 @@ export const POST: RequestHandler = async (): Promise<Response> => {
     versionInfo.lastChecked = Date.now();
     await writeVersionInfo(versionInfo);
 
-    return createApiResponse({ ...versionInfo, message: 'Update completed successfully.' });
+    return createApiResponse({
+      ...versionInfo,
+      binaryExists: true,
+      message: 'Update completed successfully.',
+    });
   } catch (error) {
     logger.error('Error in update:', error);
-    const currentInfo: VersionInfo = await readVersionInfo().catch(() => DEFAULT_VERSION_INFO);
+    await readVersionInfo().catch(() => DEFAULT_VERSION_INFO);
     return createApiError(
       error instanceof Error ? error.message : 'Update failed due to an unknown error.',
       500,
