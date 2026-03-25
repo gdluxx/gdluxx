@@ -19,6 +19,7 @@ const UserSettingsSchema = z
   .object({
     warnOnSiteRuleOverride: z.boolean().optional(),
     selectedTheme: z.enum(Object.keys(AVAILABLE_THEMES) as [ThemeName, ...ThemeName[]]).optional(),
+    maxBatchUrls: z.number().int().min(1).max(10000).optional(),
   })
   .strict();
 
@@ -49,7 +50,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     const validationResult = UserSettingsSchema.safeParse(body);
     if (!validationResult.success) {
       const errorMessages = validationResult.error.issues
-        .map((err: any) => `${err.path.join('.')}: ${err.message}`)
+        .map((err) => `${err.path.join('.')}: ${err.message}`)
         .join(', ');
       return json({ success: false, error: `Invalid settings: ${errorMessages}` }, { status: 400 });
     }

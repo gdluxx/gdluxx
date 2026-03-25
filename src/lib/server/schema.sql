@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS user (
     name TEXT,
     warnOnSiteRuleOverride INTEGER DEFAULT 0,
     selectedTheme TEXT DEFAULT 'indigo',
+    maxBatchUrls INTEGER DEFAULT 200,
     createdAt INTEGER NOT NULL,
     updatedAt INTEGER NOT NULL
 );

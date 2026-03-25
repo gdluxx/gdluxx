@@ -57,6 +57,14 @@ try {
     }
     db.exec(schema);
 
+    const userInfo = db.pragma('table_info(user)') as Array<{ name: string }>;
+    const hasMaxBatchUrls = userInfo.some((col) => col.name === 'maxBatchUrls');
+    if (!hasMaxBatchUrls) {
+      // eslint-disable-next-line no-console
+      console.log('Migrating database schema to add maxBatchUrls column...');
+      db.exec('ALTER TABLE user ADD COLUMN maxBatchUrls INTEGER DEFAULT 200');
+    }
+
     const apiKeyTableInfo = db.pragma('table_info(apiKey)') as Array<{ name: string }>;
 
     if (apiKeyTableInfo.length === 0) {

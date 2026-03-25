@@ -17,6 +17,7 @@ export interface AuthResult {
     id: string;
     name: string;
     createdAt: string;
+    userId: string;
   };
   error?: string;
 }
@@ -39,6 +40,7 @@ export async function validateApiKey(providedKey: unknown): Promise<AuthResult> 
           id: result.key.id,
           name: result.key.name || 'Unknown',
           createdAt: new Date(result.key.createdAt).toISOString(),
+          userId: result.key.userId,
         },
       };
     }

@@ -12,7 +12,7 @@ import type { RequestEvent, RequestHandler } from '@sveltejs/kit';
 import { serverLogger as logger } from '$lib/server/logger';
 import { type AuthResult, validateApiKey } from '$lib/server/auth/apiAuth';
 import type { BatchJobStartResult, BatchUrlResult } from '$lib/stores/jobs.svelte';
-import { createApiResponse, createApiError, handleApiError } from '$lib/server/api-utils';
+import { createApiResponse, createApiError } from '$lib/server/api-utils';
 import { validateInput } from '$lib/server/validation/validation-utils';
 import { externalApiSchema } from '$lib/server/validation/command-validation';
 import { siteConfigManager } from '$lib/server/siteConfigManager';
@@ -21,7 +21,7 @@ import {
   executeGalleryDlCommand,
   executeGalleryDlBatchCommand,
 } from '$lib/server/jobs/commandExecutor';
-import { API_LIMITS } from '$lib/server/constants';
+import { userSettingsManager } from '$lib/server/userSettingsManager';
 
 interface ExternalApiRequestBody {
   urlToProcess?: unknown;
@@ -43,13 +43,24 @@ export const POST: RequestHandler = async ({ request }: RequestEvent): Promise<R
   // Extract bearer token from auth header
   const authHeader: string | null = request.headers.get('authorization');
   if (!authHeader?.startsWith('Bearer ')) {
-    return handleApiError(new Error('Authorization header with Bearer token is required'));
+    return createApiError('Authorization header with Bearer token is required', 400);
   }
 
   const plainApiKey = authHeader.substring(7);
   if (!plainApiKey || plainApiKey.trim() === '') {
-    return handleApiError(new Error('Bearer token cannot be empty'));
+    return createApiError('Bearer token cannot be empty', 400);
   }
+
+  // Authenticate before parsing the body
+  const authResult: AuthResult = await validateApiKey(plainApiKey);
+  if (!authResult.success) {
+    logger.warn(`Invalid API key attempt via extension endpoint. Error: ${authResult.error}`);
+    return createApiError(authResult.error || 'Invalid API key.', 401);
+  }
+
+  const userId = authResult.keyInfo?.userId ?? '';
+  const userSettings = userSettingsManager.getUserSettings(userId);
+  const maxUrls = userSettings.maxBatchUrls;
 
   let body: ExternalApiRequestBody;
 
@@ -92,8 +103,8 @@ export const POST: RequestHandler = async ({ request }: RequestEvent): Promise<R
   if (urls.length === 0) {
     return createApiError('At least one URL is required', 400);
   }
-  if (urls.length > API_LIMITS.MAX_BATCH_URLS) {
-    return createApiError(`Too many URLs. Max allowed is ${API_LIMITS.MAX_BATCH_URLS}.`, 400);
+  if (urls.length > maxUrls) {
+    return createApiError(`Too many URLs. Max allowed is ${maxUrls}.`, 400);
   }
 
   // Extracting custom directory
@@ -101,13 +112,6 @@ export const POST: RequestHandler = async ({ request }: RequestEvent): Promise<R
     typeof body.customDirectory === 'string' && body.customDirectory.trim()
       ? body.customDirectory.trim()
       : undefined;
-
-  const authResult: AuthResult = await validateApiKey(plainApiKey);
-
-  if (!authResult.success) {
-    logger.warn(`Invalid API key attempt via extension endpoint. Error: ${authResult.error}`);
-    return handleApiError(new Error(authResult.error || 'Invalid API key.'));
-  }
 
   logger.info(
     `API key validated for: ${authResult.keyInfo?.name} (ID: ${authResult.keyInfo?.id}). Processing ${urls.length} URL(s)${customDirectory ? ` with custom directory: ${customDirectory}` : ''}`,

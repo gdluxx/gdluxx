@@ -84,5 +84,5 @@ export const GITHUB = {
 } as const;
 
 export const API_LIMITS = {
-  MAX_BATCH_URLS: 200,
+  MAX_BATCH_URLS: 10000,
 } as const;

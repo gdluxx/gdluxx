@@ -18,11 +18,13 @@ const dbPath = path.join(PATHS.DATA_DIR, 'gdluxx.db');
 export interface UserSettings {
   warnOnSiteRuleOverride: boolean;
   selectedTheme: ThemeName;
+  maxBatchUrls: number;
 }
 
 const DEFAULT_SETTINGS: UserSettings = {
   warnOnSiteRuleOverride: false,
   selectedTheme: 'indigo',
+  maxBatchUrls: 200,
 };
 
 export const userSettingsManager = {
@@ -31,10 +33,10 @@ export const userSettingsManager = {
     try {
       const db = new Database(dbPath);
       const stmt = db.prepare(
-        'SELECT warnOnSiteRuleOverride, selectedTheme FROM user WHERE id = ?',
+        'SELECT warnOnSiteRuleOverride, selectedTheme, maxBatchUrls FROM user WHERE id = ?',
       );
       const row = stmt.get(userId) as
-        | { warnOnSiteRuleOverride: number; selectedTheme: string }
+        | { warnOnSiteRuleOverride: number; selectedTheme: string; maxBatchUrls: number | null }
         | undefined;
       db.close();
 
@@ -42,6 +44,7 @@ export const userSettingsManager = {
         return {
           warnOnSiteRuleOverride: Boolean(row.warnOnSiteRuleOverride),
           selectedTheme: (row.selectedTheme || 'indigo') as ThemeName,
+          maxBatchUrls: Number(row.maxBatchUrls) || 200,
         };
       }
       return DEFAULT_SETTINGS;
@@ -73,6 +76,15 @@ export const userSettingsManager = {
           WHERE id = ?
         `);
         stmt.run(settings.selectedTheme, timestamp, userId);
+      }
+
+      if (settings.maxBatchUrls !== undefined) {
+        const stmt = db.prepare(`
+          UPDATE user
+          SET maxBatchUrls = ?, updatedAt = ?
+          WHERE id = ?
+        `);
+        stmt.run(settings.maxBatchUrls, timestamp, userId);
       }
 
       db.close();

@@ -9,7 +9,7 @@
   -->
 
 <script lang="ts">
-  import { Toggle } from '$lib/components/ui';
+  import { Toggle, Info } from '$lib/components/ui';
   import { clientLogger as logger } from '$lib/client/logger';
   import { toastStore } from '$lib/stores/toast';
   import type { UserSettings } from '$lib/server/userSettingsManager';
@@ -59,6 +59,48 @@
       settings.warnOnSiteRuleOverride = oldSetting;
     } finally {
       isUpdating = false;
+    }
+  }
+
+  async function handleMaxBatchUrlsBlur(event: FocusEvent) {
+    const input = event.currentTarget as HTMLInputElement;
+    const raw = input.value;
+    const value = Number(raw);
+    const oldValue = settings.maxBatchUrls;
+
+    if (!raw || !Number.isInteger(value) || value < 1 || value > 10000) {
+      toastStore.warning(
+        'Invalid Value',
+        'Must be a whole number between 1 and 10000. Reverting to previous value.',
+      );
+      settings.maxBatchUrls = oldValue;
+      input.value = String(oldValue);
+      return;
+    }
+
+    if (value === oldValue) {
+      return;
+    }
+
+    settings.maxBatchUrls = value;
+
+    try {
+      const response = await fetch('/api/settings/user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ maxBatchUrls: value }),
+      });
+
+      if (response.ok) {
+        toastStore.success('Settings Updated', 'Max batch URLs saved');
+      } else {
+        throw new Error('Failed to save settings');
+      }
+    } catch (error) {
+      logger.error('Failed to save max batch URLs setting:', error);
+      toastStore.error('Settings Error', 'Failed to save settings. Please try again.');
+      settings.maxBatchUrls = oldValue;
+      input.value = String(oldValue);
     }
   }
 
@@ -121,6 +163,44 @@
           onchange={handleToggleChange}
           variant="primary"
         />
+      </div>
+    </div>
+  </div>
+
+  <!-- Extension option -->
+  <div class="content-panel">
+    <h2 class="">Extension</h2>
+
+    <div class="flex items-start justify-between gap-6">
+      <div class="flex-1">
+        <label
+          for="max-batch-urls"
+          class="block font-medium text-foreground"
+        >
+          Max Batch URLs
+        </label>
+        <p class="mt-1 text-sm text-muted-foreground">
+          Maximum number of URLs the browser extension can submit in a single request.
+        </p>
+        <div class="mt-3">
+          <input
+            id="max-batch-urls"
+            type="number"
+            min="1"
+            max="10000"
+            value={settings.maxBatchUrls}
+            onblur={handleMaxBatchUrlsBlur}
+            class="w-32 rounded-sm border border-border bg-surface px-3 py-1.5 text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-hidden"
+          />
+        </div>
+        <div class="mt-3">
+          <Info
+            variant="info"
+            size="sm"
+          >
+            Must be a whole number between 1 and 10000. Default is 200.
+          </Info>
+        </div>
       </div>
     </div>
   </div>
