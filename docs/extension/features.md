@@ -182,6 +182,42 @@ If your downloads normally go to `/app/data/downloads/`, entering
 > **Note**: This feature might not be available in all versions. Check your
 > extension's overlay UI.
 
+## Site Directory
+
+Automatically organize downloads into a subfolder named after the site you're
+on.
+
+### How It Works
+
+When enabled, the extension reads the hostname of the current page (e.g.
+`example.com`) and passes it to gdluxx as a subdirectory. Downloads from that
+send are placed inside a folder matching the hostname. The hostname named
+directory will be located in the `base-directory` established in your config
+file.
+
+### How to Enable It
+
+1. Open the overlay
+2. Click the **earth icon** button in the action bar
+   - Action bar only appears after configuring gdluxx URL + API key
+3. The button shows the current hostname when active (e.g. `example.com`)
+4. Click it again to disable
+
+The toggle state is remembered between sessions.
+
+### Combining with Custom Directory
+
+If you also have a **Custom Directory** set, it becomes a subdirectory inside
+the site hostname folder:
+
+| Site Directory | Custom Directory | Result                      |
+| -------------- | ---------------- | --------------------------- |
+| `example.com`  | _(not set)_      | `example.com/`              |
+| `example.com`  | `photos`         | `example.com/photos/`       |
+| `example.com`  | `archive-2025`   | `example.com/archive-2025/` |
+
+This allows for organization similar to the how gallery-dl config file does.
+
 ## Themes
 
 Match the extension's appearance to your preference.

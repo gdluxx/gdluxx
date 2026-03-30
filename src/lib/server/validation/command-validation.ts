@@ -47,6 +47,13 @@ export const externalApiSchema: ValidationSchema = {
     maxLength: 255,
     pattern: /^[a-zA-Z0-9_\-. ]+$/,
   },
+  // optional site directory (hostname of the page)
+  siteDirectory: {
+    required: false,
+    minLength: 1,
+    maxLength: 253,
+    pattern: /^[a-zA-Z0-9][a-zA-Z0-9.-]*[a-zA-Z0-9]$|^[a-zA-Z0-9]$/,
+  },
 };
 
 export const jobIdSchema: ValidationSchema = {

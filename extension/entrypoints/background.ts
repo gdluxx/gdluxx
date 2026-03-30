@@ -53,6 +53,7 @@ interface SendCommandMessage {
   apiKey: string;
   urls: string[];
   customDirectory?: string;
+  siteDirectory?: string;
 }
 
 interface GetProfilesMessage {
@@ -253,7 +254,13 @@ export default defineBackground((): void => {
           (async () => {
             const urls = Array.isArray(message.urls) ? message.urls : [];
             sendResponse(
-              await proxyCommand(message.serverUrl, message.apiKey, urls, message.customDirectory),
+              await proxyCommand(
+                message.serverUrl,
+                message.apiKey,
+                urls,
+                message.customDirectory,
+                message.siteDirectory,
+              ),
             );
           })();
           return true;

@@ -19,6 +19,7 @@ const IGNORE_SESSION_KEY = 'gdluxx_us_ignore_profiles';
 const IGNORE_SUB_KEY = 'gdluxx_ignored_sub_profiles';
 const CUSTOM_DIR_ENABLED_KEY = 'customDirectory_enabled';
 const CUSTOM_DIR_VALUE_KEY = 'customDirectory_value';
+const SITE_DIR_ENABLED_KEY = 'siteDirectory_enabled';
 
 export async function readThemePreference(defaultTheme: string): Promise<string> {
   try {
@@ -100,4 +101,17 @@ export async function loadCustomDirectory(): Promise<{ enabled: boolean; value: 
 export async function saveCustomDirectory(enabled: boolean, value: string): Promise<void> {
   await setValue(CUSTOM_DIR_ENABLED_KEY, enabled);
   await setValue(CUSTOM_DIR_VALUE_KEY, value);
+}
+
+export async function loadSiteDirectory(): Promise<{ enabled: boolean }> {
+  try {
+    const enabled = await getValue<boolean>(SITE_DIR_ENABLED_KEY, false);
+    return { enabled };
+  } catch {
+    return { enabled: false };
+  }
+}
+
+export async function saveSiteDirectory(enabled: boolean): Promise<void> {
+  await setValue(SITE_DIR_ENABLED_KEY, enabled);
 }

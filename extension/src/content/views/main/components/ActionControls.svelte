@@ -24,6 +24,9 @@
     onCustomDirectoryToggle,
     onCustomDirectoryChange,
     onCustomDirectoryClear,
+    siteDirEnabled = false,
+    onSiteDirToggle,
+    currentHostname = '',
   }: {
     isConfigured?: boolean;
     selectionCount?: number;
@@ -35,6 +38,9 @@
     onCustomDirectoryToggle?: () => void;
     onCustomDirectoryChange?: (value: string) => void;
     onCustomDirectoryClear?: () => void;
+    siteDirEnabled?: boolean;
+    onSiteDirToggle?: () => void;
+    currentHostname?: string;
   } = $props();
 
   const isValid = $derived(isValidDirectoryName(customDirectoryValue));
@@ -53,6 +59,22 @@
     >
       <Icon iconName="send" />
       Send to gdluxx
+    </Button>
+
+    <!-- Site directory toggle -->
+    <Button
+      size="sm"
+      square
+      variant={siteDirEnabled ? 'primary' : 'ghost'}
+      onclick={onSiteDirToggle}
+      title={siteDirEnabled
+        ? `Site directory ON: saves to ${currentHostname || 'hostname'}/`
+        : 'Enable site directory: saves to hostname/'}
+    >
+      <Icon
+        iconName="site-dir"
+        size={16}
+      />
     </Button>
 
     {#if customDirectoryEnabled}

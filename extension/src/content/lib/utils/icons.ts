@@ -29,6 +29,7 @@ import keyboardIcon from '@iconify-icons/mdi/keyboard';
 import homeIcon from '@iconify-icons/mdi/home';
 import filterIcon from '@iconify-icons/mdi/filter-outline';
 import replaceIcon from '@iconify-icons/mdi/find-replace';
+import earthIcon from '@iconify-icons/mdi/earth';
 
 export type IconName =
   | 'box-add'
@@ -51,6 +52,7 @@ export type IconName =
   | 'question'
   | 'send'
   | 'settings'
+  | 'site-dir'
   | 'theme';
 
 type IconifyIconData = typeof closeIcon;
@@ -77,4 +79,5 @@ export const iconMap: Record<IconName, IconifyIconData> = {
   preview: eyeIcon,
   hotkey: keyboardIcon,
   home: homeIcon,
+  'site-dir': earthIcon,
 };

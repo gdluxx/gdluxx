@@ -811,6 +811,9 @@
         onCustomDirectoryChange={(value) =>
           selection.setCustomDirectory(selection.customDirectoryEnabled, value)}
         onCustomDirectoryClear={() => selection.setCustomDirectory(false, '')}
+        siteDirEnabled={selection.siteDirEnabled}
+        onSiteDirToggle={() => selection.setSiteDirectory(!selection.siteDirEnabled)}
+        currentHostname={typeof window !== 'undefined' ? window.location.hostname : ''}
       />
 
       <!-- ContentTabs -->

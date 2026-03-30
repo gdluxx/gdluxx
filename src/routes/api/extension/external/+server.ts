@@ -27,6 +27,21 @@ interface ExternalApiRequestBody {
   urlToProcess?: unknown;
   urls?: unknown;
   customDirectory?: unknown;
+  siteDirectory?: unknown;
+}
+
+function buildDirectoryArgs(siteDir?: string, customDir?: string): string[] {
+  const parts: string[] = [];
+  if (siteDir) {
+    parts.push(`"${siteDir.replace(/"/g, '\\"')}"`);
+  }
+  if (customDir) {
+    parts.push(`"${customDir.replace(/"/g, '\\"')}"`);
+  }
+  if (parts.length === 0) {
+    return [];
+  }
+  return ['-o', `directory=[${parts.join(',')}]`];
 }
 
 function isDirectMediaUrl(url: string): boolean {
@@ -81,7 +96,12 @@ export const POST: RequestHandler = async ({ request }: RequestEvent): Promise<R
 
   try {
     validateInput(
-      { urlToProcess: body.urlToProcess, urls: body.urls, customDirectory: body.customDirectory },
+      {
+        urlToProcess: body.urlToProcess,
+        urls: body.urls,
+        customDirectory: body.customDirectory,
+        siteDirectory: body.siteDirectory,
+      },
       externalApiSchema,
     );
   } catch (error) {
@@ -113,6 +133,12 @@ export const POST: RequestHandler = async ({ request }: RequestEvent): Promise<R
       ? body.customDirectory.trim()
       : undefined;
 
+  // Extracting site for directory name
+  const siteDirectory =
+    typeof body.siteDirectory === 'string' && body.siteDirectory.trim()
+      ? body.siteDirectory.trim()
+      : undefined;
+
   logger.info(
     `API key validated for: ${authResult.keyInfo?.name} (ID: ${authResult.keyInfo?.id}). Processing ${urls.length} URL(s)${customDirectory ? ` with custom directory: ${customDirectory}` : ''}`,
   );
@@ -139,11 +165,7 @@ export const POST: RequestHandler = async ({ request }: RequestEvent): Promise<R
     try {
       const cliArgs = [];
 
-      // Add custom directory if specified
-      if (customDirectory) {
-        const escapedDir = customDirectory.replace(/"/g, '\\"');
-        cliArgs.push('-o', `directory=["${escapedDir}"]`);
-      }
+      cliArgs.push(...buildDirectoryArgs(siteDirectory, customDirectory));
 
       logger.info(`Creating batch job for ${directMediaUrls.length} direct media URL(s)`);
       const result = await executeGalleryDlBatchCommand(directMediaUrls, cliArgs);
@@ -178,11 +200,7 @@ export const POST: RequestHandler = async ({ request }: RequestEvent): Promise<R
     try {
       const cliArgs = [];
 
-      // Add custom directory if specified
-      if (customDirectory) {
-        const escapedDir = customDirectory.replace(/"/g, '\\"');
-        cliArgs.push('-o', `directory=["${escapedDir}"]`);
-      }
+      cliArgs.push(...buildDirectoryArgs(siteDirectory, customDirectory));
 
       const result = await executeGalleryDlCommand(url, cliArgs);
 
@@ -222,12 +240,7 @@ export const POST: RequestHandler = async ({ request }: RequestEvent): Promise<R
       // Build CLI argument
       const cliArgs = validateAndBuildCliArgs(optionsMap);
 
-      // Add custom directory option if provided
-      if (customDirectory) {
-        // Escape double quotes for JSON to handle gallery-dl behavior
-        const escapedDir = customDirectory.replace(/"/g, '\\"');
-        cliArgs.push('-o', `directory=["${escapedDir}"]`);
-      }
+      cliArgs.push(...buildDirectoryArgs(siteDirectory, customDirectory));
 
       const result = await executeGalleryDlCommand(url, cliArgs);
 

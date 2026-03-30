@@ -64,7 +64,11 @@ export async function testConnection(serverUrl: string, apiKey: string): Promise
   });
 }
 
-export async function sendUrls(urls: string[], customDirectory?: string): Promise<ApiResult> {
+export async function sendUrls(
+  urls: string[],
+  customDirectory?: string,
+  siteDirectory?: string,
+): Promise<ApiResult> {
   if (!urls?.length) {
     return { success: false, error: 'No URLs to send' };
   }
@@ -84,6 +88,7 @@ export async function sendUrls(urls: string[], customDirectory?: string): Promis
     apiKey: settings.apiKey,
     urls,
     customDirectory,
+    siteDirectory,
   });
 }
 

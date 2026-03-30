@@ -11,7 +11,12 @@
 import { SvelteSet } from 'svelte/reactivity';
 import { setClipboard } from '#utils/clipboard';
 import { sendUrls } from '#utils/gdluxxApi';
-import { loadCustomDirectory, saveCustomDirectory } from '#utils/persistence';
+import {
+  loadCustomDirectory,
+  saveCustomDirectory,
+  loadSiteDirectory,
+  saveSiteDirectory,
+} from '#utils/persistence';
 import { isValidDirectoryName } from '#utils/validation';
 import {
   toggleSelection,
@@ -26,8 +31,10 @@ export function createSelectionStore() {
   let compact = $state(true);
   let customDirectoryEnabled = $state(false);
   let customDirectoryValue = $state('');
+  let siteDirEnabled = $state(false);
 
   let lastSavedDirectory = '';
+  let lastSavedSiteDir = false;
 
   $effect(() => {
     // Only save when enabled and value changed
@@ -39,6 +46,15 @@ export function createSelectionStore() {
       lastSavedDirectory = customDirectoryValue;
       saveCustomDirectory(customDirectoryEnabled, customDirectoryValue).catch((err) => {
         console.error('Failed to save custom directory:', err);
+      });
+    }
+  });
+
+  $effect(() => {
+    if (siteDirEnabled !== lastSavedSiteDir) {
+      lastSavedSiteDir = siteDirEnabled;
+      saveSiteDirectory(siteDirEnabled).catch((err) => {
+        console.error('Failed to save site directory preference:', err);
       });
     }
   });
@@ -123,8 +139,13 @@ export function createSelectionStore() {
     const customDir =
       customDirectoryEnabled && trimmed && isValidDirectoryName(trimmed) ? trimmed : undefined;
 
+    const siteDir =
+      siteDirEnabled && typeof window !== 'undefined' && window.location.hostname
+        ? window.location.hostname
+        : undefined;
+
     try {
-      const res = await sendUrls(urls, customDir);
+      const res = await sendUrls(urls, customDir, siteDir);
       if (res.success) {
         toastStore.success(
           res.message ||
@@ -145,6 +166,10 @@ export function createSelectionStore() {
       customDirectoryEnabled = dir.enabled;
       customDirectoryValue = dir.value;
       lastSavedDirectory = dir.value;
+
+      const siteDir = await loadSiteDirectory();
+      siteDirEnabled = siteDir.enabled;
+      lastSavedSiteDir = siteDir.enabled;
     } catch (error) {
       console.error('Failed to load custom directory:', error);
     }
@@ -166,6 +191,9 @@ export function createSelectionStore() {
     get customDirectoryValue() {
       return customDirectoryValue;
     },
+    get siteDirEnabled() {
+      return siteDirEnabled;
+    },
 
     setFilter(value: string) {
       filter = value;
@@ -178,6 +206,9 @@ export function createSelectionStore() {
       if (value !== undefined) {
         customDirectoryValue = value;
       }
+    },
+    setSiteDirectory(enabled: boolean) {
+      siteDirEnabled = enabled;
     },
 
     toggle,

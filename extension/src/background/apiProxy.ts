@@ -138,11 +138,15 @@ export async function proxyCommand(
   apiKey: string,
   urls: string[],
   customDirectory?: string,
+  siteDirectory?: string,
 ): Promise<ProxyApiResult<ExternalSendResponse>> {
   try {
-    const body: { urls: string[]; customDirectory?: string } = { urls };
+    const body: { urls: string[]; customDirectory?: string; siteDirectory?: string } = { urls };
     if (customDirectory) {
       body.customDirectory = customDirectory;
+    }
+    if (siteDirectory) {
+      body.siteDirectory = siteDirectory;
     }
 
     const response = await fetch(buildUrl(serverUrl, COMMAND_ENDPOINT), {
