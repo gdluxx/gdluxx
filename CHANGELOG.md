@@ -1,5 +1,17 @@
 # Changelog
 
+# [0.9.0](https://github.com/gdluxx/gdluxx/compare/v0.8.0...v0.9.0) (2026-03-31)
+
+
+### Bug Fixes
+
+* **release:** another attempt at correcting changelog contamination between root and extension ([18531eb](https://github.com/gdluxx/gdluxx/commit/18531eb45b436103c3540bb0a4da8425543629f0))
+
+
+### Features
+
+* add binary check and warn user ([c6806fe](https://github.com/gdluxx/gdluxx/commit/c6806fea0a5956fc54a0e446497a53e3b625e20c))
+
 # [0.8.0](https://github.com/gdluxx/gdluxx/compare/v0.7.0...v0.8.0) (2026-01-13)
 
 
