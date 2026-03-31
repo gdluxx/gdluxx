@@ -2,6 +2,7 @@
   "git": {
     "commitMessage": "chore: release v${version}",
     "tagName": "v${version}",
+    "tagMatch": "v[0-9]*",
     "pushArgs": ["--follow-tags"]
   },
   "npm": {
@@ -15,10 +16,8 @@
     "@release-it/conventional-changelog": {
       "preset": "angular",
       "infile": "CHANGELOG.md",
-      "context": {
-        "gitRawCommitsOpts": {
-          "ignore": "extension/**"
-        }
+      "gitRawCommitsOpts": {
+        "ignore": "\\(extension\\):"
       }
     }
   },
