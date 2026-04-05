@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.5.1](https://github.com/gdluxx/gdluxx/compare/extension-v1.5.0...extension-v1.5.1) (2026-04-05)
+
+
+### Bug Fixes
+
+* **release:** another attempt at correcting changelog contamination between root and extension ([18531eb](https://github.com/gdluxx/gdluxx/commit/18531eb45b436103c3540bb0a4da8425543629f0))
+
+
+### Features
+
+* **extension:** add site directory toggle to overlay ([a5ad218](https://github.com/gdluxx/gdluxx/commit/a5ad218d5f932c11cc8e82c1e4e50e13be2e91cf))
+
 # [1.5.0](https://github.com/gdluxx/gdluxx/compare/extension-v1.4.0...extension-v1.5.0) (2025-12-04)
 
 
