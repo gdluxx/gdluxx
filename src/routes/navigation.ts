@@ -81,6 +81,12 @@ export const navItems: NavigationItem[] = [
         href: '/settings/apikey',
       },
       {
+        id: 'extension-profiles',
+        label: 'Extension Profiles',
+        icon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8a2 2 0 0 1 2-2h3V4.5a1.5 1.5 0 1 1 3 0V6h3a2 2 0 0 1 2 2v3h1.5a1.5 1.5 0 1 1 0 3H16v3a2 2 0 0 1-2 2h-3v1.5a1.5 1.5 0 1 1-3 0V19H5a2 2 0 0 1-2-2v-3h1.5a1.5 1.5 0 1 0 0-3H3z"/></svg>`,
+        href: '/settings/extension-profiles',
+      },
+      {
         id: 'logging',
         label: 'Log Manager',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><g fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="4"><path d="M13 10h28v34H13z" /><path stroke-linecap="round" d="M35 10V4H8a1 1 0 0 0-1 1v33h6m8-16h12m-12 8h12" /></g></svg>`,

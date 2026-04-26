@@ -10,6 +10,8 @@
 
 import { auth } from '$lib/server/auth/better-auth';
 import { serverLogger as logger } from '$lib/server/logger';
+import { deleteProfileBackup } from '$lib/server/extensionProfileBackupManager';
+import { deleteSubBackup } from '$lib/server/extensionSubBackupManager';
 import type { ApiKey } from '$lib/apikey/types';
 import type BetterSqlite3 from 'better-sqlite3';
 import type { RunResult, Statement } from 'better-sqlite3';
@@ -142,6 +144,9 @@ export async function deleteApiKey(keyId: string): Promise<void> {
     if (result.changes === 0) {
       throw new Error('API key not found');
     }
+
+    deleteProfileBackup(keyId);
+    deleteSubBackup(keyId);
 
     logger.info(`Deleted API key: ${keyId}`);
   } catch (error) {

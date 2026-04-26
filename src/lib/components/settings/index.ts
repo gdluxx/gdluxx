@@ -9,6 +9,7 @@
  */
 
 export { default as ApiKeyManager } from './ApiKeyManager.svelte';
+export { default as ExtensionProfilesManager } from './ExtensionProfilesManager.svelte';
 export { default as GeneralManager } from './GeneralManager.svelte';
 export { default as LogManager } from './LogManager.svelte';
 export { default as UserManager } from './UserManager.svelte';
