@@ -18,6 +18,7 @@ const publicRoutes = [
   '/api/auth',
   '/api/extension/external',
   '/api/extension/profiles',
+  '/api/extension/subs',
   '/api/extension/ping',
 ];
 
@@ -97,6 +98,7 @@ export const handle: Handle = async ({ event, resolve }) => {
   if (
     event.url.pathname === '/api/extension/external' ||
     event.url.pathname === '/api/extension/profiles' ||
+    event.url.pathname === '/api/extension/subs' ||
     event.url.pathname === '/api/extension/ping'
   ) {
     const origin = event.request.headers.get('origin');

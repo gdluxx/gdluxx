@@ -13,15 +13,15 @@ import { serverLogger as logger } from '$lib/server/logger';
 import { createApiError, createApiResponse } from '$lib/server/api-utils';
 import { validateApiKey } from '$lib/server/auth/apiAuth';
 import {
-  deleteProfileBackup,
-  getProfileBackup,
-  saveProfileBackup,
-  type SelectorProfileBundle,
-} from '$lib/server/extensionProfileBackupManager';
+  deleteSubBackup,
+  getSubBackup,
+  saveSubBackup,
+  type SubProfileBundle,
+} from '$lib/server/extensionSubBackupManager';
 import { parseJson } from '$lib/server/validation/zod';
 import {
-  selectorBundleUpsertSchema,
-  type SelectorBundleUpsertPayload,
+  subBundleUpsertSchema,
+  type SubBundleUpsertPayload,
 } from '$lib/server/validation/extensionProfiles';
 
 interface AuthContext {
@@ -29,9 +29,9 @@ interface AuthContext {
   apiKeyName: string | null;
 }
 
-const EMPTY_BUNDLE: SelectorProfileBundle = { version: 1, profiles: {} };
+const EMPTY_BUNDLE: SubProfileBundle = { version: 1, profiles: {} };
 
-const cloneEmptyBundle = (): SelectorProfileBundle => ({ ...EMPTY_BUNDLE, profiles: {} });
+const cloneEmptyBundle = (): SubProfileBundle => ({ ...EMPTY_BUNDLE, profiles: {} });
 
 const emptyResponse = () =>
   createApiResponse({
@@ -57,7 +57,7 @@ async function authenticate(request: Request): Promise<AuthContext | { errorResp
 
   const authResult = await validateApiKey(plainApiKey);
   if (!authResult.success || !authResult.keyInfo) {
-    logger.warn(`Extension profile backup auth failure: ${authResult.error ?? 'Invalid API key.'}`);
+    logger.warn(`Extension sub backup auth failure: ${authResult.error ?? 'Invalid API key.'}`);
     return { errorResponse: createApiError(authResult.error ?? 'Invalid API key.', 401) };
   }
 
@@ -70,7 +70,7 @@ export const GET: RequestHandler = async ({ request }) => {
     return auth.errorResponse;
   }
 
-  const backup = getProfileBackup(auth.apiKeyId);
+  const backup = getSubBackup(auth.apiKeyId);
   if (!backup) {
     return emptyResponse();
   }
@@ -90,25 +90,25 @@ export const PUT: RequestHandler = async ({ request }) => {
     return auth.errorResponse;
   }
 
-  const parseResult = await parseJson(request, selectorBundleUpsertSchema);
+  const parseResult = await parseJson(request, subBundleUpsertSchema);
   if ('errorResponse' in parseResult) {
     return parseResult.errorResponse;
   }
 
-  const payload: SelectorBundleUpsertPayload = parseResult.data;
+  const payload: SubBundleUpsertPayload = parseResult.data;
 
-  const saved = saveProfileBackup(
+  const saved = saveSubBackup(
     auth.apiKeyId,
     payload.bundle,
     payload.syncedBy ?? auth.apiKeyName ?? null,
   );
 
   if (!saved) {
-    return createApiError('Failed to save selector profile backup', 500);
+    return createApiError('Failed to save substitution profile backup', 500);
   }
 
   logger.info(
-    `Saved ${saved.profileCount} selector profile(s) backup for extension via API key ${auth.apiKeyId}.`,
+    `Saved ${saved.profileCount} substitution profile(s) backup for extension via API key ${auth.apiKeyId}.`,
   );
 
   return createApiResponse({
@@ -126,9 +126,9 @@ export const DELETE: RequestHandler = async ({ request }) => {
     return auth.errorResponse;
   }
 
-  const deleted = deleteProfileBackup(auth.apiKeyId);
+  const deleted = deleteSubBackup(auth.apiKeyId);
   if (deleted) {
-    logger.info(`Deleted selector profile backup for API key ${auth.apiKeyId}.`);
+    logger.info(`Deleted substitution profile backup for API key ${auth.apiKeyId}.`);
   }
 
   return createApiResponse({
