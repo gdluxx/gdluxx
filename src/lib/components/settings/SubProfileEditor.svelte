@@ -199,7 +199,7 @@
   {onClose}
 >
   <div class="p-6">
-    <h2 class="mb-4 text-lg font-semibold">
+    <h2 class="mb-3 text-xl font-semibold text-accent-foreground">
       {isEdit ? 'Edit substitution profile' : 'New substitution profile'}
     </h2>
 
@@ -312,7 +312,7 @@
 
       <div>
         <div class="mb-2 flex items-center justify-between">
-          <span class="text-sm font-semibold">
+          <span class="font-semibold text-foreground">
             Rules ({rules.length}/{MAX_RULES})
           </span>
           <Button
@@ -327,10 +327,10 @@
         {#if rules.length === 0}
           <p class="text-sm text-muted-foreground">No rules yet — add one above.</p>
         {:else}
-          <div class="space-y-3">
+          <div>
             {#each rules as rule, idx (rule.id)}
               {@const err = ruleError(rule)}
-              <div class="rounded-sm border bg-background p-3 border-strong">
+              <div class="data-list-item">
                 <div class="flex flex-wrap items-start gap-2">
                   <div class="grid flex-1 gap-2 sm:grid-cols-3">
                     <div>

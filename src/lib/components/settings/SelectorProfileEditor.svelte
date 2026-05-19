@@ -128,7 +128,7 @@
   {onClose}
 >
   <div class="p-6">
-    <h2 class="mb-4 text-lg font-semibold">
+    <h2 class="mb-3 text-xl font-semibold text-accent-foreground">
       {isEdit ? 'Edit selector profile' : 'New selector profile'}
     </h2>
 
