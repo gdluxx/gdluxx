@@ -18,6 +18,7 @@
     SelectorProfile,
     SubProfile,
   } from '$lib/extensionProfiles/types';
+  import { Icon } from '$lib/components';
 
   interface InitialData extends Partial<ExtensionProfilesPageData> {
     success: boolean;
@@ -181,7 +182,10 @@
     <p class="text-sm">{initialData.error}</p>
   </Info>
 {:else if apiKeys.length === 0}
-  <Info title="No API keys yet.">
+  <Info
+    variant="info"
+    title="No API keys yet."
+  >
     <p class="text-sm">
       Create an API key in <a
         class="text-link hover:underline"
@@ -191,12 +195,13 @@
   </Info>
 {:else}
   <div class="space-y-6">
-    <div>
+    <div class="content-panel">
+      <h2>API Key</h2>
       <label
         class="mb-1 block text-sm font-medium text-muted-foreground"
         for="extension-profiles-api-key"
       >
-        API key
+        Select an API key to view its synced extension profiles.
       </label>
       <select
         id="extension-profiles-api-key"
@@ -250,51 +255,65 @@
     </div>
 
     {#if activeTab === 'selectors'}
-      <div class="flex items-center justify-between">
-        <p class="text-sm text-muted-foreground">
-          {selectorProfiles.length}
-          {selectorProfiles.length === 1 ? 'profile' : 'profiles'}
-        </p>
-        <Button
-          variant="primary"
-          onclick={openCreateSelector}>New selector profile</Button
-        >
-      </div>
+      <section class="data-list">
+        <header class="data-list-header flex items-center justify-between">
+          <h2 class="!mb-0">Selectors ({selectorProfiles.length})</h2>
+          <Button
+            variant="primary"
+            onclick={openCreateSelector}>New selector profile</Button
+          >
+        </header>
 
-      {#if actionError}
-        <Info variant="error">
-          <p class="text-sm">{actionError}</p>
-        </Info>
-      {/if}
+        {#if actionError}
+          <div class="p-4">
+            <Info variant="error">
+              <p class="text-sm">{actionError}</p>
+            </Info>
+          </div>
+        {/if}
 
-      {#if selectorProfiles.length === 0}
-        <Info title="No selector profiles for this API key.">
-          <p class="text-sm">
-            Selector profiles created in the browser extension or via the "New selector profile"
-            button above will appear here.
-          </p>
-        </Info>
-      {:else}
-        <div class="space-y-3">
+        {#if selectorProfiles.length === 0}
+          <div class="p-4">
+            <Info
+              variant="info"
+              title="No selector profiles for this API key."
+            >
+              <p class="text-sm">
+                Selector profiles created in the browser extension or via the "New selector profile"
+                button above will appear here.
+              </p>
+            </Info>
+          </div>
+        {:else}
           {#each selectorProfiles as profile (profile.id)}
-            <div class="rounded-sm border bg-surface-sunken p-4 border-strong">
+            <article class="data-list-item">
               <div class="flex flex-wrap items-start justify-between gap-2">
                 <div>
-                  <div class="text-sm font-semibold">{profile.name ?? profile.id}</div>
+                  <div class="text-sm text-accent-foreground font-semibold">{profile.name ?? profile.id}</div>
                   <div class="text-xs text-muted-foreground">{describeScope(profile)}</div>
                 </div>
                 <div class="flex flex-wrap gap-2">
                   <Button
-                    variant="default"
                     onclick={() => openEditSelector(profile)}
+                    variant="outline-primary"
+                    size="sm"
                   >
-                    Edit
+                    <Icon
+                      iconName="edit"
+                      size={20}
+                      class="mr-1"
+                    />
                   </Button>
                   <Button
-                    variant="outline-danger"
                     onclick={() => (selectorDeleteId = profile.id)}
+                    variant="outline-danger"
+                    size="sm"
                   >
-                    Delete
+                    <Icon
+                      iconName="delete"
+                      size={20}
+                      class="mr-1"
+                    />
                   </Button>
                 </div>
               </div>
@@ -318,39 +337,43 @@
                   {/if}
                 </div>
               </div>
-            </div>
+            </article>
           {/each}
-        </div>
-      {/if}
+        {/if}
+      </section>
     {:else}
-      <div class="flex items-center justify-between">
-        <p class="text-sm text-muted-foreground">
-          {subProfiles.length}
-          {subProfiles.length === 1 ? 'profile' : 'profiles'}
-        </p>
-        <Button
-          variant="primary"
-          onclick={openCreateSub}>New substitution profile</Button
-        >
-      </div>
+      <section class="data-list">
+        <header class="data-list-header flex items-center justify-between">
+          <h2 class="!mb-0">Substitutions ({subProfiles.length})</h2>
+          <Button
+            variant="primary"
+            onclick={openCreateSub}>New substitution profile</Button
+          >
+        </header>
 
-      {#if actionError}
-        <Info variant="error">
-          <p class="text-sm">{actionError}</p>
-        </Info>
-      {/if}
+        {#if actionError}
+          <div class="p-4">
+            <Info variant="error">
+              <p class="text-sm">{actionError}</p>
+            </Info>
+          </div>
+        {/if}
 
-      {#if subProfiles.length === 0}
-        <Info title="No substitution profiles for this API key.">
-          <p class="text-sm">
-            Substitution profiles created in the browser extension or via the "New substitution
-            profile" button above will appear here.
-          </p>
-        </Info>
-      {:else}
-        <div class="space-y-3">
+        {#if subProfiles.length === 0}
+          <div class="p-4">
+            <Info
+              variant="info"
+              title="No substitution profiles for this API key."
+            >
+              <p class="text-sm">
+                Substitution profiles created in the browser extension or via the "New substitution
+                profile" button above will appear here.
+              </p>
+            </Info>
+          </div>
+        {:else}
           {#each subProfiles as profile (profile.id)}
-            <div class="rounded-sm border bg-surface-sunken p-4 border-strong">
+            <article class="data-list-item">
               <div class="flex flex-wrap items-start justify-between gap-2">
                 <div>
                   <div class="text-sm font-semibold">{profile.name ?? profile.id}</div>
@@ -390,14 +413,14 @@
                   </li>
                 {/each}
               </ul>
-            </div>
+            </article>
           {/each}
-        </div>
-      {/if}
+        {/if}
+      </section>
     {/if}
 
     {#if selectedKeyId}
-      <details class="rounded-sm bg-surface-sunken p-3 text-sm">
+      <details class="content-panel text-sm">
         <summary class="cursor-pointer font-semibold">Sync details</summary>
         <div class="mt-2 grid gap-1 text-xs">
           <div>
