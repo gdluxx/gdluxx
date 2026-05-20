@@ -13,12 +13,14 @@
   import { Button, ConfirmModal, Info } from '$lib/components/ui';
   import SelectorProfileEditor from './SelectorProfileEditor.svelte';
   import SubProfileEditor from './SubProfileEditor.svelte';
+  import ExtensionProfilesImportModal from './ExtensionProfilesImportModal.svelte';
   import type {
     ExtensionProfilesPageData,
     SelectorProfile,
     SubProfile,
   } from '$lib/extensionProfiles/types';
   import { Icon } from '$lib/components';
+  import { toastStore } from '$lib/stores/toast';
 
   interface InitialData extends Partial<ExtensionProfilesPageData> {
     success: boolean;
@@ -42,6 +44,8 @@
   let subDeleteId = $state<string | null>(null);
   let actionError = $state<string | null>(null);
   let busy = $state(false);
+  let exportBusy = $state(false);
+  let importOpen = $state(false);
 
   $effect(() => {
     if (apiKeys.length === 0) {
@@ -53,6 +57,9 @@
     }
   });
 
+  const selectedKeyName = $derived(
+    apiKeys.find((k) => k.id === selectedKeyId)?.name ?? 'Unnamed Key',
+  );
   const selectedSelectorView = $derived(selectedKeyId ? selectorBackups[selectedKeyId] : undefined);
   const selectedSubView = $derived(selectedKeyId ? subBackups[selectedKeyId] : undefined);
 
@@ -62,6 +69,36 @@
   const subProfiles = $derived<SubProfile[]>(
     selectedSubView ? Object.values(selectedSubView.bundle.profiles) : [],
   );
+
+  async function handleExport(): Promise<void> {
+    if (!selectedKeyId) {
+      return;
+    }
+    exportBusy = true;
+    try {
+      const response = await fetch(
+        `/api/settings/extension-profiles/${encodeURIComponent(selectedKeyId)}/export`,
+      );
+      if (!response.ok) {
+        const err = await response.json().catch(() => null);
+        toastStore.error('Export failed', err?.error ?? `Server error: ${response.status}`);
+        return;
+      }
+      const blob = await response.blob();
+      const cd = response.headers.get('Content-Disposition') ?? '';
+      const match = cd.match(/filename="([^"]+)"/);
+      const filename = match?.[1] ?? `gdluxx-extension-profiles-${Date.now()}.json`;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+      toastStore.success('Export complete');
+    } finally {
+      exportBusy = false;
+    }
+  }
 
   function formatTimestamp(value: number | null | undefined): string {
     if (!value) {
@@ -212,6 +249,35 @@
           <option value={key.id}>{key.name}</option>
         {/each}
       </select>
+
+      <div class="mt-3 flex gap-2">
+        <Button
+          variant="default"
+          disabled={!selectedKeyId || exportBusy}
+          onclick={handleExport}
+        >
+          {exportBusy ? 'Exporting…' : 'Export profiles'}
+        </Button>
+        <Button
+          variant="default"
+          disabled={!selectedKeyId}
+          onclick={() => (importOpen = true)}
+        >
+          Import profiles
+        </Button>
+      </div>
+
+      {#if importOpen && selectedKeyId}
+        <ExtensionProfilesImportModal
+          apiKeyId={selectedKeyId}
+          apiKeyName={selectedKeyName}
+          onClose={() => (importOpen = false)}
+          onImported={async () => {
+            await invalidateAll();
+            importOpen = false;
+          }}
+        />
+      {/if}
     </div>
 
     <div
@@ -289,7 +355,9 @@
             <article class="data-list-item">
               <div class="flex flex-wrap items-start justify-between gap-2">
                 <div>
-                  <div class="text-sm text-accent-foreground font-semibold">{profile.name ?? profile.id}</div>
+                  <div class="text-sm font-semibold text-accent-foreground">
+                    {profile.name ?? profile.id}
+                  </div>
                   <div class="text-xs text-muted-foreground">{describeScope(profile)}</div>
                 </div>
                 <div class="flex flex-wrap gap-2">

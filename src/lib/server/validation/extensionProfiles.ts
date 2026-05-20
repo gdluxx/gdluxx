@@ -19,7 +19,7 @@ import type {
   SubProfileBundle,
 } from '$lib/server/extensionSubBackupManager';
 
-export const MAX_TOTAL_PROFILES = 500;
+export const MAX_TOTAL_PROFILES = 10_000;
 export const MAX_PROFILES_PER_HOST = 50;
 export const MAX_RULES_PER_PROFILE = 20;
 
@@ -220,3 +220,34 @@ export const subBundleUpsertSchema = z.object({
 });
 
 export type SubBundleUpsertPayload = z.infer<typeof subBundleUpsertSchema>;
+
+export const COMBINED_BUNDLE_KIND = 'gdluxx.extension-profiles.bundle';
+export const COMBINED_BUNDLE_VERSION = 1;
+
+export const combinedBundleSchema = z
+  .object({
+    kind: z.string(),
+    version: z.number(),
+    exportedAt: z.number().int().optional(),
+    apiKeyName: z.string().max(200).optional(),
+    selectors: selectorBundleSchema.optional().default({ version: 1, profiles: {} }),
+    subs: subBundleSchema.optional().default({ version: 1, profiles: {} }),
+  })
+  .superRefine((val, ctx) => {
+    if (val.kind !== COMBINED_BUNDLE_KIND) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'File is not a gdluxx extension profile bundle.',
+        path: ['kind'],
+      });
+    }
+    if (val.version !== COMBINED_BUNDLE_VERSION) {
+      ctx.addIssue({
+        code: 'custom',
+        message: `Unsupported bundle version. Expected ${COMBINED_BUNDLE_VERSION}.`,
+        path: ['version'],
+      });
+    }
+  });
+
+export type CombinedBundle = z.infer<typeof combinedBundleSchema>;
