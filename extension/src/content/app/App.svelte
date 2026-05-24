@@ -20,6 +20,7 @@
   import HelpModals from '#views/shared/modals/HelpModals.svelte';
   import {
     AppearanceTab,
+    GallerizedTab,
     GdluxxTab,
     KeyboardTab,
     PreviewTab,
@@ -972,6 +973,9 @@
             {onToggleSendTabHotkey}
             {onSendTabHotkeyChange}
           />
+        {/if}
+        {#if activeSettingsTab === 'gallerized'}
+          <GallerizedTab />
         {/if}
       </div>
     {/if}

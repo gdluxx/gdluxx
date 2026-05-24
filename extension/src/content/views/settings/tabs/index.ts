@@ -9,6 +9,7 @@
  */
 
 export { default as AppearanceTab } from './AppearanceTab.svelte';
+export { default as GallerizedTab } from './GallerizedTab.svelte';
 export { default as GdluxxTab } from './GdluxxTab.svelte';
 export { default as KeyboardTab } from './KeyboardTab.svelte';
 export { default as PreviewTab } from './PreviewTab.svelte';
