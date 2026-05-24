@@ -30,6 +30,7 @@ import homeIcon from '@iconify-icons/mdi/home';
 import filterIcon from '@iconify-icons/mdi/filter-outline';
 import replaceIcon from '@iconify-icons/mdi/find-replace';
 import earthIcon from '@iconify-icons/mdi/earth';
+import imageMultipleIcon from '@iconify-icons/mdi/image-multiple';
 
 export type IconName =
   | 'box-add'
@@ -40,6 +41,7 @@ export type IconName =
   | 'filter-outline'
   | 'find-replace'
   | 'folder-plus'
+  | 'gallery'
   | 'home'
   | 'hotkey'
   | 'image'
@@ -67,6 +69,7 @@ export const iconMap: Record<IconName, IconifyIconData> = {
   'folder-plus': folderPlusIcon,
   'filter-outline': filterIcon,
   'find-replace': replaceIcon,
+  gallery: imageMultipleIcon,
   image: imageIcon,
   link: linkIcon,
   'magnifying-glass': magnifyIcon,

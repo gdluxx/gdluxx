@@ -23,7 +23,7 @@
     GallerizedTransform,
   } from '#src/content/types';
 
-  // DRAFT STATE 
+  // DRAFT STATE
   let draft = $state<GallerizedSettings>(
     JSON.parse(JSON.stringify(DEFAULT_GALLERIZED_SETTINGS)) as GallerizedSettings,
   );
@@ -37,7 +37,7 @@
     loading = false;
   });
 
-  // TRANSFORMS HELPERS 
+  // TRANSFORMS HELPERS
   function normalizeTransforms(
     t: GallerizedTransform | GallerizedTransform[] | null,
   ): GallerizedTransform[] {
@@ -74,7 +74,7 @@
     setDefaultTransforms(rows);
   }
 
-  // PROFILE TRANSFORMS HELPERS 
+  // PROFILE TRANSFORMS HELPERS
   function getProfileTransforms(profile: GallerizedProfile): GallerizedTransform[] {
     return normalizeTransforms(profile.config.images?.transform ?? null);
   }
@@ -86,7 +86,7 @@
     draft.profiles[profileIndex].config.images!.transform = denormalizeTransforms(rows);
   }
 
-  // PROFILE MANAGEMENT 
+  // PROFILE MANAGEMENT
   function addProfile(): void {
     draft.profiles = [...draft.profiles, { key: '', config: {} }];
     expandedProfileIndex = draft.profiles.length - 1;
@@ -102,7 +102,7 @@
     expandedProfileIndex = expandedProfileIndex === i ? null : i;
   }
 
-  // SAVE 
+  // SAVE
   async function handleSave(): Promise<void> {
     saving = true;
     try {
@@ -137,7 +137,7 @@
     }
   }
 
-  // INPUT HELPERS 
+  // INPUT HELPERS
   function nullableStr(val: string | null): string {
     return val ?? '';
   }
