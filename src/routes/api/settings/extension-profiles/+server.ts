@@ -14,8 +14,11 @@ import { createApiResponse, handleApiError } from '$lib/server/api-utils';
 import { listApiKeys } from '$lib/server/apikey';
 import { getProfileBackup } from '$lib/server/extensionProfileBackupManager';
 import { getSubBackup } from '$lib/server/extensionSubBackupManager';
+import { getExtractionBackup } from '$lib/server/extensionExtractionBackupManager';
 import type {
   ApiKeySummary,
+  ExtractionBackupView,
+  ExtractionBundle,
   ExtensionProfilesPageData,
   SelectorBackupView,
   SelectorBundle,
@@ -25,6 +28,7 @@ import type {
 
 const emptySelectorBundle: SelectorBundle = { version: 1, profiles: {} };
 const emptySubBundle: SubBundle = { version: 1, profiles: {} };
+const emptyExtractionBundle: ExtractionBundle = { version: 1, profiles: {} };
 
 export const GET: RequestHandler = async (): Promise<Response> => {
   try {
@@ -37,6 +41,7 @@ export const GET: RequestHandler = async (): Promise<Response> => {
 
     const selectorBackups: Record<string, SelectorBackupView> = {};
     const subBackups: Record<string, SubBackupView> = {};
+    const extractionBackups: Record<string, ExtractionBackupView> = {};
 
     for (const key of summaries) {
       const selectorBackup = getProfileBackup(key.id);
@@ -76,12 +81,32 @@ export const GET: RequestHandler = async (): Promise<Response> => {
           bundle: { ...emptySubBundle, profiles: {} },
         };
       }
+
+      const extractionBackup = getExtractionBackup(key.id);
+      if (extractionBackup) {
+        extractionBackups[key.id] = {
+          hasBackup: true,
+          profileCount: extractionBackup.profileCount,
+          syncedBy: extractionBackup.syncedBy,
+          updatedAt: extractionBackup.updatedAt,
+          bundle: extractionBackup.bundle as ExtractionBundle,
+        };
+      } else {
+        extractionBackups[key.id] = {
+          hasBackup: false,
+          profileCount: 0,
+          syncedBy: null,
+          updatedAt: null,
+          bundle: { ...emptyExtractionBundle, profiles: {} },
+        };
+      }
     }
 
     const payload: ExtensionProfilesPageData = {
       apiKeys: summaries,
       selectorBackups,
       subBackups,
+      extractionBackups,
     };
 
     const resp = createApiResponse(payload);

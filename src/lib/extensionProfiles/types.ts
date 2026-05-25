@@ -72,6 +72,64 @@ export interface SubBackupView extends BackupMeta {
   bundle: SubBundle;
 }
 
+export type ExtractionMode = 'range' | 'targeted';
+
+export interface RangeExtractionConfig {
+  mode: 'range';
+  startSelector: string;
+  endSelector: string;
+}
+
+export type ContainerSource =
+  | { via: 'selector'; selector: string }
+  | { via: 'string'; begin: string; end: string }
+  | { via: 'body' };
+
+export type ImageSource =
+  | { via: 'selector'; selector: string; attr: string }
+  | { via: 'string'; begin: string; end: string };
+
+export interface TargetedExtractionConfig {
+  mode: 'targeted';
+  container: ContainerSource;
+  images: ImageSource;
+}
+
+export type ExtractionConfig = RangeExtractionConfig | TargetedExtractionConfig;
+
+export interface GalleryDisplayConfig {
+  thumbSizes: [number, number, number];
+  gap: number;
+  border: number;
+  buttonCorner: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
+}
+
+export interface ExtractionProfile {
+  id: string;
+  name?: string;
+  scope: ProfileScope;
+  host: string;
+  origin?: string;
+  path?: string;
+  extraction: ExtractionConfig;
+  rules: SubRule[];
+  applyToPreview: boolean;
+  autoApply: boolean;
+  gallery?: GalleryDisplayConfig;
+  createdAt: number;
+  updatedAt: number;
+  lastUsed?: number;
+}
+
+export interface ExtractionBundle {
+  version: 1;
+  profiles: Record<string, ExtractionProfile>;
+}
+
+export interface ExtractionBackupView extends BackupMeta {
+  bundle: ExtractionBundle;
+}
+
 export interface ApiKeySummary {
   id: string;
   name: string;
@@ -81,4 +139,5 @@ export interface ExtensionProfilesPageData {
   apiKeys: ApiKeySummary[];
   selectorBackups: Record<string, SelectorBackupView>;
   subBackups: Record<string, SubBackupView>;
+  extractionBackups: Record<string, ExtractionBackupView>;
 }

@@ -15,6 +15,8 @@
   import SubProfileEditor from './SubProfileEditor.svelte';
   import ExtensionProfilesImportModal from './ExtensionProfilesImportModal.svelte';
   import type {
+    ExtractionBackupView,
+    ExtractionProfile,
     ExtensionProfilesPageData,
     SelectorProfile,
     SubProfile,
@@ -32,9 +34,10 @@
   const apiKeys = $derived(initialData.apiKeys ?? []);
   const selectorBackups = $derived(initialData.selectorBackups ?? {});
   const subBackups = $derived(initialData.subBackups ?? {});
+  const extractionBackups = $derived(initialData.extractionBackups ?? {});
 
   let selectedKeyId = $state<string | null>(null);
-  let activeTab = $state<'selectors' | 'subs'>('selectors');
+  let activeTab = $state<'selectors' | 'subs' | 'extraction'>('selectors');
 
   let selectorEditorOpen = $state(false);
   let selectorEditorTarget = $state<SelectorProfile | null>(null);
@@ -62,6 +65,11 @@
   );
   const selectedSelectorView = $derived(selectedKeyId ? selectorBackups[selectedKeyId] : undefined);
   const selectedSubView = $derived(selectedKeyId ? subBackups[selectedKeyId] : undefined);
+  const selectedExtractionView = $derived<ExtractionBackupView | undefined>(
+    selectedKeyId
+      ? (extractionBackups[selectedKeyId] as ExtractionBackupView | undefined)
+      : undefined,
+  );
 
   const selectorProfiles = $derived<SelectorProfile[]>(
     selectedSelectorView ? Object.values(selectedSelectorView.bundle.profiles) : [],
@@ -69,6 +77,11 @@
   const subProfiles = $derived<SubProfile[]>(
     selectedSubView ? Object.values(selectedSubView.bundle.profiles) : [],
   );
+  const extractionProfiles = $derived<ExtractionProfile[]>(
+    selectedExtractionView ? Object.values(selectedExtractionView.bundle.profiles) : [],
+  );
+
+  let extractionDeleteBusy = $state(false);
 
   async function handleExport(): Promise<void> {
     if (!selectedKeyId) {
@@ -212,6 +225,44 @@
       busy = false;
     }
   }
+
+  async function confirmDeleteExtractionBackup(): Promise<void> {
+    if (!selectedKeyId) {
+      return;
+    }
+    extractionDeleteBusy = true;
+    try {
+      const response = await fetch(
+        `/api/settings/extension-profiles/${encodeURIComponent(selectedKeyId)}/extraction`,
+        { method: 'DELETE' },
+      );
+      const payload = await response.json().catch(() => null);
+      if (!response.ok || !payload?.success) {
+        toastStore.error('Delete failed', payload?.error ?? `Server error: ${response.status}`);
+        return;
+      }
+      toastStore.success('Extraction backup deleted');
+      await invalidateAll();
+    } catch (err) {
+      toastStore.error('Delete failed', err instanceof Error ? err.message : 'Unknown error');
+    } finally {
+      extractionDeleteBusy = false;
+    }
+  }
+
+  function describeExtractionMode(profile: ExtractionProfile): string {
+    if (profile.extraction.mode === 'range') {
+      return 'Range';
+    }
+    const via = profile.extraction.container.via;
+    if (via === 'body') {
+      return 'Targeted · body';
+    }
+    if (via === 'selector') {
+      return 'Targeted · selector';
+    }
+    return 'Targeted · string markers';
+  }
 </script>
 
 {#if !initialData.success && initialData.error}
@@ -318,9 +369,91 @@
           {subProfiles.length}
         </span>
       </button>
+      <button
+        role="tab"
+        type="button"
+        aria-selected={activeTab === 'extraction'}
+        class="cursor-pointer rounded-sm px-3 py-1.5 text-sm font-medium transition-colors {activeTab ===
+        'extraction'
+          ? 'bg-background text-foreground shadow-sm'
+          : 'text-muted-foreground hover:text-foreground'}"
+        onclick={() => (activeTab = 'extraction')}
+      >
+        Extraction Profiles
+        <span
+          class="ml-2 inline-flex items-center justify-center rounded-full bg-surface-active px-2 py-0.5 text-xs"
+        >
+          {extractionProfiles.length}
+        </span>
+      </button>
     </div>
 
-    {#if activeTab === 'selectors'}
+    {#if activeTab === 'extraction'}
+      <section class="data-list">
+        <header class="data-list-header flex items-center justify-between">
+          <h2 class="!mb-0">Extraction Profiles ({extractionProfiles.length})</h2>
+          {#if selectedExtractionView?.hasBackup}
+            <Button
+              variant="outline-danger"
+              size="sm"
+              disabled={extractionDeleteBusy}
+              onclick={confirmDeleteExtractionBackup}
+            >
+              {extractionDeleteBusy ? 'Deleting…' : 'Delete backup'}
+            </Button>
+          {/if}
+        </header>
+
+        {#if selectedExtractionView?.hasBackup}
+          <div class="px-4 py-2 text-xs text-muted-foreground">
+            {selectedExtractionView.profileCount} profile(s) · last sync
+            {formatTimestamp(selectedExtractionView.updatedAt)}
+            {#if selectedExtractionView.syncedBy}
+              · by {selectedExtractionView.syncedBy}
+            {/if}
+          </div>
+        {/if}
+
+        {#if extractionProfiles.length === 0}
+          <div class="p-4">
+            <Info
+              variant="info"
+              title="No extraction profiles for this API key."
+            >
+              <p class="text-sm">
+                Extraction profiles created in the browser extension will appear here after the
+                extension syncs its backup.
+              </p>
+            </Info>
+          </div>
+        {:else}
+          {#each extractionProfiles as profile (profile.id)}
+            <article class="data-list-item">
+              <div class="flex flex-wrap items-start justify-between gap-2">
+                <div>
+                  <div class="text-sm font-semibold text-accent-foreground">
+                    {profile.name ?? profile.id}
+                  </div>
+                  <div class="text-xs text-muted-foreground">
+                    {describeScope(profile)} · {describeExtractionMode(profile)}
+                    {#if profile.rules.length > 0}
+                      · {profile.rules.length}
+                      {profile.rules.length === 1 ? 'rule' : 'rules'}
+                    {/if}
+                  </div>
+                </div>
+              </div>
+              <div class="mt-1 text-xs text-muted-foreground">
+                Updated: {formatTimestamp(profile.updatedAt)}
+                {#if profile.lastUsed}
+                  · Last used: {formatTimestamp(profile.lastUsed)}
+                {/if}
+              </div>
+            </article>
+          {/each}
+        {/if}
+      </section>
+    {:else if activeTab === 'selectors'}
       <section class="data-list">
         <header class="data-list-header flex items-center justify-between">
           <h2 class="!mb-0">Selectors ({selectorProfiles.length})</h2>
@@ -409,7 +542,7 @@
           {/each}
         {/if}
       </section>
-    {:else}
+    {:else if activeTab === 'subs'}
       <section class="data-list">
         <header class="data-list-header flex items-center justify-between">
           <h2 class="!mb-0">Substitutions ({subProfiles.length})</h2>
@@ -510,6 +643,18 @@
               {formatTimestamp(selectedSubView.updatedAt)}
               {#if selectedSubView.syncedBy}
                 · by {selectedSubView.syncedBy}
+              {/if}
+            {:else}
+              no remote backup
+            {/if}
+          </div>
+          <div>
+            <span class="font-semibold">Extraction Profiles:</span>
+            {#if selectedExtractionView?.hasBackup}
+              {selectedExtractionView.profileCount} profile(s) · last sync
+              {formatTimestamp(selectedExtractionView.updatedAt)}
+              {#if selectedExtractionView.syncedBy}
+                · by {selectedExtractionView.syncedBy}
               {/if}
             {:else}
               no remote backup

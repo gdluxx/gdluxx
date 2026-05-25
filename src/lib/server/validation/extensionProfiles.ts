@@ -221,6 +221,124 @@ export const subBundleUpsertSchema = z.object({
 
 export type SubBundleUpsertPayload = z.infer<typeof subBundleUpsertSchema>;
 
+/* ----- Extraction profiles ----- */
+
+const galleryDisplayConfigSchema = z.object({
+  thumbSizes: z.tuple([
+    z.number().int().positive(),
+    z.number().int().positive(),
+    z.number().int().positive(),
+  ]),
+  gap: z.number().int().nonnegative(),
+  border: z.number().int().nonnegative(),
+  buttonCorner: z.enum(['bottom-right', 'bottom-left', 'top-right', 'top-left']),
+});
+
+const containerSourceSchema = z.discriminatedUnion('via', [
+  z.object({ via: z.literal('body') }),
+  z.object({
+    via: z.literal('selector'),
+    selector: z.string().refine((s) => s.trim().length > 0, 'Container selector must be non-empty'),
+  }),
+  z.object({
+    via: z.literal('string'),
+    begin: z.string().min(1, 'Container begin marker must be non-empty'),
+    end: z.string().min(1, 'Container end marker must be non-empty'),
+  }),
+]);
+
+const imageSourceSchema = z.discriminatedUnion('via', [
+  z.object({
+    via: z.literal('selector'),
+    selector: z.string().refine((s) => s.trim().length > 0, 'Image selector must be non-empty'),
+    attr: z.string().default('src'),
+  }),
+  z.object({
+    via: z.literal('string'),
+    begin: z.string().min(1, 'Image begin marker must be non-empty'),
+    end: z.string().min(1, 'Image end marker must be non-empty'),
+  }),
+]);
+
+export const extractionConfigSchema = z.discriminatedUnion('mode', [
+  z.object({
+    mode: z.literal('range'),
+    startSelector: z.string(),
+    endSelector: z.string(),
+  }),
+  z.object({
+    mode: z.literal('targeted'),
+    container: containerSourceSchema,
+    images: imageSourceSchema,
+  }),
+]);
+
+const extractionProfileBaseSchema = z.object({
+  id: z.string().min(1, 'Profile id is required'),
+  name: z.string().max(200).optional(),
+  scope: profileScopeSchema,
+  host: z.string().min(1, 'Host is required'),
+  origin: z.string().optional(),
+  path: z.string().optional(),
+  extraction: extractionConfigSchema,
+  rules: z.array(subRuleSchema).max(MAX_RULES_PER_PROFILE),
+  applyToPreview: z.boolean(),
+  autoApply: z.boolean(),
+  gallery: galleryDisplayConfigSchema.optional(),
+  createdAt: z.number().int(),
+  updatedAt: z.number().int(),
+  lastUsed: z.number().int().optional(),
+});
+
+export const extractionProfileSchema = extractionProfileBaseSchema.superRefine((profile, ctx) => {
+  const hasContent =
+    (profile.extraction.mode === 'range' &&
+      (profile.extraction.startSelector.trim().length > 0 ||
+        profile.extraction.endSelector.trim().length > 0)) ||
+    profile.extraction.mode === 'targeted' ||
+    profile.rules.some((r) => r.pattern.trim().length > 0) ||
+    profile.gallery !== undefined;
+
+  if (!hasContent) {
+    ctx.addIssue({
+      code: 'custom',
+      message:
+        'Profile must have at least one of: non-empty range selector, targeted config, a rule with non-empty pattern, or a gallery override.',
+      path: ['extraction'],
+    });
+  }
+  if (profile.scope === 'path' && !profile.path) {
+    ctx.addIssue({
+      code: 'custom',
+      message: 'Path is required when scope is "path".',
+      path: ['path'],
+    });
+  }
+  if (profile.scope === 'origin' && !profile.origin) {
+    ctx.addIssue({
+      code: 'custom',
+      message: 'Origin is required when scope is "origin".',
+      path: ['origin'],
+    });
+  }
+});
+
+export const extractionBundleSchema = z
+  .object({
+    version: z.number().int().nonnegative(),
+    profiles: z.record(z.string(), extractionProfileSchema),
+  })
+  .superRefine((bundle, ctx) => {
+    checkBundleCaps(bundle.profiles, ctx);
+  });
+
+export const extractionBundleUpsertSchema = z.object({
+  bundle: extractionBundleSchema,
+  syncedBy: syncedBySchema,
+});
+
+export type ExtractionBundleUpsertPayload = z.infer<typeof extractionBundleUpsertSchema>;
+
 export const COMBINED_BUNDLE_KIND = 'gdluxx.extension-profiles.bundle';
 export const COMBINED_BUNDLE_VERSION = 1;
 
@@ -232,6 +350,7 @@ export const combinedBundleSchema = z
     apiKeyName: z.string().max(200).optional(),
     selectors: selectorBundleSchema.optional().default({ version: 1, profiles: {} }),
     subs: subBundleSchema.optional().default({ version: 1, profiles: {} }),
+    extraction: extractionBundleSchema.optional().default({ version: 1, profiles: {} }),
   })
   .superRefine((val, ctx) => {
     if (val.kind !== COMBINED_BUNDLE_KIND) {

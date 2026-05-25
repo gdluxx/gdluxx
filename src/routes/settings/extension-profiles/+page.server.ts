@@ -12,6 +12,6 @@ import { createPageLoad } from '$lib/utils/page-load';
 
 export const load = createPageLoad({
   endpoint: '/api/settings/extension-profiles',
-  fallback: { apiKeys: [], selectorBackups: {}, subBackups: {} },
+  fallback: { apiKeys: [], selectorBackups: {}, subBackups: {}, extractionBackups: {} },
   errorMessage: 'Failed to load extension profile backups',
 });

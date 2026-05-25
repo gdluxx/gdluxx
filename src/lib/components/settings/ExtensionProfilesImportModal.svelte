@@ -66,15 +66,18 @@
         return;
       }
 
-      const { selectors, subs } = payload.data as {
+      const { selectors, subs, extraction } = payload.data as {
         selectors: { added: number; updated: number; total: number };
         subs: { added: number; updated: number; total: number };
+        extraction: { added: number; updated: number; total: number };
       };
 
-      toastStore.success(
-        'Import complete',
-        `Imported ${selectors.added + selectors.updated} selector profile(s) (${selectors.added} new, ${selectors.updated} updated) and ${subs.added + subs.updated} substitution profile(s) (${subs.added} new, ${subs.updated} updated).`,
-      );
+      const parts = [
+        `${selectors.added + selectors.updated} selector profile(s) (${selectors.added} new, ${selectors.updated} updated)`,
+        `${subs.added + subs.updated} substitution profile(s) (${subs.added} new, ${subs.updated} updated)`,
+        `${extraction.added + extraction.updated} extraction profile(s) (${extraction.added} new, ${extraction.updated} updated)`,
+      ];
+      toastStore.success('Import complete', `Imported ${parts.join(', ')}.`);
       onImported();
     } finally {
       submitting = false;

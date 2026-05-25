@@ -14,6 +14,7 @@ import { createApiError } from '$lib/server/api-utils';
 import { listApiKeys } from '$lib/server/apikey';
 import { getProfileBackup } from '$lib/server/extensionProfileBackupManager';
 import { getSubBackup } from '$lib/server/extensionSubBackupManager';
+import { getExtractionBackup } from '$lib/server/extensionExtractionBackupManager';
 import {
   COMBINED_BUNDLE_KIND,
   COMBINED_BUNDLE_VERSION,
@@ -44,10 +45,12 @@ export const GET: RequestHandler = async ({ params }) => {
 
     const selectorBackup = getProfileBackup(apiKeyId);
     const subBackup = getSubBackup(apiKeyId);
+    const extractionBackup = getExtractionBackup(apiKeyId);
 
-    // Empty profiles on both sides is valid — yields an importable no-op file.
+    // Empty profiles on all sides is valid — yields an importable no-op file.
     const selectors = selectorBackup?.bundle ?? { version: 1, profiles: {} };
     const subs = subBackup?.bundle ?? { version: 1, profiles: {} };
+    const extraction = extractionBackup?.bundle ?? { version: 1, profiles: {} };
 
     const envelope = {
       kind: COMBINED_BUNDLE_KIND,
@@ -56,6 +59,7 @@ export const GET: RequestHandler = async ({ params }) => {
       apiKeyName: apiKey.name,
       selectors,
       subs,
+      extraction,
     };
 
     const date = new Date().toISOString().slice(0, 10);
