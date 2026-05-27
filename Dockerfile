@@ -1,8 +1,11 @@
-FROM node:20-alpine AS builder
+ARG PNPM_VERSION=10.33.0
+
+FROM node:20-slim AS builder
 
 LABEL org.opencontainers.image.source=https://github.com/gdluxx/gdluxx
 
-RUN corepack enable && corepack prepare pnpm@latest --activate
+ARG PNPM_VERSION
+RUN corepack enable && corepack prepare pnpm@${PNPM_VERSION} --activate
 
 WORKDIR /app
 
@@ -18,7 +21,8 @@ RUN pnpm build
 
 FROM node:20-slim AS runner
 
-RUN corepack enable && corepack prepare pnpm@latest --activate
+ARG PNPM_VERSION
+RUN corepack enable && corepack prepare pnpm@${PNPM_VERSION} --activate
 
 WORKDIR /app
 
