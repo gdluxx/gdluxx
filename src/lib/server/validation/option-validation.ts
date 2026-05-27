@@ -30,8 +30,8 @@ export function validateOptionValue(option: Option, value: unknown): string | nu
   }
 
   if (option.type === 'range') {
-    const num = Number(value);
-    return !isNaN(num) && isFinite(num) ? String(num) : null;
+    const str = String(value).trim();
+    return str.length > 0 ? str : null;
   }
 
   if (option.type === 'string') {

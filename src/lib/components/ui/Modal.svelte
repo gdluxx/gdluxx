@@ -40,8 +40,8 @@
 
   function handleBackdropKeydown(event: KeyboardEvent) {
     if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
       if (event.target === event.currentTarget && onClose) {
+        event.preventDefault();
         onClose();
       }
     }

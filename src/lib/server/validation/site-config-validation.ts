@@ -47,11 +47,11 @@ function validateCliOptionValue(optionId: string, value: unknown): boolean {
   }
 
   if (option.type === 'string' || option.type === 'range') {
-    const str = String(value).trim();
-
-    if (containsDangerousChars(str)) {
+    if (typeof value !== 'string') {
       return false;
     }
+
+    const str = value.trim();
 
     if (str.length === 0 || str.length > 500) {
       return false;
