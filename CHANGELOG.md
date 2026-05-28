@@ -1,5 +1,19 @@
 # Changelog
 
+# [0.10.0](https://github.com/gdluxx/gdluxx/compare/v0.9.1...v0.10.0) (2026-05-28)
+
+
+### Bug Fixes
+
+* **docker:** pin pnpm to 10.33.0 to maintain Node 20 compatibility ([c81090e](https://github.com/gdluxx/gdluxx/commit/c81090e40ba2d1a2edc5d6949b72cb005f3dd43f))
+* **docker:** pin pnpm/action-setup@v4 to 10.33.0 ([11555cd](https://github.com/gdluxx/gdluxx/commit/11555cd32f01c1c4f7aaa09e6319da1c8ace02f4))
+* parenthesis in Site Rules user-agent fails validation ([6e5a2ac](https://github.com/gdluxx/gdluxx/commit/6e5a2ac5a618d2405cd0a4f90ab79967fe997adb)), closes [#6](https://github.com/gdluxx/gdluxx/issues/6)
+
+
+### Features
+
+* **version:** add Codeberg support ([b8fa07e](https://github.com/gdluxx/gdluxx/commit/b8fa07eae19e6dd537efa6e586418916d8eb89c1)), closes [#5](https://github.com/gdluxx/gdluxx/issues/5)
+
 ## [0.9.1](https://github.com/gdluxx/gdluxx/compare/v0.9.0...v0.9.1) (2026-04-05)
 
 # [0.9.0](https://github.com/gdluxx/gdluxx/compare/v0.8.0...v0.9.0) (2026-03-31)
