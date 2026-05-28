@@ -13,12 +13,14 @@ import { exec } from 'node:child_process';
 import { promisify } from 'node:util';
 import { serverLogger as logger } from '$lib/server/logger';
 import { PATHS, GITHUB } from '$lib/server/constants';
+import type { ReleaseProvider } from '$lib/server/constants';
 import { createSettingsManager } from '$lib/server/settingsManager';
 
 export interface SourceInfo {
   user: string;
   repo: string;
   isArm64: boolean;
+  provider: ReleaseProvider;
 }
 
 export function getSourceInfo(): SourceInfo {
@@ -26,10 +28,21 @@ export function getSourceInfo(): SourceInfo {
     user: GITHUB.ACTIVE_USER,
     repo: GITHUB.ACTIVE_REPO,
     isArm64: GITHUB.IS_ARM64,
+    provider: GITHUB.ACTIVE_PROVIDER,
   };
 }
 
 const execAsync = promisify(exec);
+
+interface ReleaseAsset {
+  name?: string;
+  browser_download_url?: string;
+}
+
+interface LatestRelease {
+  tag_name?: string;
+  assets?: ReleaseAsset[];
+}
 
 export interface VersionInfo {
   current: string | null;
@@ -106,34 +119,58 @@ export async function checkBinaryExists(): Promise<boolean> {
   }
 }
 
-export async function getLatestVersionFromGithub(): Promise<string | null> {
+async function fetchLatestRelease(): Promise<LatestRelease | null> {
   try {
     const response = await fetch(GITHUB.LATEST_RELEASE_URL, {
       headers: { 'User-Agent': 'gdluxx' },
     });
     if (!response.ok) {
-      logger.error(`GitHub API error: ${response.status} ${await response.text()}`);
-      throw new Error(`GitHub API error: ${response.status} ${await response.text()}`);
+      const responseText = await response.text();
+      logger.error(`Release API error: ${response.status} ${responseText}`);
+      throw new Error(`Release API error: ${response.status} ${responseText}`);
     }
-    const data = await response.json();
-    const tagName = data.tag_name?.trim();
+
+    return (await response.json()) as LatestRelease;
+  } catch (error) {
+    logger.error('Error fetching latest release:', error);
+    return null;
+  }
+}
+
+export async function getLatestVersionFromGithub(): Promise<string | null> {
+  const latestRelease = await fetchLatestRelease();
+  try {
+    const tagName = latestRelease?.tag_name?.trim();
     if (!tagName) {
       return null;
     }
     return tagName.startsWith('v') ? tagName.slice(1) : tagName;
   } catch (error) {
-    logger.error('Error fetching latest version from GitHub:', error);
+    logger.error('Error parsing latest version from release:', error);
     return null;
   }
+}
+
+async function getLatestBinaryDownloadUrl(): Promise<string | null> {
+  const latestRelease = await fetchLatestRelease();
+  const binaryAsset = latestRelease?.assets?.find((asset) => asset.name === 'gallery-dl.bin');
+
+  return binaryAsset?.browser_download_url ?? null;
 }
 
 export async function downloadAndInstallBinary(): Promise<boolean> {
   logger.info('Downloading latest gallery-dl binary...');
   const TEMP_BIN_FILE_PATH = `${PATHS.BIN_FILE}.tmp`;
   try {
-    const response: Response = await fetch(GITHUB.BINARY_DOWNLOAD_URL);
+    const downloadUrl = await getLatestBinaryDownloadUrl();
+
+    if (!downloadUrl) {
+      throw new Error('No gallery-dl.bin asset found in latest release.');
+    }
+
+    const response: Response = await fetch(downloadUrl);
     logger.info('Download response:', response.status, response.statusText);
-    logger.info('Github download url', GITHUB.BINARY_DOWNLOAD_URL);
+    logger.info('Binary download url', downloadUrl);
     if (!response.ok || !response.body) {
       throw new Error(`Download failed: ${response.status} ${response.statusText}`);
     }

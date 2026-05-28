@@ -159,7 +159,9 @@
       <span class="font-medium text-foreground">Source:</span>
       <span class="text-foreground">
         <a
-          href="https://github.com/{versionState.source.user}/{versionState.source.repo}"
+          href={versionState.source.provider === 'codeberg'
+            ? `https://codeberg.org/${versionState.source.user}/${versionState.source.repo}`
+            : `https://github.com/${versionState.source.user}/${versionState.source.repo}`}
           target="_blank"
           rel="noopener noreferrer"
           class="text-link hover:underline"

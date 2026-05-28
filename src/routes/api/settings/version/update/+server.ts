@@ -36,7 +36,7 @@ export const POST: RequestHandler = async (): Promise<Response> => {
       versionInfo.latestAvailable ?? (await getLatestVersionFromGithub());
 
     if (!latestVersionFromGithub) {
-      return createApiError('Could not determine latest version from GitHub.', 500);
+      return createApiError('Could not determine latest version from release source.', 500);
     }
 
     // Only skip the download if the binary actually exists on disk AND the version is already current

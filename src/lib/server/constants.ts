@@ -13,6 +13,8 @@ import { arch } from 'node:os';
 
 const isArm64 = arch() === 'arm64';
 
+export type ReleaseProvider = 'github' | 'codeberg';
+
 function getCwd(): string {
   if (typeof process === 'undefined' || !process.cwd) {
     return '.';
@@ -69,6 +71,9 @@ export const GITHUB = {
   get IS_ARM64() {
     return isArm64;
   },
+  get ACTIVE_PROVIDER(): ReleaseProvider {
+    return isArm64 ? 'github' : 'codeberg';
+  },
   get ACTIVE_USER() {
     return isArm64 ? this.ARM64_USER : this.USER;
   },
@@ -76,10 +81,11 @@ export const GITHUB = {
     return isArm64 ? this.ARM64_REPO : this.REPO;
   },
   get LATEST_RELEASE_URL() {
+    if (this.ACTIVE_PROVIDER === 'codeberg') {
+      return `https://codeberg.org/api/v1/repos/${this.ACTIVE_USER}/${this.ACTIVE_REPO}/releases/latest`;
+    }
+
     return `https://api.github.com/repos/${this.ACTIVE_USER}/${this.ACTIVE_REPO}/releases/latest`;
-  },
-  get BINARY_DOWNLOAD_URL() {
-    return `https://github.com/${this.ACTIVE_USER}/${this.ACTIVE_REPO}/releases/latest/download/gallery-dl.bin`;
   },
 } as const;
 
