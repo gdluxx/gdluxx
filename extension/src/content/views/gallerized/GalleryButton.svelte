@@ -10,13 +10,15 @@
 
 <script lang="ts">
   import type { GallerizedStore } from '#stores/gallerizedStore.svelte';
+  import type { GalleryDisplayConfig } from '#src/content/types';
 
-  const { store }: { store: GallerizedStore } = $props();
+  const { store, displayConfig }: { store: GallerizedStore; displayConfig: GalleryDisplayConfig } =
+    $props();
 
-  const corner = $derived(store.settings?.defaultConfig.gallery.buttonCorner ?? 'bottom-right');
+  const corner = $derived(displayConfig.buttonCorner);
   const vEdge = $derived(corner.startsWith('top') ? 'top' : 'bottom');
   const hEdge = $derived(corner.endsWith('left') ? 'left' : 'right');
-  const thumbSizes = $derived(store.settings?.defaultConfig.gallery.thumbSizes ?? [150, 200, 300]);
+  const thumbSizes = $derived(displayConfig.thumbSizes);
 </script>
 
 <div

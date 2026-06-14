@@ -43,8 +43,18 @@ export function extractAll(startSelector = '', endSelector = ''): ExtractResult 
   };
 
   if (meta.rangeApplied) {
-    const start = startSelector ? document.querySelector(startSelector) : null;
-    const end = endSelector ? document.querySelector(endSelector) : null;
+    let start: Element | null = null;
+    let end: Element | null = null;
+    try {
+      start = startSelector ? document.querySelector(startSelector) : null;
+    } catch {
+      // invalid CSS selector, treat as not found
+    }
+    try {
+      end = endSelector ? document.querySelector(endSelector) : null;
+    } catch {
+      // invalid CSS selector,treat as not found
+    }
     if (startSelector) meta.startFound = !!start;
     if (endSelector) meta.endFound = !!end;
 

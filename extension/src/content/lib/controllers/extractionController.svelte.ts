@@ -8,15 +8,16 @@
  * as published by the Free Software Foundation.
  */
 
-import type { AppTab } from '#src/content/types';
+import type { AppTab, ExtractionConfig } from '#src/content/types';
 import type { SelectionStore } from '#stores/selectionStore.svelte';
 import { extractAll } from '#utils/extract';
+import { discoverImages } from '#utils/gallerizedUtils';
 
 export function createExtractionController(
   selection: SelectionStore,
   clearSubstitutionModifications: () => void,
   getActiveTab: () => AppTab,
-  getSelectors: () => { startSel: string; endSel: string },
+  getExtractionConfig: () => ExtractionConfig,
 ) {
   let links = $state<string[]>([]);
   let images = $state<string[]>([]);
@@ -25,34 +26,51 @@ export function createExtractionController(
   let rangeHint = $state('');
 
   function populate() {
-    const { startSel, endSel } = getSelectors();
-    const {
-      links: l,
-      images: i,
-      linkCounts: lc,
-      imageCounts: ic,
-      meta,
-    } = extractAll(startSel.trim(), endSel.trim());
-    links = l;
-    images = i;
-    linkCounts = lc;
-    imageCounts = ic;
-    selection.selectNone();
-    clearSubstitutionModifications();
-    if (meta.rangeApplied) {
-      if (!meta.startFound && !meta.endFound) {
-        rangeHint = 'Range: selectors not found';
-      } else if (!meta.startFound) {
-        rangeHint = 'Range: start selector not found';
-      } else if (!meta.endFound) {
-        rangeHint = 'Range: end selector not found';
-      } else if (meta.startBeforeEnd === false) {
-        rangeHint = 'Range: start appears after end';
+    const config = getExtractionConfig();
+
+    if (config.mode === 'range') {
+      const {
+        links: l,
+        images: i,
+        linkCounts: lc,
+        imageCounts: ic,
+        meta,
+      } = extractAll(config.startSelector.trim(), config.endSelector.trim());
+      links = l;
+      images = i;
+      linkCounts = lc;
+      imageCounts = ic;
+      selection.selectNone();
+      clearSubstitutionModifications();
+      if (meta.rangeApplied) {
+        if (!meta.startFound && !meta.endFound) {
+          rangeHint = 'Range: selectors not found';
+        } else if (!meta.startFound) {
+          rangeHint = 'Range: start selector not found';
+        } else if (!meta.endFound) {
+          rangeHint = 'Range: end selector not found';
+        } else if (meta.startBeforeEnd === false) {
+          rangeHint = 'Range: start appears after end';
+        } else {
+          rangeHint = `Range: ${meta.inRangeAnchors} links, ${meta.inRangeImages} images scanned`;
+        }
       } else {
-        rangeHint = `Range: ${meta.inRangeAnchors} links, ${meta.inRangeImages} images scanned`;
+        rangeHint = '';
       }
     } else {
+      // targeted mode — images only, no links
+      const discovered = discoverImages(config);
+      const ic: Record<string, number> = {};
+      for (const url of discovered) {
+        ic[url] = (ic[url] ?? 0) + 1;
+      }
+      links = [];
+      images = discovered;
+      linkCounts = {};
+      imageCounts = ic;
       rangeHint = '';
+      selection.selectNone();
+      clearSubstitutionModifications();
     }
   }
 

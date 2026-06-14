@@ -15,8 +15,7 @@ import type { DisplayMode } from '#src/content/types';
 
 const THEME_KEY = 'gdluxx_us_theme';
 const DISPLAY_MODE_KEY = 'gdluxx_us_display_mode';
-const IGNORE_SESSION_KEY = 'gdluxx_us_ignore_profiles';
-const IGNORE_SUB_KEY = 'gdluxx_ignored_sub_profiles';
+const IGNORE_EXTRACTION_KEY = 'gdluxx_ignored_extraction_profiles';
 const CUSTOM_DIR_ENABLED_KEY = 'customDirectory_enabled';
 const CUSTOM_DIR_VALUE_KEY = 'customDirectory_value';
 const SITE_DIR_ENABLED_KEY = 'siteDirectory_enabled';
@@ -45,31 +44,10 @@ export async function persistDisplayModePreference(mode: DisplayMode): Promise<v
   await setValue(DISPLAY_MODE_KEY, mode);
 }
 
-export function readIgnoredProfileIds(): Set<string> {
-  if (typeof window === 'undefined') return new Set<string>();
-  try {
-    const raw = window.sessionStorage.getItem(IGNORE_SESSION_KEY);
-    if (!raw) return new Set<string>();
-    const parsed = JSON.parse(raw) as string[];
-    return new Set(parsed);
-  } catch {
-    return new Set<string>();
-  }
-}
-
-export function persistIgnoredProfileIds(ids: Set<string>): void {
-  if (typeof window === 'undefined') return;
-  try {
-    window.sessionStorage.setItem(IGNORE_SESSION_KEY, JSON.stringify(Array.from(ids)));
-  } catch {
-    // Silently fail to avoid breaking overlay flow
-  }
-}
-
-export function readIgnoredSubProfileIds(): ReadonlySet<string> {
+export function readIgnoredExtractionProfileIds(): ReadonlySet<string> {
   if (typeof window === 'undefined') return new Set();
   try {
-    const raw = window.localStorage.getItem(IGNORE_SUB_KEY);
+    const raw = window.sessionStorage.getItem(IGNORE_EXTRACTION_KEY);
     if (!raw) return new Set();
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return new Set();
@@ -79,12 +57,12 @@ export function readIgnoredSubProfileIds(): ReadonlySet<string> {
   }
 }
 
-export function persistIgnoredSubProfileIds(ids: ReadonlySet<string>): void {
+export function persistIgnoredExtractionProfileIds(ids: ReadonlySet<string>): void {
   if (typeof window === 'undefined') return;
   try {
-    window.localStorage.setItem(IGNORE_SUB_KEY, JSON.stringify(Array.from(ids)));
-  } catch (error) {
-    console.error('Failed to persist ignored substitution profiles', error);
+    window.sessionStorage.setItem(IGNORE_EXTRACTION_KEY, JSON.stringify(Array.from(ids)));
+  } catch {
+    // Silently fail to avoid breaking overlay flow
   }
 }
 

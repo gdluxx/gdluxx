@@ -12,15 +12,19 @@ import type { Handle } from '@sveltejs/kit';
 import { json, redirect } from '@sveltejs/kit';
 import { auth } from '$lib/server/auth/better-auth';
 
-const publicRoutes = [
-  '/auth/login',
-  '/auth/setup',
-  '/api/auth',
+const publicRoutes = ['/auth/login', '/auth/setup', '/api/auth'];
+
+const extensionApiRoutes = [
   '/api/extension/external',
+  '/api/extension/extraction',
   '/api/extension/profiles',
   '/api/extension/subs',
   '/api/extension/ping',
 ];
+
+function isExtensionApiRoute(pathname: string): boolean {
+  return extensionApiRoutes.some((route) => pathname === route);
+}
 
 async function getUserCount(): Promise<number> {
   try {
@@ -62,7 +66,9 @@ export const handle: Handle = async ({ event, resolve }) => {
   }
 
   // Skip auth for browser extension API endpoint
-  const isPublicRoute = publicRoutes.some((route) => event.url.pathname.startsWith(route));
+  const isPublicRoute =
+    publicRoutes.some((route) => event.url.pathname.startsWith(route)) ||
+    isExtensionApiRoute(event.url.pathname);
 
   if (!isPublicRoute) {
     const userCount = await getUserCount();
@@ -95,12 +101,7 @@ export const handle: Handle = async ({ event, resolve }) => {
   }
 
   // CORS for browser extension endpoint
-  if (
-    event.url.pathname === '/api/extension/external' ||
-    event.url.pathname === '/api/extension/profiles' ||
-    event.url.pathname === '/api/extension/subs' ||
-    event.url.pathname === '/api/extension/ping'
-  ) {
+  if (isExtensionApiRoute(event.url.pathname)) {
     const origin = event.request.headers.get('origin');
 
     // Determine appropriate Access-Control-Allow-Origin value

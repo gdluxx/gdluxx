@@ -8,8 +8,17 @@
  * as published by the Free Software Foundation.
  */
 
-import type { ProfilesBundle } from '#src/content/lib/utils/storageProfiles';
-import type { SubsBundle } from '#src/content/lib/utils/storageSubstitution';
+import type { ExtractionBundle } from '#src/content/types';
+
+export interface ProfilesBundle {
+  version: number;
+  profiles: Record<string, unknown>;
+}
+
+export interface SubsBundle {
+  version: number;
+  profiles: Record<string, unknown>;
+}
 
 export interface ProxyApiResult<T = unknown> {
   success: boolean;
@@ -33,6 +42,15 @@ export interface SubBackupData {
   syncedBy: string | null;
   updatedAt: number | null;
 }
+
+export interface ExtractionBackupData {
+  hasBackup: boolean;
+  bundle: ExtractionBundle;
+  profileCount: number;
+  syncedBy: string | null;
+  updatedAt: number | null;
+}
+
 interface BatchUrlResult {
   jobId?: string;
   url: string;
@@ -54,6 +72,7 @@ const COMMAND_ENDPOINT = '/api/extension/external';
 const PING_ENDPOINT = '/api/extension/ping';
 const PROFILE_BACKUP_ENDPOINT = '/api/extension/profiles';
 const SUB_BACKUP_ENDPOINT = '/api/extension/subs';
+const EXTRACTION_BACKUP_ENDPOINT = '/api/extension/extraction';
 
 function ensureHttpScheme(url: string): string {
   if (url.startsWith('http://') || url.startsWith('https://')) {
@@ -483,6 +502,154 @@ export async function proxySubsDelete(
       message: deleted
         ? 'Removed substitution profile backup from gdluxx'
         : 'No substitution backup existed on gdluxx',
+    };
+  } catch (error) {
+    return networkError(error);
+  }
+}
+
+export async function proxyExtractionGet(
+  serverUrl: string,
+  apiKey: string,
+): Promise<ProxyApiResult<ExtractionBackupData>> {
+  try {
+    const response = await fetch(buildUrl(serverUrl, EXTRACTION_BACKUP_ENDPOINT), {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+      },
+    });
+
+    const payload = await parseJsonSafe<{
+      success?: boolean;
+      error?: string;
+      data?: ExtractionBackupData;
+    }>(response);
+
+    if (!response.ok) {
+      if (response.status === 401 || response.status === 403) {
+        return {
+          success: false,
+          error: payload?.error ?? 'Invalid API key',
+        };
+      }
+      return {
+        success: false,
+        error: payload?.error ?? `Server error: ${response.status}`,
+      };
+    }
+
+    if (!payload?.success || !payload.data) {
+      return {
+        success: false,
+        error: payload?.error ?? 'Failed to load extraction backup',
+      };
+    }
+
+    const count = payload.data.profileCount;
+    return {
+      success: true,
+      data: payload.data,
+      message: payload.data.hasBackup
+        ? `Found ${count} extraction profile${count === 1 ? '' : 's'} on gdluxx`
+        : 'No extraction backup found on server',
+    };
+  } catch (error) {
+    return networkError(error);
+  }
+}
+
+export async function proxyExtractionPut(
+  serverUrl: string,
+  apiKey: string,
+  bundle: ExtractionBundle,
+  syncedBy?: string,
+): Promise<ProxyApiResult<ExtractionBackupData>> {
+  try {
+    const response = await fetch(buildUrl(serverUrl, EXTRACTION_BACKUP_ENDPOINT), {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({ bundle, syncedBy }),
+    });
+
+    const payload = await parseJsonSafe<{
+      success?: boolean;
+      error?: string;
+      data?: ExtractionBackupData;
+    }>(response);
+
+    if (!response.ok) {
+      if (response.status === 401 || response.status === 403) {
+        return {
+          success: false,
+          error: payload?.error ?? 'Invalid API key',
+        };
+      }
+      return {
+        success: false,
+        error: payload?.error ?? `Server error: ${response.status}`,
+      };
+    }
+
+    if (!payload?.success || !payload.data) {
+      return {
+        success: false,
+        error: payload?.error ?? 'Failed to save extraction backup',
+      };
+    }
+
+    const count = payload.data.profileCount;
+    return {
+      success: true,
+      data: payload.data,
+      message: `Backed up ${count} extraction profile${count === 1 ? '' : 's'} to gdluxx`,
+    };
+  } catch (error) {
+    return networkError(error);
+  }
+}
+
+export async function proxyExtractionDelete(
+  serverUrl: string,
+  apiKey: string,
+): Promise<ProxyApiResult<DeleteResponse>> {
+  try {
+    const response = await fetch(buildUrl(serverUrl, EXTRACTION_BACKUP_ENDPOINT), {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+      },
+    });
+
+    const payload = await parseJsonSafe<{
+      success?: boolean;
+      error?: string;
+      data?: DeleteResponse;
+    }>(response);
+
+    if (!response.ok) {
+      if (response.status === 401 || response.status === 403) {
+        return {
+          success: false,
+          error: payload?.error ?? 'Invalid API key',
+        };
+      }
+      return {
+        success: false,
+        error: payload?.error ?? `Server error: ${response.status}`,
+      };
+    }
+
+    const deleted = payload?.data?.deleted ?? false;
+    return {
+      success: true,
+      data: { deleted },
+      message: deleted
+        ? 'Removed extraction profile backup from gdluxx'
+        : 'No extraction backup existed on gdluxx',
     };
   } catch (error) {
     return networkError(error);

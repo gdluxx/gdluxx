@@ -82,16 +82,16 @@
     </button>
     <button
       class="text-base-content/70 hover:text-base-content flex cursor-pointer items-center gap-2 border-b-2 border-transparent px-4 py-3 text-sm transition-all duration-200"
-      class:border-b-primary={activeTab === 'gallerized'}
-      class:text-primary={activeTab === 'gallerized'}
-      class:font-semibold={activeTab === 'gallerized'}
-      onclick={() => select('gallerized')}
+      class:border-b-primary={activeTab === 'extraction-profiles'}
+      class:text-primary={activeTab === 'extraction-profiles'}
+      class:font-semibold={activeTab === 'extraction-profiles'}
+      onclick={() => select('extraction-profiles')}
     >
       <Icon
         iconName="gallery"
         size={18}
       />
-      Gallerized
+      Extraction Profiles
     </button>
   </div>
 </div>

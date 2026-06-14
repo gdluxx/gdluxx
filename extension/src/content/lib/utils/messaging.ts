@@ -19,6 +19,10 @@ export {
   saveSubBackup,
   deleteSubBackup,
   type SubBackupPayload,
+  fetchExtractionBackup,
+  saveExtractionBackup,
+  deleteExtractionBackup,
+  type ExtractionBackupPayload,
   type ApiResult,
 } from './gdluxxApi';
 

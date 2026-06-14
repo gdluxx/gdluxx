@@ -9,8 +9,8 @@
  */
 
 import { ensureOrigins, syncOverlayRegistrationFromPermissions } from '#src/background/permissions';
-import type { ProfilesBundle } from '#src/content/lib/utils/storageProfiles';
-import type { SubsBundle } from '#src/content/lib/utils/storageSubstitution';
+import type { ProfilesBundle, SubsBundle } from '#src/background/apiProxy';
+import type { ExtractionBundle } from '#src/content/types';
 import {
   proxyPing,
   proxyCommand,
@@ -20,6 +20,9 @@ import {
   proxySubsGet,
   proxySubsPut,
   proxySubsDelete,
+  proxyExtractionGet,
+  proxyExtractionPut,
+  proxyExtractionDelete,
   type ProxyApiResult,
 } from '#src/background/apiProxy';
 
@@ -96,6 +99,26 @@ interface DeleteSubsMessage {
   apiKey: string;
 }
 
+interface GetExtractionMessage {
+  action: 'getExtraction';
+  serverUrl: string;
+  apiKey: string;
+}
+
+interface SaveExtractionMessage {
+  action: 'saveExtraction';
+  serverUrl: string;
+  apiKey: string;
+  bundle: ExtractionBundle;
+  syncedBy?: string;
+}
+
+interface DeleteExtractionMessage {
+  action: 'deleteExtraction';
+  serverUrl: string;
+  apiKey: string;
+}
+
 interface ApiResponse {
   success: boolean;
   message: string;
@@ -110,7 +133,10 @@ type ProxyMessage =
   | DeleteProfilesMessage
   | GetSubsMessage
   | SaveSubsMessage
-  | DeleteSubsMessage;
+  | DeleteSubsMessage
+  | GetExtractionMessage
+  | SaveExtractionMessage
+  | DeleteExtractionMessage;
 
 type MessageType =
   | SendUrlMessage
@@ -306,6 +332,28 @@ export default defineBackground((): void => {
         case 'deleteSubs':
           (async () => {
             sendResponse(await proxySubsDelete(message.serverUrl, message.apiKey));
+          })();
+          return true;
+        case 'getExtraction':
+          (async () => {
+            sendResponse(await proxyExtractionGet(message.serverUrl, message.apiKey));
+          })();
+          return true;
+        case 'saveExtraction':
+          (async () => {
+            sendResponse(
+              await proxyExtractionPut(
+                message.serverUrl,
+                message.apiKey,
+                message.bundle,
+                message.syncedBy,
+              ),
+            );
+          })();
+          return true;
+        case 'deleteExtraction':
+          (async () => {
+            sendResponse(await proxyExtractionDelete(message.serverUrl, message.apiKey));
           })();
           return true;
         default:

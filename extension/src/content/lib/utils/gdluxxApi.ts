@@ -8,14 +8,22 @@
  * as published by the Free Software Foundation.
  */
 
-import type { ProfileBackupData, SubBackupData, ProxyApiResult } from '#src/background/apiProxy';
+import type {
+  ProfileBackupData,
+  SubBackupData,
+  ExtractionBackupData,
+  ProxyApiResult,
+} from '#src/background/apiProxy';
 import { loadSettings, validateServerUrl } from '#utils/persistence';
-import type { ProfilesBundle } from './storageProfiles';
-import type { SubsBundle } from './storageSubstitution';
+import type { ExtractionBundle } from '#src/content/types';
+
+type ProfilesBundle = { version: number; profiles: Record<string, unknown> };
+type SubsBundle = { version: number; profiles: Record<string, unknown> };
 
 export type ApiResult<T = unknown> = ProxyApiResult<T>;
 export type ProfileBackupPayload = ProfileBackupData;
 export type SubBackupPayload = SubBackupData;
+export type ExtractionBackupPayload = ExtractionBackupData;
 
 type DeletePayload = { deleted: boolean };
 
@@ -215,6 +223,70 @@ export async function deleteSubBackup(
 
   return sendBackgroundRequest<DeletePayload>({
     action: 'deleteSubs',
+    serverUrl,
+    apiKey,
+  });
+}
+
+export async function fetchExtractionBackup(
+  serverUrl: string,
+  apiKey: string,
+): Promise<ApiResult<ExtractionBackupPayload>> {
+  if (!serverUrl || !apiKey) {
+    return { success: false, error: 'Server URL and API key are required' };
+  }
+
+  const validation = validateServerUrl(serverUrl);
+  if (!validation.valid) {
+    return { success: false, error: validation.error };
+  }
+
+  return sendBackgroundRequest<ExtractionBackupPayload>({
+    action: 'getExtraction',
+    serverUrl,
+    apiKey,
+  });
+}
+
+export async function saveExtractionBackup(
+  serverUrl: string,
+  apiKey: string,
+  bundle: ExtractionBundle,
+  syncedBy?: string,
+): Promise<ApiResult<ExtractionBackupPayload>> {
+  if (!serverUrl || !apiKey) {
+    return { success: false, error: 'Server URL and API key are required' };
+  }
+
+  const validation = validateServerUrl(serverUrl);
+  if (!validation.valid) {
+    return { success: false, error: validation.error };
+  }
+
+  return sendBackgroundRequest<ExtractionBackupPayload>({
+    action: 'saveExtraction',
+    serverUrl,
+    apiKey,
+    bundle,
+    syncedBy,
+  });
+}
+
+export async function deleteExtractionBackup(
+  serverUrl: string,
+  apiKey: string,
+): Promise<ApiResult<DeletePayload>> {
+  if (!serverUrl || !apiKey) {
+    return { success: false, error: 'Server URL and API key are required' };
+  }
+
+  const validation = validateServerUrl(serverUrl);
+  if (!validation.valid) {
+    return { success: false, error: validation.error };
+  }
+
+  return sendBackgroundRequest<DeletePayload>({
+    action: 'deleteExtraction',
     serverUrl,
     apiKey,
   });

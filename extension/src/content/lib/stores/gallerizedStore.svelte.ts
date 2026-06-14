@@ -8,18 +8,21 @@
  * as published by the Free Software Foundation.
  */
 
-import { loadGallerizedSettings } from '#utils/gallerizedStorage';
-import { resolveConfig, discoverImages } from '#utils/gallerizedUtils';
-import type { GallerizedSettings } from '#src/content/types';
+import { discoverImages } from '#utils/gallerizedUtils';
+import { applySubRules } from '#utils/substitution';
+import type { ExtractionConfig } from '#src/content/types';
+import type { SubRule } from '#utils/substitution';
 
-export function createGallerizedStore() {
+export function createGallerizedStore(
+  getExtraction: () => ExtractionConfig,
+  getRules: () => SubRule[],
+) {
   let urls = $state<string[] | null>(null);
   let lbIndex = $state(0);
   let open = $state(false);
   let lightboxOpen = $state(false);
   let activeThumbSize = $state(200);
   let sdOpen = $state(false);
-  let settings = $state<GallerizedSettings | null>(null);
 
   return {
     get urls() {
@@ -40,25 +43,18 @@ export function createGallerizedStore() {
     get sdOpen() {
       return sdOpen;
     },
-    get settings() {
-      return settings;
-    },
-
-    async loadSettings(): Promise<void> {
-      settings = await loadGallerizedSettings();
-      activeThumbSize = settings.defaultConfig.gallery.thumbSizes[1];
-    },
-
-    updateSettings(s: GallerizedSettings): void {
-      settings = s;
-      activeThumbSize = s.defaultConfig.gallery.thumbSizes[1];
-    },
 
     toggleGallery(): void {
-      if (!settings) return;
       if (urls === null) {
-        const config = resolveConfig(settings.profiles, settings.defaultConfig);
-        urls = discoverImages(config);
+        const discovered = discoverImages(getExtraction());
+        const rules = getRules();
+        urls =
+          rules.length > 0
+            ? discovered.map((url) => {
+                const result = applySubRules(url, rules);
+                return result.modified ? result.modifiedUrl : url;
+              })
+            : discovered;
       }
       open = !open;
       if (!open) lightboxOpen = false;
@@ -93,6 +89,10 @@ export function createGallerizedStore() {
 
     closeSd(): void {
       sdOpen = false;
+    },
+
+    clearUrls(): void {
+      urls = null;
     },
   };
 }

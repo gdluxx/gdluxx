@@ -10,102 +10,118 @@
 
 <script lang="ts">
   import { AdvancedSection, Info } from '#components/ui';
-  import SubInputs from './SubInputs.svelte';
+  import ContainerModeTab from './ContainerModeTab.svelte';
+  import RuleList from './RuleList.svelte';
   import SubPreview from './SubPreview.svelte';
-  import SubProfileControls from './SubProfileControls.svelte';
-  import SubQuickApply from './SubQuickApply.svelte';
-  import type { ProfileScope } from '#utils/storageProfiles';
-  import type { SavedSubProfile } from '#utils/storageSubstitution';
+  import ProfileControls from './ProfileControls.svelte';
+  import QuickApply from './QuickApply.svelte';
+  import type {
+    ContainerSource,
+    ExtractionConfig,
+    ExtractionProfile,
+    ImageSource,
+  } from '#src/content/types';
+  import type { ProfileScope } from '#utils/storageExtractionProfiles';
   import { previewSubs, type SubPreviewItem, type SubRule } from '#utils/substitution';
 
-  interface SubSectionProps {
+  interface ExtractionSectionProps {
     expanded?: boolean;
+    extraction?: ExtractionConfig;
     rules?: SubRule[];
-    hasActiveSubs?: boolean;
-    hasSubRules?: boolean;
     profileScope?: ProfileScope;
     applyToPreview?: boolean;
-    applyDefaultSub?: boolean;
-    activeSubProfileId?: string | null;
+    hasActiveContent?: boolean;
+    hasActiveProfile?: boolean;
     activeProfileDiffers?: boolean;
-    subProfileStatusMessage?: string | null;
+    statusMessage?: string | null;
     autoAppliedProfile?: boolean;
-    isSavingProfile?: boolean;
-    hostProfiles?: SavedSubProfile[];
+    isSaving?: boolean;
+    hostProfiles?: ExtractionProfile[];
+    rangeHint?: string | null;
     storageWarning?: string | null;
     modifiedUrls?: ReadonlySet<string>;
     selectedItems?: ReadonlySet<string>;
     previewCount?: number;
+
+    onmodechange?: (mode: 'range' | 'targeted') => void;
+    onstartselectorchange?: (value: string) => void;
+    onendselectorchange?: (value: string) => void;
+    oncontainersourcechange?: (source: ContainerSource) => void;
+    onimagesourcechange?: (source: ImageSource) => void;
+
     onapply?: () => void;
     onreset?: () => void;
+
     onsaveprofile?: () => void;
     ondeleteprofile?: () => void;
     onignoreprofile?: () => void;
     onscopechange?: (scope: ProfileScope) => void;
     onapplyprofile?: (id: string) => void;
+    onapplytopreviewchange?: (value: boolean) => void;
+
     onshowscopehelp?: () => void;
-    onapplydefaultchange?: (value: boolean) => void;
+    onshowselectorhelp?: () => void;
     onshowregexhelp?: () => void;
   }
 
   let {
     expanded = $bindable(false),
+    extraction = $bindable<ExtractionConfig>({ mode: 'range', startSelector: '', endSelector: '' }),
     rules = $bindable<SubRule[]>([]),
-    hasActiveSubs = false,
-    hasSubRules = false,
     profileScope = $bindable<ProfileScope>('host'),
     applyToPreview = $bindable(false),
-    applyDefaultSub = $bindable(true),
-    activeSubProfileId = null,
+    hasActiveContent = false,
+    hasActiveProfile = false,
     activeProfileDiffers = false,
-    subProfileStatusMessage = null,
+    statusMessage = null,
     autoAppliedProfile = false,
-    isSavingProfile = false,
-    hostProfiles = [] as SavedSubProfile[],
+    isSaving = false,
+    hostProfiles = [],
+    rangeHint = null,
     storageWarning = null,
     modifiedUrls = new Set<string>(),
     selectedItems = new Set<string>(),
     previewCount = 0,
+
+    onmodechange,
+    onstartselectorchange,
+    onendselectorchange,
+    oncontainersourcechange,
+    onimagesourcechange,
+
     onapply,
     onreset,
+
     onsaveprofile,
     ondeleteprofile,
     onignoreprofile,
     onscopechange,
     onapplyprofile,
-    onshowscopehelp,
-    onapplydefaultchange,
-    onshowregexhelp,
-  }: SubSectionProps = $props();
+    onapplytopreviewchange,
 
-  let previewItems = $state<SubPreviewItem[]>([]);
+    onshowscopehelp,
+    onshowselectorhelp,
+    onshowregexhelp,
+  }: ExtractionSectionProps = $props();
 
   const selectedCount = $derived(selectedItems.size);
   const modifiedCount = $derived(modifiedUrls.size);
-  const hasActiveProfile = $derived(!!activeSubProfileId);
 
-  // Track if all rules are enabled
-  const allRulesEnabled = $derived(
-    rules.length > 0 && rules.every((rule) => rule.enabled !== false),
-  );
+  let previewItems = $state<SubPreviewItem[]>([]);
 
   $effect(() => {
-    if (!hasActiveSubs || selectedItems.size === 0) {
+    if (!selectedItems.size) {
       previewItems = [];
       return;
     }
     previewItems = previewSubs(Array.from(selectedItems), rules, 5);
   });
-
-  function handleToggleAllRules(enabled: boolean) {
-    rules = rules.map((rule) => ({ ...rule, enabled }));
-  }
 </script>
 
 <AdvancedSection
-  title="String Substitution"
+  title="Extraction"
   bind:expanded
-  hasActiveFilters={hasActiveSubs}
+  hasActiveFilters={hasActiveContent}
 >
   <div class="space-y-6">
     {#if storageWarning}
@@ -114,8 +130,21 @@
       </Info>
     {/if}
 
+    <ContainerModeTab
+      {extraction}
+      {rangeHint}
+      {onmodechange}
+      {onstartselectorchange}
+      {onendselectorchange}
+      {oncontainersourcechange}
+      {onimagesourcechange}
+      {onapply}
+      {onreset}
+      {onshowselectorhelp}
+    />
+
     <div class="pt-2">
-      <SubInputs
+      <RuleList
         bind:rules
         {onapply}
         {onreset}
@@ -123,27 +152,24 @@
       />
     </div>
 
-    <SubProfileControls
-      bind:profileScope
+    <ProfileControls
+      bind:scope={profileScope}
       bind:applyToPreview
-      bind:applyDefaultSub
-      {hasSubRules}
+      hasContent={hasActiveContent}
       {hasActiveProfile}
       {activeProfileDiffers}
-      {allRulesEnabled}
-      profileStatusMessage={subProfileStatusMessage}
+      {statusMessage}
       {autoAppliedProfile}
-      {isSavingProfile}
+      {isSaving}
       {onsaveprofile}
       {ondeleteprofile}
       {onignoreprofile}
       {onscopechange}
       {onshowscopehelp}
-      {onapplydefaultchange}
-      ontoggleallrules={handleToggleAllRules}
+      {onapplytopreviewchange}
     />
 
-    <SubQuickApply
+    <QuickApply
       {hostProfiles}
       {onapplyprofile}
     />
@@ -161,8 +187,8 @@
         soft
       >
         <span class="text-lg">
-          {modifiedCount} URL{modifiedCount === 1 ? '' : 's'} currently show modified values. Use “Reset
-          URLs” to restore the originals.
+          {modifiedCount} URL{modifiedCount === 1 ? '' : 's'} currently show modified values. Use "Reset
+          URLs" to restore the originals.
         </span>
       </Info>
     {/if}

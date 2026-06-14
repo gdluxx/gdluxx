@@ -9,9 +9,8 @@
  */
 
 export { default as AppearanceTab } from './AppearanceTab.svelte';
-export { default as GallerizedTab } from './GallerizedTab.svelte';
+export { default as ExtractionProfilesTab } from './ExtractionProfilesTab.svelte';
 export { default as GdluxxTab } from './GdluxxTab.svelte';
 export { default as KeyboardTab } from './KeyboardTab.svelte';
 export { default as PreviewTab } from './PreviewTab.svelte';
-export { default as ProfileManager } from './components/ProfileManager.svelte';
 export { default as SettingsTabs } from './SettingsTabs.svelte';

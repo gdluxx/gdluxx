@@ -8,13 +8,14 @@
  * as published by the Free Software Foundation.
  */
 
-import type { Settings } from './lib/utils/settings';
-import type { ProfileScope, SavedSelectorProfile } from './lib/utils/storageProfiles';
-import type { ProfileBackupPayload } from './lib/utils/gdluxxApi';
+import type { Settings } from '#utils/settings.ts';
+import type { ProfileScope } from '#utils/storageExtractionProfiles.ts';
+import type { ProfileBackupPayload } from '#utils/gdluxxApi.ts';
+import type { SubRule } from '#utils/substitution.ts';
 
 export type DisplayMode = 'modal' | 'fullscreen';
 export type AppTab = 'links' | 'images' | 'settings';
-export type SettingsTab = 'appearance' | 'gdluxx' | 'keyboard' | 'preview' | 'gallerized';
+export type SettingsTab = 'appearance' | 'gdluxx' | 'keyboard' | 'preview' | 'extraction-profiles';
 export type HoverPreviewMode = 'off' | 'small' | 'medium' | 'large';
 export type HotkeyString = string;
 
@@ -35,12 +36,6 @@ export interface AppInitializationResult {
   displayMode: DisplayMode;
 }
 
-export interface SelectorProfileContext {
-  scope: ProfileScope;
-  activeProfileId: string | null;
-  activeProfile: SavedSelectorProfile | null;
-}
-
 export interface BackupSyncResult {
   remote: RemoteBackupMeta | null;
   payload?: ProfileBackupPayload;
@@ -52,51 +47,66 @@ export interface GlobalEffectsConfig {
   saveProfile: () => Promise<void>;
 }
 
-// GALLERIZED
+// EXTRACTION PROFILES
 
-export interface GallerizedTransform {
-  find: string;
-  replace: string;
+export type { SubRule };
+
+export type ExtractionMode = 'range' | 'targeted';
+
+export interface RangeExtractionConfig {
+  mode: 'range';
+  startSelector: string;
+  endSelector: string;
 }
 
-export interface GallerizedContainerConfig {
-  selector: string | null;
-  begin: string | null;
-  end: string | null;
+export type ContainerSource =
+  | { via: 'selector'; selector: string }
+  | { via: 'string'; begin: string; end: string }
+  | { via: 'body' };
+
+export type ImageSource =
+  | { via: 'selector'; selector: string; attr: string }
+  | { via: 'string'; begin: string; end: string };
+
+export interface TargetedExtractionConfig {
+  mode: 'targeted';
+  container: ContainerSource;
+  images: ImageSource;
 }
 
-export interface GallerizedImagesConfig {
-  selector: string | null;
-  attr: string;
-  begin: string | null;
-  end: string | null;
-  transform: GallerizedTransform | GallerizedTransform[] | null;
-}
+export type ExtractionConfig = RangeExtractionConfig | TargetedExtractionConfig;
 
-export interface GallerizedGalleryConfig {
+export interface GalleryDisplayConfig {
   thumbSizes: [number, number, number];
   gap: number;
   border: number;
   buttonCorner: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
 }
 
-export interface GallerizedConfig {
-  container: GallerizedContainerConfig;
-  images: GallerizedImagesConfig;
-  gallery: GallerizedGalleryConfig;
+export interface ExtractionProfile {
+  id: string;
+  name?: string;
+  scope: ProfileScope;
+  host: string;
+  origin?: string;
+  path?: string;
+  extraction: ExtractionConfig;
+  rules: SubRule[];
+  applyToPreview: boolean;
+  autoApply: boolean;
+  gallery?: GalleryDisplayConfig;
+  createdAt: number;
+  updatedAt: number;
+  lastUsed?: number;
 }
 
-export interface GallerizedProfile {
-  key: string;
-  config: {
-    container?: Partial<GallerizedContainerConfig>;
-    images?: Partial<GallerizedImagesConfig>;
-    gallery?: Partial<GallerizedGalleryConfig>;
-  };
+export interface ExtractionBundle {
+  version: 1;
+  profiles: Record<string, ExtractionProfile>;
 }
 
-export interface GallerizedSettings {
-  enabled: boolean;
-  defaultConfig: GallerizedConfig;
-  profiles: GallerizedProfile[];
+export interface ActiveExtractionConfig {
+  extraction: ExtractionConfig;
+  rules: SubRule[];
+  applyToPreview: boolean;
 }

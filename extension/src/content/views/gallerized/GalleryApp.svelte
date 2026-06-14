@@ -10,14 +10,29 @@
 
 <script lang="ts">
   import { onMount } from 'svelte';
-  import browser from 'webextension-polyfill';
   import { createGallerizedStore } from '#stores/gallerizedStore.svelte';
-  import { GALLERIZED_STORAGE_KEY } from '#utils/gallerizedStorage';
+  import { createExtractionProfileStore } from '#stores/extractionProfileStore.svelte';
   import GalleryButton from './GalleryButton.svelte';
   import GalleryModal from './GalleryModal.svelte';
-  import type { GallerizedSettings } from '#src/content/types';
+  import type { GalleryDisplayConfig } from '#src/content/types';
 
-  const store = createGallerizedStore();
+  const extractionProfiles = createExtractionProfileStore();
+  const store = createGallerizedStore(
+    () => extractionProfiles.extraction,
+    () => extractionProfiles.rules,
+  );
+
+  const displayConfig: GalleryDisplayConfig = $derived(
+    extractionProfiles.activeProfile?.gallery ?? extractionProfiles.galleryDefaults,
+  );
+
+  // Invalidate cached URLs whenever extraction config or rules change so the
+  // next toggleGallery() always rediscovers with the current config.
+  $effect(() => {
+    void extractionProfiles.extraction;
+    void extractionProfiles.rules;
+    store.clearUrls();
+  });
 
   function handleKeydown(e: KeyboardEvent): void {
     if (!store.open) return;
@@ -39,35 +54,28 @@
     if (!insideSd) store.closeSd();
   }
 
-  function onStorageChanged(
-    changes: Record<string, browser.Storage.StorageChange>,
-    area: string,
-  ): void {
-    if (area !== 'local') return;
-    if (GALLERIZED_STORAGE_KEY in changes) {
-      const newSettings = changes[GALLERIZED_STORAGE_KEY].newValue as
-        | GallerizedSettings
-        | undefined;
-      if (newSettings) store.updateSettings(newSettings);
-    }
-  }
-
   onMount(async () => {
-    await store.loadSettings();
+    if (typeof window !== 'undefined') {
+      await extractionProfiles.initialize(window.location.href);
+    }
 
-    browser.storage.onChanged.addListener(onStorageChanged);
     document.addEventListener('keydown', handleKeydown);
     document.addEventListener('click', handleGlobalClick);
 
     return () => {
-      browser.storage.onChanged.removeListener(onStorageChanged);
       document.removeEventListener('keydown', handleKeydown);
       document.removeEventListener('click', handleGlobalClick);
     };
   });
 </script>
 
-<GalleryButton {store} />
+<GalleryButton
+  {store}
+  {displayConfig}
+/>
 {#if store.open}
-  <GalleryModal {store} />
+  <GalleryModal
+    {store}
+    {displayConfig}
+  />
 {/if}

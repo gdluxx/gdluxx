@@ -11,14 +11,16 @@
 <script lang="ts">
   import Lightbox from './Lightbox.svelte';
   import type { GallerizedStore } from '#stores/gallerizedStore.svelte';
+  import type { GalleryDisplayConfig } from '#src/content/types';
 
-  const { store }: { store: GallerizedStore } = $props();
+  const { store, displayConfig }: { store: GallerizedStore; displayConfig: GalleryDisplayConfig } =
+    $props();
 
   const urlCount = $derived(store.urls?.length ?? 0);
   const title = $derived(`Gallerized — ${urlCount} image${urlCount !== 1 ? 's' : ''}`);
   const thumbPx = $derived(`${store.activeThumbSize}px`);
-  const gapPx = $derived(`${store.settings?.defaultConfig.gallery.gap ?? 12}px`);
-  const borderPx = $derived(`${store.settings?.defaultConfig.gallery.border ?? 30}px`);
+  const gapPx = $derived(`${displayConfig.gap}px`);
+  const borderPx = $derived(`${displayConfig.border}px`);
 
   function onCellLoad(img: HTMLImageElement) {
     img.classList.remove('gz-loading');

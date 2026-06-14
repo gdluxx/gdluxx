@@ -9,14 +9,14 @@
   -->
 
 <script lang="ts">
-  import { describeProfile } from '#utils/formatters';
-  import type { SavedSelectorProfile } from '#utils/storageProfiles';
+  import { describeExtractionProfile } from '#utils/formatters';
+  import type { ExtractionProfile } from '#src/content/types';
 
   const {
     hostProfiles = [],
     onapplyprofile,
   }: {
-    hostProfiles: SavedSelectorProfile[];
+    hostProfiles?: ExtractionProfile[];
     onapplyprofile?: (profileId: string) => void;
   } = $props();
 
@@ -37,13 +37,16 @@
       class="select-bordered select select-xs focus:select-primary"
       bind:value={quickApplySelection}
       onchange={handleSelectionChange}
+      aria-label="Quick apply extraction profile"
     >
-      <option value="">Select a saved range…</option>
+      <option value="">Select a saved profile…</option>
       {#each hostProfiles as profile (profile.id)}
         <option value={profile.id}>
-          {describeProfile(profile)}
+          {describeExtractionProfile(profile)}
         </option>
       {/each}
     </select>
   </div>
+{:else}
+  <p class="text-base-content/50 text-xs">No extraction profiles for this host yet.</p>
 {/if}
