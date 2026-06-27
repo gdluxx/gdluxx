@@ -18,10 +18,10 @@
   import type { SiteConfig } from '$lib/server/siteConfigManager';
 
   const { data } = $props<{ data: PageData }>();
-  const { categories: _categories } = data;
+  const _categories = $derived(data.categories);
 
-  let configs = $state<SiteConfig[]>(data.configs || []);
-  let supportedSites = $state(data.supportedSites || []);
+  let configs = $state<SiteConfig[]>([]);
+  let supportedSites = $state<typeof data.supportedSites>([]);
   let showAddModal = $state(false);
   let editingConfig = $state<SiteConfig | null>(null);
   let isRefreshingSites = $state(false);
@@ -31,6 +31,11 @@
   let sortMode = $state<'alphabetical' | 'cli-options' | 'none'>('none');
   let isAlphabeticalAscending = $state(true);
   let isCLIOptionsAscending = $state(false);
+
+  $effect(() => {
+    configs = data.configs || [];
+    supportedSites = data.supportedSites || [];
+  });
 
   async function handleSaveConfig(configData: Partial<SiteConfig>) {
     try {

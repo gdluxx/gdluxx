@@ -40,7 +40,7 @@ export async function validateApiKey(providedKey: unknown): Promise<AuthResult> 
           id: result.key.id,
           name: result.key.name || 'Unknown',
           createdAt: new Date(result.key.createdAt).toISOString(),
-          userId: result.key.userId,
+          userId: result.key.referenceId,
         },
       };
     }

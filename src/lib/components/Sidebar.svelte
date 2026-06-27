@@ -9,6 +9,7 @@
   -->
 
 <script lang="ts">
+  import { SvelteSet } from 'svelte/reactivity';
   import { Icon } from '$lib/components';
   import { signOut } from '$lib/auth-client';
   import { toastStore } from '$lib/stores/toast';
@@ -39,16 +40,9 @@
     user,
   }: Props = $props();
 
-  let collapsed = $state(defaultCollapsed);
-  let expandedItems = $state<Set<string>>(new Set());
+  let collapsed = $derived(isMobile ? false : defaultCollapsed);
+  const expandedItems = new SvelteSet<string>();
   let activeItemId = $state<string>('');
-
-  // Don't allow collapse on mobile - mobile is handled by layout
-  $effect(() => {
-    if (isMobile) {
-      collapsed = false;
-    }
-  });
 
   function toggleSidebar() {
     if (!isMobile) {
@@ -62,7 +56,6 @@
     } else {
       expandedItems.add(itemId);
     }
-    expandedItems = new Set(expandedItems);
   }
 
   // Remove focus ring when user collapses/expands sidebar

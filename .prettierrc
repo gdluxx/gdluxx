@@ -21,7 +21,6 @@
       "options": {
         "parser": "svelte",
         "bracketSameLine": false,
-        "svelteStrictMode": false,
         "svelteIndentScriptAndStyle": true,
         "svelteAllowShorthand": true
       }

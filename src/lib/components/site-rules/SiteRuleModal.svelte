@@ -30,7 +30,7 @@
     onCancel,
   }: SaveSiteRuleModalProps = $props();
 
-  let selectedPattern = $state(detectedPatterns[0] ?? '');
+  let selectedPattern = $state('');
   let displayName = $state('');
   let isSaving = $state(false);
   let error = $state<string | null>(null);
@@ -51,10 +51,10 @@
     error = null;
 
     try {
-      const userOptions = new Map<string, string | number | boolean>();
+      const userOptions: Array<[string, string | number | boolean]> = [];
       for (const [key, optionData] of options) {
         if (optionData.source === 'user') {
-          userOptions.set(key, optionData.value);
+          userOptions.push([key, optionData.value]);
         }
       }
 
@@ -64,7 +64,7 @@
         body: JSON.stringify({
           site_pattern: selectedPattern,
           display_name: displayName.trim(),
-          cli_options: Array.from(userOptions.entries()),
+          cli_options: userOptions,
           enabled: true,
         }),
       });

@@ -9,7 +9,7 @@
  */
 
 import { betterAuth } from 'better-auth';
-import { apiKey } from 'better-auth/plugins';
+import { apiKey } from '@better-auth/api-key';
 import { join } from 'path';
 import { existsSync, readFileSync } from 'fs';
 import { v4 as uuidv4 } from 'uuid';
@@ -58,6 +58,9 @@ try {
     }
 
     const apiKeyTableInfo = db.pragma('table_info(apiKey)') as Array<{ name: string }>;
+    const hasApiKeyReferenceId = apiKeyTableInfo.some((col) => col.name === 'referenceId');
+    const hasApiKeyUserId = apiKeyTableInfo.some((col) => col.name === 'userId');
+    const hasApiKeyConfigId = apiKeyTableInfo.some((col) => col.name === 'configId');
 
     if (apiKeyTableInfo.length === 0) {
       // eslint-disable-next-line no-console
@@ -65,11 +68,12 @@ try {
       db.exec(`
         CREATE TABLE IF NOT EXISTS apiKey (
           id TEXT PRIMARY KEY,
+          configId TEXT NOT NULL DEFAULT 'default',
           name TEXT,
           start TEXT,
           prefix TEXT,
           key TEXT NOT NULL,
-          userId TEXT NOT NULL,
+          referenceId TEXT NOT NULL,
           refillInterval INTEGER,
           refillAmount INTEGER,
           lastRefillAt INTEGER,
@@ -85,12 +89,28 @@ try {
           updatedAt INTEGER NOT NULL DEFAULT (unixepoch() * 1000),
           permissions TEXT,
           metadata TEXT,
-          FOREIGN KEY (userId) REFERENCES user(id) ON DELETE CASCADE
+          FOREIGN KEY (referenceId) REFERENCES user(id) ON DELETE CASCADE
         );
         
-        CREATE INDEX IF NOT EXISTS idx_apiKey_userId ON apiKey(userId);
+        CREATE INDEX IF NOT EXISTS idx_apiKey_configId ON apiKey(configId);
+        CREATE INDEX IF NOT EXISTS idx_apiKey_referenceId ON apiKey(referenceId);
         CREATE INDEX IF NOT EXISTS idx_apiKey_key ON apiKey(key);
       `);
+    } else if (!hasApiKeyReferenceId) {
+      // eslint-disable-next-line no-console
+      console.log('Migrating API key table to better-auth referenceId column...');
+      db.exec('ALTER TABLE apiKey ADD COLUMN referenceId TEXT');
+      if (hasApiKeyUserId) {
+        db.exec('UPDATE apiKey SET referenceId = userId WHERE referenceId IS NULL');
+      }
+      db.exec('CREATE INDEX IF NOT EXISTS idx_apiKey_referenceId ON apiKey(referenceId)');
+    }
+
+    if (apiKeyTableInfo.length > 0 && !hasApiKeyConfigId) {
+      // eslint-disable-next-line no-console
+      console.log('Migrating API key table to add configId column...');
+      db.exec("ALTER TABLE apiKey ADD COLUMN configId TEXT NOT NULL DEFAULT 'default'");
+      db.exec('CREATE INDEX IF NOT EXISTS idx_apiKey_configId ON apiKey(configId)');
     }
   } else {
     // eslint-disable-next-line no-console

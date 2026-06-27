@@ -1,6 +1,24 @@
 packages:
   - .
 
+overrides:
+  '@codemirror/language': 6.12.4
+  '@codemirror/state': 6.7.0
+  '@codemirror/view': 6.43.3
+  basic-ftp: 5.3.1
+  cookie: 0.7.2
+  defu: 6.1.7
+  esbuild: 0.25.12
+  flatted: 3.4.2
+  handlebars: 4.7.9
+  ip-address: 10.1.1
+  mdast-util-to-hast: 13.2.1
+  postcss: 8.5.15
+  preact: 10.26.10
+  tar-fs: 2.1.4
+  vitepress>vite: 6.4.3
+  yaml: 1.10.3
+
 allowBuilds:
   '@homebridge/node-pty-prebuilt-multiarch': true
   '@prisma/client': true

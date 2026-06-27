@@ -32,7 +32,7 @@
 
   // Special handling for loading icon
   // Animation wasn't working otherwise
-  const isLoadingIcon = iconName === 'loading';
+  const isLoadingIcon = $derived(iconName === 'loading');
 </script>
 
 {#if isLoadingIcon}

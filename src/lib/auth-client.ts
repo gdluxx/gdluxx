@@ -9,7 +9,7 @@
  */
 
 import { createAuthClient } from 'better-auth/client';
-import { apiKeyClient } from 'better-auth/client/plugins';
+import { apiKeyClient } from '@better-auth/api-key/client';
 import { browser } from '$app/environment';
 
 export const authClient = createAuthClient({

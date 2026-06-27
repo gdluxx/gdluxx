@@ -12,7 +12,8 @@
     "module": "ESNext",
     "target": "ES2022",
     "moduleResolution": "bundler"
-  }
+  },
+  "exclude": ["extension", "extension/**"]
   // Path aliases are handled by https://svelte.dev/docs/kit/configuration#alias
   // except $lib which is handled by https://svelte.dev/docs/kit/configuration#files
   //

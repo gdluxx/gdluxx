@@ -81,23 +81,16 @@
     'active:enabled:shadow-xs',
   ];
 
-  const sizeClasses: Record<ButtonSize, string[]> = {
-    sm: [
-      icon ? 'p-1' : 'px-3 py-1',
-      'text-sm',
-      square ? 'rounded-none' : pill ? 'rounded-full' : 'rounded-xs',
-    ],
-    default: [
-      icon ? 'p-2' : 'px-4 py-2',
-      'text-base',
-      square ? 'rounded-none' : pill ? 'rounded-full' : 'rounded-sm',
-    ],
-    lg: [
-      icon ? 'p-3' : 'px-6 py-3',
-      'text-lg',
-      square ? 'rounded-none' : pill ? 'rounded-full' : 'rounded-sm',
-    ],
-  };
+  function getSizeClasses(buttonSize: ButtonSize): string[] {
+    const padding = icon
+      ? { sm: 'p-1', default: 'p-2', lg: 'p-3' }[buttonSize]
+      : { sm: 'px-3 py-1', default: 'px-4 py-2', lg: 'px-6 py-3' }[buttonSize];
+    const textSize = { sm: 'text-sm', default: 'text-base', lg: 'text-lg' }[buttonSize];
+    const defaultRadius = buttonSize === 'sm' ? 'rounded-xs' : 'rounded-sm';
+    const radius = square ? 'rounded-none' : pill ? 'rounded-full' : defaultRadius;
+
+    return [padding, textSize, radius];
+  }
 
   const variantClasses: Record<ButtonVariant, string[]> = {
     default: [
@@ -208,7 +201,7 @@
   const computedClasses = $derived(
     [
       ...baseClasses,
-      ...sizeClasses[size],
+      ...getSizeClasses(size),
       ...variantClasses[variant],
       block && 'flex w-full',
       loading && 'relative text-transparent pointer-events-none',

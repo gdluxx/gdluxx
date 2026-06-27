@@ -20,8 +20,8 @@
 
   let theme = $state<'light' | 'dark'>('light');
   let _isSubmitting = $state(false);
-  let jsonContent = $state(data.success ? data.content : '{}');
-  let lastSavedISO = $state<string | undefined>(data.success ? data.mtimeISO : undefined);
+  let jsonContent = $state('{}');
+  let lastSavedISO = $state<string | undefined>(undefined);
 
   // React to data changes from invalidation
   const loadMessage = $derived(data.message ?? '');

@@ -27,15 +27,23 @@
   const { config = null, supportedSites = [], onSave, onCancel }: Props = $props();
 
   const formData = $state({
-    site_pattern: config?.site_pattern ?? '',
-    display_name: config?.display_name ?? '',
-    cli_options: new Map(config?.cli_options ?? []),
-    is_default: config?.is_default ?? false,
-    enabled: config?.enabled !== false,
+    site_pattern: '',
+    display_name: '',
+    cli_options: new Map<string, string | number | boolean>(),
+    is_default: false,
+    enabled: true,
   });
 
   let isSubmitting = $state(false);
   let errors = $state<Record<string, string>>({});
+
+  $effect(() => {
+    formData.site_pattern = config?.site_pattern ?? '';
+    formData.display_name = config?.display_name ?? '';
+    formData.cli_options = new Map(config?.cli_options ?? []);
+    formData.is_default = config?.is_default ?? false;
+    formData.enabled = config?.enabled !== false;
+  });
 
   // Watch for site selection from dropdown
   $effect(() => {

@@ -88,7 +88,7 @@ export async function createApiKey(
     return {
       id: result.id,
       name: result.name || name,
-      userId: result.userId,
+      userId: result.referenceId,
       createdAt:
         result.createdAt instanceof Date
           ? result.createdAt.getTime()
@@ -113,11 +113,11 @@ export async function listApiKeys(): Promise<ApiKey[]> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const db = (auth as any).options.database as BetterSqlite3.Database;
     const stmt = db.prepare(`
-			SELECT id, name, userId, createdAt, expiresAt 
+			SELECT id, name, referenceId AS userId, createdAt, expiresAt 
 			FROM apiKey 
-			WHERE userId = ? 
+			WHERE referenceId = ? 
 			ORDER BY createdAt DESC
-		`);
+	`);
     const rows = stmt.all(userId) as ApiKeyRow[];
 
     return rows.map((row: ApiKeyRow) => ({
@@ -162,10 +162,10 @@ export async function findApiKeyByName(name: string): Promise<ApiKey | null> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const db = (auth as any).options.database as BetterSqlite3.Database;
     const stmt: Statement = db.prepare(`
-			SELECT id, name, userId, createdAt, expiresAt 
+			SELECT id, name, referenceId AS userId, createdAt, expiresAt 
 			FROM apiKey 
-			WHERE userId = ? AND name = ?
-		`);
+			WHERE referenceId = ? AND name = ?
+	`);
     const row = stmt.get(userId, name) as ApiKeyRow | undefined;
 
     if (!row) {

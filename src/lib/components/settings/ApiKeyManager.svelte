@@ -31,16 +31,21 @@
 
   const { initialData }: { initialData: InitialData } = $props();
 
-  let apiKeys = $state<ApiKey[]>(initialData.success ? (initialData.apiKeys ?? []) : []);
+  let apiKeys = $state<ApiKey[]>([]);
   let newKeyName = $state('');
   let expirationDate = $state('');
   let neverExpires = $state(true);
   let isLoading = $state(false);
-  let error = $state<string | null>(initialData.success ? null : (initialData.error ?? null));
+  let error = $state<string | null>(null);
   let copyFeedback = $state<string | null>(null);
   let justCreatedKey = $state<{ key: string; name: string } | null>(null);
   let keyToDelete = $state<string | null>(null);
   const clipboard = navigator.clipboard;
+
+  $effect(() => {
+    apiKeys = initialData.success ? (initialData.apiKeys ?? []) : [];
+    error = initialData.success ? null : (initialData.error ?? null);
+  });
 
   function isExpired(expiresAt: string | null | undefined): boolean {
     if (!expiresAt) {

@@ -21,10 +21,8 @@
     userSettings: UserSettings;
   }
 
-  // eslint-disable-next-line prefer-const
-  let { userSettings }: Props = $props();
-  // eslint-disable-next-line prefer-const
-  let settings = $state(userSettings);
+  const { userSettings }: Props = $props();
+  const settings = $derived<UserSettings>({ ...userSettings });
   let isUpdating = $state(false);
 
   let isUpdatingTheme = $state(false);
