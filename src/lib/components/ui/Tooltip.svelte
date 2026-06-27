@@ -47,7 +47,7 @@
     content,
     class: className = '',
     placement = 'top',
-    _offset = 8,
+    offset: _offset = 8,
     trigger = 'hover',
     show = false,
     delay = 0,

@@ -8,6 +8,11 @@
     "url": "git@github.com:gdluxx/gdluxx.git"
   },
   "type": "module",
+  "packageManager": "pnpm@11.3.0",
+  "engines": {
+    "node": ">=24 <25",
+    "pnpm": ">=11 <12"
+  },
   "scripts": {
     "dev": "vite dev",
     "build": "vite build",
@@ -54,19 +59,8 @@
     "typescript": "^5.0.0",
     "typescript-eslint": "^8.20.0",
     "vite": "^6.2.6",
+    "vitest": "^4.0.18",
     "vitepress": "^1.6.3"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "@homebridge/node-pty-prebuilt-multiarch",
-      "@prisma/client",
-      "@prisma/engines",
-      "@tailwindcss/oxide",
-      "bcrypt",
-      "better-sqlite3",
-      "esbuild",
-      "prisma"
-    ]
   },
   "dependencies": {
     "@codemirror/autocomplete": "^6.18.6",

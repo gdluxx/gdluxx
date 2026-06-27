@@ -10,6 +10,7 @@
 
 export const API_KEY_VALIDATION = {
   NAME: {
+    MAX_LENGTH: 100,
     REQUIRED_MESSAGE: 'Name is required',
     LENGTH_MESSAGE: 'Name must be at most 100 characters',
     CHARSET_MESSAGE: 'Name may contain only letters, numbers, underscores, and hyphens',
@@ -30,7 +31,7 @@ export const createApiKeySchema = {
   name: {
     required: true,
     minLength: 1,
-    maxLength: 100,
+    maxLength: API_KEY_VALIDATION.NAME.MAX_LENGTH,
     pattern: /^[a-zA-Z0-9_-]+$/,
   },
   expiresAt: {

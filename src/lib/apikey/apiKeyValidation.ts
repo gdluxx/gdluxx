@@ -12,17 +12,29 @@ import { API_KEY_VALIDATION } from './validation-schemas';
 
 export function validateApiKeyName(name: string): string | null {
   const trimmed = (name || '').trim();
-  if (!trimmed) return API_KEY_VALIDATION.NAME.REQUIRED_MESSAGE;
-  if (trimmed.length > 100) return API_KEY_VALIDATION.NAME.LENGTH_MESSAGE;
-  if (!/^[a-zA-Z0-9_-]+$/.test(trimmed)) return API_KEY_VALIDATION.NAME.CHARSET_MESSAGE;
+  if (!trimmed) {
+    return API_KEY_VALIDATION.NAME.REQUIRED_MESSAGE;
+  }
+  if (trimmed.length > API_KEY_VALIDATION.NAME.MAX_LENGTH) {
+    return API_KEY_VALIDATION.NAME.LENGTH_MESSAGE;
+  }
+  if (!/^[a-zA-Z0-9_-]+$/.test(trimmed)) {
+    return API_KEY_VALIDATION.NAME.CHARSET_MESSAGE;
+  }
   return null;
 }
 
 export function validateExpirationDate(expiresAt?: string): string | null {
-  if (!expiresAt) return null;
+  if (!expiresAt) {
+    return null;
+  }
   const ms = Date.parse(expiresAt);
-  if (Number.isNaN(ms)) return API_KEY_VALIDATION.EXPIRES_AT.INVALID_MESSAGE;
-  if (ms <= Date.now()) return API_KEY_VALIDATION.EXPIRES_AT.PAST_MESSAGE;
+  if (Number.isNaN(ms)) {
+    return API_KEY_VALIDATION.EXPIRES_AT.INVALID_MESSAGE;
+  }
+  if (ms <= Date.now()) {
+    return API_KEY_VALIDATION.EXPIRES_AT.PAST_MESSAGE;
+  }
   return null;
 }
 

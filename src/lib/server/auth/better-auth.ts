@@ -10,20 +10,12 @@
 
 import { betterAuth } from 'better-auth';
 import { apiKey } from 'better-auth/plugins';
-import Database from 'better-sqlite3';
 import { join } from 'path';
 import { existsSync, readFileSync } from 'fs';
 import { v4 as uuidv4 } from 'uuid';
-import { ensureDir } from '$lib/utils/fs';
+import { openDatabase } from '$lib/server/database';
 
-const dataDir: string = join(process.cwd(), 'data');
-
-(async () => {
-  await ensureDir(dataDir);
-})();
-
-const dbPath: string = join(dataDir, 'gdluxx.db');
-const db = new Database(dbPath);
+const db = openDatabase();
 
 try {
   const schemaPaths = [

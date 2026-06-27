@@ -8,12 +8,10 @@
  * as published by the Free Software Foundation.
  */
 
-import Database from 'better-sqlite3';
-import path from 'path';
-import { PATHS } from './constants';
-import type { ThemeName } from '$lib/themes/themeUtils';
+/* eslint-disable no-console */
 
-const dbPath = path.join(PATHS.DATA_DIR, 'gdluxx.db');
+import { openDatabase } from './database';
+import type { ThemeName } from '$lib/themes/themeUtils';
 
 export interface UserSettings {
   warnOnSiteRuleOverride: boolean;
@@ -31,7 +29,7 @@ export const userSettingsManager = {
   // Get user current settings
   getUserSettings(userId: string): UserSettings {
     try {
-      const db = new Database(dbPath);
+      const db = openDatabase();
       const stmt = db.prepare(
         'SELECT warnOnSiteRuleOverride, selectedTheme, maxBatchUrls FROM user WHERE id = ?',
       );
@@ -57,7 +55,7 @@ export const userSettingsManager = {
   // Update user settings
   updateUserSettings(userId: string, settings: Partial<UserSettings>): void {
     try {
-      const db = new Database(dbPath);
+      const db = openDatabase();
       const timestamp = Math.floor(Date.now() / 1000);
 
       if (settings.warnOnSiteRuleOverride !== undefined) {

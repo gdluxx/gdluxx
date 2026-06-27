@@ -9,12 +9,8 @@
  */
 
 import { getCurrentTimestamp } from './settingsManager';
-import Database from 'better-sqlite3';
-import { PATHS } from './constants';
-import path from 'path';
+import { openDatabase } from './database';
 import { transformLogPath } from './config-utils';
-
-const dbPath = path.join(PATHS.DATA_DIR, 'gdluxx.db');
 
 // Server logging
 export interface ServerLoggingConfig {
@@ -46,7 +42,7 @@ export const DEFAULT_SERVER_LOGGING_CONFIG: ServerLoggingConfig = {
 // Server logging functions
 export async function readServerLoggingConfig(): Promise<ServerLoggingConfig> {
   try {
-    const db = new Database(dbPath);
+    const db = openDatabase();
     const stmt = db.prepare(`
 			SELECT enabled, level, format, consoleEnabled, fileEnabled, 
 			       fileDirectory, fileMaxSize, fileMaxFiles, performanceLogging, 
@@ -96,7 +92,7 @@ export async function readServerLoggingConfig(): Promise<ServerLoggingConfig> {
 
 export async function writeServerLoggingConfig(config: ServerLoggingConfig): Promise<void> {
   try {
-    const db = new Database(dbPath);
+    const db = openDatabase();
     const timestamp = getCurrentTimestamp();
 
     const stmt = db.prepare(`

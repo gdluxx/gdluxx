@@ -8,13 +8,12 @@
  * as published by the Free Software Foundation.
  */
 
-import path from 'path';
-import Database from 'better-sqlite3';
-import type { Statement } from 'better-sqlite3';
-import { PATHS } from '$lib/server/constants';
+/* eslint-disable no-console */
 
-const dbPath = path.join(PATHS.DATA_DIR, 'gdluxx.db');
-const db = new Database(dbPath);
+import type { Statement } from 'better-sqlite3';
+import { openDatabase } from '$lib/server/database';
+
+const db = openDatabase();
 
 export function getCurrentTimestamp(): number {
   return Date.now();
@@ -111,7 +110,9 @@ function parseBundle(row: ProfileBackupRow): SelectorProfileBundle {
 }
 
 function mapRow(row: ProfileBackupRow | undefined): SelectorProfileBackup | null {
-  if (!row) return null;
+  if (!row) {
+    return null;
+  }
   return {
     apiKeyId: row.api_key_id,
     bundle: parseBundle(row),
@@ -123,9 +124,13 @@ function mapRow(row: ProfileBackupRow | undefined): SelectorProfileBackup | null
 }
 
 function countProfiles(bundle: SelectorProfileBundle): number {
-  if (!bundle || typeof bundle !== 'object') return 0;
+  if (!bundle || typeof bundle !== 'object') {
+    return 0;
+  }
   const profiles = bundle.profiles;
-  if (!profiles || typeof profiles !== 'object') return 0;
+  if (!profiles || typeof profiles !== 'object') {
+    return 0;
+  }
   return Object.keys(profiles).length;
 }
 

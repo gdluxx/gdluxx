@@ -11,6 +11,8 @@
 import type { Handle } from '@sveltejs/kit';
 import { json, redirect } from '@sveltejs/kit';
 import { auth } from '$lib/server/auth/better-auth';
+import { DATABASE_PATH, openDatabase } from '$lib/server/database';
+import { existsSync } from 'node:fs';
 
 const publicRoutes = ['/auth/login', '/auth/setup', '/api/auth'];
 
@@ -28,17 +30,11 @@ function isExtensionApiRoute(pathname: string): boolean {
 
 async function getUserCount(): Promise<number> {
   try {
-    const Database = await import('better-sqlite3');
-    const { join } = await import('path');
-    const { existsSync } = await import('fs');
-
-    const dbPath: string = join(process.cwd(), 'data', 'gdluxx.db');
-
-    if (!existsSync(dbPath)) {
+    if (!existsSync(DATABASE_PATH)) {
       return 0;
     }
 
-    const db = new Database.default(dbPath);
+    const db = openDatabase();
 
     const tableCheck = db
       .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='user'")

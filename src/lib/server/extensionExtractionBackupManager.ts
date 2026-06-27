@@ -8,13 +8,10 @@
  * as published by the Free Software Foundation.
  */
 
-import path from 'path';
-import Database from 'better-sqlite3';
 import type { Statement } from 'better-sqlite3';
-import { PATHS } from '$lib/server/constants';
+import { openDatabase } from '$lib/server/database';
 
-const dbPath = path.join(PATHS.DATA_DIR, 'gdluxx.db');
-const db = new Database(dbPath);
+const db = openDatabase();
 
 export function getCurrentTimestamp(): number {
   return Date.now();

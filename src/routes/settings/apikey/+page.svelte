@@ -12,7 +12,7 @@
   import { ApiKeyManager } from '$lib/components/settings';
   import { PageLayout } from '$lib/components/ui';
   import { Icon } from '$lib/components';
-  import type { ApiKey } from './lib';
+  import type { ApiKey } from '$lib/apikey';
 
   interface PageData {
     success: boolean;
