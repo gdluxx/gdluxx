@@ -1,15 +1,18 @@
-ARG PNPM_VERSION=10.33.0
+ARG PNPM_VERSION=11.3.0
 
-FROM node:20-slim AS builder
+FROM node:24-slim AS builder
 
 LABEL org.opencontainers.image.source=https://github.com/gdluxx/gdluxx
 
 ARG PNPM_VERSION
 RUN corepack enable && corepack prepare pnpm@${PNPM_VERSION} --activate
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends python3 make g++ && \
+    rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-COPY package.json pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
 RUN pnpm install --frozen-lockfile
 
@@ -19,7 +22,7 @@ RUN mkdir -p data && chown 1000:1000 data
 
 RUN pnpm build
 
-FROM node:20-slim AS runner
+FROM node:24-slim AS runner
 
 ARG PNPM_VERSION
 RUN corepack enable && corepack prepare pnpm@${PNPM_VERSION} --activate
@@ -30,11 +33,15 @@ COPY --from=builder --chown=1000:1000 /app/build ./build
 COPY --from=builder --chown=1000:1000 /app/static ./static
 COPY --from=builder --chown=1000:1000 /app/package.json ./package.json
 COPY --from=builder --chown=1000:1000 /app/pnpm-lock.yaml ./pnpm-lock.yaml
+COPY --from=builder --chown=1000:1000 /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
 COPY --from=builder --chown=1000:1000 /app/src/lib/server/schema.sql ./schema.sql
 
-RUN pnpm install --frozen-lockfile --prod && \
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends python3 make g++ && \
+    pnpm install --frozen-lockfile --prod && \
     pnpm store prune && \
-    rm -rf /root/.cache /tmp/* /var/cache/apt/*
+    apt-get purge -y --auto-remove python3 make g++ && \
+    rm -rf /root/.cache /tmp/* /var/cache/apt/* /var/lib/apt/lists/*
 
 ENV NODE_ENV=production
 ENV PORT=7755
