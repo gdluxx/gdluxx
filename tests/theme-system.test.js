@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'vitest';
+import { readFileSync } from 'node:fs';
 import {
   REQUIRED_THEME_TOKENS,
   extractTokens,
@@ -30,5 +31,11 @@ describe('theme system', () => {
   test('maintains the complete theme token contract', () => {
     expect(REQUIRED_THEME_TOKENS).toHaveLength(47);
     expect(new Set(REQUIRED_THEME_TOKENS).size).toBe(REQUIRED_THEME_TOKENS.length);
+  });
+
+  test('preserves CSS side-effect imports during production builds', () => {
+    const packageJson = JSON.parse(readFileSync('package.json', 'utf8'));
+
+    expect(packageJson.sideEffects).toEqual(['**/*.css', 'src/lib/themes/css/index.ts']);
   });
 });
