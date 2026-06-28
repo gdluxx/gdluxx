@@ -49,7 +49,8 @@
     oncontainersourcechange?: (source: ContainerSource) => void;
     onimagesourcechange?: (source: ImageSource) => void;
 
-    onapply?: () => void;
+    onapplyextraction?: () => void;
+    onapplysubstitutions?: () => void;
     onreset?: () => void;
 
     onsaveprofile?: () => void;
@@ -89,7 +90,8 @@
     oncontainersourcechange,
     onimagesourcechange,
 
-    onapply,
+    onapplyextraction,
+    onapplysubstitutions,
     onreset,
 
     onsaveprofile,
@@ -138,7 +140,7 @@
       {onendselectorchange}
       {oncontainersourcechange}
       {onimagesourcechange}
-      {onapply}
+      onapply={onapplyextraction}
       {onreset}
       {onshowselectorhelp}
     />
@@ -146,7 +148,7 @@
     <div class="pt-2">
       <RuleList
         bind:rules
-        {onapply}
+        onapply={onapplysubstitutions}
         {onreset}
         {onshowregexhelp}
       />

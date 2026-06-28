@@ -95,6 +95,24 @@
     extraction.populate();
   }
 
+  function applySubs() {
+    const result = extractionProfiles.applyToSelected(
+      [...selection.selected],
+      links,
+      images,
+      linkCounts,
+      imageCounts,
+    );
+
+    extraction.setData({
+      links: result.links,
+      images: result.images,
+      linkCounts: result.linkCounts,
+      imageCounts: result.imageCounts,
+    });
+    selection.replace(result.newSelection);
+  }
+
   function resetSubs() {
     if (
       extractionProfiles.modifiedUrls.size > 0 &&
@@ -391,7 +409,8 @@
             onendselectorchange={(val) => extractionProfiles.setEndSelector(val)}
             oncontainersourcechange={(src) => extractionProfiles.setContainerSource(src)}
             onimagesourcechange={(src) => extractionProfiles.setImageSource(src)}
-            onapply={populate}
+            onapplyextraction={populate}
+            onapplysubstitutions={applySubs}
             onreset={resetSubs}
             onsaveprofile={() => onSaveProfile()}
             ondeleteprofile={onDeleteProfile}
