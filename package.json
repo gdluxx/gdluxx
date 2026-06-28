@@ -1,6 +1,9 @@
 {
   "name": "gdluxx",
-  "sideEffects": false,
+  "sideEffects": [
+    "**/*.css",
+    "src/lib/themes/css/index.ts"
+  ],
   "private": true,
   "version": "0.10.0",
   "repository": {

@@ -22,7 +22,11 @@
   }
 
   const { userSettings }: Props = $props();
-  const settings = $derived<UserSettings>({ ...userSettings });
+  const settings = $state<UserSettings>({
+    warnOnSiteRuleOverride: false,
+    selectedTheme: 'indigo',
+    maxBatchUrls: 200,
+  });
   let isUpdating = $state(false);
 
   let isUpdatingTheme = $state(false);
@@ -30,6 +34,12 @@
   const sortedThemes = Object.values(AVAILABLE_THEMES).sort((a, b) =>
     a.displayName.localeCompare(b.displayName),
   );
+
+  $effect(() => {
+    settings.warnOnSiteRuleOverride = userSettings.warnOnSiteRuleOverride;
+    settings.selectedTheme = userSettings.selectedTheme;
+    settings.maxBatchUrls = userSettings.maxBatchUrls;
+  });
 
   async function handleToggleChange(checked: boolean) {
     const newSetting = checked;
