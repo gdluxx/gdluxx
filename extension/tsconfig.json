@@ -15,23 +15,22 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "types": ["chrome", "webextension-polyfill"],
-    "baseUrl": ".",
     "paths": {
-      "#src/*": ["src/*"],
+      "#src/*": ["./src/*"],
 
-      "#app": ["src/content/app"],
-      "#app/*": ["src/content/app/*"],
-      "#views": ["src/content/views"],
-      "#views/*": ["src/content/views/*"],
-      "#assets": ["src/content/assets"],
-      "#assets/*": ["src/content/assets/*"],
+      "#app": ["./src/content/app"],
+      "#app/*": ["./src/content/app/*"],
+      "#views": ["./src/content/views"],
+      "#views/*": ["./src/content/views/*"],
+      "#assets": ["./src/content/assets"],
+      "#assets/*": ["./src/content/assets/*"],
 
-      "#components": ["src/content/lib/components"],
-      "#components/*": ["src/content/lib/components/*"],
-      "#stores": ["src/content/lib/stores"],
-      "#stores/*": ["src/content/lib/stores/*"],
-      "#utils": ["src/content/lib/utils"],
-      "#utils/*": ["src/content/lib/utils/*"],
+      "#components": ["./src/content/lib/components"],
+      "#components/*": ["./src/content/lib/components/*"],
+      "#stores": ["./src/content/lib/stores"],
+      "#stores/*": ["./src/content/lib/stores/*"],
+      "#utils": ["./src/content/lib/utils"],
+      "#utils/*": ["./src/content/lib/utils/*"]
     }
   },
   "include": [

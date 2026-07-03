@@ -39,13 +39,17 @@
 
   let visible = $state(true);
 
-  if (autoHide && duration > 0) {
-    setTimeout(() => {
+  $effect(() => {
+    if (!autoHide || duration <= 0) return;
+
+    const timeout = setTimeout(() => {
       if (visible) {
         handleDismiss();
       }
     }, duration);
-  }
+
+    return () => clearTimeout(timeout);
+  });
 
   function handleDismiss() {
     visible = false;

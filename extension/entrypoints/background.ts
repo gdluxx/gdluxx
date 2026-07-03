@@ -139,10 +139,7 @@ type ProxyMessage =
   | DeleteExtractionMessage;
 
 type MessageType =
-  | SendUrlMessage
-  | ShowNotificationMessage
-  | SyncOverlayRegistrationMessage
-  | ProxyMessage;
+  SendUrlMessage | ShowNotificationMessage | SyncOverlayRegistrationMessage | ProxyMessage;
 
 type BackgroundResponse = ApiResponse | ProxyApiResult<unknown>;
 
@@ -368,7 +365,11 @@ export default defineBackground((): void => {
     try {
       const result = await browser.storage.local.get(['gdluxx_server_url', 'gdluxx_api_key']);
 
-      if (!result.gdluxx_server_url || !result.gdluxx_api_key) {
+      const serverUrl =
+        typeof result.gdluxx_server_url === 'string' ? result.gdluxx_server_url : '';
+      const apiKey = typeof result.gdluxx_api_key === 'string' ? result.gdluxx_api_key : '';
+
+      if (!serverUrl || !apiKey) {
         browser.notifications.create({
           type: 'basic',
           iconUrl: 'icon/48.png',
@@ -380,9 +381,7 @@ export default defineBackground((): void => {
 
       const cleanedUrl = url.replace(/\/+$/, '');
 
-      const sendResult = await proxyCommand(result.gdluxx_server_url, result.gdluxx_api_key, [
-        cleanedUrl,
-      ]);
+      const sendResult = await proxyCommand(serverUrl, apiKey, [cleanedUrl]);
 
       if (sendResult.success) {
         browser.notifications.create({

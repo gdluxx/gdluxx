@@ -1,0 +1,25 @@
+packages:
+  - .
+
+allowBuilds:
+  '@tailwindcss/oxide': true
+  esbuild: true
+  spawn-sync: true
+
+overrides:
+  basic-ftp: 5.3.1
+  brace-expansion: 1.1.13
+  defu: 6.1.5
+  esbuild: 0.28.1
+  flatted: 3.4.2
+  handlebars: 4.7.9
+  ip-address: 10.2.0
+  'multimatch>minimatch': 3.1.4
+  node-forge: 1.4.0
+  picomatch: 4.0.4
+  postcss: 8.5.10
+  shell-quote: 1.9.0
+  tmp: 0.2.7
+  uuid: 14.0.1
+  'wxt>vite': ^8.1.0
+  yaml: 1.10.3

@@ -23,7 +23,14 @@
 
   let { extractionStore, settings, isConfigured }: Props = $props();
 
-  let galleryDraft = $state<GalleryDisplayConfig>({ ...extractionStore.galleryDefaults });
+  function cloneGalleryConfig(config: GalleryDisplayConfig): GalleryDisplayConfig {
+    return {
+      ...config,
+      thumbSizes: [...config.thumbSizes],
+    };
+  }
+
+  let galleryDraft = $derived(cloneGalleryConfig(extractionStore.galleryDefaults));
   let savingGallery = $state(false);
 
   function syncTextareaValue(node: HTMLTextAreaElement, value: string | null | undefined) {
@@ -200,8 +207,7 @@
           oninput={(event) =>
             extractionStore.setImportText((event.target as HTMLTextAreaElement).value)}
           id="import-extraction-json"
-          placeholder=""
-        ></textarea>
+          placeholder=""></textarea>
         {#if extractionStore.importError}
           <p class="text-error mx-2 mt-1 text-xs">{extractionStore.importError}</p>
         {:else}

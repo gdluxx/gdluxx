@@ -15,6 +15,12 @@
 
   const currentUrl = $derived(store.urls?.[store.lbIndex] ?? '');
   const counter = $derived(store.urls ? `${store.lbIndex + 1} / ${store.urls.length}` : '');
+
+  function handleKeydown(event: KeyboardEvent) {
+    if (event.key === 'Escape') {
+      store.closeLightbox();
+    }
+  }
 </script>
 
 <div
@@ -22,7 +28,9 @@
   role="dialog"
   aria-modal="true"
   aria-label="Image lightbox"
+  tabindex="-1"
   onclick={store.closeLightbox}
+  onkeydown={handleKeydown}
 >
   <!-- svelte-ignore a11y_click_events_have_key_events -->
   <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
