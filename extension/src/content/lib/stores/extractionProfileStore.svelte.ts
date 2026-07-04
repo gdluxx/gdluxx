@@ -77,6 +77,10 @@ export interface ResetResult {
   newSelection: Set<string>;
 }
 
+interface ApplySubstitutionOptions {
+  notify?: boolean;
+}
+
 export function createExtractionProfileStore() {
   // Active config state
   let extraction = $state<ExtractionConfig>({ ...DEFAULT_EXTRACTION_CONFIG });
@@ -614,7 +618,58 @@ export function createExtractionProfileStore() {
       };
     }
 
-    const nextSelected = new SvelteSet(selectedUrls);
+    const result = applySubstitutions(selectedUrls, links, images, linkCounts, imageCounts);
+
+    if (result.modifiedCount === 0) {
+      toastStore.info('No URLs were modified by the substitution rules');
+      return result;
+    }
+
+    toastStore.success(
+      `Applied substitutions to ${result.modifiedCount} URL${result.modifiedCount === 1 ? '' : 's'}`,
+    );
+
+    return result;
+  }
+
+  function applyToAll(
+    links: string[],
+    images: string[],
+    linkCounts: Record<string, number>,
+    imageCounts: Record<string, number>,
+    options: ApplySubstitutionOptions = {},
+  ): ApplyResult {
+    const allUrls = Array.from(new SvelteSet([...links, ...images]));
+    if (!hasActiveRules() || !allUrls.length) {
+      return {
+        links,
+        images,
+        linkCounts,
+        imageCounts,
+        newSelection: new SvelteSet<string>(),
+        modifiedCount: 0,
+      };
+    }
+
+    const result = applySubstitutions(allUrls, links, images, linkCounts, imageCounts);
+
+    if (options.notify && result.modifiedCount > 0) {
+      toastStore.success(
+        `Applied substitutions to ${result.modifiedCount} URL${result.modifiedCount === 1 ? '' : 's'}`,
+      );
+    }
+
+    return result;
+  }
+
+  function applySubstitutions(
+    urls: string[],
+    links: string[],
+    images: string[],
+    linkCounts: Record<string, number>,
+    imageCounts: Record<string, number>,
+  ): ApplyResult {
+    const nextSelected = new SvelteSet(urls);
     const pendingModifications = new SvelteMap<string, SubResult>();
     const pendingModifiedUrls = new SvelteSet<string>();
 
@@ -628,7 +683,7 @@ export function createExtractionProfileStore() {
     const nextLinkCounts = { ...linkCounts };
     const nextImageCounts = { ...imageCounts };
 
-    for (const url of selectedUrls) {
+    for (const url of urls) {
       const result = applySubRules(url, rules);
       if (!result.modified) continue;
 
@@ -679,7 +734,6 @@ export function createExtractionProfileStore() {
     if (imageCountsChanged) imageCounts = nextImageCounts;
 
     if (!pendingModifications.size) {
-      toastStore.info('No URLs were modified by the substitution rules');
       return {
         links,
         images,
@@ -695,9 +749,6 @@ export function createExtractionProfileStore() {
     }
 
     const modifiedCount = pendingModifiedUrls.size;
-    toastStore.success(
-      `Applied substitutions to ${modifiedCount} URL${modifiedCount === 1 ? '' : 's'}`,
-    );
 
     return { links, images, linkCounts, imageCounts, newSelection: nextSelected, modifiedCount };
   }
@@ -1204,6 +1255,7 @@ export function createExtractionProfileStore() {
 
     // URL modification
     applyToSelected,
+    applyToAll,
     resetModifications,
     clearModifications,
     calculatePreviewCount,

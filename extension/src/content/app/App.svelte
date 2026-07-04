@@ -9,7 +9,6 @@
   -->
 
 <script lang="ts">
-  /* eslint-env browser */
   /* global Event, HTMLSelectElement */
   import { Icon } from '#components/ui';
   import { ToastContainer } from '#components/ui';
@@ -91,8 +90,20 @@
   const filteredImages = $derived(extraction.filteredImages);
   const visible = $derived(extraction.visible);
 
-  function populate() {
+  function populate(options: { applyAutoSubstitutions?: boolean } = {}) {
     extraction.populate();
+    if (!options.applyAutoSubstitutions) return;
+    if (!extractionProfiles.autoAppliedProfile || !extractionProfiles.hasActiveRules) return;
+
+    const result = extractionProfiles.applyToAll(links, images, linkCounts, imageCounts);
+    if (result.modifiedCount === 0) return;
+
+    extraction.setData({
+      links: result.links,
+      images: result.images,
+      linkCounts: result.linkCounts,
+      imageCounts: result.imageCounts,
+    });
   }
 
   function applySubs() {
@@ -147,7 +158,7 @@
       }
       await initializeExtraction();
     } finally {
-      populate();
+      populate({ applyAutoSubstitutions: true });
     }
   }
   init();
