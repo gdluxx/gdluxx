@@ -130,6 +130,31 @@ const subRuleBaseSchema = z.object({
   order: z.number().int().nonnegative(),
 });
 
+export const subRuleInputSchema = z.object({
+  id: z.string().min(1).optional(),
+  pattern: z.string(),
+  replacement: z.string(),
+  flags: z.string(),
+  enabled: z.boolean(),
+});
+
+export type SubRuleInput = z.infer<typeof subRuleInputSchema>;
+
+function generateRuleId(): string {
+  return `rule_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+}
+
+export function normaliseRuleInputs(input: SubRuleInput[]): SavedSubRule[] {
+  return input.map((rule, index) => ({
+    id: rule.id?.trim() || generateRuleId(),
+    pattern: rule.pattern,
+    replacement: rule.replacement,
+    flags: rule.flags,
+    enabled: rule.enabled,
+    order: index,
+  }));
+}
+
 export const subRuleSchema: z.ZodType<SavedSubRule> = subRuleBaseSchema.superRefine((rule, ctx) => {
   for (const ch of rule.flags) {
     if (!ALLOWED_FLAG_CHARS.has(ch)) {
@@ -322,6 +347,32 @@ export const extractionProfileSchema = extractionProfileBaseSchema.superRefine((
     });
   }
 });
+
+export const extractionProfileCreateSchema = z.object({
+  scope: profileScopeSchema,
+  host: z.string().min(1, 'Host is required'),
+  origin: z.string().optional(),
+  path: z.string().optional(),
+  name: z.string().max(200).optional(),
+  extraction: extractionConfigSchema,
+  rules: z.array(subRuleInputSchema).max(MAX_RULES_PER_PROFILE),
+  applyToPreview: z.boolean().default(false),
+  autoApply: z.boolean().default(true),
+  gallery: galleryDisplayConfigSchema.optional(),
+});
+
+export type ExtractionProfileCreateInput = z.infer<typeof extractionProfileCreateSchema>;
+
+export const extractionProfileUpdateSchema = z.object({
+  name: z.string().max(200).optional(),
+  extraction: extractionConfigSchema,
+  rules: z.array(subRuleInputSchema).max(MAX_RULES_PER_PROFILE),
+  applyToPreview: z.boolean(),
+  autoApply: z.boolean(),
+  gallery: galleryDisplayConfigSchema.optional(),
+});
+
+export type ExtractionProfileUpdateInput = z.infer<typeof extractionProfileUpdateSchema>;
 
 export const extractionBundleSchema = z
   .object({

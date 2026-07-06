@@ -16,11 +16,15 @@ import {
   getSubBackup,
   saveSubBackup,
   type SavedSubProfile,
-  type SavedSubRule,
   type SubProfileBundle,
 } from '$lib/server/extensionSubBackupManager';
 import { parseJson } from '$lib/server/validation/zod';
-import { MAX_RULES_PER_PROFILE, subProfileSchema } from '$lib/server/validation/extensionProfiles';
+import {
+  MAX_RULES_PER_PROFILE,
+  normaliseRuleInputs,
+  subProfileSchema,
+  subRuleInputSchema,
+} from '$lib/server/validation/extensionProfiles';
 import {
   buildProfileId,
   normaliseHost,
@@ -30,14 +34,6 @@ import {
 
 const profileScopeSchema = z.enum(['host', 'origin', 'path']);
 
-const ruleInputSchema = z.object({
-  id: z.string().min(1).optional(),
-  pattern: z.string(),
-  replacement: z.string(),
-  flags: z.string(),
-  enabled: z.boolean(),
-});
-
 const createSchema = z.object({
   scope: profileScopeSchema,
   host: z.string().min(1, 'Host is required'),
@@ -45,26 +41,11 @@ const createSchema = z.object({
   origin: z.string().optional(),
   applyToPreview: z.boolean().default(false),
   name: z.string().max(200).optional(),
-  rules: z.array(ruleInputSchema).max(MAX_RULES_PER_PROFILE),
+  rules: z.array(subRuleInputSchema).max(MAX_RULES_PER_PROFILE),
 });
 
 function emptyBundle(): SubProfileBundle {
   return { version: 1, profiles: {} };
-}
-
-function generateRuleId(): string {
-  return `rule_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
-}
-
-function normaliseRules(input: Array<z.infer<typeof ruleInputSchema>>): SavedSubRule[] {
-  return input.map((rule, index) => ({
-    id: rule.id?.trim() || generateRuleId(),
-    pattern: rule.pattern,
-    replacement: rule.replacement,
-    flags: rule.flags,
-    enabled: rule.enabled,
-    order: index,
-  }));
 }
 
 export const POST: RequestHandler = async ({ request, params, locals }) => {
@@ -99,7 +80,7 @@ export const POST: RequestHandler = async ({ request, params, locals }) => {
       host,
       origin,
       path,
-      rules: normaliseRules(input.rules),
+      rules: normaliseRuleInputs(input.rules),
       name: input.name?.trim() || undefined,
       applyToPreview: input.applyToPreview,
       createdAt: now,

@@ -19,6 +19,7 @@ import type {
   TargetedExtractionConfig,
 } from '#src/content/types';
 import {
+  applyExtractionImportPlan,
   buildProfileId,
   clearActiveConfig,
   clearExtractionProfiles,
@@ -33,6 +34,8 @@ import {
   hasExtractionContent,
   importExtractionProfiles,
   isTargetedConfigValid,
+  planExtractionImport,
+  type ExtractionImportPlan,
   loadActiveConfig,
   loadExtractionProfiles,
   loadGalleryDefaults,
@@ -105,6 +108,7 @@ export function createExtractionProfileStore() {
   let remoteBackupMeta = $state<RemoteBackupMeta | null>(null);
   let backupLoading = $state(false);
   let backupStatusMessage = $state('');
+  let pendingRestore = $state<{ plan: ExtractionImportPlan } | null>(null);
 
   // UI state
   let profileSearch = $state('');
@@ -933,16 +937,47 @@ export function createExtractionProfileStore() {
         toastStore.info('No remote extraction backup found for this API key.');
         return;
       }
-      await importExtractionProfiles(res.data.bundle);
-      toastStore.success('Restored extraction profiles from gdluxx.');
-      await refreshHostProfiles(currentUrl);
-      await loadAllProfilesInternal();
+      const plan = await planExtractionImport(res.data.bundle, { newerWins: true });
+      if (plan.toAdd.length + plan.toOverwrite.length === 0) {
+        const skipped = plan.skippedOlder + plan.skippedInvalid;
+        toastStore.info(
+          `Local profiles already up to date (${skipped} remote profile${skipped === 1 ? '' : 's'} skipped).`,
+        );
+        return;
+      }
+      // The confirmation dialog takes over from here; loading state resumes on confirm.
+      pendingRestore = { plan };
     } catch (error) {
       console.error('Failed to restore extraction profiles from gdluxx', error);
       toastStore.error('Failed to restore extraction profiles from gdluxx.');
     } finally {
       backupLoading = false;
     }
+  }
+
+  async function confirmRestoreFromRemote(): Promise<void> {
+    if (!pendingRestore || backupLoading) return;
+    const { plan } = pendingRestore;
+    backupLoading = true;
+    try {
+      await applyExtractionImportPlan(plan);
+      const skipped = plan.skippedOlder + plan.skippedInvalid;
+      toastStore.success(
+        `Restored from gdluxx: ${plan.toAdd.length} added, ${plan.toOverwrite.length} updated, ${skipped} skipped.`,
+      );
+      await refreshHostProfiles(currentUrl);
+      await loadAllProfilesInternal();
+    } catch (error) {
+      console.error('Failed to restore extraction profiles from gdluxx', error);
+      toastStore.error('Failed to restore extraction profiles from gdluxx.');
+    } finally {
+      pendingRestore = null;
+      backupLoading = false;
+    }
+  }
+
+  function cancelRestoreFromRemote(): void {
+    pendingRestore = null;
   }
 
   async function deleteRemoteBackup(serverUrl: string, apiKey: string): Promise<void> {
@@ -1167,6 +1202,9 @@ export function createExtractionProfileStore() {
     get backupLoading() {
       return backupLoading;
     },
+    get pendingRestore() {
+      return pendingRestore;
+    },
     get backupStatusMessage() {
       return backupStatusMessage;
     },
@@ -1273,6 +1311,8 @@ export function createExtractionProfileStore() {
     fetchBackupMeta,
     backupToRemote,
     restoreFromRemote,
+    confirmRestoreFromRemote,
+    cancelRestoreFromRemote,
     deleteRemoteBackup,
 
     // UI helpers

@@ -10,10 +10,10 @@
 
 <script lang="ts">
   import { invalidateAll } from '$app/navigation';
+  import { resolve } from '$app/paths';
   import { Button, ConfirmModal, Info } from '$lib/components/ui';
-  import SelectorProfileEditor from './SelectorProfileEditor.svelte';
-  import SubProfileEditor from './SubProfileEditor.svelte';
   import ExtensionProfilesImportModal from './ExtensionProfilesImportModal.svelte';
+  import ExtractionProfileEditor from './ExtractionProfileEditor.svelte';
   import type {
     ExtractionBackupView,
     ExtractionProfile,
@@ -21,7 +21,6 @@
     SelectorProfile,
     SubProfile,
   } from '$lib/extensionProfiles/types';
-  import { Icon } from '$lib/components';
   import { toastStore } from '$lib/stores/toast';
 
   interface InitialData extends Partial<ExtensionProfilesPageData> {
@@ -37,18 +36,17 @@
   const extractionBackups = $derived(initialData.extractionBackups ?? {});
 
   let selectedKeyId = $state<string | null>(null);
-  let activeTab = $state<'selectors' | 'subs' | 'extraction'>('selectors');
-
-  let selectorEditorOpen = $state(false);
-  let selectorEditorTarget = $state<SelectorProfile | null>(null);
   let selectorDeleteId = $state<string | null>(null);
-  let subEditorOpen = $state(false);
-  let subEditorTarget = $state<SubProfile | null>(null);
   let subDeleteId = $state<string | null>(null);
   let actionError = $state<string | null>(null);
   let busy = $state(false);
   let exportBusy = $state(false);
   let importOpen = $state(false);
+  let extractionDeleteBusy = $state(false);
+  let extractionEditorOpen = $state(false);
+  let extractionEditorProfile = $state<ExtractionProfile | null>(null);
+  let extractionProfileDeleteId = $state<string | null>(null);
+  let extractionProfileDeleteBusy = $state(false);
 
   $effect(() => {
     if (apiKeys.length === 0) {
@@ -80,8 +78,7 @@
   const extractionProfiles = $derived<ExtractionProfile[]>(
     selectedExtractionView ? Object.values(selectedExtractionView.bundle.profiles) : [],
   );
-
-  let extractionDeleteBusy = $state(false);
+  const hasLegacyData = $derived(selectorProfiles.length > 0 || subProfiles.length > 0);
 
   async function handleExport(): Promise<void> {
     if (!selectedKeyId) {
@@ -120,7 +117,7 @@
     return new Date(value).toLocaleString();
   }
 
-  function describeScope(profile: SelectorProfile | SubProfile): string {
+  function describeScope(profile: SelectorProfile | SubProfile | ExtractionProfile): string {
     if (profile.scope === 'path') {
       return `Path • ${profile.host}${profile.path ?? ''}`;
     }
@@ -128,29 +125,6 @@
       return `Origin • ${profile.origin}`;
     }
     return `Host • ${profile.host}`;
-  }
-
-  function openCreateSelector(): void {
-    actionError = null;
-    selectorEditorTarget = null;
-    selectorEditorOpen = true;
-  }
-
-  function openEditSelector(profile: SelectorProfile): void {
-    actionError = null;
-    selectorEditorTarget = profile;
-    selectorEditorOpen = true;
-  }
-
-  function closeSelectorEditor(): void {
-    selectorEditorOpen = false;
-    selectorEditorTarget = null;
-  }
-
-  async function onSelectorSaved(): Promise<void> {
-    selectorEditorOpen = false;
-    selectorEditorTarget = null;
-    await invalidateAll();
   }
 
   async function confirmDeleteSelector(): Promise<void> {
@@ -176,29 +150,6 @@
     } finally {
       busy = false;
     }
-  }
-
-  function openCreateSub(): void {
-    actionError = null;
-    subEditorTarget = null;
-    subEditorOpen = true;
-  }
-
-  function openEditSub(profile: SubProfile): void {
-    actionError = null;
-    subEditorTarget = profile;
-    subEditorOpen = true;
-  }
-
-  function closeSubEditor(): void {
-    subEditorOpen = false;
-    subEditorTarget = null;
-  }
-
-  async function onSubSaved(): Promise<void> {
-    subEditorOpen = false;
-    subEditorTarget = null;
-    await invalidateAll();
   }
 
   async function confirmDeleteSub(): Promise<void> {
@@ -250,6 +201,35 @@
     }
   }
 
+  function openExtractionEditor(profile: ExtractionProfile | null): void {
+    extractionEditorProfile = profile;
+    extractionEditorOpen = true;
+  }
+
+  async function confirmDeleteExtractionProfile(): Promise<void> {
+    if (!selectedKeyId || !extractionProfileDeleteId) {
+      return;
+    }
+    extractionProfileDeleteBusy = true;
+    try {
+      const response = await fetch(
+        `/api/settings/extension-profiles/${encodeURIComponent(selectedKeyId)}/extraction/${encodeURIComponent(extractionProfileDeleteId)}`,
+        { method: 'DELETE' },
+      );
+      const payload = await response.json().catch(() => null);
+      if (!response.ok || !payload?.success) {
+        toastStore.error('Delete failed', payload?.error ?? `Server error: ${response.status}`);
+        return;
+      }
+      extractionProfileDeleteId = null;
+      await invalidateAll();
+    } catch (err) {
+      toastStore.error('Delete failed', err instanceof Error ? err.message : 'Unknown error');
+    } finally {
+      extractionProfileDeleteBusy = false;
+    }
+  }
+
   function describeExtractionMode(profile: ExtractionProfile): string {
     if (profile.extraction.mode === 'range') {
       return 'Range';
@@ -277,7 +257,7 @@
     <p class="text-sm">
       Create an API key in <a
         class="text-link hover:underline"
-        href="/settings/apikey">Key Manager</a
+        href={resolve('/settings/apikey')}>Key Manager</a
       > to enable extension profile syncing.
     </p>
   </Info>
@@ -289,7 +269,7 @@
         class="mb-1 block text-sm font-medium text-muted-foreground"
         for="extension-profiles-api-key"
       >
-        Select an API key to view its synced extension profiles.
+        Select an API key to view its synced extraction profile backup.
       </label>
       <select
         id="extension-profiles-api-key"
@@ -331,67 +311,18 @@
       {/if}
     </div>
 
-    <div
-      role="tablist"
-      class="inline-flex w-fit gap-1 rounded-sm bg-surface-sunken p-1"
-    >
-      <button
-        role="tab"
-        type="button"
-        aria-selected={activeTab === 'selectors'}
-        class="cursor-pointer rounded-sm px-3 py-1.5 text-sm font-medium transition-colors {activeTab ===
-        'selectors'
-          ? 'bg-background text-foreground shadow-sm'
-          : 'text-muted-foreground hover:text-foreground'}"
-        onclick={() => (activeTab = 'selectors')}
-      >
-        Selectors
-        <span
-          class="ml-2 inline-flex items-center justify-center rounded-full bg-surface-active px-2 py-0.5 text-xs"
-        >
-          {selectorProfiles.length}
-        </span>
-      </button>
-      <button
-        role="tab"
-        type="button"
-        aria-selected={activeTab === 'subs'}
-        class="cursor-pointer rounded-sm px-3 py-1.5 text-sm font-medium transition-colors {activeTab ===
-        'subs'
-          ? 'bg-background text-foreground shadow-sm'
-          : 'text-muted-foreground hover:text-foreground'}"
-        onclick={() => (activeTab = 'subs')}
-      >
-        Substitutions
-        <span
-          class="ml-2 inline-flex items-center justify-center rounded-full bg-surface-active px-2 py-0.5 text-xs"
-        >
-          {subProfiles.length}
-        </span>
-      </button>
-      <button
-        role="tab"
-        type="button"
-        aria-selected={activeTab === 'extraction'}
-        class="cursor-pointer rounded-sm px-3 py-1.5 text-sm font-medium transition-colors {activeTab ===
-        'extraction'
-          ? 'bg-background text-foreground shadow-sm'
-          : 'text-muted-foreground hover:text-foreground'}"
-        onclick={() => (activeTab = 'extraction')}
-      >
-        Extraction Profiles
-        <span
-          class="ml-2 inline-flex items-center justify-center rounded-full bg-surface-active px-2 py-0.5 text-xs"
-        >
-          {extractionProfiles.length}
-        </span>
-      </button>
-    </div>
-
-    {#if activeTab === 'extraction'}
-      <section class="data-list">
-        <header class="data-list-header flex items-center justify-between">
-          <h2 class="!mb-0">Extraction Profiles ({extractionProfiles.length})</h2>
+    <section class="data-list">
+      <header class="data-list-header flex items-center justify-between">
+        <h2 class="!mb-0">Extraction Profiles ({extractionProfiles.length})</h2>
+        <div class="flex gap-2">
+          <Button
+            variant="primary"
+            size="sm"
+            disabled={!selectedKeyId}
+            onclick={() => openExtractionEditor(null)}
+          >
+            New profile
+          </Button>
           {#if selectedExtractionView?.hasBackup}
             <Button
               variant="outline-danger"
@@ -402,290 +333,231 @@
               {extractionDeleteBusy ? 'Deleting…' : 'Delete backup'}
             </Button>
           {/if}
-        </header>
+        </div>
+      </header>
 
-        {#if selectedExtractionView?.hasBackup}
-          <div class="px-4 py-2 text-xs text-muted-foreground">
-            {selectedExtractionView.profileCount} profile(s) · last sync
-            {formatTimestamp(selectedExtractionView.updatedAt)}
-            {#if selectedExtractionView.syncedBy}
-              · by {selectedExtractionView.syncedBy}
-            {/if}
-          </div>
-        {/if}
+      {#if selectedExtractionView?.hasBackup}
+        <div class="px-4 py-2 text-xs text-muted-foreground">
+          {selectedExtractionView.profileCount} profile(s) · last sync
+          {formatTimestamp(selectedExtractionView.updatedAt)}
+          {#if selectedExtractionView.syncedBy}
+            · by {selectedExtractionView.syncedBy}
+          {/if}
+        </div>
+      {/if}
 
-        {#if extractionProfiles.length === 0}
-          <div class="p-4">
-            <Info
-              variant="info"
-              title="No extraction profiles for this API key."
-            >
-              <p class="text-sm">
-                Extraction profiles created in the browser extension will appear here after the
-                extension syncs its backup.
-              </p>
-            </Info>
-          </div>
-        {:else}
-          {#each extractionProfiles as profile (profile.id)}
-            <article class="data-list-item">
-              <div class="flex flex-wrap items-start justify-between gap-2">
-                <div>
-                  <div class="text-sm font-semibold text-accent-foreground">
-                    {profile.name ?? profile.id}
-                  </div>
-                  <div class="text-xs text-muted-foreground">
-                    {describeScope(profile)} · {describeExtractionMode(profile)}
-                    {#if profile.rules.length > 0}
-                      · {profile.rules.length}
-                      {profile.rules.length === 1 ? 'rule' : 'rules'}
-                    {/if}
-                  </div>
-                </div>
-              </div>
-              <div class="mt-1 text-xs text-muted-foreground">
-                Updated: {formatTimestamp(profile.updatedAt)}
-                {#if profile.lastUsed}
-                  · Last used: {formatTimestamp(profile.lastUsed)}
-                {/if}
-              </div>
-            </article>
-          {/each}
-        {/if}
-      </section>
-    {:else if activeTab === 'selectors'}
-      <section class="data-list">
-        <header class="data-list-header flex items-center justify-between">
-          <h2 class="!mb-0">Selectors ({selectorProfiles.length})</h2>
-          <Button
-            variant="primary"
-            onclick={openCreateSelector}>New selector profile</Button
+      {#if extractionProfiles.length === 0}
+        <div class="p-4">
+          <Info
+            variant="info"
+            title="No extraction backup for this API key."
           >
-        </header>
-
-        {#if actionError}
-          <div class="p-4">
-            <Info variant="error">
-              <p class="text-sm">{actionError}</p>
-            </Info>
-          </div>
-        {/if}
-
-        {#if selectorProfiles.length === 0}
-          <div class="p-4">
-            <Info
-              variant="info"
-              title="No selector profiles for this API key."
-            >
-              <p class="text-sm">
-                Selector profiles created in the browser extension or via the "New selector profile"
-                button above will appear here.
-              </p>
-            </Info>
-          </div>
-        {:else}
-          {#each selectorProfiles as profile (profile.id)}
-            <article class="data-list-item">
-              <div class="flex flex-wrap items-start justify-between gap-2">
-                <div>
-                  <div class="text-sm font-semibold text-accent-foreground">
-                    {profile.name ?? profile.id}
-                  </div>
-                  <div class="text-xs text-muted-foreground">{describeScope(profile)}</div>
+            <p class="text-sm">
+              Use "Save to gdluxx" in the extension's Extraction Profiles settings to sync your
+              profiles, or create one here with "New profile".
+            </p>
+          </Info>
+        </div>
+      {:else}
+        {#each extractionProfiles as profile (profile.id)}
+          <article class="data-list-item">
+            <div class="flex flex-wrap items-start justify-between gap-2">
+              <div>
+                <div class="text-sm font-semibold text-accent-foreground">
+                  {profile.name ?? profile.id}
                 </div>
-                <div class="flex flex-wrap gap-2">
-                  <Button
-                    onclick={() => openEditSelector(profile)}
-                    variant="outline-primary"
-                    size="sm"
-                  >
-                    <Icon
-                      iconName="edit"
-                      size={20}
-                      class="mr-1"
-                    />
-                  </Button>
-                  <Button
-                    onclick={() => (selectorDeleteId = profile.id)}
-                    variant="outline-danger"
-                    size="sm"
-                  >
-                    <Icon
-                      iconName="delete"
-                      size={20}
-                      class="mr-1"
-                    />
-                  </Button>
-                </div>
-              </div>
-              <div class="mt-2 grid gap-1 text-xs text-muted-foreground">
-                <div>
-                  Start selector:
-                  <code class="rounded-sm bg-background px-1 py-0.5">
-                    {profile.startSelector || '—'}
-                  </code>
-                </div>
-                <div>
-                  End selector:
-                  <code class="rounded-sm bg-background px-1 py-0.5">
-                    {profile.endSelector || '—'}
-                  </code>
-                </div>
-                <div>
-                  Updated: {formatTimestamp(profile.updatedAt)}
-                  {#if profile.lastUsed}
-                    · Last used: {formatTimestamp(profile.lastUsed)}
+                <div class="text-xs text-muted-foreground">
+                  {describeScope(profile)} · {describeExtractionMode(profile)}
+                  {#if profile.rules.length > 0}
+                    · {profile.rules.length}
+                    {profile.rules.length === 1 ? 'rule' : 'rules'}
                   {/if}
                 </div>
               </div>
-            </article>
-          {/each}
-        {/if}
-      </section>
-    {:else if activeTab === 'subs'}
-      <section class="data-list">
-        <header class="data-list-header flex items-center justify-between">
-          <h2 class="!mb-0">Substitutions ({subProfiles.length})</h2>
-          <Button
-            variant="primary"
-            onclick={openCreateSub}>New substitution profile</Button
-          >
-        </header>
+              <div class="flex gap-2">
+                <Button
+                  variant="default"
+                  size="sm"
+                  onclick={() => openExtractionEditor(profile)}
+                >
+                  Edit
+                </Button>
+                <Button
+                  variant="outline-danger"
+                  size="sm"
+                  onclick={() => (extractionProfileDeleteId = profile.id)}
+                >
+                  Delete
+                </Button>
+              </div>
+            </div>
+            <div class="mt-1 text-xs text-muted-foreground">
+              Updated: {formatTimestamp(profile.updatedAt)}
+              {#if profile.lastUsed}
+                · Last used: {formatTimestamp(profile.lastUsed)}
+              {/if}
+            </div>
+          </article>
+        {/each}
+      {/if}
+    </section>
+
+    {#if hasLegacyData}
+      <details class="content-panel text-sm">
+        <summary class="cursor-pointer font-semibold">Legacy backups</summary>
+        <p class="mt-2 text-xs text-muted-foreground">
+          Selector and substitution backups were used by older extension versions. The current
+          extension uses extraction profile backups instead.
+        </p>
 
         {#if actionError}
-          <div class="p-4">
+          <div class="mt-3">
             <Info variant="error">
               <p class="text-sm">{actionError}</p>
             </Info>
           </div>
         {/if}
 
-        {#if subProfiles.length === 0}
-          <div class="p-4">
-            <Info
-              variant="info"
-              title="No substitution profiles for this API key."
-            >
-              <p class="text-sm">
-                Substitution profiles created in the browser extension or via the "New substitution
-                profile" button above will appear here.
-              </p>
-            </Info>
-          </div>
-        {:else}
-          {#each subProfiles as profile (profile.id)}
-            <article class="data-list-item">
-              <div class="flex flex-wrap items-start justify-between gap-2">
-                <div>
-                  <div class="text-sm font-semibold">{profile.name ?? profile.id}</div>
-                  <div class="text-xs text-muted-foreground">
-                    {describeScope(profile)} · {profile.rules.length}
-                    {profile.rules.length === 1 ? 'rule' : 'rules'} · Apply to previews:
-                    {profile.applyToPreview ? 'Yes' : 'No'}
-                  </div>
-                </div>
-                <div class="flex flex-wrap gap-2">
-                  <Button
-                    variant="default"
-                    onclick={() => openEditSub(profile)}>Edit</Button
-                  >
-                  <Button
-                    variant="outline-danger"
-                    onclick={() => (subDeleteId = profile.id)}
-                  >
-                    Delete
-                  </Button>
-                </div>
-              </div>
-              <div class="mt-2 text-xs text-muted-foreground">
-                Updated: {formatTimestamp(profile.updatedAt)}
-                {#if profile.lastUsed}
-                  · Last used: {formatTimestamp(profile.lastUsed)}
-                {/if}
-              </div>
-              <ul class="mt-2 rounded-sm bg-background px-2 py-1">
-                {#each profile.rules as rule (rule.id)}
-                  <li class="font-mono text-[11px] leading-snug">
-                    <span
-                      class={rule.enabled ? '' : 'text-muted-foreground line-through opacity-70'}
-                    >
-                      /{rule.pattern}/{rule.flags} → {rule.replacement || '—'}
-                    </span>
-                  </li>
-                {/each}
-              </ul>
-            </article>
-          {/each}
-        {/if}
-      </section>
-    {/if}
-
-    {#if selectedKeyId}
-      <details class="content-panel text-sm">
-        <summary class="cursor-pointer font-semibold">Sync details</summary>
-        <div class="mt-2 grid gap-1 text-xs">
-          <div>
-            <span class="font-semibold">Selectors:</span>
-            {#if selectedSelectorView?.hasBackup}
-              {selectedSelectorView.profileCount} profile(s) · last sync
-              {formatTimestamp(selectedSelectorView.updatedAt)}
-              {#if selectedSelectorView.syncedBy}
+        {#if selectorProfiles.length > 0}
+          <section class="mt-4">
+            <h3 class="mb-2 text-sm font-semibold">Selectors ({selectorProfiles.length})</h3>
+            <div class="mb-2 text-xs text-muted-foreground">
+              {selectedSelectorView?.profileCount ?? selectorProfiles.length} profile(s) · last sync {formatTimestamp(
+                selectedSelectorView?.updatedAt,
+              )}
+              {#if selectedSelectorView?.syncedBy}
                 · by {selectedSelectorView.syncedBy}
               {/if}
-            {:else}
-              no remote backup
-            {/if}
-          </div>
-          <div>
-            <span class="font-semibold">Substitutions:</span>
-            {#if selectedSubView?.hasBackup}
-              {selectedSubView.profileCount} profile(s) · last sync
-              {formatTimestamp(selectedSubView.updatedAt)}
-              {#if selectedSubView.syncedBy}
+            </div>
+            <div class="grid gap-3">
+              {#each selectorProfiles as profile (profile.id)}
+                <article class="data-list-item">
+                  <div class="flex flex-wrap items-start justify-between gap-2">
+                    <div>
+                      <div class="text-sm font-semibold text-accent-foreground">
+                        {profile.name ?? profile.id}
+                      </div>
+                      <div class="text-xs text-muted-foreground">{describeScope(profile)}</div>
+                    </div>
+                    <Button
+                      onclick={() => (selectorDeleteId = profile.id)}
+                      variant="outline-danger"
+                      size="sm"
+                    >
+                      Delete
+                    </Button>
+                  </div>
+                  <div class="mt-2 grid gap-1 text-xs text-muted-foreground">
+                    <div>
+                      Start selector:
+                      <code class="rounded-sm bg-background px-1 py-0.5">
+                        {profile.startSelector || '—'}
+                      </code>
+                    </div>
+                    <div>
+                      End selector:
+                      <code class="rounded-sm bg-background px-1 py-0.5">
+                        {profile.endSelector || '—'}
+                      </code>
+                    </div>
+                    <div>
+                      Updated: {formatTimestamp(profile.updatedAt)}
+                      {#if profile.lastUsed}
+                        · Last used: {formatTimestamp(profile.lastUsed)}
+                      {/if}
+                    </div>
+                  </div>
+                </article>
+              {/each}
+            </div>
+          </section>
+        {/if}
+
+        {#if subProfiles.length > 0}
+          <section class="mt-4">
+            <h3 class="mb-2 text-sm font-semibold">Substitutions ({subProfiles.length})</h3>
+            <div class="mb-2 text-xs text-muted-foreground">
+              {selectedSubView?.profileCount ?? subProfiles.length} profile(s) · last sync
+              {formatTimestamp(selectedSubView?.updatedAt)}
+              {#if selectedSubView?.syncedBy}
                 · by {selectedSubView.syncedBy}
               {/if}
-            {:else}
-              no remote backup
-            {/if}
-          </div>
-          <div>
-            <span class="font-semibold">Extraction Profiles:</span>
-            {#if selectedExtractionView?.hasBackup}
-              {selectedExtractionView.profileCount} profile(s) · last sync
-              {formatTimestamp(selectedExtractionView.updatedAt)}
-              {#if selectedExtractionView.syncedBy}
-                · by {selectedExtractionView.syncedBy}
-              {/if}
-            {:else}
-              no remote backup
-            {/if}
-          </div>
-        </div>
+            </div>
+            <div class="grid gap-3">
+              {#each subProfiles as profile (profile.id)}
+                <article class="data-list-item">
+                  <div class="flex flex-wrap items-start justify-between gap-2">
+                    <div>
+                      <div class="text-sm font-semibold">{profile.name ?? profile.id}</div>
+                      <div class="text-xs text-muted-foreground">
+                        {describeScope(profile)} · {profile.rules.length}
+                        {profile.rules.length === 1 ? 'rule' : 'rules'} · Apply to previews:
+                        {profile.applyToPreview ? 'Yes' : 'No'}
+                      </div>
+                    </div>
+                    <Button
+                      variant="outline-danger"
+                      size="sm"
+                      onclick={() => (subDeleteId = profile.id)}
+                    >
+                      Delete
+                    </Button>
+                  </div>
+                  <div class="mt-2 text-xs text-muted-foreground">
+                    Updated: {formatTimestamp(profile.updatedAt)}
+                    {#if profile.lastUsed}
+                      · Last used: {formatTimestamp(profile.lastUsed)}
+                    {/if}
+                  </div>
+                  <ul class="mt-2 rounded-sm bg-background px-2 py-1">
+                    {#each profile.rules as rule (rule.id)}
+                      <li class="font-mono text-[11px] leading-snug">
+                        <span
+                          class={rule.enabled
+                            ? ''
+                            : 'text-muted-foreground line-through opacity-70'}
+                        >
+                          /{rule.pattern}/{rule.flags} → {rule.replacement || '—'}
+                        </span>
+                      </li>
+                    {/each}
+                  </ul>
+                </article>
+              {/each}
+            </div>
+          </section>
+        {/if}
       </details>
     {/if}
   </div>
 
   {#if selectedKeyId}
-    <SelectorProfileEditor
-      show={selectorEditorOpen}
+    <ExtractionProfileEditor
+      show={extractionEditorOpen}
       apiKeyId={selectedKeyId}
-      profile={selectorEditorTarget}
-      onClose={closeSelectorEditor}
-      onSaved={onSelectorSaved}
-    />
-    <SubProfileEditor
-      show={subEditorOpen}
-      apiKeyId={selectedKeyId}
-      profile={subEditorTarget}
-      onClose={closeSubEditor}
-      onSaved={onSubSaved}
+      profile={extractionEditorProfile}
+      onClose={() => (extractionEditorOpen = false)}
+      onSaved={async () => {
+        await invalidateAll();
+        extractionEditorOpen = false;
+      }}
     />
   {/if}
 
   <ConfirmModal
+    show={extractionProfileDeleteId !== null}
+    title="Delete extraction profile?"
+    message="This removes the profile from the gdluxx backup. It will not be removed from extensions that already restored it."
+    confirmText={extractionProfileDeleteBusy ? 'Deleting…' : 'Delete'}
+    confirmVariant="danger"
+    onCancel={() => (extractionProfileDeleteId = null)}
+    onConfirm={confirmDeleteExtractionProfile}
+  />
+
+  <ConfirmModal
     show={selectorDeleteId !== null}
-    title="Delete selector profile?"
-    message="This removes the profile from the gdluxx server. The browser extension will overwrite this on its next sync if it still has the profile locally."
+    title="Delete legacy selector profile?"
+    message="This removes the legacy selector profile from the gdluxx server. Current extension versions do not use selector backups."
     confirmText={busy ? 'Deleting…' : 'Delete'}
     confirmVariant="danger"
     onCancel={() => (selectorDeleteId = null)}
@@ -694,8 +566,8 @@
 
   <ConfirmModal
     show={subDeleteId !== null}
-    title="Delete substitution profile?"
-    message="This removes the profile from the gdluxx server. The browser extension will overwrite this on its next sync if it still has the profile locally."
+    title="Delete legacy substitution profile?"
+    message="This removes the legacy substitution profile from the gdluxx server. Current extension versions do not use substitution backups."
     confirmText={busy ? 'Deleting…' : 'Delete'}
     confirmVariant="danger"
     onCancel={() => (subDeleteId = null)}

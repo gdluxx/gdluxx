@@ -24,7 +24,7 @@
 
 <PageLayout
   title="Extension Profiles"
-  description="View and manage browser extension profiles synced to gdluxx"
+  description="View and manage extraction profile backups synced from the browser extension"
 >
   {#snippet icon()}
     <Icon

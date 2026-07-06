@@ -8,28 +8,20 @@
  * as published by the Free Software Foundation.
  */
 
-import { z } from 'zod';
 import type { RequestHandler } from './$types';
 import { serverLogger as logger } from '$lib/server/logger';
 import { createApiError, createApiResponse, handleApiError } from '$lib/server/api-utils';
 import {
-  getSubBackup,
-  saveSubBackup,
-  type SavedSubProfile,
-} from '$lib/server/extensionSubBackupManager';
+  getExtractionBackup,
+  saveExtractionBackup,
+  type SavedExtractionProfile,
+} from '$lib/server/extensionExtractionBackupManager';
 import { parseJson } from '$lib/server/validation/zod';
 import {
-  MAX_RULES_PER_PROFILE,
+  extractionProfileSchema,
+  extractionProfileUpdateSchema,
   normaliseRuleInputs,
-  subProfileSchema,
-  subRuleInputSchema,
 } from '$lib/server/validation/extensionProfiles';
-
-const updateSchema = z.object({
-  applyToPreview: z.boolean(),
-  name: z.string().max(200).optional(),
-  rules: z.array(subRuleInputSchema).max(MAX_RULES_PER_PROFILE),
-});
 
 export const PUT: RequestHandler = async ({ request, params, locals }) => {
   try {
@@ -38,27 +30,32 @@ export const PUT: RequestHandler = async ({ request, params, locals }) => {
       return createApiError('apiKeyId and profileId are required', 400);
     }
 
-    const parseResult = await parseJson(request, updateSchema);
+    const parseResult = await parseJson(request, extractionProfileUpdateSchema);
     if ('errorResponse' in parseResult) {
       return parseResult.errorResponse;
     }
     const input = parseResult.data;
 
-    const existing = getSubBackup(apiKeyId);
+    const existing = getExtractionBackup(apiKeyId);
     if (!existing?.bundle.profiles[profileId]) {
-      return createApiError('Substitution profile not found', 404);
+      return createApiError('Extraction profile not found', 404);
     }
 
     const current = existing.bundle.profiles[profileId];
-    const updated: SavedSubProfile = {
+    const updated: SavedExtractionProfile = {
       ...current,
+      name: input.name?.trim() || undefined,
+      extraction: input.extraction,
       rules: normaliseRuleInputs(input.rules),
       applyToPreview: input.applyToPreview,
-      name: input.name?.trim() || undefined,
+      autoApply: input.autoApply,
+      // Assigned explicitly so omitting gallery in the request clears the
+      // stored override (undefined is dropped on JSON serialization).
+      gallery: input.gallery,
       updatedAt: Date.now(),
     };
 
-    const validation = subProfileSchema.safeParse(updated);
+    const validation = extractionProfileSchema.safeParse(updated);
     if (!validation.success) {
       const message = validation.error.issues[0]?.message ?? 'Invalid profile';
       return createApiError(message, 400);
@@ -67,16 +64,16 @@ export const PUT: RequestHandler = async ({ request, params, locals }) => {
     existing.bundle.profiles[profileId] = updated;
 
     const syncedBy = locals.user?.email ?? locals.user?.name ?? null;
-    const saved = saveSubBackup(apiKeyId, existing.bundle, syncedBy);
+    const saved = saveExtractionBackup(apiKeyId, existing.bundle, syncedBy);
     if (!saved) {
-      return createApiError('Failed to save substitution profile', 500);
+      return createApiError('Failed to save extraction profile', 500);
     }
 
-    logger.info(`Updated substitution profile ${profileId} for API key ${apiKeyId}`);
+    logger.info(`Updated extraction profile ${profileId} for API key ${apiKeyId}`);
     return createApiResponse({ profile: updated });
   } catch (error) {
-    logger.error('Error updating substitution profile:', error);
-    return handleApiError(new Error('Failed to update substitution profile'));
+    logger.error('Error updating extraction profile:', error);
+    return handleApiError(new Error('Failed to update extraction profile'));
   }
 };
 
@@ -87,7 +84,7 @@ export const DELETE: RequestHandler = async ({ params, locals }) => {
       return createApiError('apiKeyId and profileId are required', 400);
     }
 
-    const existing = getSubBackup(apiKeyId);
+    const existing = getExtractionBackup(apiKeyId);
     if (!existing?.bundle.profiles[profileId]) {
       return createApiResponse({ deleted: false });
     }
@@ -97,15 +94,15 @@ export const DELETE: RequestHandler = async ({ params, locals }) => {
     existing.bundle.profiles = nextProfiles;
 
     const syncedBy = locals.user?.email ?? locals.user?.name ?? null;
-    const saved = saveSubBackup(apiKeyId, existing.bundle, syncedBy);
+    const saved = saveExtractionBackup(apiKeyId, existing.bundle, syncedBy);
     if (!saved) {
-      return createApiError('Failed to delete substitution profile', 500);
+      return createApiError('Failed to delete extraction profile', 500);
     }
 
-    logger.info(`Deleted substitution profile ${profileId} for API key ${apiKeyId}`);
+    logger.info(`Deleted extraction profile ${profileId} for API key ${apiKeyId}`);
     return createApiResponse({ deleted: true });
   } catch (error) {
-    logger.error('Error deleting substitution profile:', error);
-    return handleApiError(new Error('Failed to delete substitution profile'));
+    logger.error('Error deleting extraction profile:', error);
+    return handleApiError(new Error('Failed to delete extraction profile'));
   }
 };

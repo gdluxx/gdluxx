@@ -468,60 +468,118 @@ export async function getProfileForUrl(
   return null;
 }
 
-export async function importExtractionProfiles(bundle: ExtractionBundle): Promise<void> {
+function normaliseIncomingProfile(profile: ExtractionProfile): ExtractionProfile | null {
+  if (!profile || typeof profile !== 'object') return null;
+
+  // Structural validity check
+  if (profile.extraction?.mode === 'targeted') {
+    if (!isTargetedConfigValid(profile.extraction as TargetedExtractionConfig)) return null;
+  } else if (profile.extraction?.mode !== 'range') {
+    return null;
+  }
+
+  // Meaningful content check
+  if (!hasExtractionContent(profile)) return null;
+
+  const scope = (profile.scope ?? 'host') as ProfileScope;
+  const host = normaliseHost(profile.host);
+  const origin = scope === 'host' ? undefined : normaliseOrigin(profile.origin);
+  const path = scope === 'path' ? (normalisePath(profile.path) ?? '/') : undefined;
+  const id = buildProfileId(scope, host, origin, path);
+
+  // Normalise image attr default
+  return cloneExtractionProfile({
+    id,
+    scope,
+    host,
+    origin,
+    path,
+    extraction: cloneExtractionConfig(profile.extraction),
+    rules: cloneRules(profile.rules),
+    applyToPreview: profile.applyToPreview ?? false,
+    autoApply: profile.autoApply ?? true,
+    name: profile.name?.trim() || undefined,
+    gallery: cloneGalleryConfig(profile.gallery),
+    createdAt: profile.createdAt ?? Date.now(),
+    updatedAt: profile.updatedAt ?? Date.now(),
+    lastUsed: profile.lastUsed,
+  });
+}
+
+export interface ExtractionImportPlan {
+  toAdd: ExtractionProfile[];
+  toOverwrite: ExtractionProfile[];
+  skippedOlder: number;
+  skippedInvalid: number;
+  newerWins: boolean;
+}
+
+export async function planExtractionImport(
+  bundle: ExtractionBundle,
+  options?: { newerWins?: boolean },
+): Promise<ExtractionImportPlan> {
   if (!bundle || typeof bundle !== 'object' || typeof bundle.profiles !== 'object') {
     throw new Error('Invalid extraction profile import payload');
   }
 
+  const newerWins = options?.newerWins === true;
+  const current = await loadBundle();
+  const plan: ExtractionImportPlan = {
+    toAdd: [],
+    toOverwrite: [],
+    skippedOlder: 0,
+    skippedInvalid: 0,
+    newerWins,
+  };
+
+  for (const incoming of Object.values(bundle.profiles)) {
+    const normalised = normaliseIncomingProfile(incoming);
+    if (!normalised) {
+      plan.skippedInvalid += 1;
+      continue;
+    }
+    const local = current.profiles[normalised.id];
+    if (!local) {
+      plan.toAdd.push(normalised);
+      continue;
+    }
+    // Equal timestamps mean the same sync generation — treat as up to date.
+    if (newerWins && normalised.updatedAt <= local.updatedAt) {
+      plan.skippedOlder += 1;
+      continue;
+    }
+    plan.toOverwrite.push(normalised);
+  }
+
+  return plan;
+}
+
+export async function applyExtractionImportPlan(plan: ExtractionImportPlan): Promise<void> {
   const current = await loadBundle();
   const merged: ExtractionBundle = {
     version: BUNDLE_VERSION,
     profiles: { ...current.profiles },
   };
 
-  for (const profile of Object.values(bundle.profiles)) {
-    if (!profile || typeof profile !== 'object') continue;
-
-    // Structural validity check
-    if (profile.extraction?.mode === 'targeted') {
-      if (!isTargetedConfigValid(profile.extraction as TargetedExtractionConfig)) continue;
-    } else if (profile.extraction?.mode !== 'range') {
-      continue;
-    }
-
-    // Meaningful content check
-    if (!hasExtractionContent(profile)) continue;
-
-    const scope = (profile.scope ?? 'host') as ProfileScope;
-    const host = normaliseHost(profile.host);
-    const origin = scope === 'host' ? undefined : normaliseOrigin(profile.origin);
-    const path = scope === 'path' ? (normalisePath(profile.path) ?? '/') : undefined;
-    const id = buildProfileId(scope, host, origin, path);
-
-    // Normalise image attr default
-    const normalised: ExtractionProfile = {
-      id,
-      scope,
-      host,
-      origin,
-      path,
-      extraction: cloneExtractionConfig(profile.extraction),
-      rules: cloneRules(profile.rules),
-      applyToPreview: profile.applyToPreview ?? false,
-      autoApply: profile.autoApply ?? true,
-      name: profile.name?.trim() || undefined,
-      gallery: cloneGalleryConfig(profile.gallery),
-      createdAt: profile.createdAt ?? Date.now(),
-      updatedAt: profile.updatedAt ?? Date.now(),
-      lastUsed: profile.lastUsed,
-    };
-
-    merged.profiles[id] = cloneExtractionProfile(normalised);
+  for (const profile of plan.toAdd) {
+    merged.profiles[profile.id] = cloneExtractionProfile(profile);
+  }
+  for (const profile of plan.toOverwrite) {
+    // Re-check recency at apply time in case the local profile changed while
+    // a confirmation dialog was open.
+    const local = merged.profiles[profile.id];
+    if (plan.newerWins && local && local.updatedAt > profile.updatedAt) continue;
+    merged.profiles[profile.id] = cloneExtractionProfile(profile);
   }
 
   bundleCache = merged;
   pruneByLimits(bundleCache);
   await persistBundle();
+}
+
+export async function importExtractionProfiles(bundle: ExtractionBundle): Promise<void> {
+  const plan = await planExtractionImport(bundle);
+  await applyExtractionImportPlan(plan);
 }
 
 export async function clearExtractionProfiles(): Promise<void> {

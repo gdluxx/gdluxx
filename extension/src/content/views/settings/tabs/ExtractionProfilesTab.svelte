@@ -9,7 +9,7 @@
   -->
 
 <script lang="ts">
-  import { Button, Info } from '#components/ui';
+  import { Button, Info, Modal } from '#components/ui';
   import type { ExtractionProfileStore } from '#stores/extractionProfileStore.svelte';
   import type { GalleryDisplayConfig } from '#src/content/types';
   import type { Settings } from '#utils/settings';
@@ -54,6 +54,12 @@
       savingGallery = false;
     }
   }
+
+  const RESTORE_PREVIEW_LIMIT = 8;
+  const restorePlan = $derived(extractionStore.pendingRestore?.plan ?? null);
+  const restoreAffected = $derived(
+    restorePlan ? [...restorePlan.toAdd, ...restorePlan.toOverwrite] : [],
+  );
 </script>
 
 <div class="mx-2 my-4 max-w-[640px]">
@@ -417,3 +423,58 @@
     </div>
   </div>
 </div>
+
+<Modal
+  show={restorePlan !== null}
+  title="Restore from gdluxx?"
+  onClose={() => extractionStore.cancelRestoreFromRemote()}
+>
+  {#if restorePlan}
+    <div class="space-y-3 text-sm">
+      <p>
+        {restorePlan.toAdd.length} profile{restorePlan.toAdd.length === 1 ? '' : 's'} will be added and
+        {restorePlan.toOverwrite.length} overwritten (remote copy is newer).
+        {#if restorePlan.skippedOlder > 0}
+          {restorePlan.skippedOlder} will be skipped because the local copy is newer or unchanged.
+        {/if}
+        {#if restorePlan.skippedInvalid > 0}
+          {restorePlan.skippedInvalid} invalid remote profile{restorePlan.skippedInvalid === 1
+            ? ''
+            : 's'} will be ignored.
+        {/if}
+      </p>
+      {#if restoreAffected.length > 0}
+        <ul class="list-inside list-disc text-base-content/70">
+          {#each restoreAffected.slice(0, RESTORE_PREVIEW_LIMIT) as profile (profile.id)}
+            <li>{describeExtractionProfile(profile)}</li>
+          {/each}
+        </ul>
+        {#if restoreAffected.length > RESTORE_PREVIEW_LIMIT}
+          <p class="text-base-content/60 text-xs">
+            +{restoreAffected.length - RESTORE_PREVIEW_LIMIT} more
+          </p>
+        {/if}
+      {/if}
+    </div>
+  {/if}
+  {#snippet actions()}
+    <Button
+      variant="ghost"
+      onclick={() => extractionStore.cancelRestoreFromRemote()}
+    >
+      Cancel
+    </Button>
+    <Button
+      variant="primary"
+      onclick={() => extractionStore.confirmRestoreFromRemote()}
+      disabled={extractionStore.backupLoading}
+    >
+      {#if extractionStore.backupLoading}
+        <span class="loading loading-sm loading-spinner"></span>
+        Restoring...
+      {:else}
+        Restore
+      {/if}
+    </Button>
+  {/snippet}
+</Modal>
