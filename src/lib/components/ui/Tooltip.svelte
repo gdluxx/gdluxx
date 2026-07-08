@@ -24,7 +24,6 @@
     class?: string;
 
     placement?: TooltipPlacement;
-    offset?: number;
 
     trigger?: TooltipTrigger;
     show?: boolean;
@@ -47,7 +46,6 @@
     content,
     class: className = '',
     placement = 'top',
-    offset: _offset = 8,
     trigger = 'hover',
     show = false,
     delay = 0,
@@ -182,13 +180,13 @@
   }
 
   function handleFocus(): void {
-    if (trigger === 'focus') {
+    if (trigger === 'hover' || trigger === 'focus') {
       showTooltip();
     }
   }
 
   function handleBlur(): void {
-    if (trigger === 'focus') {
+    if (trigger === 'hover' || trigger === 'focus') {
       hideTooltip();
     }
   }
@@ -212,8 +210,8 @@
   onmouseenter={handleMouseEnter}
   onmouseleave={handleMouseLeave}
   onclick={handleClick}
-  onfocus={handleFocus}
-  onblur={handleBlur}
+  onfocusin={handleFocus}
+  onfocusout={handleBlur}
   bind:this={triggerElement}
   {...ariaAttributes}
   {...restProps}

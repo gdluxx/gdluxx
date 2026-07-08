@@ -19,11 +19,12 @@
   interface ModalProps {
     show: boolean;
     size?: ModalSize;
+    closeOnEscape?: boolean;
     children?: Snippet;
     onClose?: () => void;
   }
 
-  const { show, size = 'md', children, onClose }: ModalProps = $props();
+  const { show, size = 'md', closeOnEscape = true, children, onClose }: ModalProps = $props();
 
   const sizeClasses = {
     sm: 'max-w-sm',
@@ -48,6 +49,9 @@
   }
 
   function handleKeydown(event: KeyboardEvent) {
+    if (!show || !closeOnEscape) {
+      return;
+    }
     if (event.key === 'Escape' && onClose) {
       onClose();
     }
