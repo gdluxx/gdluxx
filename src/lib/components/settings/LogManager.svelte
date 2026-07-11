@@ -243,7 +243,7 @@
 </script>
 
 <svelte:head>
-  <title>Log Settings - gdluxx</title>
+  <title>Logging - gdluxx</title>
 </svelte:head>
 
 <div class="container mx-auto max-w-4xl space-y-8 p-6">
@@ -471,6 +471,7 @@
                 placeholder="10m"
                 class="form-input"
               />
+              <p class="mt-1 text-xs text-muted-foreground">e.g. 10m, 1g</p>
             </div>
 
             <div>
@@ -478,7 +479,7 @@
                 for="server-file-max-files"
                 class="mb-1 block text-sm font-medium text-muted-foreground"
               >
-                Max Files to Keep
+                Retention
                 <Tooltip
                   maxWidth="32rem"
                   class="!min-w-80 !whitespace-normal"
@@ -498,6 +499,9 @@
                 placeholder="7d"
                 class="form-input"
               />
+              <p class="mt-1 text-xs text-muted-foreground">
+                Number of files (e.g. 14) or duration (e.g. 7d)
+              </p>
             </div>
           {/if}
 

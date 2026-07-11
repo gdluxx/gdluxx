@@ -16,8 +16,8 @@
     type VersionStoreState,
   } from '$lib/version/versionStore';
   import { toastStore } from '$lib/stores/toast';
-  import { clientLogger as logger } from '$lib/client/logger';
   import { Button, Info } from '$lib/components/ui';
+  import { `formatRelativeTime` } from '$lib/utils/relativeTime';
 
   onMount(async () => {
     const result: StoreActionResult = await versionStore.loadStatus();
@@ -32,6 +32,13 @@
       return 'N/A';
     }
     return new Date(timestamp).toLocaleString();
+  }
+
+  function formatCheckedRelative(timestamp: number | null): string {
+    if (!timestamp) {
+      return 'N/A';
+    }
+    return formatRelativeTime(timestamp);
   }
 
   let updateAvailable = $state(false);
@@ -53,7 +60,6 @@
         result = !areVersionsEqual;
       }
       updateAvailable = result;
-      logger.info(`[EFFECT DEBUG] Manually set updateAvailable (state): ${updateAvailable}`);
     });
   });
 
@@ -86,24 +92,6 @@
       }
     }
   }
-
-  $effect(() => {
-    if (!versionState) {
-      return;
-    }
-
-    const current = versionState.current;
-    const latest = versionState.latestAvailable;
-
-    logger.info(`[EFFECT DEBUG] RAW current: >${current}< (Type: ${typeof current})`);
-    logger.info(`[EFFECT DEBUG] RAW latest: >${latest}< (Type: ${typeof latest})`);
-
-    if (current !== null && current !== undefined && latest !== null && latest !== undefined) {
-      const areDifferent = current !== latest;
-      logger.info(`[EFFECT DEBUG] Comparison (current !== latest): ${areDifferent}`);
-    }
-    logger.info(`[EFFECT DEBUG] Derived updateAvailable value: ${updateAvailable}`);
-  });
 </script>
 
 {#if versionState?.error && !versionState?.loading && !versionState?.updateInProgress}
@@ -130,23 +118,26 @@
   </Info>
 {/if}
 
-<section class="content-panel">
-  <div class="flex justify-between">
+<section class="content-panel space-y-1.5">
+  <div class="flex flex-wrap items-baseline gap-x-2">
     <span class="font-medium text-foreground">Current Version:</span>
     <span class="text-foreground">
       {versionState?.current ?? 'Not Installed or Unknown'}
     </span>
   </div>
 
-  <div class="flex justify-between">
+  <div class="flex flex-wrap items-baseline gap-x-2">
     <span class="font-medium text-foreground">Last Checked:</span>
-    <span class="text-foreground">
-      {formatTimestamp(versionState?.lastChecked ?? null)}
+    <span
+      class="text-foreground"
+      title={versionState?.lastChecked ? formatTimestamp(versionState.lastChecked) : undefined}
+    >
+      {formatCheckedRelative(versionState?.lastChecked ?? null)}
     </span>
   </div>
 
   {#if versionState?.latestAvailable}
-    <div class="flex justify-between">
+    <div class="flex flex-wrap items-baseline gap-x-2">
       <span class="font-medium text-foreground">Latest Available:</span>
       <span class="text-foreground">
         {versionState.latestAvailable}
@@ -155,7 +146,7 @@
   {/if}
 
   {#if versionState?.source}
-    <div class="flex justify-between">
+    <div class="flex flex-wrap items-baseline gap-x-2">
       <span class="font-medium text-foreground">Source:</span>
       <span class="text-foreground">
         <a
@@ -166,7 +157,9 @@
           rel="noopener noreferrer"
           class="text-link hover:underline"
         >
-          {versionState.source.user}/{versionState.source.repo}
+          {versionState.source.provider === 'codeberg'
+            ? 'codeberg.org'
+            : 'github.com'}/{versionState.source.user}/{versionState.source.repo}
         </a>
         {#if versionState.source.isArm64}
           <span class="bg-muted ml-2 rounded px-1.5 py-0.5 text-xs text-muted-foreground">
@@ -217,5 +210,10 @@
       variant="info"
       title="Update available!">A newer version is ready to install.</Info
     >
+  </div>
+{:else if versionState?.current && versionState?.latestAvailable}
+  <div class="mx-4 mt-8 flex items-center gap-2 text-sm font-medium text-success">
+    <span aria-hidden="true">✓</span>
+    <span>You're running the latest version</span>
   </div>
 {/if}

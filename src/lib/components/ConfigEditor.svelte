@@ -588,20 +588,8 @@
           </Tooltip>
         </div>
 
-        <!-- save/fullscreen buttons -->
+        <!-- fullscreen button -->
         <div class="flex items-center gap-3">
-          {#if onSave && !readonly}
-            <Button
-              variant="primary"
-              onclick={() => handleSave()}
-              disabled={isSaving}
-              loading={isSaving}
-              title=""
-              size="sm"
-            >
-              {isSaving ? 'Saving...' : hasLintErrors ? 'Save (Errors)' : 'Save'}
-            </Button>
-          {/if}
           <Button
             variant="outline-info"
             onclick={toggleFullscreen}
@@ -629,8 +617,20 @@
 
     <div class="data-list-controls mt-3">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-        <!-- reload/restore/format buttons -->
-        <div>
+        <!-- save/reload/restore/format buttons -->
+        <div class="flex flex-wrap items-center gap-2">
+          {#if onSave && !readonly}
+            <Button
+              variant="primary"
+              onclick={() => handleSave()}
+              disabled={isSaving}
+              loading={isSaving}
+              title=""
+              size="sm"
+            >
+              {isSaving ? 'Saving...' : hasLintErrors ? 'Save (Errors)' : 'Save'}
+            </Button>
+          {/if}
           {#if enableReload && !readonly}
             <Button
               variant="outline-warning"
@@ -650,7 +650,7 @@
           {/if}
           {#if enableRestoreDefaults && !readonly}
             <Button
-              variant="outline-warning"
+              variant="outline-danger"
               size="sm"
               disabled={isRestoring}
               loading={isRestoring}

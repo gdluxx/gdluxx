@@ -9,6 +9,7 @@
   -->
 
 <script lang="ts">
+  import { resolve } from '$app/paths';
   import { PageLayout } from '$lib/components/ui';
   import { Button } from '$lib/components/ui';
   import { Icon } from '$lib/components';
@@ -18,46 +19,43 @@
   const settingsPages = [
     {
       name: 'General',
-      title: 'General Settings',
+      title: 'General',
       description: 'Manage general application preferences',
       icon: 'settings' as IconName,
-      href: '/settings/general',
+      href: resolve('/settings/general'),
     },
     {
       name: 'Version',
-      title: 'Version Manager',
+      title: 'Version',
       description: 'Manage your gallery-dl version',
       icon: VersionIcon,
-      href: '/settings/version',
+      href: resolve('/settings/version'),
     },
     {
-      name: 'Users',
-      title: 'User Manager',
+      name: 'Account',
+      title: 'Account',
       description: 'Manage user accounts',
       icon: 'user' as IconName,
-      href: '/settings/users',
+      href: resolve('/settings/users'),
     },
     {
       name: 'API Keys',
-      title: 'Key Manager',
+      title: 'API Keys',
       description: 'Manage your API keys',
       icon: KeyIcon,
-      href: '/settings/apikey',
+      href: resolve('/settings/apikey'),
     },
     {
       name: 'Logging',
-      title: 'Logging Manager',
+      title: 'Logging',
       description: 'Manage your log settings',
       icon: LogIcon,
-      href: '/settings/logging',
+      href: resolve('/settings/logging'),
     },
   ];
 </script>
 
-<PageLayout
-  title="Settings"
-  description="Configure your gdluxx application"
->
+<PageLayout title="Settings">
   {#snippet icon()}
     <VersionIcon />
   {/snippet}

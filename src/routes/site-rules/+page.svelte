@@ -239,7 +239,7 @@
 
 <PageLayout
   title="Site Rules"
-  description="Site rules configuration"
+  description="Automatically apply CLI options to URLs matching a site pattern"
 >
   {#snippet icon()}
     <Icon
@@ -304,7 +304,7 @@
                 Refreshing...
               {:else}
                 <Icon
-                  iconName="magnifying-glass"
+                  iconName="reload"
                   size={16}
                   class="mr-2"
                 />

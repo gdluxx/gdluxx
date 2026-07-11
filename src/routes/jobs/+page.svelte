@@ -16,10 +16,7 @@
   const { data } = $props();
 </script>
 
-<PageLayout
-  title="Jobs"
-  description="Manage your job logs"
->
+<PageLayout title="Jobs">
   {#snippet icon()}
     <Icon
       iconName="job"

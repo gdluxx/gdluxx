@@ -14,7 +14,7 @@
 
   interface Props {
     title: string;
-    description: string;
+    description?: string;
     icon?: Snippet;
     children: Snippet;
     ariaLabel?: string;
@@ -25,54 +25,51 @@
 
 <svelte:head>
   <title>{title} - gdluxx</title>
-  <meta
-    name="description"
-    content={description}
-  />
+  {#if description}
+    <meta
+      name="description"
+      content={description}
+    />
+  {/if}
 </svelte:head>
 
 <section
   class="space-y-6 sm:space-y-8"
   aria-labelledby="page-title"
-  aria-describedby="page-description"
+  aria-describedby={description ? 'page-description' : undefined}
   {...ariaLabel && { 'aria-label': ariaLabel }}
 >
-  <header class="text-center">
-    <div class="mb-3 flex items-center justify-center sm:mb-4">
-      {#if icon}
-        <div
-          class="mr-2 h-6 w-6 text-primary sm:mr-3 sm:h-8 sm:w-8"
-          aria-hidden="true"
-        >
+  <header>
+    <div class="flex items-center gap-2">
+      <div
+        class="h-6 w-6 flex-shrink-0 text-primary [&_svg]:h-full [&_svg]:w-full"
+        aria-hidden="true"
+      >
+        {#if icon}
           {@render icon()}
-        </div>
-      {:else}
-        <div
-          class="mr-2 h-6 w-6 text-primary sm:mr-3 sm:h-8 sm:w-8"
-          aria-hidden="true"
-        >
+        {:else}
           <Icon
             iconName="circle"
             size={16}
           />
-        </div>
-      {/if}
-
+        {/if}
+      </div>
       <h1
         id="page-title"
-        class="cursor-default text-xl font-bold text-primary sm:text-2xl lg:text-3xl"
+        class="cursor-default text-2xl font-bold text-primary"
       >
         {title}
       </h1>
     </div>
-
-    <p
-      id="page-description"
-      class="mx-auto max-w-2xl cursor-default px-4 text-sm text-muted-foreground sm:px-0 sm:text-base"
-    >
-      <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-      {@html description}
-    </p>
+    {#if description}
+      <p
+        id="page-description"
+        class="mt-1 cursor-default text-sm text-muted-foreground"
+      >
+        <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+        {@html description}
+      </p>
+    {/if}
   </header>
 
   <div

@@ -27,13 +27,13 @@
   />
   {#if runningJobCount > 0}
     <span
-      class="absolute -top-1 -right-1 flex h-5 w-5 animate-pulse items-center justify-center rounded-full bg-error/75 text-xs text-foreground"
+      class="absolute -top-1 -right-1 flex h-5 min-w-5 animate-pulse items-center justify-center rounded-full bg-error/75 px-1 text-xs font-semibold text-foreground"
     >
-      {runningJobCount}
+      (runningJobCount)
     </span>
   {:else}
     <span
-      class="absolute -top-0.25 -right-0.25 flex h-5.5 w-5.5 cursor-default items-center justify-center rounded-full bg-primary/75 text-xs font-semibold text-black select-none"
+      class="absolute -top-1 -right-1 flex h-5 min-w-5 cursor-default items-center justify-center rounded-full bg-primary/75 px-1 text-xs font-semibold text-black select-none"
     >
       {jobCount}
     </span>

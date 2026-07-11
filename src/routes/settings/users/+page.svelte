@@ -18,10 +18,7 @@
   const user = $derived(data.user);
 </script>
 
-<PageLayout
-  title="User Manager"
-  description="Manage user accounts"
->
+<PageLayout title="Account">
   {#snippet icon()}
     <Icon
       iconName="user"

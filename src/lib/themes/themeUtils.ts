@@ -34,6 +34,14 @@ export interface ThemeConfig {
   displayName: string;
   description: string;
   supportsDarkMode: boolean;
+  /**
+   * Small set of signature colors (primary/success/warning/info) taken
+   * directly from this theme's own CSS token file (light mode). Used to
+   * render identity swatches on theme picker cards. These are literal
+   * values by design - they mirror the theme's own tokens, not app UI
+   * palette drift.
+   */
+  swatch: string[];
 }
 
 export const AVAILABLE_THEMES: Record<ThemeName, ThemeConfig> = {
@@ -42,42 +50,49 @@ export const AVAILABLE_THEMES: Record<ThemeName, ThemeConfig> = {
     displayName: 'Indigo',
     description: 'Enhanced indigo',
     supportsDarkMode: true,
+    swatch: ['#6366f1', '#059669', '#eab308', '#0ea5e9'],
   },
   'media-gallery': {
     name: 'media-gallery',
     displayName: 'Media Gallery',
     description: 'Orange-focused',
     supportsDarkMode: true,
+    swatch: ['#ea580c', '#059669', '#f59e0b', '#0ea5e9'],
   },
   'developer-tool': {
     name: 'developer-tool',
     displayName: 'Developer Tool',
     description: 'GitHub-inspired',
     supportsDarkMode: true,
+    swatch: ['#0969da', '#1a7f37', '#bf8700', '#0969da'],
   },
   'high-contrast': {
     name: 'high-contrast',
     displayName: 'High Contrast',
     description: 'Maximum contrast',
     supportsDarkMode: true,
+    swatch: ['#7c2d12', '#15803d', '#a16207', '#1d4ed8'],
   },
   'media-downloader': {
     name: 'media-downloader',
     displayName: 'Media Downloader',
     description: 'Amber-focused',
     supportsDarkMode: true,
+    swatch: ['#d97706', '#059669', '#d97706', '#2563eb'],
   },
   'terminal-dark': {
     name: 'terminal-dark',
     displayName: 'Terminal Dark',
     description: 'Green-focused',
     supportsDarkMode: true,
+    swatch: ['#16a34a', '#059669', '#d97706', '#2563eb'],
   },
   'power-user': {
     name: 'power-user',
     displayName: 'Power User',
     description: 'Purple-focused',
     supportsDarkMode: true,
+    swatch: ['#7c3aed', '#059669', '#d97706', '#2563eb'],
   },
 };
 

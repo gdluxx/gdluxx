@@ -81,6 +81,16 @@
   const hasSelection = $derived(selectedCount > 0);
   const allSelected = $derived(selectedCount === jobs.length && jobs.length > 0);
 
+  // header job count label: "N jobs" (or "1 job") when unfiltered, "N of Total" when filtered
+  const jobsHeaderLabel = $derived(() => {
+    const total = allJobs.length;
+    const filteredCount = jobs.length;
+    if (filteredCount === total) {
+      return `${total} ${total === 1 ? 'job' : 'jobs'}`;
+    }
+    return `${filteredCount} of ${total}`;
+  });
+
   // statistics
   const aggregateStats = $derived(() => {
     const stats = {
@@ -257,7 +267,7 @@
   <div class="data-list-header">
     <div class="mb-3 flex items-center justify-between">
       <h2>
-        Jobs: {jobs.length} / {aggregateStats().total}
+        {jobsHeaderLabel()}
         {#if hasSelection}
           <span class="text-sm text-muted-foreground">
             ({selectedCount} selected)
@@ -315,7 +325,7 @@
       >
         <div class="flex items-center justify-center gap-2">
           <div class="h-2 w-2 rounded-full bg-warning"></div>
-          <span class="text-md font-medium text-accent-foreground">Skips</span>
+          <span class="text-md font-medium text-accent-foreground">Skipped</span>
         </div>
         <div class="mt-1 flex justify-center text-xl font-semibold text-primary">
           {aggregateStats().skips}
@@ -363,7 +373,7 @@
             size={16}
             class="align-middle text-warning"
           />
-          <span class="text-md font-medium text-accent-foreground">Skips</span>
+          <span class="text-md font-medium text-accent-foreground">Skipped</span>
         </div>
         <div class="mt-1 flex justify-center text-xl font-semibold text-primary">
           {aggregateStats().totalSkips}
@@ -392,16 +402,6 @@
               size="sm"
             >
               Delete Selected
-            </Button>
-          {:else}
-            <Button
-              name="Delete All Jobs"
-              onclick={deleteAllJobs}
-              aria-label="Delete All Jobs"
-              variant="outline-danger"
-              size="sm"
-            >
-              Delete All
             </Button>
           {/if}
         </div>
@@ -448,6 +448,17 @@
             />
           </Button>
         </div>
+
+        <Button
+          name="Delete All Jobs"
+          onclick={deleteAllJobs}
+          aria-label="Delete All Jobs"
+          variant="outline-danger"
+          size="sm"
+          class="sm:ml-auto"
+        >
+          Delete All
+        </Button>
       </div>
     </div>
   </div>

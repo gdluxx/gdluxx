@@ -20,7 +20,7 @@
 
 <PageLayout
   title="Run"
-  description="Retrieve your URLs"
+  description="Download media from one or more URLs"
 >
   {#snippet icon()}
     <RunIcon />

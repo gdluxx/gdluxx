@@ -24,8 +24,8 @@
 </script>
 
 <PageLayout
-  title="Key Manager"
-  description="Manage your API keys"
+  title="API Keys"
+  description="Keys for the browser extension and external API access"
 >
   {#snippet icon()}
     <Icon

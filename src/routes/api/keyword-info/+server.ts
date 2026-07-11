@@ -129,9 +129,7 @@ export const POST: RequestHandler = async ({ request }: RequestEvent): Promise<R
     if (error instanceof Error) {
       if (error.message.includes('ENOENT')) {
         return handleApiError(
-          new Error(
-            "gallery-dl binary not found. Go to 'Settings -> Version Manager' to download it.",
-          ),
+          new Error("gallery-dl binary not found. Go to 'Settings -> Version' to download it."),
         );
       }
       if (error.message.includes('timeout')) {

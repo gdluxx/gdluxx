@@ -58,25 +58,25 @@ export const navItems: NavigationItem[] = [
     children: [
       {
         id: 'general',
-        label: 'General Manager',
+        label: 'General',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.5" d="M2.25 2.25h7.5v7.5h-7.5zm15.489.5l4 7.25h-8zM1.75 18a4.25 4.25 0 1 0 8.5 0a4.25 4.25 0 1 0-8.5 0m11.498-3.75h9.504M13.248 18h9.504m-9.504 3.75h9.504"/></svg>`,
         href: '/settings/general',
       },
       {
         id: 'version',
-        label: 'Version Manager',
+        label: 'Version',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><g fill="none" fill-rule="evenodd"><path d="m12.593 23.258l-.011.002l-.071.035l-.02.004l-.014-.004l-.071-.035q-.016-.005-.024.005l-.004.01l-.017.428l.005.02l.01.013l.104.074l.015.004l.012-.004l.104-.074l.012-.016l.004-.017l-.017-.427q-.004-.016-.017-.018m.265-.113l-.013.002l-.185.093l-.01.01l-.003.011l.018.43l.005.012l.008.007l.201.093q.019.005.029-.008l.004-.014l-.034-.614q-.005-.018-.02-.022m-.715.002a.02.02 0 0 0-.027.006l-.006.014l-.034.614q.001.018.017.024l.015-.002l.201-.093l.01-.008l.004-.011l.017-.43l-.003-.012l-.01-.01z" /><path fill="currentColor" fill-rule="nonzero" d="m12.935 2.878l7.181 3.796c1.066.563 1.066 2.09 0 2.652L18.842 10l1.274.674c1.066.563 1.066 2.09 0 2.652L18.842 14l1.274.674c1.066.563 1.066 2.09 0 2.652l-7.181 3.796a2 2 0 0 1-1.87 0l-7.181-3.796c-1.066-.563-1.066-2.089 0-2.652L5.159 14l-1.275-.674c-1.066-.563-1.066-2.089 0-2.652L5.159 10l-1.275-.674c-1.066-.563-1.066-2.089 0-2.652l7.181-3.796a2 2 0 0 1 1.87 0m3.767 12.253l-3.767 1.991a2 2 0 0 1-1.87 0l-3.767-1.99L5.655 16L12 19.354L18.346 16zm0-4l-3.767 1.992a2 2 0 0 1-1.707.076l-.163-.076l-3.767-1.992l-1.643.87L12 15.353L18.346 12zM12 4.646L5.655 8L12 11.354L18.346 8z" /></g></svg>`,
         href: '/settings/version',
       },
       {
         id: 'users',
-        label: 'User Manager',
+        label: 'Account',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path fill="currentColor" d="M11 7c0 1.66-1.34 3-3 3S5 8.66 5 7s1.34-3 3-3s3 1.34 3 3"/><path fill="currentColor" fill-rule="evenodd" d="M16 8c0 4.42-3.58 8-8 8s-8-3.58-8-8s3.58-8 8-8s8 3.58 8 8M4 13.75C4.16 13.484 5.71 11 7.99 11c2.27 0 3.83 2.49 3.99 2.75A6.98 6.98 0 0 0 14.99 8c0-3.87-3.13-7-7-7s-7 3.13-7 7c0 2.38 1.19 4.49 3.01 5.75" clip-rule="evenodd"/></svg>`,
         href: '/settings/users',
       },
       {
         id: 'apikey',
-        label: 'Key Manager',
+        label: 'API Keys',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" /></svg>`,
         href: '/settings/apikey',
       },
@@ -88,7 +88,7 @@ export const navItems: NavigationItem[] = [
       },
       {
         id: 'logging',
-        label: 'Log Manager',
+        label: 'Logging',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><g fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="4"><path d="M13 10h28v34H13z" /><path stroke-linecap="round" d="M35 10V4H8a1 1 0 0 0-1 1v33h6m8-16h12m-12 8h12" /></g></svg>`,
         href: '/settings/logging',
       },

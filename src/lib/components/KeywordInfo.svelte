@@ -176,7 +176,7 @@
         onclick={() => keywordInfoStore.clearAllCachedData()}
         disabled={buttonsDisabled}
         size="sm"
-        variant="outline-danger"
+        variant="outline-primary"
         class="order-2 w-full sm:order-1 sm:w-auto"
       >
         Clear Data
@@ -262,7 +262,7 @@
               {#if keywordInfoStore.hasOutput}
                 <Button
                   onclick={clearOutput}
-                  variant="outline-warning"
+                  variant="outline-primary"
                   size="sm"
                   class="flex items-center gap-1"
                 >

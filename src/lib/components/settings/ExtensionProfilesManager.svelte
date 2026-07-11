@@ -110,6 +110,10 @@
     }
   }
 
+  function pluralize(count: number, word: string): string {
+    return `${count} ${word}${count === 1 ? '' : 's'}`;
+  }
+
   function formatTimestamp(value: number | null | undefined): string {
     if (!value) {
       return '—';
@@ -257,7 +261,7 @@
     <p class="text-sm">
       Create an API key in <a
         class="text-link hover:underline"
-        href={resolve('/settings/apikey')}>Key Manager</a
+        href={resolve('/settings/apikey')}>API Keys</a
       > to enable extension profile syncing.
     </p>
   </Info>
@@ -283,14 +287,14 @@
 
       <div class="mt-3 flex gap-2">
         <Button
-          variant="default"
+          variant="outline-primary"
           disabled={!selectedKeyId || exportBusy}
           onclick={handleExport}
         >
           {exportBusy ? 'Exporting…' : 'Export profiles'}
         </Button>
         <Button
-          variant="default"
+          variant="outline-primary"
           disabled={!selectedKeyId}
           onclick={() => (importOpen = true)}
         >
@@ -312,9 +316,9 @@
     </div>
 
     <section class="data-list">
-      <header class="data-list-header flex items-center justify-between">
+      <header class="data-list-header flex items-center justify-between gap-2">
         <h2 class="!mb-0">Extraction Profiles ({extractionProfiles.length})</h2>
-        <div class="flex gap-2">
+        <div class="flex items-center gap-2">
           <Button
             variant="primary"
             size="sm"
@@ -323,26 +327,28 @@
           >
             New profile
           </Button>
-          {#if selectedExtractionView?.hasBackup}
-            <Button
-              variant="outline-danger"
-              size="sm"
-              disabled={extractionDeleteBusy}
-              onclick={confirmDeleteExtractionBackup}
-            >
-              {extractionDeleteBusy ? 'Deleting…' : 'Delete backup'}
-            </Button>
-          {/if}
         </div>
       </header>
 
       {#if selectedExtractionView?.hasBackup}
-        <div class="px-4 py-2 text-xs text-muted-foreground">
-          {selectedExtractionView.profileCount} profile(s) · last sync
-          {formatTimestamp(selectedExtractionView.updatedAt)}
-          {#if selectedExtractionView.syncedBy}
-            · by {selectedExtractionView.syncedBy}
-          {/if}
+        <div
+          class="flex items-center justify-between gap-2 px-4 py-2 text-xs text-muted-foreground"
+        >
+          <span>
+            {pluralize(selectedExtractionView.profileCount, 'profile')} · last sync
+            {formatTimestamp(selectedExtractionView.updatedAt)}
+            {#if selectedExtractionView.syncedBy}
+              · by {selectedExtractionView.syncedBy}
+            {/if}
+          </span>
+          <Button
+            variant="outline-danger"
+            size="sm"
+            disabled={extractionDeleteBusy}
+            onclick={confirmDeleteExtractionBackup}
+          >
+            {extractionDeleteBusy ? 'Deleting…' : 'Delete backup'}
+          </Button>
         </div>
       {/if}
 
@@ -422,9 +428,8 @@
           <section class="mt-4">
             <h3 class="mb-2 text-sm font-semibold">Selectors ({selectorProfiles.length})</h3>
             <div class="mb-2 text-xs text-muted-foreground">
-              {selectedSelectorView?.profileCount ?? selectorProfiles.length} profile(s) · last sync {formatTimestamp(
-                selectedSelectorView?.updatedAt,
-              )}
+              {pluralize(selectedSelectorView?.profileCount ?? selectorProfiles.length, 'profile')} ·
+              last sync {formatTimestamp(selectedSelectorView?.updatedAt)}
               {#if selectedSelectorView?.syncedBy}
                 · by {selectedSelectorView.syncedBy}
               {/if}
@@ -477,7 +482,7 @@
           <section class="mt-4">
             <h3 class="mb-2 text-sm font-semibold">Substitutions ({subProfiles.length})</h3>
             <div class="mb-2 text-xs text-muted-foreground">
-              {selectedSubView?.profileCount ?? subProfiles.length} profile(s) · last sync
+              {pluralize(selectedSubView?.profileCount ?? subProfiles.length, 'profile')} · last sync
               {formatTimestamp(selectedSubView?.updatedAt)}
               {#if selectedSubView?.syncedBy}
                 · by {selectedSubView.syncedBy}

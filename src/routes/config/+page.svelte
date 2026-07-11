@@ -100,10 +100,7 @@
   }
 </script>
 
-<PageLayout
-  title="Configuration"
-  description="Manage your config file"
->
+<PageLayout title="Configuration">
   {#snippet icon()}
     <Icon
       iconName="json"

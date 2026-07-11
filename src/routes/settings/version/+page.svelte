@@ -15,8 +15,8 @@
 </script>
 
 <PageLayout
-  title="Version Manager"
-  description="Manage your <i>gallery-dl</i> version"
+  title="Version"
+  description="Check for and install gallery-dl updates"
 >
   {#snippet icon()}
     <Icon

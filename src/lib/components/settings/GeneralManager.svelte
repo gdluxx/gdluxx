@@ -9,7 +9,7 @@
   -->
 
 <script lang="ts">
-  import { Toggle, Info } from '$lib/components/ui';
+  import { Toggle } from '$lib/components/ui';
   import { clientLogger as logger } from '$lib/client/logger';
   import { toastStore } from '$lib/stores/toast';
   import type { UserSettings } from '$lib/server/userSettingsManager';
@@ -147,7 +147,7 @@
 <div class="space-y-6">
   <!-- CommandForm options -->
   <div class="content-panel">
-    <h2 class="">Command Form</h2>
+    <h2 class="">Run</h2>
 
     <div class="flex items-start justify-between">
       <div class="flex-1">
@@ -201,14 +201,9 @@
             class="w-32 rounded-sm border border-border bg-surface px-3 py-1.5 text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-hidden"
           />
         </div>
-        <div class="mt-3">
-          <Info
-            variant="info"
-            size="sm"
-          >
-            Must be a whole number between 1 and 10000. Default is 200.
-          </Info>
-        </div>
+        <p class="mt-1 text-xs text-muted-foreground">
+          Must be a whole number between 1 and 10000. Default is 200.
+        </p>
       </div>
     </div>
   </div>
@@ -258,6 +253,14 @@
               class="mt-1 text-xs text-muted-foreground"
             >
               {theme.description}
+            </div>
+            <div class="mt-2 flex items-center gap-1.5">
+              {#each theme.swatch as color, index (index)}
+                <span
+                  class="h-3 w-3 rounded-full border border-border/50"
+                  style:background-color={color}
+                ></span>
+              {/each}
             </div>
             <span class="sr-only">
               {settings.selectedTheme === theme.name ? 'Currently selected' : 'Not selected'}

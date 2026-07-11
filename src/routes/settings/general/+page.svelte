@@ -21,10 +21,7 @@
   const { data }: Props = $props();
 </script>
 
-<PageLayout
-  title="General Settings"
-  description="Manage general application preferences"
->
+<PageLayout title="General">
   {#snippet icon()}
     <Icon
       iconName="general-settings"
