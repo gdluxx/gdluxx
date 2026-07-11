@@ -18,6 +18,7 @@
   import { jobStore } from '$lib/stores/jobs.svelte';
   import { CopyTooltip } from '$lib/components/ui';
   import { Icon } from '$lib/components/index';
+  import { getStatusColor, getStatusText } from '$lib/utils/jobStatus';
 
   interface Props {
     job: ClientJob;
@@ -119,39 +120,6 @@
         return 'text-accent-foreground italic';
       default:
         return 'text-foreground';
-    }
-  }
-
-  function getStatusColor(status: ClientJob['status']): string {
-    switch (status) {
-      case 'running':
-        return 'bg-info';
-      case 'success':
-        return 'bg-success';
-      case 'no_action':
-        return 'bg-warning';
-      case 'error':
-        return 'bg-error';
-      default:
-        return 'bg-muted-foreground';
-    }
-  }
-
-  function getStatusText(status: ClientJob['status']): string {
-    switch (status) {
-      case 'running':
-        return 'Running';
-      case 'success':
-        return 'Success';
-      case 'no_action':
-        return 'Skips';
-      case 'error':
-        return 'Error';
-      default:
-        console.warn(
-          `Unknown job status encountered: "${status}". This may indicate a data migration issue.`,
-        );
-        return 'Unknown';
     }
   }
 

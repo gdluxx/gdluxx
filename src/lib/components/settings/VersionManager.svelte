@@ -17,7 +17,7 @@
   } from '$lib/version/versionStore';
   import { toastStore } from '$lib/stores/toast';
   import { Button, Info } from '$lib/components/ui';
-  import { `formatRelativeTime` } from '$lib/utils/relativeTime';
+  import { formatRelativeTime } from '$lib/utils/relativeTime';
 
   onMount(async () => {
     const result: StoreActionResult = await versionStore.loadStatus();

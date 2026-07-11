@@ -16,6 +16,7 @@
   import { Icon } from '$lib/components/index';
   import { SiteRuleModal } from '$lib/components/site-rules';
   import { extractUniquePatterns } from '$lib/utils/patternDetection';
+  import { parseUrls } from '$lib/utils/parseUrls';
   import { toastStore } from '$lib/stores/toast';
 
   const typedOptionsData = optionsData as OptionsData;
@@ -539,12 +540,7 @@
   <SiteRuleModal
     show={showSaveRuleDialog}
     options={getUserSelectedOptions()}
-    detectedPatterns={extractUniquePatterns(
-      commandUrlsInput
-        .split(/[\s\n]+/)
-        .map((url) => url.trim())
-        .filter((url) => url !== ''),
-    )}
+    detectedPatterns={extractUniquePatterns(parseUrls(commandUrlsInput))}
     onSaved={handleSiteRuleSaved}
     onCancel={() => (showSaveRuleDialog = false)}
   />

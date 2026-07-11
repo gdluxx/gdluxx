@@ -12,6 +12,7 @@
   import { CommandForm } from '$lib/components';
   import { PageLayout } from '$lib/components/ui';
   import { RunIcon } from '$lib/components/icons';
+  import { RecentJobs } from '$lib/components/jobs';
 </script>
 
 <svelte:head>
@@ -25,5 +26,8 @@
   {#snippet icon()}
     <RunIcon />
   {/snippet}
-  <CommandForm />
+  <div class="space-y-6">
+    <CommandForm />
+    <RecentJobs />
+  </div>
 </PageLayout>

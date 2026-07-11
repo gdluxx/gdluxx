@@ -18,6 +18,7 @@
   import type { OptionWithSource, SiteConfigData } from '$lib/types/command-form';
   import { browser } from '$app/environment';
   import { jobStore } from '$lib/stores/jobs.svelte';
+  import { parseUrls } from '$lib/utils/parseUrls';
   import OptionsManager from './OptionsManager.svelte';
 
   const typedOptionsData = optionsData as OptionsData;
@@ -52,9 +53,22 @@
   let showConflictWarning = $state(false);
   let detectedConflicts = $state<Conflict[]>([]);
 
+  // Live, non-blocking site-rule hint shown while typing (before submit)
+  let siteRuleHints = $state<SiteConfigData[]>([]);
+  let hintRequestId = 0;
+
   const allOptions: Option[] = Object.values(typedOptionsData).flatMap(
     (category) => category.options as Option[],
   );
+
+  const siteRuleHintSummary = $derived.by(() => {
+    const counts: Record<string, number> = {};
+    for (const config of siteRuleHints) {
+      const name = config.configName ?? config.matchedPattern ?? 'site rule';
+      counts[name] = (counts[name] ?? 0) + 1;
+    }
+    return Object.entries(counts).map(([configName, count]) => ({ configName, count }));
+  });
 
   onMount(async () => {
     await checkConfigFileForErrors();
@@ -86,6 +100,81 @@
     }
   });
 
+  // Debounced site rule lookup to surface a quiet hint while the user types
+  $effect(() => {
+    const input = commandUrlsInput;
+
+    if (!browser) {
+      return;
+    }
+
+    const urls = parseUrls(input);
+    if (urls.length === 0) {
+      siteRuleHints = [];
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      const requestId = ++hintRequestId;
+      void lookupSiteConfigs(urls)
+        .then((configs) => {
+          // Ignore stale/out-of-order responses
+          if (requestId === hintRequestId) {
+            siteRuleHints = configs;
+          }
+        })
+        .catch(() => {
+          if (requestId === hintRequestId) {
+            siteRuleHints = [];
+          }
+        });
+    }, 450);
+
+    return () => clearTimeout(timer);
+  });
+
+  async function lookupSiteConfigs(urls: string[]): Promise<SiteConfigData[]> {
+    const response = await fetch('/api/site-configs/lookup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ urls }),
+    });
+
+    if (!response.ok) {
+      return [];
+    }
+
+    const { data } = await response.json();
+    return data ?? [];
+  }
+
+  function detectConflicts(siteConfigs: SiteConfigData[]): Conflict[] {
+    const conflicts: Conflict[] = [];
+
+    const userSelectedOptions = Array.from(selectedOptions.entries()).filter(
+      ([, optionData]) => optionData.source === 'user',
+    );
+
+    for (const [optionId, userOptionData] of userSelectedOptions) {
+      for (const config of siteConfigs) {
+        if (optionId in config.options) {
+          const siteRuleValue = config.options[optionId];
+          if (userOptionData.value !== siteRuleValue) {
+            conflicts.push({
+              optionId,
+              userValue: userOptionData.value,
+              siteRuleValue,
+              sitePattern: config.matchedPattern ?? '',
+              configName: config.configName,
+            });
+          }
+        }
+      }
+    }
+
+    return conflicts;
+  }
+
   function getOptionById(optionId: string): Option | undefined {
     return allOptions.find((opt) => opt.id === optionId);
   }
@@ -110,13 +199,6 @@
     } catch (fetchError) {
       logger.error('Failed to fetch config:', fetchError);
     }
-  }
-
-  function extractUrlsFromInput(input: string): string[] {
-    return input
-      .split(/[\s\n]+/)
-      .map((url) => url.trim())
-      .filter((url) => url !== '');
   }
 
   function mergeSiteConfigsWithUserOptions(siteConfigs: SiteConfigData[]) {
@@ -164,10 +246,7 @@
   function handleFormResult(result: FormResult) {
     formError = null;
 
-    const urlsToProcess = commandUrlsInput
-      .split(/[\s\n]+/)
-      .map((url) => url.trim())
-      .filter((url) => url !== '');
+    const urlsToProcess = parseUrls(commandUrlsInput);
 
     let localStartedCount = 0;
     const localErrorMessages: string[] = [];
@@ -221,7 +300,7 @@
   async function handleSubmit(event: SubmitEvent) {
     event.preventDefault();
 
-    const urls = extractUrlsFromInput(commandUrlsInput);
+    const urls = parseUrls(commandUrlsInput);
 
     if (urls.length === 0) {
       formError = 'Please enter at least one URL.';
@@ -232,22 +311,21 @@
     formError = null;
 
     try {
-      // Load site configs for URLs
-      const siteConfigResponse = await fetch('/api/site-configs/lookup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ urls }),
-      });
+      // Load site configs for URLs, shared with the typing hint lookup
+      const siteConfigs = await lookupSiteConfigs(urls);
 
-      let siteConfigs: SiteConfigData[] = [];
-      if (siteConfigResponse.ok) {
-        const { data } = await siteConfigResponse.json();
-        siteConfigs = data ?? [];
-      }
-
-      // Conflict detection is now being handled by OptionsManager
-      // Store siteConfigData for OptionsManager to make use of
+      // Store siteConfigData for OptionsManager and the Site Rules panel
       siteConfigData = siteConfigs;
+
+      // Gate submission on user/site rule conflicts when the warning is enabled
+      if (userWarningSetting && siteConfigs.length > 0) {
+        const conflicts = detectConflicts(siteConfigs);
+        if (conflicts.length > 0) {
+          detectedConflicts = conflicts;
+          showConflictWarning = true;
+          return;
+        }
+      }
 
       // Proceed with submission if no conflicts or if warning disabled
       await proceedWithJobSubmission(siteConfigs);
@@ -272,10 +350,7 @@
       }
 
       // Submitting job
-      const result = await jobStore.startJob(
-        extractUrlsFromInput(commandUrlsInput),
-        selectedOptions,
-      );
+      const result = await jobStore.startJob(parseUrls(commandUrlsInput), selectedOptions);
       handleFormResult(result);
     } catch (error) {
       logger.error('Failed to start jobs:', error);
@@ -318,10 +393,20 @@
           placeholder="https://example.com/gallery1&#10;https://example.com/image.jpg https://othersite.com/album"
           autocomplete="off"
           rows="7"
-          class="form-textarea"
-        ></textarea>
+          class="form-textarea"></textarea>
       </div>
     </div>
+
+    <!-- Live site rule hint (while typing, before submit time lookup) -->
+    {#if siteConfigData.length === 0 && siteRuleHintSummary.length > 0}
+      <div class="mx-4 -mt-2 space-y-0.5 px-2 text-xs text-muted-foreground">
+        {#each siteRuleHintSummary as hint (hint.configName)}
+          <p>
+            {hint.count} URL{hint.count === 1 ? '' : 's'} will use the "{hint.configName}" rule
+          </p>
+        {/each}
+      </div>
+    {/if}
 
     <!-- Site Rule Panel -->
     {#if siteConfigData.length > 0}
@@ -459,7 +544,6 @@
   </form>
 
   <!-- OptionsManager -->
-  <!--
   <OptionsManager
     bind:selectedOptions
     bind:conflicts={detectedConflicts}
@@ -476,5 +560,4 @@
       // Handle site rule saved
     }}
   />
-  -->
 </div>

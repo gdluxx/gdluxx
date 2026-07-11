@@ -11,3 +11,4 @@
 export { default as JobsList } from './JobsList.svelte';
 export { default as JobOutputModal } from './JobOutputModal.svelte';
 export { default as JobsIndicator } from './JobsIndicator.svelte';
+export { default as RecentJobs } from './RecentJobs.svelte';

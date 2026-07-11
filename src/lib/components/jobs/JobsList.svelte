@@ -16,6 +16,7 @@
   import { Button, Info, ConfirmModal, Toggle } from '$lib/components/ui';
   import { Icon } from '$lib/components/index';
   import type { Job } from '$lib/server/jobs/jobManager';
+  import { getStatusColor, getStatusText } from '$lib/utils/jobStatus';
 
   const tooltip = $state({
     visible: false,
@@ -104,39 +105,6 @@
     };
     return stats;
   });
-
-  function getStatusColor(status: ClientJob['status']): string {
-    switch (status) {
-      case 'running':
-        return 'bg-info shadow-lg animate-pulse';
-      case 'success':
-        return 'bg-success shadow-lg';
-      case 'no_action':
-        return 'bg-warning shadow-lg';
-      case 'error':
-        return 'bg-error shadow-lg';
-      default:
-        return 'bg-surface-sunken';
-    }
-  }
-
-  function getStatusText(status: ClientJob['status']): string {
-    switch (status) {
-      case 'running':
-        return 'Running';
-      case 'success':
-        return 'Success';
-      case 'no_action':
-        return 'Skips';
-      case 'error':
-        return 'Error';
-      default:
-        console.warn(
-          `Unknown job status encountered: "${status}". This may indicate a data migration issue.`,
-        );
-        return 'Unknown';
-    }
-  }
 
   function getStatusTooltip(job: ClientJob): string {
     switch (job.status) {
@@ -486,7 +454,7 @@
                 <div class="mb-1 flex items-center gap-2">
                   <!-- status circle -->
                   <div
-                    class={`h-3 w-3 cursor-help rounded-full transition-transform hover:scale-125 ${getStatusColor(job.status)}`}
+                    class={`h-3 w-3 cursor-help rounded-full transition-transform hover:scale-125 ${getStatusColor(job.status, { emphasized: true })}`}
                     onmouseenter={(e) => showTooltip(e, getStatusTooltip(job))}
                     onmouseleave={hideTooltip}
                     role="tooltip"
