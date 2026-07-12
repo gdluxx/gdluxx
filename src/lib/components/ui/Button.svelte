@@ -11,6 +11,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import type { HTMLButtonAttributes } from 'svelte/elements';
+  import Spinner from './Spinner.svelte';
 
   type ButtonType = 'button' | 'submit' | 'reset';
   type ButtonSize = 'sm' | 'default' | 'lg';
@@ -242,11 +243,12 @@
       class="absolute inset-0 flex items-center justify-center"
       aria-hidden="true"
     >
-      <div
-        class="h-4 w-4 animate-spin rounded-full border-2 border-skeleton border-t-spinner"
-        role="status"
-        aria-label="Loading"
-      ></div>
+      <Spinner
+        variant="ring"
+        size={16}
+        border="full"
+        class="border-skeleton border-t-spinner"
+      />
     </div>
   {/if}
 </button>

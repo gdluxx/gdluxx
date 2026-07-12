@@ -13,7 +13,7 @@
   import { clientLogger } from '$lib/client/logger';
   import type { ServerLoggingConfig } from '$lib/server/loggingManager';
   import type { ClientLogConfig } from '$lib/client/config/logger-config';
-  import { Button, Toggle, Tooltip } from '$lib/components/ui';
+  import { Button, Toggle, Tooltip, Spinner } from '$lib/components/ui';
   import { toastStore } from '$lib/stores/toast';
   import { Icon } from '$lib/components';
 
@@ -249,7 +249,12 @@
 <div class="container mx-auto max-w-4xl space-y-8 p-6">
   {#if loading}
     <div class="py-8 text-center">
-      <div class="inline-block h-8 w-8 animate-spin rounded-full border-b-2 border-strong"></div>
+      <Spinner
+        variant="ring"
+        size={32}
+        border="bottom"
+        class="inline-block border-strong"
+      />
       <p class="mt-2 text-foreground">Loading...</p>
     </div>
   {:else}

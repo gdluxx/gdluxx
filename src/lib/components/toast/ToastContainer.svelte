@@ -21,7 +21,7 @@
     class="flex w-full flex-col items-center space-y-4 sm:items-end"
     class:mb-20={hasJobButton}
   >
-    {#each $toastStore as toast (toast.id)}
+    {#each toastStore.toasts as toast (toast.id)}
       <Toast {toast} />
     {/each}
   </div>

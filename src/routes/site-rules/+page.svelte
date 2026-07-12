@@ -9,7 +9,16 @@
   -->
 
 <script lang="ts">
-  import { PageLayout, Button, Chip, Modal, ConfirmModal, Toggle } from '$lib/components/ui';
+  import {
+    PageLayout,
+    Button,
+    Chip,
+    Modal,
+    ConfirmModal,
+    Toggle,
+    Spinner,
+    EmptyState,
+  } from '$lib/components/ui';
   import { Icon } from '$lib/components';
   import { SiteRules } from '$lib/components/site-rules';
   import { Info } from '$lib/components/ui';
@@ -338,10 +347,9 @@
               size="sm"
             >
               {#if isRefreshingSites}
-                <Icon
-                  iconName="loading"
+                <Spinner
                   size={16}
-                  class="mr-2 animate-spin"
+                  class="mr-2"
                 />
                 Refreshing...
               {:else}
@@ -438,7 +446,6 @@
                   variant="warning"
                   label="Disabled"
                   size="sm"
-                  dismissible={false}
                 />
               {/if}
             </div>
@@ -492,14 +499,12 @@
       {/each}
 
       {#if configs.length === 0}
-        <div class="text-muted cursor-default py-12 text-center text-foreground">
-          <Icon
-            iconName="site-rules"
-            size={48}
-            class="text-muted mx-auto mb-4 text-accent-foreground"
-          />
-          <p class="text-lg font-medium">No site rules yet</p>
-          <p class="text-sm">Add your first rule to get started with site-specific CLI options.</p>
+        <EmptyState
+          icon="site-rules"
+          title="No site rules yet"
+          description="Add your first rule to get started with site-specific CLI options."
+          class="py-12"
+        >
           <Button
             onclick={openAddModal}
             variant="primary"
@@ -512,7 +517,7 @@
             />
             Add Rule
           </Button>
-        </div>
+        </EmptyState>
       {/if}
     </div>
   </div>

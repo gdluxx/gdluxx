@@ -79,7 +79,6 @@
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                   <Chip
-                    dismissible={false}
                     size="sm"
                     label="Active"
                     variant="outline-primary"

@@ -9,14 +9,12 @@
   -->
 
 <script lang="ts">
-  import { fade, scale } from 'svelte/transition';
-  import { quintOut } from 'svelte/easing';
   import { onMount, tick } from 'svelte';
   import { AnsiUp } from 'ansi_up';
   import DOMPurify from 'dompurify';
   import type { ClientJob } from '$lib/stores/jobs.svelte';
   import { jobStore } from '$lib/stores/jobs.svelte';
-  import { CopyTooltip } from '$lib/components/ui';
+  import { CopyTooltip, Modal } from '$lib/components/ui';
   import { Icon } from '$lib/components/index';
   import { getStatusColor, getStatusText } from '$lib/utils/jobStatus';
   import { copyToClipboard } from '$lib/utils/clipboard';
@@ -70,18 +68,14 @@
     }
   });
 
+  // The job keeps running; closing the modal (Escape, backdrop, close button)
+  // only hides it and returns to the job list.
   function handleMinimize() {
     jobStore.hideJob(job.id);
   }
 
   function handleDismiss() {
     jobStore.deleteJob(job.id);
-  }
-
-  function handleBackdropClick(event: MouseEvent) {
-    if (event.target === event.currentTarget) {
-      handleMinimize();
-    }
   }
 
   function formatOutput(output: (typeof job.output)[0]): string {
@@ -161,20 +155,14 @@
   });
 </script>
 
-<div
-  class="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
-  transition:fade={{ duration: 200 }}
-  onclick={handleBackdropClick}
-  onkeydown={(e) => e.key === 'Escape' && handleMinimize()}
-  role="button"
-  tabindex="-1"
+<Modal
+  show
+  size="xl"
+  onClose={handleMinimize}
 >
-  <div
-    class="relative flex max-h-[90vh] w-full max-w-full flex-col overflow-hidden rounded-sm border-strong bg-surface shadow-lg sm:max-w-2xl md:max-w-3xl lg:max-w-4xl"
-    transition:scale={{ duration: 300, easing: quintOut, start: 0.95 }}
-  >
+  <div class="flex max-h-[90vh] w-full flex-col overflow-hidden">
     <!-- Header -->
-    <div class="flex items-center justify-between px-4 py-3 sm:px-6 sm:py-4">
+    <div class="flex items-center justify-between px-4 py-3 pr-14 sm:px-6 sm:py-4 sm:pr-16">
       <div class="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
         <div class={`h-4 w-4 flex-shrink-0 rounded-full ${getStatusColor(job.status)}`}></div>
         <h2 class="text-lg font-semibold text-foreground sm:text-xl">
@@ -224,18 +212,6 @@
           visible={tooltip.visible}
           text={tooltip.text}
         />
-
-        <button
-          onclick={handleMinimize}
-          aria-label="Show Job List"
-          class="cursor-pointer p-1 text-muted-foreground transition-all duration-200 hover:scale-110 hover:text-foreground sm:p-2"
-          title="Show Job List"
-        >
-          <Icon
-            iconName="close"
-            size={20}
-          />
-        </button>
       </div>
     </div>
 
@@ -338,4 +314,4 @@
       </div>
     </div>
   </div>
-</div>
+</Modal>

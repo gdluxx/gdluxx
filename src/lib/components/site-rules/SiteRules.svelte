@@ -9,7 +9,7 @@
   -->
 
 <script lang="ts">
-  import { Button, Chip, Toggle, Tooltip } from '$lib/components/ui';
+  import { Button, Chip, Toggle, Tooltip, Spinner } from '$lib/components/ui';
   import { Icon } from '$lib/components/index';
   import optionsData from '$lib/assets/options.json';
   import type { Option, OptionsData } from '$lib/types/options';
@@ -285,7 +285,6 @@
                   {#if formData.cli_options.has(option.id) && option.type === 'boolean'}
                     <Chip
                       label="Enabled"
-                      dismissible={false}
                       size="sm"
                       variant="outline-primary"
                     />
@@ -307,10 +306,9 @@
       size="sm"
     >
       {#if isSubmitting}
-        <Icon
-          iconName="loading"
+        <Spinner
           size={16}
-          class="mr-2 animate-spin"
+          class="mr-2"
         />
         Saving...
       {:else}

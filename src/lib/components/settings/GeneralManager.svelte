@@ -9,7 +9,7 @@
   -->
 
 <script lang="ts">
-  import { Toggle } from '$lib/components/ui';
+  import { Toggle, Spinner } from '$lib/components/ui';
   import { clientLogger as logger } from '$lib/client/logger';
   import { toastStore } from '$lib/stores/toast';
   import type { UserSettings } from '$lib/server/userSettingsManager';
@@ -273,9 +273,12 @@
           <div
             class="flex items-center gap-2 rounded border bg-surface-elevated px-3 py-2 shadow-md"
           >
-            <div
-              class="h-4 w-4 animate-spin rounded-full border-2 border-skeleton border-t-spinner"
-            ></div>
+            <Spinner
+              variant="ring"
+              size={16}
+              border="full"
+              class="border-skeleton border-t-spinner"
+            />
             <span class="text-sm text-foreground">Updating theme...</span>
           </div>
         </div>

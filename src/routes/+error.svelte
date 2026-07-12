@@ -8,11 +8,11 @@
   - as published by the Free Software Foundation.
   -->
 
-<script>
+<script lang="ts">
   import { page } from '$app/state';
   import { Icon } from '$lib/components/index';
   import { goto } from '$app/navigation';
-  import { Button, Info } from '$lib/components/ui/index';
+  import { Button, Info } from '$lib/components/ui';
 
   const is404 = $derived(page.status === 404);
   const isServerError = $derived(page.status >= 500);

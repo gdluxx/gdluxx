@@ -11,7 +11,7 @@
 <script lang="ts">
   import { enhance } from '$app/forms';
   import { SuccessIcon } from '$lib/components/icons';
-  import { Button, Info, ConfirmModal, Toggle } from '$lib/components/ui';
+  import { Button, Info, ConfirmModal, Toggle, Spinner, EmptyState } from '$lib/components/ui';
   import { Icon } from '$lib/components/index';
   import { API_KEY_VALIDATION, validateApiKeyInput, type ApiKey } from '$lib/apikey';
   import {
@@ -143,10 +143,11 @@
     role="status"
     aria-live="polite"
   >
-    <div
-      class="h-8 w-8 animate-spin rounded-full border-b-2"
-      aria-hidden="true"
-    ></div>
+    <Spinner
+      variant="ring"
+      size={32}
+      border="bottom"
+    />
     <span class="ml-3 text-foreground">Loading API keys...</span>
   </div>
 {:else}
@@ -347,15 +348,13 @@
 
     <!-- API Keys list -->
     {#if apiKeys.length === 0}
-      <div class="cursor-default p-8 text-center">
-        <Icon
-          iconName="key"
-          size={50}
-          class="text-foreground"
-        />
-        <h3 class="my-2 text-lg font-medium text-foreground">No API Keys</h3>
-        <p class="text-foreground">Create your first API key to get started.</p>
-      </div>
+      <EmptyState
+        icon="key"
+        iconSize={50}
+        title="No API Keys"
+        description="Create your first API key to get started."
+        class="p-8"
+      />
     {:else}
       <div>
         {#each apiKeys as apiKey (apiKey.id)}

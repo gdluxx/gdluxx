@@ -431,7 +431,6 @@
               label={`${Object.keys(config.options).length} options`}
               variant="info"
               size="sm"
-              dismissible={false}
             >
               {Object.keys(config.options).length} options
             </Chip>

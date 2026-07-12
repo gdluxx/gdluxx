@@ -14,3 +14,4 @@ export { default as Icon } from './Icon.svelte';
 export { default as KeywordInfo } from './KeywordInfo.svelte';
 export { default as Sidebar } from './Sidebar.svelte';
 export { default as ThemeToggle } from './ThemeToggle.svelte';
+export { default as UploadModal } from './UploadModal.svelte';

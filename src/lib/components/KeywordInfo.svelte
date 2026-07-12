@@ -9,7 +9,7 @@
   -->
 
 <script lang="ts">
-  import { Button, Info, CopyTooltip } from '$lib/components/ui';
+  import { Button, Info, CopyTooltip, Spinner } from '$lib/components/ui';
   import { Icon } from '$lib/components';
   import { keywordInfoStore } from '$lib/stores/keyword-info.svelte';
   import { copyToClipboard } from '$lib/utils/clipboard';
@@ -225,10 +225,9 @@
           class="order-1 w-full sm:order-2 sm:w-auto"
         >
           {#if keywordInfoStore.state.isLoading}
-            <Icon
-              iconName="loading"
+            <Spinner
               size={16}
-              class="mr-2 animate-spin"
+              class="mr-2"
             />
           {/if}
           Run {modeLabel(mode)}
@@ -296,10 +295,9 @@
             <div
               class="mt-4 flex items-center justify-center rounded-sm border bg-surface px-4 py-8 text-foreground"
             >
-              <Icon
-                iconName="loading"
+              <Spinner
                 size={24}
-                class="mr-2 animate-spin"
+                class="mr-2"
               />
               <span class="text-base"
                 >Executing {modeLabel(keywordInfoStore.state.lastCommand)}...</span

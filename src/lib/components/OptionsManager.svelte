@@ -281,7 +281,6 @@
         <Chip
           label={`${selectedOptions.size.toString()} selected`}
           size="sm"
-          dismissible={false}
         />
       {/if}
       <span
@@ -320,7 +319,6 @@
                 <Chip
                   label={`${getSelectedCountForCategory(categoryKey).toString()} selected`}
                   size="sm"
-                  dismissible={false}
                 />
               {/if}
               <span

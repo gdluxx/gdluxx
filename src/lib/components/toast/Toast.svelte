@@ -12,7 +12,11 @@
   import { type Toast, toastStore } from '$lib/stores/toast';
   import { fly } from 'svelte/transition';
 
-  export let toast: Toast;
+  interface Props {
+    toast: Toast;
+  }
+
+  const { toast }: Props = $props();
 
   const iconMap = {
     success: '✓',
@@ -56,7 +60,7 @@
     },
   };
 
-  $: styles = styleMap[toast.type];
+  const styles = $derived(styleMap[toast.type]);
 
   function handleClose() {
     toastStore.removeToast(toast.id);

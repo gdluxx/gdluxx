@@ -44,8 +44,8 @@
   import { lintGutter, linter } from '@codemirror/lint';
   import { codemirrorLight } from '$lib/themes/codemirror/codemirror-light';
   import { codemirrorDark } from '$lib/themes/codemirror/codemirror-dark';
-  import { Button, ConfirmModal, UploadModal, Chip, Tooltip, Info } from '$lib/components/ui';
-  import { Icon } from '$lib/components/index';
+  import { Button, ConfirmModal, Chip, Tooltip, Info } from '$lib/components/ui';
+  import { Icon, UploadModal } from '$lib/components';
   import { invalidateAll } from '$app/navigation';
   import { clientLogger } from '$lib/client/logger';
 
@@ -558,7 +558,6 @@
                 label="From: {currentSource}"
                 variant={currentSource === 'example' ? 'warning' : 'info'}
                 size="sm"
-                dismissible={false}
               />
             </Tooltip>
           {/if}
@@ -567,14 +566,12 @@
               label="Last saved: {formatRelativeTime(lastSavedISO)}"
               variant="info"
               size="sm"
-              dismissible={false}
             />
           {:else}
             <Chip
               label="Unsaved"
               variant="warning"
               size="sm"
-              dismissible={false}
             />
           {/if}
           <Tooltip content="JSON syntax status">
@@ -583,7 +580,6 @@
               variant={hasLintErrors ? 'danger' : 'outline-success'}
               title=""
               size="sm"
-              dismissible={false}
             />
           </Tooltip>
         </div>

@@ -9,10 +9,14 @@
   -->
 
 <script lang="ts">
-  export let x: number;
-  export let y: number;
-  export let visible: boolean;
-  export let text: string;
+  interface Props {
+    x: number;
+    y: number;
+    visible: boolean;
+    text: string;
+  }
+
+  const { x, y, visible, text }: Props = $props();
 </script>
 
 {#if visible}

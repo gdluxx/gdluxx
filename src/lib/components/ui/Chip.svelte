@@ -44,7 +44,7 @@
     label,
     value,
     editable = false,
-    dismissible = true,
+    dismissible = false,
     variant = 'primary',
     size = 'default',
     icon,
