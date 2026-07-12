@@ -150,11 +150,10 @@
       'focus:border-focus',
     ],
     dark: [
-      'bg-text-primary',
-      'text-inverse',
-      'border-text-primary',
-      'hover:enabled:bg-surface-hover',
-      'hover:enabled:border-hover',
+      'bg-foreground',
+      'text-background',
+      'border-foreground',
+      'hover:enabled:opacity-90',
       'focus:border-focus',
     ],
     'outline-primary': [
