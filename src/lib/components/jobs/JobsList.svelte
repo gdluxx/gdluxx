@@ -11,11 +11,11 @@
 <script lang="ts">
   import { fade } from 'svelte/transition';
   import { onMount } from 'svelte';
-  import type { ClientJob } from '$lib/stores/jobs.svelte';
+  import { SvelteSet } from 'svelte/reactivity';
   import { jobStore } from '$lib/stores/jobs.svelte';
   import { Button, Info, ConfirmModal, Toggle, Tooltip } from '$lib/components/ui';
   import { Icon } from '$lib/components/index';
-  import type { Job } from '$lib/server/jobs/jobManager';
+  import type { JobListItem, JobStatus } from '$lib/types/jobs';
   import { getStatusColor, getStatusText } from '$lib/utils/jobStatus';
 
   const tooltip = $state({
@@ -26,37 +26,23 @@
   });
 
   interface Props {
-    initialJobs?: Job[];
+    initialJobs?: JobListItem[];
+    initialTotal?: number;
   }
 
-  const { initialJobs = [] }: Props = $props();
+  const { initialJobs = [], initialTotal = 0 }: Props = $props();
 
   let showDeleteConfirm = $state(false);
   let deleteAction = $state<'single' | 'all' | 'selected'>('all');
   let jobToDelete = $state<string | null>(null);
   let sortNewestFirst = $state(true);
   let sortBy = $state<'time' | 'downloads'>('time');
-  let selectedJobs = $state<Set<string>>(new Set());
-  let activeFilters = $state<Set<string>>(new Set(['all']));
+  const selectedJobs = new SvelteSet<string>();
+  const activeFilters = new SvelteSet<string>(['all']);
 
-  const allJobs = $derived(jobStore.jobs);
-  const filteredJobs = $derived(
-    activeFilters.has('all') || activeFilters.size === 0
-      ? allJobs
-      : allJobs.filter((job) => activeFilters.has(job.status)),
-  );
-
-  const jobs = $derived(
-    [...filteredJobs].sort((a, b) => {
-      if (sortBy === 'downloads') {
-        const aDownloads = a.downloadCount ?? 0;
-        const bDownloads = b.downloadCount ?? 0;
-        return sortNewestFirst ? bDownloads - aDownloads : aDownloads - bDownloads;
-      } else {
-        return sortNewestFirst ? b.startTime - a.startTime : a.startTime - b.startTime;
-      }
-    }),
-  );
+  // Filtering and sorting happen server-side; this is simply the currently
+  // loaded page of rows for the active filter/sort.
+  const jobs = $derived(jobStore.listJobs);
 
   function toggleFilter(filterType: string) {
     if (filterType === 'all') {
@@ -74,8 +60,12 @@
         activeFilters.add(filterType);
       }
     }
-    activeFilters = new Set(activeFilters);
     selectedJobs.clear();
+
+    const statuses = activeFilters.has('all')
+      ? undefined
+      : (Array.from(activeFilters) as JobStatus[]);
+    jobStore.setStatusFilter(statuses);
   }
 
   const selectedCount = $derived(selectedJobs.size);
@@ -83,16 +73,16 @@
   const allSelected = $derived(selectedCount === jobs.length && jobs.length > 0);
 
   // header job count label: "N jobs" (or "1 job") when unfiltered, "N of Total" when filtered
-  const jobsHeaderLabel = $derived(() => {
-    const total = allJobs.length;
-    const filteredCount = jobs.length;
-    if (filteredCount === total) {
+  const jobsHeaderLabel = $derived.by(() => {
+    const total = jobStore.jobCount;
+    const matching = jobStore.listTotal;
+    if (activeFilters.has('all') || activeFilters.size === 0) {
       return `${total} ${total === 1 ? 'job' : 'jobs'}`;
     }
-    return `${filteredCount} of ${total}`;
+    return `${matching} of ${total}`;
   });
 
-  function getStatusTooltip(job: ClientJob): string {
+  function getStatusTooltip(job: JobListItem): string {
     switch (job.status) {
       case 'running':
         return 'Job is currently downloading...';
@@ -134,7 +124,7 @@
     }
   }
 
-  function handleJobClick(job: ClientJob) {
+  function handleJobClick(job: JobListItem) {
     jobStore.showJob(job.id);
   }
 
@@ -154,10 +144,12 @@
 
   function toggleSort() {
     sortNewestFirst = !sortNewestFirst;
+    jobStore.setSort(sortBy, sortNewestFirst ? 'desc' : 'asc');
   }
 
   function setSortBy(newSortBy: 'time' | 'downloads') {
     sortBy = newSortBy;
+    jobStore.setSort(sortBy, sortNewestFirst ? 'desc' : 'asc');
   }
 
   function toggleJobSelection(jobId: string) {
@@ -166,16 +158,15 @@
     } else {
       selectedJobs.add(jobId);
     }
-    selectedJobs = new Set(selectedJobs);
   }
 
   function toggleSelectAll() {
-    if (allSelected) {
-      selectedJobs.clear();
-    } else {
-      selectedJobs = new Set(jobs.map((job) => job.id));
+    selectedJobs.clear();
+    if (!allSelected) {
+      for (const job of jobs) {
+        selectedJobs.add(job.id);
+      }
     }
-    selectedJobs = new Set(selectedJobs);
   }
 
   function deleteJob(event: MouseEvent, jobId: string) {
@@ -189,15 +180,10 @@
     if (deleteAction === 'single' && jobToDelete) {
       jobStore.deleteJob(jobToDelete);
     } else if (deleteAction === 'all') {
-      jobs.forEach(function (job) {
-        jobStore.deleteJob(job.id);
-      });
+      jobStore.deleteAllJobs();
     } else if (deleteAction === 'selected') {
-      Array.from(selectedJobs).forEach(function (jobId) {
-        jobStore.deleteJob(jobId);
-      });
+      jobStore.deleteJobsBulk(Array.from(selectedJobs));
       selectedJobs.clear();
-      selectedJobs = new Set(selectedJobs);
     }
     showDeleteConfirm = false;
     jobToDelete = null;
@@ -208,11 +194,10 @@
     jobToDelete = null;
   }
 
-  // Initialize job store with server-provided data on mount
+  // Seed the store with the server-rendered first page, then let it fetch
+  // the summary and reconnect to any running jobs.
   onMount(() => {
-    if (initialJobs.length > 0) {
-      jobStore.initializeWithJobs(initialJobs);
-    }
+    jobStore.initializeWithJobs(initialJobs, initialTotal);
   });
 </script>
 
@@ -221,7 +206,7 @@
   <div class="data-list-header">
     <div class="mb-3 flex items-center justify-between">
       <h2>
-        {jobsHeaderLabel()}
+        {jobsHeaderLabel}
         {#if hasSelection}
           <span class="text-sm text-muted-foreground">
             ({selectedCount} selected)
@@ -523,6 +508,25 @@
       {/each}
     {/if}
   </div>
+
+  <!-- Pagination -->
+  {#if jobs.length > 0}
+    <div class="mt-4 flex flex-col items-center gap-2 pb-2">
+      <span class="text-xs text-muted-foreground">
+        Showing {jobs.length} of {jobStore.listTotal}
+      </span>
+      {#if jobStore.hasMoreListJobs}
+        <Button
+          variant="outline-primary"
+          size="sm"
+          onclick={() => jobStore.loadMore()}
+          loading={jobStore.listLoadingMore}
+        >
+          Load more
+        </Button>
+      {/if}
+    </div>
+  {/if}
 </div>
 
 <!-- Tooltip -->

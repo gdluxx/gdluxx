@@ -73,6 +73,11 @@
 
     checkMobile();
 
+    jobStore
+      .loadSummary()
+      .then(() => jobStore.reconnectToRunningJobs())
+      .catch((error) => logger.error('Failed to load jobs summary:', error));
+
     const validation = validateThemeSystem();
     if (!validation.valid) {
       logger.warn('Theme system validation failed:', validation.errors);

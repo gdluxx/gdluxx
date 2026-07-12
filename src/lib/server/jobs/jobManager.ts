@@ -12,12 +12,21 @@ import type { IPty } from '@homebridge/node-pty-prebuilt-multiarch';
 import { v4 as uuidv4 } from 'uuid';
 import { serverLogger as logger } from '$lib/server/logger';
 import {
-  readAllJobs,
   createJob as dbCreateJob,
   updateJob as dbUpdateJob,
   addJobOutput as dbAddJobOutput,
   deleteJob as dbDeleteJob,
+  deleteJobs as dbDeleteJobs,
+  deleteAllJobs as dbDeleteAllJobs,
+  readJobById,
+  readJobOutputs,
+  readJobsPage,
+  countJobs,
+  readJobsSummary,
+  readRunningJobIds,
+  type JobsPageOptions,
 } from './jobsManager';
+import type { JobListItem, JobsSummary } from '$lib/types/jobs';
 
 export interface JobOutput {
   type: 'info' | 'stdout' | 'stderr' | 'error' | 'fatal' | 'status';
@@ -74,44 +83,31 @@ class JobManager {
   }
 
   private async loadJobsInternal(): Promise<void> {
+    // The in-memory map starts EMPTY and only ever holds jobs created during
+    // this process's lifetime. Historical jobs are read from the database on
+    // demand. On startup we only reconcile jobs left in a 'running' state by a
+    // previous process (interrupted by a server restart).
     try {
-      const dbJobs = await readAllJobs();
+      const interruptedIds = readRunningJobIds();
 
-      for (const dbJob of dbJobs) {
-        const job: Job = {
-          id: dbJob.id,
-          url: dbJob.url,
-          status: dbJob.status,
-          output: dbJob.outputs,
-          startTime: dbJob.startTime,
-          endTime: dbJob.endTime,
-          exitCode: dbJob.exitCode,
-          downloadCount: dbJob.downloadCount,
-          skipCount: dbJob.skipCount,
-          batchCount: dbJob.batchCount,
-          subscribers: new Set(),
-        };
-
-        if (job.status === 'running') {
-          job.status = 'error';
-          job.output.push({
-            type: 'error',
-            data: 'Job was interrupted by server restart',
-            timestamp: Date.now(),
-          });
-          // Update database to reflect status change
-          await dbUpdateJob(job.id, {
-            status: 'error',
-            endTime: Date.now(),
-          });
-        }
-
-        this.jobs.set(job.id, job);
+      for (const id of interruptedIds) {
+        const timestamp = Date.now();
+        await dbUpdateJob(id, {
+          status: 'error',
+          endTime: timestamp,
+        });
+        await dbAddJobOutput(id, {
+          type: 'error',
+          data: 'Job was interrupted by server restart',
+          timestamp,
+        });
       }
 
-      logger.info(`Jobs loaded successfully from database: ${dbJobs.length} jobs`);
+      if (interruptedIds.length > 0) {
+        logger.info(`Reconciled ${interruptedIds.length} interrupted job(s) after server restart`);
+      }
     } catch (error) {
-      logger.warn('Error loading jobs from database, starting fresh:', error);
+      logger.warn('Error reconciling interrupted jobs on startup:', error);
     }
   }
 
@@ -177,15 +173,42 @@ class JobManager {
 
   async getJob(id: string): Promise<Job | undefined> {
     await this.initializationPromise;
-    return this.jobs.get(id);
+    const inMemory = this.jobs.get(id);
+    if (inMemory) {
+      return inMemory;
+    }
+
+    // Fall back to the database for completed/evicted jobs. The reconstructed
+    // job is NOT inserted into the map and carries no process handle.
+    const dbJob = readJobById(id);
+    if (!dbJob) {
+      return undefined;
+    }
+    return {
+      id: dbJob.id,
+      url: dbJob.url,
+      status: dbJob.status,
+      output: readJobOutputs(id),
+      startTime: dbJob.startTime,
+      endTime: dbJob.endTime,
+      exitCode: dbJob.exitCode,
+      downloadCount: dbJob.downloadCount,
+      skipCount: dbJob.skipCount,
+      batchCount: dbJob.batchCount,
+      subscribers: new Set(),
+    };
   }
 
-  async getAllJobs(): Promise<Job[]> {
+  async getJobsList(options: JobsPageOptions): Promise<{ jobs: JobListItem[]; total: number }> {
     await this.initializationPromise;
-    return Array.from(this.jobs.values()).map((job) => {
-      const { process: _process, subscribers: _subscribers, ...jobData } = job;
-      return jobData as Job;
-    });
+    const jobs = readJobsPage(options);
+    const total = countJobs(options.statuses);
+    return { jobs, total };
+  }
+
+  async getJobsSummary(): Promise<JobsSummary> {
+    await this.initializationPromise;
+    return readJobsSummary();
   }
 
   async setJobProcess(id: string, process: IPty): Promise<void> {
@@ -311,6 +334,10 @@ class JobManager {
         }
       }
       job.subscribers.clear();
+
+      // The job is fully persisted; evict it from memory. Later reads are
+      // served by the getJob / addSubscriber database fallbacks.
+      this.jobs.delete(id);
     }
   }
 
@@ -319,11 +346,11 @@ class JobManager {
     controller: ReadableStreamDefaultController<Uint8Array>,
   ): Promise<void> {
     await this.initializationPromise;
+    const encoder = new TextEncoder();
     const job: Job | undefined = this.jobs.get(id);
     if (job) {
       job.subscribers.add(controller);
       logger.info(`Subscriber added to job ${id}. Total subscribers: ${job.subscribers.size}`);
-      const encoder = new TextEncoder();
       for (const output of job.output) {
         try {
           const eventData = `event: ${output.type}\ndata: ${JSON.stringify(output.data)}\n\n`;
@@ -355,6 +382,41 @@ class JobManager {
           job.subscribers.delete(controller);
         }
       }
+      return;
+    }
+
+    // Not in memory: the job was completed and evicted (or predates this
+    // process). Replay its persisted output from the database, then close.
+    const dbJob = readJobById(id);
+    if (!dbJob) {
+      return;
+    }
+    const outputs = readJobOutputs(id);
+    for (const output of outputs) {
+      try {
+        const eventData = `event: ${output.type}\ndata: ${JSON.stringify(output.data)}\n\n`;
+        controller.enqueue(encoder.encode(eventData));
+      } catch (error) {
+        logger.warn(`Error replaying persisted output to subscriber for job ${id}:`, error);
+        return;
+      }
+    }
+    if (dbJob.status !== 'running') {
+      try {
+        controller.enqueue(
+          encoder.encode(
+            `event: close\ndata: ${JSON.stringify({
+              code: dbJob.exitCode ?? 0,
+              status: dbJob.status,
+              downloadCount: dbJob.downloadCount,
+              skipCount: dbJob.skipCount,
+            })}\n\n`,
+          ),
+        );
+        controller.close();
+      } catch (error) {
+        logger.warn(`Error sending close event to subscriber for persisted job ${id}:`, error);
+      }
     }
   }
 
@@ -367,40 +429,92 @@ class JobManager {
     if (job) {
       job.subscribers.delete(controller);
       logger.info(`Subscriber removed from job ${id}. Total subscribers: ${job.subscribers.size}`);
+
+      // A completed job with no remaining subscribers is fully persisted and
+      // can be evicted; later reads use the getJob / addSubscriber DB fallbacks.
+      if (job.status !== 'running' && job.subscribers.size === 0) {
+        this.jobs.delete(id);
+        logger.info(`Evicted completed job ${id} from memory`);
+      }
     }
   }
 
-  async deleteJob(id: string): Promise<boolean> {
-    await this.initializationPromise;
-    const job: Job | undefined = this.jobs.get(id);
-    if (!job) {
-      return false;
-    }
+  private terminateInMemoryJob(job: Job): void {
     if (job.process && job.status === 'running') {
       try {
         job.process.kill();
-        logger.info(`Killed process for job ${id}`);
+        logger.info(`Killed process for job ${job.id}`);
       } catch (error) {
-        logger.error(`Failed to kill process for job ${id}:`, error);
+        logger.error(`Failed to kill process for job ${job.id}:`, error);
       }
     }
     for (const controller of job.subscribers) {
       try {
         controller.close();
       } catch (error) {
-        logger.warn(`Error closing subscriber during job ${id} deletion:`, error);
+        logger.warn(`Error closing subscriber during job ${job.id} deletion:`, error);
       }
     }
+  }
 
+  async deleteJob(id: string): Promise<boolean> {
+    await this.initializationPromise;
+    const job: Job | undefined = this.jobs.get(id);
+    if (job) {
+      this.terminateInMemoryJob(job);
+      this.jobs.delete(id);
+    }
+
+    let deletedFromDb = false;
     try {
-      await dbDeleteJob(id);
+      deletedFromDb = await dbDeleteJob(id);
     } catch (error) {
       logger.warn(`Failed to delete job from database for job ${id}:`, error);
     }
 
-    this.jobs.delete(id);
+    if (!job && !deletedFromDb) {
+      return false;
+    }
+
     logger.info(`Job ${id} deleted.`);
     return true;
+  }
+
+  async deleteJobs(ids: string[]): Promise<number> {
+    await this.initializationPromise;
+    for (const id of ids) {
+      const job = this.jobs.get(id);
+      if (job) {
+        this.terminateInMemoryJob(job);
+        this.jobs.delete(id);
+      }
+    }
+
+    try {
+      const deletedCount = dbDeleteJobs(ids);
+      logger.info(`Deleted ${deletedCount} job(s).`);
+      return deletedCount;
+    } catch (error) {
+      logger.warn('Failed to bulk delete jobs from database:', error);
+      return 0;
+    }
+  }
+
+  async deleteAllJobs(): Promise<number> {
+    await this.initializationPromise;
+    for (const job of this.jobs.values()) {
+      this.terminateInMemoryJob(job);
+    }
+    this.jobs.clear();
+
+    try {
+      const deletedCount = dbDeleteAllJobs();
+      logger.info(`Deleted all ${deletedCount} job(s).`);
+      return deletedCount;
+    } catch (error) {
+      logger.warn('Failed to delete all jobs from database:', error);
+      return 0;
+    }
   }
 }
 

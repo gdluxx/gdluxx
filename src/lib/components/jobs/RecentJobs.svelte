@@ -9,28 +9,31 @@
   -->
 
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { resolve } from '$app/paths';
   import { jobStore } from '$lib/stores/jobs.svelte';
-  import type { ClientJob } from '$lib/stores/jobs.svelte';
+  import type { JobListItem } from '$lib/types/jobs';
   import { getStatusColor, getStatusText } from '$lib/utils/jobStatus';
   import { formatRelativeTime } from '$lib/utils/relativeTime';
 
-  const RECENT_JOBS_LIMIT = 5;
+  const recentJobs = $derived(jobStore.summary.recent);
 
-  const recentJobs = $derived(
-    [...jobStore.jobs].sort((a, b) => b.startTime - a.startTime).slice(0, RECENT_JOBS_LIMIT),
-  );
-
-  function openJob(job: ClientJob) {
+  function openJob(job: JobListItem) {
     jobStore.showJob(job.id);
   }
 
-  function handleKeydown(event: KeyboardEvent, job: ClientJob) {
+  function handleKeydown(event: KeyboardEvent, job: JobListItem) {
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
       openJob(job);
     }
   }
+
+  onMount(() => {
+    if (jobStore.summary.recent.length === 0) {
+      void jobStore.loadSummary();
+    }
+  });
 </script>
 
 {#if recentJobs.length > 0}

@@ -23,5 +23,8 @@
       size={32}
     />
   {/snippet}
-  <JobsList initialJobs={data.success ? data.jobs : []} />
+  <JobsList
+    initialJobs={data.success ? data.jobs : []}
+    initialTotal={data.success ? data.total : 0}
+  />
 </PageLayout>

@@ -12,6 +12,6 @@ import { createPageLoad } from '$lib/utils/page-load';
 
 export const load = createPageLoad({
   endpoint: '/api/jobs',
-  fallback: { jobs: [] },
+  fallback: { jobs: [], total: 0 },
   errorMessage: 'Failed to load jobs',
 });
