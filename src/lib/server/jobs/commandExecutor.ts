@@ -13,6 +13,7 @@ import type { IPty } from '@homebridge/node-pty-prebuilt-multiarch';
 import { jobManager } from './jobManager';
 import { serverLogger as logger } from '$lib/server/logger';
 import { PATHS, TERMINAL } from '$lib/server/constants';
+import { redactSensitiveArgs } from '$lib/server/validation/option-validation';
 
 export interface CommandExecutionResult {
   success: boolean;
@@ -31,7 +32,10 @@ export async function executeGalleryDlCommand(
     // Build process arguments: [cliOptions..., --config, configPath, url]
     const processArgs = [...cliArgs, '--config', PATHS.CONFIG_FILE, url];
 
-    logger.info(`Starting gallery-dl process for job ${jobId} with args:`, processArgs);
+    logger.info(
+      `Starting gallery-dl process for job ${jobId} with args:`,
+      redactSensitiveArgs(processArgs),
+    );
 
     // Spawn PTY process
     const ptyProcess: IPty = spawn(PATHS.BIN_FILE, processArgs, {

@@ -21,6 +21,8 @@ const REDACT_PATTERNS = [
   /secret["\s]*[=:]["\s]*([^"'\s,}]+)/gi,
   /Bearer\s+([^\s]+)/gi,
   /Authorization:\s*([^\s,}]+)/gi,
+  /--(?:password|token|secret|key)\s+(\S+)/gi,
+  /"--(?:password|token|secret|key)"\s*,\s*"([^"]+)"/gi,
 ];
 
 function sanitizeMessage(message: string): string {

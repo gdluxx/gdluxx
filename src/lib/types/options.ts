@@ -15,6 +15,7 @@ export interface Option {
   type: 'boolean' | 'string' | 'number' | 'range';
   placeholder?: string;
   defaultValue?: string | number | boolean;
+  sensitive?: boolean;
 }
 
 export interface OptionCategory {

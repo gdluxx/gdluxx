@@ -25,6 +25,9 @@ export function validateOptionValue(option: Option, value: unknown): string | nu
   }
 
   if (option.type === 'number') {
+    if (typeof value === 'string' && value.trim() === '') {
+      return null;
+    }
     const num = Number(value);
     return !isNaN(num) && isFinite(num) ? String(num) : null;
   }
@@ -67,6 +70,22 @@ export function validateAndBuildCliArgs(argsMap: Map<string, unknown>): string[]
   }
 
   return cliArgs;
+}
+
+export const sensitiveCommands = new Set<string>(
+  Array.from(validOptions.values())
+    .filter((option) => option.sensitive === true)
+    .map((option) => option.command),
+);
+
+export function redactSensitiveArgs(args: string[]): string[] {
+  const redacted = [...args];
+  for (let i = 0; i < redacted.length; i++) {
+    if (sensitiveCommands.has(redacted[i]) && i + 1 < redacted.length) {
+      redacted[i + 1] = '[REDACTED]';
+    }
+  }
+  return redacted;
 }
 
 export { validOptions };

@@ -9,19 +9,22 @@
   -->
 
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, untrack } from 'svelte';
   import { hasJsonLintErrors } from '$lib/stores/lint';
   import { clientLogger as logger } from '$lib/client/logger';
   import { Button, Chip, Info } from '$lib/components/ui';
-  import optionsData from '$lib/assets/options.json';
-  import type { Option, OptionsData } from '$lib/types/options';
-  import type { OptionWithSource, SiteConfigData } from '$lib/types/command-form';
+  import type { Conflict, OptionWithSource, SiteConfigData } from '$lib/types/command-form';
+  import {
+    buildCommandPreview,
+    detectConflicts,
+    getActiveMutuallyExclusive,
+    getEmptyValueOptions,
+    optionsById,
+  } from '$lib/utils/commandOptions';
   import { browser } from '$app/environment';
   import { jobStore } from '$lib/stores/jobs.svelte';
   import { parseUrls } from '$lib/utils/parseUrls';
   import OptionsManager from './OptionsManager.svelte';
-
-  const typedOptionsData = optionsData as OptionsData;
 
   interface FormResult {
     overallSuccess: boolean;
@@ -35,14 +38,6 @@
     error?: string;
   }
 
-  interface Conflict {
-    optionId: string;
-    userValue: string | number | boolean;
-    siteRuleValue: string | number | boolean;
-    sitePattern: string;
-    configName?: string;
-  }
-
   let commandUrlsInput = $state('');
   let isLoading = $state(false);
   let formError = $state<string | null>(null);
@@ -53,12 +48,23 @@
   let showConflictWarning = $state(false);
   let detectedConflicts = $state<Conflict[]>([]);
 
+  // Site-rule options the user has explicitly dismissed; excluded from the merge
+  // and sent to the server so they aren't reapplied per URL
+  // Always reassigned, never mutated in place, so the merge effect re-fires
+  let dismissedSiteRuleOptions = $state(new Set<string>());
+
   // Live, non-blocking site-rule hint shown while typing (before submit)
   let siteRuleHints = $state<SiteConfigData[]>([]);
   let hintRequestId = 0;
 
-  const allOptions: Option[] = Object.values(typedOptionsData).flatMap(
-    (category) => category.options as Option[],
+  const emptyValueOptions = $derived(getEmptyValueOptions(selectedOptions));
+  const emptyValueOptionIds = $derived(new Set(emptyValueOptions.map((o) => o.id)));
+  const mutuallyExclusiveActive = $derived(getActiveMutuallyExclusive(selectedOptions));
+  const runDisabled = $derived(
+    isLoading || $hasJsonLintErrors || !commandUrlsInput || emptyValueOptions.length > 0,
+  );
+  const commandPreview = $derived(
+    buildCommandPreview(selectedOptions, parseUrls(commandUrlsInput), { maskSensitive: true }),
   );
 
   const siteRuleHintSummary = $derived.by(() => {
@@ -148,37 +154,6 @@
     return data ?? [];
   }
 
-  function detectConflicts(siteConfigs: SiteConfigData[]): Conflict[] {
-    const conflicts: Conflict[] = [];
-
-    const userSelectedOptions = Array.from(selectedOptions.entries()).filter(
-      ([, optionData]) => optionData.source === 'user',
-    );
-
-    for (const [optionId, userOptionData] of userSelectedOptions) {
-      for (const config of siteConfigs) {
-        if (optionId in config.options) {
-          const siteRuleValue = config.options[optionId];
-          if (userOptionData.value !== siteRuleValue) {
-            conflicts.push({
-              optionId,
-              userValue: userOptionData.value,
-              siteRuleValue,
-              sitePattern: config.matchedPattern ?? '',
-              configName: config.configName,
-            });
-          }
-        }
-      }
-    }
-
-    return conflicts;
-  }
-
-  function getOptionById(optionId: string): Option | undefined {
-    return allOptions.find((opt) => opt.id === optionId);
-  }
-
   async function checkConfigFileForErrors() {
     try {
       const response = await fetch('/api/config');
@@ -212,6 +187,9 @@
       const optionsEntries = Object.entries(config.options);
 
       for (const [optionId, value] of optionsEntries) {
+        if (dismissedSiteRuleOptions.has(optionId)) {
+          continue;
+        }
         selectedOptions.set(optionId, {
           value,
           source: 'site-config',
@@ -223,6 +201,10 @@
 
     // Then add user options (overriding site configs)
     for (const [optionId, optionData] of userOptions) {
+      if (typeof optionData === 'object' && optionData.source !== 'user') {
+        continue;
+      }
+
       if (selectedOptions.has(optionId)) {
         const siteConfigOption = selectedOptions.get(optionId);
         if (siteConfigOption?.sitePattern) {
@@ -242,6 +224,16 @@
     selectedOptions = new Map(selectedOptions);
     conflictWarnings = new Map(conflictWarnings);
   }
+
+  $effect(() => {
+    const hints = siteRuleHints;
+    // Register the dismissal set as a dependency
+    void dismissedSiteRuleOptions;
+
+    untrack(() => {
+      mergeSiteConfigsWithUserOptions(hints);
+    });
+  });
 
   function handleFormResult(result: FormResult) {
     formError = null;
@@ -319,7 +311,7 @@
 
       // Gate submission on user/site rule conflicts when the warning is enabled
       if (userWarningSetting && siteConfigs.length > 0) {
-        const conflicts = detectConflicts(siteConfigs);
+        const conflicts = detectConflicts(selectedOptions, siteConfigs);
         if (conflicts.length > 0) {
           detectedConflicts = conflicts;
           showConflictWarning = true;
@@ -350,7 +342,11 @@
       }
 
       // Submitting job
-      const result = await jobStore.startJob(parseUrls(commandUrlsInput), selectedOptions);
+      const result = await jobStore.startJob(
+        parseUrls(commandUrlsInput),
+        selectedOptions,
+        Array.from(dismissedSiteRuleOptions),
+      );
       handleFormResult(result);
     } catch (error) {
       logger.error('Failed to start jobs:', error);
@@ -373,6 +369,7 @@
 
 <div class="content-panel">
   <form
+    id="command-form"
     class="space-y-6"
     onsubmit={handleSubmit}
   >
@@ -439,15 +436,6 @@
       </Info>
     {/if}
 
-    <!-- Hidden inputs for form data -->
-    <input
-      type="hidden"
-      name="args"
-      value={JSON.stringify(
-        Array.from(selectedOptions.entries()).map(([key, optionData]) => [key, optionData.value]),
-      )}
-    />
-
     <!-- Conflict warning Info -->
     {#if showConflictWarning}
       <Info
@@ -460,7 +448,7 @@
 
           <ul class="list-disc space-y-1 pl-5 text-sm">
             {#each detectedConflicts as conflict (conflict.optionId)}
-              {@const option = getOptionById(conflict.optionId)}
+              {@const option = optionsById.get(conflict.optionId)}
               {#if option}
                 <li>
                   For <strong>{conflict.sitePattern}</strong>
@@ -499,6 +487,47 @@
       </Info>
     {/if}
 
+    <!-- Command preview -->
+    {#if parseUrls(commandUrlsInput).length > 0}
+      <div class="mx-4">
+        <span class="mb-1 block px-2 text-xs font-medium text-muted-foreground"
+          >Command preview</span
+        >
+        <pre
+          class="overflow-x-auto rounded-sm bg-surface-sunken px-3 py-2 text-xs text-foreground border-strong"><code
+            >{commandPreview.text}</code
+          ></pre>
+        {#if siteRuleHints.length > 0 || siteConfigData.length > 0}
+          <p class="mt-1 px-2 text-xs text-muted-foreground">
+            Site rules matched — their options will also be applied per URL; your selections take
+            precedence.
+          </p>
+        {/if}
+      </div>
+    {/if}
+
+    <!-- Selection warnings -->
+    {#if emptyValueOptions.length > 0}
+      <Info
+        variant="warning"
+        title="Missing option values"
+        class="mx-4"
+      >
+        Provide a value or deselect: {emptyValueOptions.map((o) => o.command).join(', ')}
+      </Info>
+    {/if}
+
+    {#if mutuallyExclusiveActive.length >= 2}
+      <Info
+        variant="info"
+        title="Mutually exclusive flags"
+        class="mx-4"
+      >
+        {mutuallyExclusiveActive.map((o) => o.command).join(', ')}, generally conflict — gallery-dl
+        will honor only one behavior.
+      </Info>
+    {/if}
+
     <!-- Form Buttons with Error Handling -->
     <div class="m-4 flex justify-end gap-6">
       <Button
@@ -512,7 +541,7 @@
 
       <Button
         type="submit"
-        disabled={isLoading || $hasJsonLintErrors || !commandUrlsInput}
+        disabled={runDisabled}
         class="mt-2 w-full"
         variant="primary"
       >
@@ -547,11 +576,18 @@
     bind:selectedOptions
     bind:conflicts={detectedConflicts}
     bind:conflictWarnings
-    {siteConfigData}
+    bind:dismissedSiteRuleOptions
+    siteConfigData={siteConfigData.length > 0 ? siteConfigData : siteRuleHints}
     {userWarningSetting}
     {commandUrlsInput}
+    {runDisabled}
+    runFormId="command-form"
+    isRunning={isLoading}
+    {emptyValueOptionIds}
     onConflictDetected={(conflicts) => {
-      if (conflicts.length > 0) {
+      // Only surface the blocking override panel during an in-flight submit
+      // otherwise typing would pop it open
+      if (conflicts.length > 0 && isLoading) {
         showConflictWarning = true;
       }
     }}

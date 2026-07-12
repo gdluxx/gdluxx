@@ -13,3 +13,11 @@ export interface SiteConfigData {
   configName?: string;
   options: Record<string, string | number | boolean>;
 }
+
+export interface Conflict {
+  optionId: string;
+  userValue: string | number | boolean;
+  siteRuleValue: string | number | boolean;
+  sitePattern: string;
+  configName?: string;
+}

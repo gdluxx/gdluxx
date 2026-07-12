@@ -204,6 +204,7 @@ function findListRow(id: string): JobListItem | undefined {
 async function startJob(
   urls: string[],
   selectedOptions = new Map<string, OptionWithSource>(),
+  excludedOptions: string[] = [],
 ): Promise<BatchJobStartResult> {
   if (!browser) {
     return {
@@ -235,6 +236,7 @@ async function startJob(
       body: JSON.stringify({
         urls,
         args: optionsArray,
+        excludedOptions,
       }),
     });
 

@@ -11,8 +11,14 @@
 <script lang="ts">
   import { Button, Chip, Info, Toggle } from '$lib/components/ui';
   import optionsData from '$lib/assets/options.json';
-  import type { Option, OptionsData } from '$lib/types/options';
-  import type { OptionWithSource, SiteConfigData } from '$lib/types/command-form';
+  import type { Option, OptionCategory, OptionsData } from '$lib/types/options';
+  import type { Conflict, OptionWithSource, SiteConfigData } from '$lib/types/command-form';
+  import {
+    allOptions,
+    detectConflicts,
+    optionsById,
+    SENSITIVE_MASK,
+  } from '$lib/utils/commandOptions';
   import { Icon } from '$lib/components/index';
   import { SiteRuleModal } from '$lib/components/site-rules';
   import { extractUniquePatterns } from '$lib/utils/patternDetection';
@@ -21,32 +27,34 @@
 
   const typedOptionsData = optionsData as OptionsData;
 
-  interface Conflict {
-    optionId: string;
-    userValue: string | number | boolean;
-    siteRuleValue: string | number | boolean;
-    sitePattern: string;
-    configName?: string;
-  }
-
   let {
     selectedOptions = $bindable(),
     conflicts = $bindable(),
     conflictWarnings = $bindable(),
+    dismissedSiteRuleOptions = $bindable(),
 
     siteConfigData, // eslint-disable-line prefer-const
     userWarningSetting, // eslint-disable-line prefer-const
     commandUrlsInput, // eslint-disable-line prefer-const
+    runDisabled, // eslint-disable-line prefer-const
+    runFormId, // eslint-disable-line prefer-const
+    isRunning, // eslint-disable-line prefer-const
+    emptyValueOptionIds, // eslint-disable-line prefer-const
 
     onConflictDetected, // eslint-disable-line prefer-const
     onSiteRuleSaved, // eslint-disable-line prefer-const
   }: {
     selectedOptions: Map<string, OptionWithSource>;
     conflicts: Conflict[];
-    siteConfigData: SiteConfigData[];
     conflictWarnings: Map<string, string>;
+    dismissedSiteRuleOptions: Set<string>;
+    siteConfigData: SiteConfigData[];
     userWarningSetting: boolean;
     commandUrlsInput: string;
+    runDisabled: boolean;
+    runFormId: string;
+    isRunning: boolean;
+    emptyValueOptionIds: Set<string>;
     onConflictDetected?: (conflicts: Conflict[]) => void;
     onSiteRuleSaved?: () => void;
   } = $props();
@@ -73,10 +81,31 @@
     }
   });
 
-  const allOptions: Option[] = Object.values(typedOptionsData).flatMap(
-    (category) => category.options as Option[],
-  );
   const categoriesArray = Object.entries(typedOptionsData);
+
+  let optionsSearch = $state('');
+  const searchActive = $derived(optionsSearch.trim().length > 0);
+
+  const filteredCategories = $derived.by((): Array<[string, OptionCategory]> => {
+    if (!searchActive) {
+      return categoriesArray;
+    }
+    const query = optionsSearch.trim().toLowerCase();
+    return categoriesArray
+      .map(([key, category]): [string, OptionCategory] => {
+        const options = category.options.filter(
+          (option) =>
+            option.command.toLowerCase().includes(query) ||
+            option.description.toLowerCase().includes(query),
+        );
+        return [key, { ...category, options }];
+      })
+      .filter(([, category]) => category.options.length > 0);
+  });
+
+  const filteredOptionCount = $derived(
+    filteredCategories.reduce((sum, [, category]) => sum + category.options.length, 0),
+  );
 
   function toggleOption(option: Option) {
     const { id, defaultValue } = option;
@@ -84,7 +113,7 @@
       selectedOptions.delete(id);
     } else {
       selectedOptions.set(id, {
-        value: defaultValue ?? true,
+        value: defaultValue ?? (option.type === 'boolean' ? true : ''),
         source: 'user',
       });
     }
@@ -92,6 +121,12 @@
   }
 
   function removeOption(optionId: string) {
+    // Dismissing a site-rule chip suppresses it from the parent's re-merge so it
+    // won't immediately reappear; the reassignment triggers that effect
+    if (selectedOptions.get(optionId)?.source === 'site-config') {
+      dismissedSiteRuleOptions = new Set([...dismissedSiteRuleOptions, optionId]);
+    }
+
     selectedOptions.delete(optionId);
     conflictWarnings.delete(optionId);
     selectedOptions = new Map(selectedOptions);
@@ -109,10 +144,6 @@
         selectedOptions = new Map(selectedOptions);
       }
     }
-  }
-
-  function getOptionById(optionId: string): Option | undefined {
-    return allOptions.find((opt) => opt.id === optionId);
   }
 
   function getCategoryKeyForOption(optionId: string): string | undefined {
@@ -152,33 +183,6 @@
     selectedOptionsByCategory = newCategoryMap;
   }
 
-  function detectConflicts(siteConfigs: SiteConfigData[]): Conflict[] {
-    const detectedConflicts: Conflict[] = [];
-
-    const userSelectedOptions = Array.from(selectedOptions.entries()).filter(
-      ([, optionData]) => optionData.source === 'user',
-    );
-
-    for (const [optionId, userOptionData] of userSelectedOptions) {
-      for (const config of siteConfigs) {
-        if (optionId in config.options) {
-          const siteRuleValue = config.options[optionId];
-          if (userOptionData.value !== siteRuleValue) {
-            detectedConflicts.push({
-              optionId,
-              userValue: userOptionData.value,
-              siteRuleValue,
-              sitePattern: config.matchedPattern ?? '',
-              configName: config.configName,
-            });
-          }
-        }
-      }
-    }
-
-    return detectedConflicts;
-  }
-
   function revertToSiteConfig(optionId: string) {
     const currentOption = selectedOptions.get(optionId);
     if (!currentOption) {
@@ -208,8 +212,11 @@
   }
 
   function clearAllOptions() {
-    selectedOptions = new Map();
-    selectedOptionsByCategory = new Map();
+    // Keep site-config (and any non-user) entries; clearing dismissals lets the
+    // parent's re-merge restore previously dismissed site-rule chips
+    selectedOptions = new Map([...selectedOptions].filter(([, d]) => d.source !== 'user'));
+    conflictWarnings = new Map();
+    dismissedSiteRuleOptions = new Set();
   }
 
   function canSaveAsSiteRule(): boolean {
@@ -241,7 +248,7 @@
 
   $effect(() => {
     if (userWarningSetting && siteConfigData.length > 0 && selectedOptions.size > 0) {
-      const detectedConflicts = detectConflicts(siteConfigData);
+      const detectedConflicts = detectConflicts(selectedOptions, siteConfigData);
       if (detectedConflicts.length !== previousConflictCount) {
         previousConflictCount = detectedConflicts.length;
         conflicts = detectedConflicts;
@@ -296,13 +303,32 @@
   </summary>
 
   <div class="bg-surface-sunken border-t-strong">
+    <!-- Sticky search across all option flags/descriptions -->
+    <div class="sticky top-0 z-10 bg-surface-sunken px-4 pt-4 pb-2">
+      <input
+        type="text"
+        bind:value={optionsSearch}
+        placeholder="Search options by flag or description..."
+        aria-label="Search options"
+        class="form-input"
+      />
+      {#if searchActive}
+        <p class="mt-1 text-xs text-muted-foreground">
+          Showing {filteredOptionCount} of {allOptions.length} options
+        </p>
+      {/if}
+    </div>
+
     <!-- Nested accordions for categories -->
-    <div class="space-y-2 p-4">
-      {#each categoriesArray as [categoryKey, category] (categoryKey)}
+    <div class="space-y-2 p-4 pt-2">
+      {#each filteredCategories as [categoryKey, category] (categoryKey)}
         <details
           class="group rounded-sm bg-surface-elevated border-strong"
-          open={categoryAccordionStates.get(categoryKey) ?? false}
+          open={searchActive ? true : (categoryAccordionStates.get(categoryKey) ?? false)}
           ontoggle={(e) => {
+            if (searchActive) {
+              return;
+            }
             const target = e.target as HTMLDetailsElement;
             categoryAccordionStates.set(categoryKey, target.open);
             categoryAccordionStates = new Map(categoryAccordionStates);
@@ -333,7 +359,7 @@
             </div>
           </summary>
 
-          <div class="max-h-60 overflow-y-auto bg-surface-sunken p-3 border-t-strong">
+          <div class="bg-surface-sunken p-3 border-t-strong">
             <div class="space-y-3">
               {#each category.options as option (option.id)}
                 <div
@@ -361,20 +387,35 @@
                     {#if selectedOptions.has(option.id) && option.type !== 'boolean'}
                       <div class="mt-2">
                         <input
-                          type={option.type === 'number' ? 'number' : 'text'}
+                          type={option.type === 'number'
+                            ? 'number'
+                            : option.sensitive
+                              ? 'password'
+                              : 'text'}
                           value={selectedOptions.get(option.id)?.value ?? ''}
                           oninput={(e) => {
                             const target = e.target;
                             if (target instanceof HTMLInputElement) {
                               editOption(
                                 option.id,
-                                option.type === 'number' ? Number(target.value) : target.value,
+                                option.type === 'number'
+                                  ? target.value === ''
+                                    ? ''
+                                    : Number(target.value)
+                                  : target.value,
                               );
                             }
                           }}
                           placeholder={option.placeholder ?? ''}
-                          class="bg-input w-full rounded-sm px-2 py-1 text-sm text-foreground border-strong focus:ring-primary"
+                          class="bg-input w-full rounded-sm px-2 py-1 text-sm text-foreground focus:ring-primary {emptyValueOptionIds.has(
+                            option.id,
+                          )
+                            ? 'border-warning'
+                            : 'border-strong'}"
                         />
+                        {#if emptyValueOptionIds.has(option.id)}
+                          <p class="mt-1 text-xs text-warning">Value required</p>
+                        {/if}
                       </div>
                     {/if}
                   </div>
@@ -384,6 +425,12 @@
           </div>
         </details>
       {/each}
+
+      {#if searchActive && filteredCategories.length === 0}
+        <p class="cursor-default py-8 text-center text-sm text-muted-foreground">
+          No options match your search.
+        </p>
+      {/if}
     </div>
   </div>
 </details>
@@ -396,7 +443,7 @@
     class="my-4"
   >
     {#each Array.from(conflictWarnings.entries()) as [optionId, warning] (optionId)}
-      {@const option = getOptionById(optionId)}
+      {@const option = optionsById.get(optionId)}
       {#if option}
         <div
           class="config-item flex items-center justify-between rounded border bg-surface px-3 py-2"
@@ -456,32 +503,43 @@
         </span>
 
         <!-- Legend/key -->
-        <div class="flex cursor-default items-center gap-4 text-xs text-foreground">
-          <div class="flex items-center gap-1 rounded-sm px-2 py-1 border-strong">
+        <div class="flex cursor-default items-center gap-3 text-xs text-muted-foreground">
+          <span class="flex items-center gap-1">
             <Icon
               iconName="site-rules"
-              size={16}
+              size={14}
             />
-            <span>Site Rules</span>
-          </div>
-          <div class="flex items-center gap-1 rounded-sm px-2 py-1 border-strong">
+            Site rules
+          </span>
+          <span class="flex items-center gap-1">
             <Icon
               iconName="options"
-              size={16}
+              size={14}
             />
-            <span>User Selected</span>
-          </div>
+            User selected
+          </span>
         </div>
 
-        <Button
-          pill
-          onclick={clearAllOptions}
-          size="sm"
-          variant="warning"
-          class="px-2 py-1 text-xs"
-        >
-          Clear All
-        </Button>
+        <div class="flex items-center gap-2">
+          <Button
+            pill
+            onclick={clearAllOptions}
+            size="sm"
+            variant="warning"
+            class="px-2 py-1 text-xs"
+          >
+            Clear All
+          </Button>
+          <Button
+            type="submit"
+            form={runFormId}
+            disabled={runDisabled}
+            variant="primary"
+            size="sm"
+          >
+            {isRunning ? 'Running…' : 'Run'}
+          </Button>
+        </div>
       </div>
       <div class="cursor-default space-y-4">
         {#each [...selectedOptionsByCategory.entries()] as [categoryKey, categoryOptions] (categoryKey)}
@@ -493,17 +551,21 @@
               </h3>
               <div class="flex flex-wrap gap-2">
                 {#each [...categoryOptions.entries()] as [optionId, optionData] (optionId)}
-                  {@const option = getOptionById(optionId)}
+                  {@const option = optionsById.get(optionId)}
                   {#if option}
                     <Chip
                       label={option.command}
                       value={optionData.value !== true && option.type !== 'boolean'
-                        ? optionData.value
+                        ? option.sensitive
+                          ? SENSITIVE_MASK
+                          : optionData.value
                         : undefined}
                       variant={optionData.source === 'site-config' ? 'primary' : 'outline-primary'}
                       size="default"
                       dismissible={true}
-                      editable={option.type === 'string' && optionData.source === 'user'}
+                      editable={option.type === 'string' &&
+                        optionData.source === 'user' &&
+                        !option.sensitive}
                       onDismiss={() => removeOption(optionId)}
                       onEdit={(newValue) => editOption(optionId, newValue)}
                       ariaLabel={`${optionData.source === 'site-config' ? 'Site rule' : 'User selected'} option: ${option.command}`}

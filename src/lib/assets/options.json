@@ -77,7 +77,8 @@
         "description": "Password belonging to the given username",
         "type": "string",
         "placeholder": "e.g. hunter2",
-        "defaultValue": ""
+        "defaultValue": "",
+        "sensitive": true
       },
       {
         "id": "user-agent",

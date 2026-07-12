@@ -21,7 +21,7 @@ import { createApiError, createApiResponse, handleApiError } from '$lib/server/a
 export const POST: RequestHandler = async ({ request }) => {
   try {
     const requestData = await request.json();
-    const { urls, args } = requestData ?? {};
+    const { urls, args, excludedOptions } = requestData ?? {};
 
     if (!urls || !Array.isArray(urls) || urls.length === 0) {
       return createApiError('URLs are required and cannot be empty', 400);
@@ -41,6 +41,15 @@ export const POST: RequestHandler = async ({ request }) => {
     if (args && Array.isArray(args)) {
       receivedArgs = args;
     }
+
+    // Parse excluded options, client-dismissed site-rule options
+    let excludedOptionIds: string[] = [];
+    if (excludedOptions && Array.isArray(excludedOptions)) {
+      excludedOptionIds = excludedOptions.filter(
+        (x: unknown): x is string => typeof x === 'string',
+      );
+    }
+    const excluded = new Set(excludedOptionIds);
 
     // does gallery-dl binary exist
     try {
@@ -64,7 +73,9 @@ export const POST: RequestHandler = async ({ request }) => {
         continue;
       }
 
-      const siteCliOptions = await siteConfigManager.getCliOptionsForUrl(url);
+      const siteCliOptions = (await siteConfigManager.getCliOptionsForUrl(url)).filter(
+        ([optionId]) => !excluded.has(optionId),
+      );
 
       const allArgs: Array<[string, string | number | boolean]> = [
         ...siteCliOptions,
