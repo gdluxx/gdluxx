@@ -12,10 +12,12 @@
   import { Button, Info, CopyTooltip } from '$lib/components/ui';
   import { Icon } from '$lib/components';
   import { keywordInfoStore } from '$lib/stores/keyword-info.svelte';
+  import { copyToClipboard } from '$lib/utils/clipboard';
+
+  type Mode = 'list-keywords' | 'extractor-info';
 
   let urlInput = $state(keywordInfoStore.state.currentUrl || '');
-
-  const _placeholderIndex = $state(0);
+  let mode = $state<Mode>(keywordInfoStore.state.lastCommand ?? 'list-keywords');
 
   const tooltip = $state({
     visible: false,
@@ -24,20 +26,18 @@
     text: '',
   });
 
-  function handleListKeywords(event: Event) {
-    event.preventDefault();
-    if (!urlInput.trim()) {
-      return;
-    }
-    keywordInfoStore.executeCommand(urlInput.trim(), 'list-keywords');
+  function selectMode(next: Mode) {
+    mode = next;
+    keywordInfoStore.selectCommand(next);
   }
 
-  function handleExtractorInfo(event: Event) {
+  function runCommand(event: Event) {
     event.preventDefault();
-    if (!urlInput.trim()) {
+    const url = urlInput.trim();
+    if (!url || buttonsDisabled) {
       return;
     }
-    keywordInfoStore.executeCommand(urlInput.trim(), 'extractor-info');
+    keywordInfoStore.executeCommand(url, mode);
   }
 
   function clearOutput() {
@@ -45,38 +45,31 @@
     urlInput = '';
   }
 
-  function fallbackCopy(text: string): void {
-    const textArea = document.createElement('textarea');
-    textArea.value = text;
-    textArea.style.position = 'fixed';
-    textArea.style.left = '-999999px';
-    textArea.style.top = '-999999px';
-    textArea.setAttribute('aria-hidden', 'true');
-    document.body.appendChild(textArea);
-    textArea.focus();
-    textArea.select();
+  function getEventCoords(event: MouseEvent | KeyboardEvent): { x: number; y: number } {
+    if ('clientX' in event && event.clientX !== 0) {
+      return { x: event.clientX, y: event.clientY };
+    }
+    const el = event.currentTarget as HTMLElement | null;
+    if (el) {
+      const rect = el.getBoundingClientRect();
+      return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+    }
+    return { x: 0, y: 0 };
   }
 
-  async function copyToClipboard(text: string | null, event: MouseEvent) {
+  async function handleCopy(text: string | null, event: MouseEvent | KeyboardEvent) {
     if (!text) {
       return;
     }
 
+    const { x, y } = getEventCoords(event);
+
     try {
-      if (navigator.clipboard && window.isSecureContext) {
-        try {
-          await navigator.clipboard.writeText(text);
-        } catch (clipboardError) {
-          console.warn('Clipboard API failed, falling back to execCommand:', clipboardError);
-          fallbackCopy(text);
-        }
-      } else {
-        fallbackCopy(text);
-      }
+      await copyToClipboard(text);
 
       tooltip.text = 'Copied!';
-      tooltip.x = event.clientX;
-      tooltip.y = event.clientY;
+      tooltip.x = x;
+      tooltip.y = y;
       tooltip.visible = true;
 
       setTimeout(() => {
@@ -85,13 +78,24 @@
     } catch (err) {
       console.error('Copy failed:', err);
       tooltip.text = 'Copy failed';
-      tooltip.x = event.clientX;
-      tooltip.y = event.clientY;
+      tooltip.x = x;
+      tooltip.y = y;
       tooltip.visible = true;
 
       setTimeout(() => {
         tooltip.visible = false;
       }, 2000);
+    }
+  }
+
+  function copyKeyword(name: string, event: MouseEvent | KeyboardEvent) {
+    handleCopy(`{${name}}`, event);
+  }
+
+  function handleKeywordKeydown(name: string, event: KeyboardEvent) {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      copyKeyword(name, event);
     }
   }
 
@@ -102,6 +106,9 @@
 
   const buttonsDisabled = $derived(keywordInfoStore.state.isLoading || !isValidUrl());
 
+  const modeLabel = (m: Mode | null): string =>
+    m === 'list-keywords' ? 'List Keywords' : 'Extractor Info';
+
   const errorVariant = $derived(() => {
     const error = keywordInfoStore.state.error?.toLowerCase() ?? '';
     return error.includes('timeout') || error.includes('network') ? 'warning' : 'error';
@@ -111,7 +118,7 @@
 <div class="content-panel">
   <form
     class="space-y-6"
-    onsubmit={handleExtractorInfo}
+    onsubmit={runCommand}
   >
     <!-- URL Input -->
     <div class="m-4">
@@ -141,9 +148,7 @@
           onkeydown={(e) => {
             if (e.key === 'Enter') {
               e.preventDefault();
-              if (urlInput.trim() && !buttonsDisabled) {
-                handleExtractorInfo(e);
-              }
+              runCommand(e);
             }
           }}
           class="form-input"
@@ -170,50 +175,65 @@
       </div>
     </div>
 
-    <!-- Buttons -->
-    <div class="m-4 flex flex-col justify-end gap-2 sm:flex-row">
-      <Button
-        onclick={() => keywordInfoStore.clearAllCachedData()}
-        disabled={buttonsDisabled}
-        size="sm"
-        variant="outline-primary"
-        class="order-2 w-full sm:order-1 sm:w-auto"
+    <!-- Mode + actions -->
+    <div class="m-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <!-- Segmented control: choose which command to run -->
+      <div
+        role="group"
+        aria-label="Select command"
+        class="inline-flex w-full overflow-hidden rounded-sm border border-primary sm:w-auto"
       >
-        Clear Data
-      </Button>
-      <Button
-        onclick={handleListKeywords}
-        disabled={buttonsDisabled}
-        size="sm"
-        variant="primary"
-        class="order-2 w-full sm:order-1 sm:w-auto"
-      >
-        {#if keywordInfoStore.state.isLoading && keywordInfoStore.state.lastCommand === 'list-keywords'}
-          <Icon
-            iconName="loading"
-            size={16}
-            class="mr-2 animate-spin"
-          />
-        {/if}
-        List Keywords
-      </Button>
+        <button
+          type="button"
+          aria-pressed={mode === 'list-keywords'}
+          onclick={() => selectMode('list-keywords')}
+          class="flex-1 cursor-pointer px-4 py-1.5 text-sm font-medium transition-colors focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:flex-none {mode ===
+          'list-keywords'
+            ? 'bg-primary text-on-primary'
+            : 'bg-transparent text-primary hover:bg-primary/10'}"
+        >
+          List Keywords
+        </button>
+        <button
+          type="button"
+          aria-pressed={mode === 'extractor-info'}
+          onclick={() => selectMode('extractor-info')}
+          class="flex-1 cursor-pointer border-l border-primary px-4 py-1.5 text-sm font-medium transition-colors focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:flex-none {mode ===
+          'extractor-info'
+            ? 'bg-primary text-on-primary'
+            : 'bg-transparent text-primary hover:bg-primary/10'}"
+        >
+          Extractor Info
+        </button>
+      </div>
 
-      <Button
-        type="submit"
-        disabled={buttonsDisabled}
-        size="sm"
-        variant="primary"
-        class="order-1 w-full sm:order-2 sm:w-auto"
-      >
-        {#if keywordInfoStore.state.isLoading && keywordInfoStore.state.lastCommand === 'extractor-info'}
-          <Icon
-            iconName="loading"
-            size={16}
-            class="mr-2 animate-spin"
-          />
-        {/if}
-        Extractor Info
-      </Button>
+      <div class="flex flex-col gap-2 sm:flex-row">
+        <Button
+          onclick={() => keywordInfoStore.clearAllCachedData()}
+          disabled={buttonsDisabled}
+          size="sm"
+          variant="outline-primary"
+          class="order-2 w-full sm:order-1 sm:w-auto"
+        >
+          Clear Data
+        </Button>
+        <Button
+          type="submit"
+          disabled={buttonsDisabled}
+          size="sm"
+          variant="primary"
+          class="order-1 w-full sm:order-2 sm:w-auto"
+        >
+          {#if keywordInfoStore.state.isLoading}
+            <Icon
+              iconName="loading"
+              size={16}
+              class="mr-2 animate-spin"
+            />
+          {/if}
+          Run {modeLabel(mode)}
+        </Button>
+      </div>
     </div>
 
     <!-- Error -->
@@ -231,11 +251,7 @@
         <!-- Context Info -->
         {#if keywordInfoStore.state.currentUrl && keywordInfoStore.state.lastCommand}
           <Info variant="info">
-            <strong>
-              {keywordInfoStore.state.lastCommand === 'list-keywords'
-                ? 'List Keywords'
-                : 'Extractor Info'}:
-            </strong>
+            <strong>{modeLabel(keywordInfoStore.state.lastCommand)}:</strong>
             <code class="text-sm">{keywordInfoStore.state.currentUrl}</code>
           </Info>
         {/if}
@@ -247,7 +263,7 @@
             <div class="flex gap-2">
               {#if keywordInfoStore.currentOutput()}
                 <Button
-                  onclick={(e) => copyToClipboard(keywordInfoStore.currentOutput(), e)}
+                  onclick={(e) => handleCopy(keywordInfoStore.currentOutput(), e)}
                   variant="outline-primary"
                   size="sm"
                   class="flex items-center gap-1"
@@ -276,29 +292,80 @@
             </div>
           </div>
 
-          <div
-            class="mt-4 max-h-[calc(100vh-550px)] w-full cursor-default overflow-auto rounded-sm border bg-surface px-4 py-3 font-mono text-sm leading-relaxed break-words whitespace-pre-wrap text-foreground"
-          >
-            {#if keywordInfoStore.state.isLoading}
-              <div class="flex items-center justify-center py-8">
-                <Icon
-                  iconName="loading"
-                  size={24}
-                  class="mr-2 animate-spin"
-                />
-                <span class="text-base">
-                  Executing {keywordInfoStore.state.lastCommand === 'list-keywords'
-                    ? 'List Keywords'
-                    : 'Extractor Info'}...
-                </span>
-              </div>
-            {:else if keywordInfoStore.currentOutput()}
+          {#if keywordInfoStore.state.isLoading}
+            <div
+              class="mt-4 flex items-center justify-center rounded-sm border bg-surface px-4 py-8 text-foreground"
+            >
+              <Icon
+                iconName="loading"
+                size={24}
+                class="mr-2 animate-spin"
+              />
+              <span class="text-base"
+                >Executing {modeLabel(keywordInfoStore.state.lastCommand)}...</span
+              >
+            </div>
+          {:else if keywordInfoStore.currentSections()}
+            <!-- Structured list-keywords view: keyword -> example table -->
+            <div
+              class="mt-4 max-h-[calc(100vh-550px)] w-full overflow-auto rounded-sm border bg-surface"
+            >
+              {#each keywordInfoStore.currentSections() ?? [] as section (section.title)}
+                <div class="border-b last:border-b-0">
+                  <div
+                    class="sticky top-0 z-10 bg-surface-elevated px-4 py-2 text-sm font-semibold text-primary"
+                  >
+                    {section.title}
+                  </div>
+                  <table class="w-full table-fixed border-collapse text-sm">
+                    <thead>
+                      <tr class="border-b text-left text-muted-foreground">
+                        <th class="w-2/5 px-4 py-1.5 font-medium">Keyword</th>
+                        <th class="px-4 py-1.5 font-medium">Example value</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {#each section.keywords as keyword (keyword.name)}
+                        <tr
+                          role="button"
+                          tabindex="0"
+                          onclick={(e) => copyKeyword(keyword.name, e)}
+                          onkeydown={(e) => handleKeywordKeydown(keyword.name, e)}
+                          title={`Copy {${keyword.name}}`}
+                          class="cursor-pointer border-b last:border-b-0 hover:bg-surface-hover focus-visible:bg-surface-hover focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary"
+                        >
+                          <td class="px-4 py-1.5 align-top font-mono text-primary">
+                            <span class="block truncate">{`{${keyword.name}}`}</span>
+                          </td>
+                          <td class="px-4 py-1.5 align-top text-foreground">
+                            <span
+                              class="block truncate"
+                              title={keyword.example}
+                            >
+                              {keyword.example || '—'}
+                            </span>
+                          </td>
+                        </tr>
+                      {/each}
+                    </tbody>
+                  </table>
+                </div>
+              {/each}
+            </div>
+          {:else if keywordInfoStore.currentOutput()}
+            <div
+              class="mt-4 max-h-[calc(100vh-550px)] w-full cursor-default overflow-auto rounded-sm border bg-surface px-4 py-3 font-mono text-sm leading-relaxed break-words whitespace-pre-wrap text-foreground"
+            >
               <!-- prettier-ignore -->
               {keywordInfoStore.currentOutput()}
-            {:else}
+            </div>
+          {:else}
+            <div
+              class="mt-4 w-full rounded-sm border bg-surface px-4 py-3 font-mono text-sm text-foreground"
+            >
               <span class="text-muted-foreground italic"> No output to display </span>
-            {/if}
-          </div>
+            </div>
+          {/if}
         </div>
       </div>
     {/if}

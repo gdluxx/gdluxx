@@ -15,7 +15,7 @@
   import { Info } from '$lib/components/ui';
   import { toastStore } from '$lib/stores/toast';
   import type { PageData } from './$types';
-  import type { SiteConfig } from '$lib/server/siteConfigManager';
+  import type { SiteConfig, SupportedSite } from '$lib/server/siteConfigManager';
 
   const { data } = $props<{ data: PageData }>();
   const _categories = $derived(data.categories);
@@ -32,9 +32,36 @@
   let isAlphabeticalAscending = $state(true);
   let isCLIOptionsAscending = $state(false);
 
+  let showSupportedSitesModal = $state(false);
+  let supportedSitesSearch = $state('');
+
   $effect(() => {
     configs = data.configs || [];
     supportedSites = data.supportedSites || [];
+  });
+
+  const alphaSortLabel = $derived(
+    sortMode === 'alphabetical' && !isAlphabeticalAscending ? 'Z–A' : 'A–Z',
+  );
+
+  const cliSortActive = $derived(sortMode === 'cli-options');
+  const cliSortDirectionLabel = $derived(cliSortActive ? (isCLIOptionsAscending ? '↑' : '↓') : '');
+  const cliSortTitle = $derived(
+    `Sort by CLI options count ${cliSortActive && isCLIOptionsAscending ? '(low to high)' : '(high to low)'}`,
+  );
+
+  const filteredSupportedSites = $derived.by(() => {
+    const query = supportedSitesSearch.trim().toLowerCase();
+    if (!query) {
+      return supportedSites;
+    }
+    return supportedSites.filter((site: SupportedSite) => {
+      return (
+        site.name.toLowerCase().includes(query) ||
+        site.url.toLowerCase().includes(query) ||
+        (site.category ?? '').toLowerCase().includes(query)
+      );
+    });
   });
 
   async function handleSaveConfig(configData: Partial<SiteConfig>) {
@@ -203,6 +230,15 @@
     showAddModal = true;
   }
 
+  function openSupportedSitesModal() {
+    showSupportedSitesModal = true;
+  }
+
+  function closeSupportedSitesModal() {
+    showSupportedSitesModal = false;
+    supportedSitesSearch = '';
+  }
+
   function sortByAlpha() {
     if (sortMode === 'alphabetical') {
       isAlphabeticalAscending = !isAlphabeticalAscending;
@@ -259,7 +295,7 @@
     </Info>
   {/if}
 
-  <div class="data-list">
+  <div class="cursor-default">
     <!-- Header -->
     <div class="data-list-header">
       <div class="mb-3 flex items-center justify-between">
@@ -269,21 +305,27 @@
       </div>
 
       <!-- Site Stats -->
-      <div class="mb-4 grid grid-cols-1 gap-4 md:grid-cols-3">
+      <div class="mb-4 grid grid-cols-1 gap-3 md:grid-cols-3">
         <!-- config count card -->
-        <div class="data-list-stats">
-          <h3 class="text-lg font-semibold text-primary">Rules</h3>
-          <p class="text-3xl font-bold text-success">
+        <div class="data-list-stats flex items-center justify-between gap-2 p-3">
+          <h3 class="text-sm font-medium text-muted-foreground">Rules</h3>
+          <p class="text-xl font-bold text-success">
             {configs.length}
           </p>
         </div>
         <!-- Supported sites card -->
-        <div class="data-list-stats">
-          <h3 class="text-lg font-semibold text-primary">Supported Sites</h3>
-          <p class="text-3xl font-bold text-success">
+        <button
+          type="button"
+          onclick={openSupportedSitesModal}
+          class="data-list-stats flex w-full items-center justify-between gap-2 p-3 text-left transition-colors hover:bg-surface-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          aria-haspopup="dialog"
+          title="View and search supported sites"
+        >
+          <h3 class="text-sm font-medium text-muted-foreground">Supported Sites</h3>
+          <p class="text-xl font-bold text-success">
             {supportedSites.length}
           </p>
-        </div>
+        </button>
       </div>
       <!-- buttons -->
       <div class="data-list-controls">
@@ -326,14 +368,14 @@
             </Button>
           </div>
 
-          <div class="flex items-center gap-3">
+          <div class="flex items-center gap-2">
             <Button
               onclick={sortByAlpha}
               disabled={configs.length === 0}
-              aria-label="Sort alphabetically"
+              aria-label={`Sort alphabetically (${alphaSortLabel})`}
               variant={sortMode === 'alphabetical' ? 'primary' : 'outline-primary'}
               size="sm"
-              title={`Sort alphabetically ${sortMode === 'alphabetical' && !isAlphabeticalAscending ? '(Z-A)' : '(A-Z)'}`}
+              title={`Sort alphabetically (${alphaSortLabel})`}
             >
               <Icon
                 iconName={sortMode === 'alphabetical'
@@ -341,16 +383,18 @@
                     ? 'alpha-asc'
                     : 'alpha-desc'
                   : 'alpha-var'}
-                size={24}
+                size={18}
+                class="mr-1.5"
               />
+              <span class="text-xs font-semibold">{alphaSortLabel}</span>
             </Button>
             <Button
               onclick={sortByCLIOptions}
               disabled={configs.length === 0}
-              aria-label="Sort by CLI options count"
+              aria-label={cliSortTitle}
               variant={sortMode === 'cli-options' ? 'primary' : 'outline-primary'}
               size="sm"
-              title={`Sort by CLI options count ${sortMode === 'cli-options' && isCLIOptionsAscending ? '(0-9)' : '(9-0)'}`}
+              title={cliSortTitle}
             >
               <Icon
                 iconName={sortMode === 'cli-options'
@@ -358,8 +402,12 @@
                     ? 'num-asc'
                     : 'num-desc'
                   : 'num-var'}
-                size={24}
+                size={18}
+                class="mr-1.5"
               />
+              <span class="text-xs font-semibold"
+                >Options{cliSortDirectionLabel ? ` ${cliSortDirectionLabel}` : ''}</span
+              >
             </Button>
           </div>
         </div>
@@ -368,8 +416,11 @@
 
     <!-- Config list -->
     <div>
-      {#each configs as config (config.id)}
-        <div class="data-list-item flex items-center justify-between">
+      {#each configs as config, index (config.id)}
+        <div
+          class="flex items-center justify-between gap-4 px-2 py-3 transition-colors hover:bg-surface-hover"
+          class:border-b-strong={index < configs.length - 1}
+        >
           <div class="flex-1">
             <div class="flex items-center">
               <h3 class="pr-2 text-lg font-medium text-primary">
@@ -509,4 +560,50 @@
       <Info variant="warning">This action cannot be undone.</Info>
     {/if}
   </ConfirmModal>
+
+  <!-- Supported Sites search modal -->
+  <Modal
+    show={showSupportedSitesModal}
+    onClose={closeSupportedSitesModal}
+    size="lg"
+  >
+    <div class="content-panel">
+      <h2 class="mb-4 cursor-default text-xl font-bold text-primary">Supported Sites</h2>
+      <input
+        type="text"
+        bind:value={supportedSitesSearch}
+        placeholder="Search by name, URL, or category..."
+        aria-label="Search supported sites"
+        class="form-input mb-3"
+      />
+      <p class="mb-2 cursor-default text-sm text-muted-foreground">
+        Showing {filteredSupportedSites.length} of {supportedSites.length} sites
+      </p>
+      <div class="max-h-96 overflow-y-auto pr-1">
+        {#each filteredSupportedSites as site, index (site.id ?? site.url)}
+          <div
+            class="px-1 py-2 hover:bg-surface-hover"
+            class:border-b-strong={index < filteredSupportedSites.length - 1}
+          >
+            <p class="text-sm font-medium text-foreground">{site.name}</p>
+            <p class="text-xs text-muted-foreground">
+              {site.url}
+              {#if site.category}
+                <span
+                  class="ml-2 inline-flex items-center rounded-full bg-surface-selected px-2 py-0.5 text-info"
+                >
+                  {site.category}
+                </span>
+              {/if}
+            </p>
+          </div>
+        {/each}
+        {#if filteredSupportedSites.length === 0}
+          <p class="cursor-default py-8 text-center text-sm text-muted-foreground">
+            No supported sites match your search.
+          </p>
+        {/if}
+      </div>
+    </div>
+  </Modal>
 </PageLayout>

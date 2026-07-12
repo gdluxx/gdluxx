@@ -19,6 +19,7 @@
   import { CopyTooltip } from '$lib/components/ui';
   import { Icon } from '$lib/components/index';
   import { getStatusColor, getStatusText } from '$lib/utils/jobStatus';
+  import { copyToClipboard } from '$lib/utils/clipboard';
 
   interface Props {
     job: ClientJob;
@@ -123,40 +124,9 @@
     }
   }
 
-  function fallbackCopy(text: string): void {
-    const textArea = document.createElement('textarea');
-    textArea.value = text;
-    textArea.style.position = 'fixed';
-    textArea.style.left = '-999999px';
-    textArea.style.top = '-999999px';
-    textArea.setAttribute('aria-hidden', 'true');
-    document.body.appendChild(textArea);
-    textArea.focus();
-    textArea.select();
-
-    const successful = document.execCommand('copy');
-    document.body.removeChild(textArea);
-
-    if (!successful) {
-      throw new Error('Fallback copy method failed');
-    }
-  }
-
-  async function copyToClipboard(jobUrl: string, event: MouseEvent) {
+  async function handleCopy(jobUrl: string, event: MouseEvent) {
     try {
-      // Modern clipboard
-      if (navigator.clipboard && window.isSecureContext) {
-        try {
-          await navigator.clipboard.writeText(jobUrl);
-        } catch (clipboardError) {
-          // if errors received, fall back
-          console.warn('Clipboard API failed, falling back to execCommand:', clipboardError);
-          fallbackCopy(jobUrl);
-        }
-      } else {
-        // Last effort
-        fallbackCopy(jobUrl);
-      }
+      await copyToClipboard(jobUrl);
 
       tooltip.text = 'Copied!';
       tooltip.x = event.clientX;
@@ -238,7 +208,7 @@
 
       <div class="flex flex-shrink-0 items-center gap-2 sm:gap-3">
         <button
-          onclick={(event: MouseEvent) => copyToClipboard(job.url, event)}
+          onclick={(event: MouseEvent) => handleCopy(job.url, event)}
           aria-label="Copy Job URL"
           class="cursor-pointer p-1 text-muted-foreground transition-all duration-200 hover:scale-110 hover:text-foreground sm:p-2"
           title="Copy Job URL"

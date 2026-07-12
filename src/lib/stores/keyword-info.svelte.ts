@@ -11,10 +11,16 @@
 import { browser } from '$app/environment';
 import { clientLogger as logger } from '$lib/client/logger';
 
+export interface KeywordSection {
+  title: string;
+  keywords: Array<{ name: string; example: string }>;
+}
+
 export interface KeywordInfoState {
   isLoading: boolean;
   currentUrl: string;
   listKeywordsOutput: string | null;
+  listKeywordsSections: KeywordSection[] | null;
   extractorInfoOutput: string | null;
   error: string | null;
   lastCommand: 'list-keywords' | 'extractor-info' | null;
@@ -24,14 +30,21 @@ export interface KeywordInfoResponse {
   success: boolean;
   data?: {
     output: string;
+    sections?: KeywordSection[];
   };
   error?: string;
+}
+
+interface CachedListKeywords {
+  output: string;
+  sections: KeywordSection[] | null;
 }
 
 const initialState: KeywordInfoState = {
   isLoading: false,
   currentUrl: '',
   listKeywordsOutput: null,
+  listKeywordsSections: null,
   extractorInfoOutput: null,
   error: null,
   lastCommand: null,
@@ -53,14 +66,29 @@ const currentOutput = $derived(() => {
   return null;
 });
 
+const currentSections = $derived(() => {
+  if (keywordInfoState.lastCommand === 'list-keywords') {
+    return keywordInfoState.listKeywordsSections;
+  }
+  return null;
+});
+
 const getStorageKey = (url: string, command: 'list-keywords' | 'extractor-info'): string => {
   return `keyword-info-${command}-${encodeURIComponent(url)}`;
 };
 
+interface LoadedOutput {
+  output: string;
+  sections: KeywordSection[] | null;
+}
+
+// list-keywords entries are cached as a JSON `{ output, sections }` blob so the
+// structured table survives a cache hit; extractor-info stays a raw string.
+// Older raw-string entries (or a failed parse) degrade gracefully to raw only
 const loadFromStorage = (
   url: string,
   command: 'list-keywords' | 'extractor-info',
-): string | null => {
+): LoadedOutput | null => {
   if (!browser) {
     return null;
   }
@@ -68,7 +96,25 @@ const loadFromStorage = (
   try {
     const key = getStorageKey(url, command);
     const stored = localStorage.getItem(key);
-    return stored;
+    if (stored === null) {
+      return null;
+    }
+
+    if (command === 'list-keywords') {
+      try {
+        const parsed = JSON.parse(stored) as Partial<CachedListKeywords>;
+        if (parsed && typeof parsed.output === 'string') {
+          return {
+            output: parsed.output,
+            sections: Array.isArray(parsed.sections) ? parsed.sections : null,
+          };
+        }
+      } catch {
+        // Legacy raw-string entry - fall through to raw handling below
+      }
+    }
+
+    return { output: stored, sections: null };
   } catch (error) {
     logger.warn(`Failed to load ${command} data from localStorage for URL: ${url}`, error);
     return null;
@@ -79,6 +125,7 @@ const saveToStorage = (
   url: string,
   command: 'list-keywords' | 'extractor-info',
   output: string,
+  sections: KeywordSection[] | null,
 ): void => {
   if (!browser) {
     return;
@@ -86,7 +133,11 @@ const saveToStorage = (
 
   try {
     const key = getStorageKey(url, command);
-    localStorage.setItem(key, output);
+    const value =
+      command === 'list-keywords'
+        ? JSON.stringify({ output, sections } satisfies CachedListKeywords)
+        : output;
+    localStorage.setItem(key, value);
     logger.info(`Saved ${command} data to localStorage for URL: ${url}`);
   } catch (error) {
     logger.warn(`Failed to save ${command} data to localStorage for URL: ${url}`, error);
@@ -128,14 +179,15 @@ const executeCommand = async (
   keywordInfoState.currentUrl = url;
   keywordInfoState.lastCommand = command;
 
-  const cachedOutput = loadFromStorage(url, command);
-  if (cachedOutput) {
+  const cached = loadFromStorage(url, command);
+  if (cached) {
     logger.info(`Using cached ${command} data for URL: ${url}`);
 
     if (command === 'list-keywords') {
-      keywordInfoState.listKeywordsOutput = cachedOutput;
+      keywordInfoState.listKeywordsOutput = cached.output;
+      keywordInfoState.listKeywordsSections = cached.sections;
     } else {
-      keywordInfoState.extractorInfoOutput = cachedOutput;
+      keywordInfoState.extractorInfoOutput = cached.output;
     }
 
     keywordInfoState.isLoading = false;
@@ -171,14 +223,16 @@ const executeCommand = async (
     }
 
     const output = payload.data.output;
+    const sections = Array.isArray(payload.data.sections) ? payload.data.sections : null;
 
     if (command === 'list-keywords') {
       keywordInfoState.listKeywordsOutput = output;
+      keywordInfoState.listKeywordsSections = sections;
     } else {
       keywordInfoState.extractorInfoOutput = output;
     }
 
-    saveToStorage(url, command, output);
+    saveToStorage(url, command, output, sections);
 
     logger.info(`Successfully executed ${command} command for URL: ${url}`);
   } catch (error) {
@@ -190,8 +244,33 @@ const executeCommand = async (
   }
 };
 
+// Switch the displayed command without hitting the network. If the newly
+// selected command has no in-memory output yet, hydrate it from cache so a
+// previously run command's result reappears when its segment is selected
+const selectCommand = (command: 'list-keywords' | 'extractor-info'): void => {
+  keywordInfoState.lastCommand = command;
+
+  if (!keywordInfoState.currentUrl) {
+    return;
+  }
+
+  if (command === 'list-keywords' && keywordInfoState.listKeywordsOutput === null) {
+    const cached = loadFromStorage(keywordInfoState.currentUrl, command);
+    if (cached) {
+      keywordInfoState.listKeywordsOutput = cached.output;
+      keywordInfoState.listKeywordsSections = cached.sections;
+    }
+  } else if (command === 'extractor-info' && keywordInfoState.extractorInfoOutput === null) {
+    const cached = loadFromStorage(keywordInfoState.currentUrl, command);
+    if (cached) {
+      keywordInfoState.extractorInfoOutput = cached.output;
+    }
+  }
+};
+
 const clearOutput = (): void => {
   keywordInfoState.listKeywordsOutput = null;
+  keywordInfoState.listKeywordsSections = null;
   keywordInfoState.extractorInfoOutput = null;
   keywordInfoState.error = null;
   keywordInfoState.lastCommand = null;
@@ -217,7 +296,12 @@ export const keywordInfoStore = {
     return currentOutput;
   },
 
+  get currentSections() {
+    return currentSections;
+  },
+
   executeCommand,
+  selectCommand,
   clearOutput,
   clearAllCachedData,
 };

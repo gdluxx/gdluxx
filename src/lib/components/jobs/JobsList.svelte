@@ -13,7 +13,7 @@
   import { onMount } from 'svelte';
   import type { ClientJob } from '$lib/stores/jobs.svelte';
   import { jobStore } from '$lib/stores/jobs.svelte';
-  import { Button, Info, ConfirmModal, Toggle } from '$lib/components/ui';
+  import { Button, Info, ConfirmModal, Toggle, Tooltip } from '$lib/components/ui';
   import { Icon } from '$lib/components/index';
   import type { Job } from '$lib/server/jobs/jobManager';
   import { getStatusColor, getStatusText } from '$lib/utils/jobStatus';
@@ -375,46 +375,52 @@
         </div>
 
         <div class="flex items-center gap-3">
-          <Button
-            onclick={toggleSort}
-            aria-label={`Sort ${sortNewestFirst ? 'oldest' : 'newest'} first`}
-            disabled={jobs.length === 0}
-            variant="outline-primary"
-            size="sm"
-            title={`Sort ${sortNewestFirst ? 'descending' : 'ascending'}`}
-          >
-            <Icon
-              iconName="sort"
-              size={20}
-              class={`${sortNewestFirst ? '' : 'rotate-180'}`}
-            />
-          </Button>
-          <Button
-            onclick={() => setSortBy('time')}
-            aria-label={`Sort ${sortNewestFirst ? 'oldest' : 'newest'} first`}
-            disabled={jobs.length === 0}
-            variant={`${sortBy === 'time' ? 'primary' : 'outline-primary'}`}
-            size="sm"
-            title={`Sort ${sortNewestFirst ? 'newest' : 'oldest'} first`}
-          >
-            <Icon
-              iconName="date"
-              class="h-5 w-5"
-            />
-          </Button>
-          <Button
-            onclick={() => setSortBy('downloads')}
-            aria-label={`Sort ${sortNewestFirst ? 'oldest' : 'newest'} first`}
-            disabled={jobs.length === 0}
-            variant={`${sortBy === 'downloads' ? 'primary' : 'outline-primary'}`}
-            size="sm"
-            title={`Sort ${sortNewestFirst ? 'most' : 'fewest'} downloads first`}
-          >
-            <Icon
-              iconName="download-arrow"
-              class="h-5 w-5"
-            />
-          </Button>
+          <Tooltip content={`Sort ${sortNewestFirst ? 'oldest' : 'newest'} first`}>
+            <Button
+              onclick={toggleSort}
+              aria-label={`Sort ${sortNewestFirst ? 'oldest' : 'newest'} first`}
+              disabled={jobs.length === 0}
+              variant="outline-primary"
+              size="sm"
+              title=""
+            >
+              <Icon
+                iconName="sort"
+                size={20}
+                class={`${sortNewestFirst ? '' : 'rotate-180'}`}
+              />
+            </Button>
+          </Tooltip>
+          <Tooltip content={`Sort by date, ${sortNewestFirst ? 'newest' : 'oldest'} first`}>
+            <Button
+              onclick={() => setSortBy('time')}
+              aria-label={`Sort by date, ${sortNewestFirst ? 'newest' : 'oldest'} first`}
+              disabled={jobs.length === 0}
+              variant={`${sortBy === 'time' ? 'primary' : 'outline-primary'}`}
+              size="sm"
+              title=""
+            >
+              <Icon
+                iconName="date"
+                class="h-5 w-5"
+              />
+            </Button>
+          </Tooltip>
+          <Tooltip content={`Sort by downloads, ${sortNewestFirst ? 'most' : 'fewest'} first`}>
+            <Button
+              onclick={() => setSortBy('downloads')}
+              aria-label={`Sort by downloads, ${sortNewestFirst ? 'most' : 'fewest'} first`}
+              disabled={jobs.length === 0}
+              variant={`${sortBy === 'downloads' ? 'primary' : 'outline-primary'}`}
+              size="sm"
+              title=""
+            >
+              <Icon
+                iconName="download-arrow"
+                class="h-5 w-5"
+              />
+            </Button>
+          </Tooltip>
         </div>
 
         <Button

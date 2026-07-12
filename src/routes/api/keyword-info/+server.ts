@@ -9,7 +9,7 @@
  */
 
 import type { RequestEvent, RequestHandler } from '@sveltejs/kit';
-import { exec } from 'node:child_process';
+import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { serverLogger as logger } from '$lib/server/logger';
 import { PATHS } from '$lib/server/constants';
@@ -17,15 +17,83 @@ import { createApiResponse, handleApiError } from '$lib/server/api-utils';
 import { validateInput } from '$lib/server/validation/validation-utils';
 import { keywordInfoSchema } from '$lib/server/validation/keyword-validation';
 
-const execAsync = promisify(exec);
+// `execFile` (no shell) so the user-supplied URL is passed as a discrete argv
+// entry and can never be interpreted as shell syntax. The validation schema
+// only enforces an `^https?://.+` prefix, which does NOT block shell
+// metacharacters (`;`, `|`, `$()`, backticks, spaces, ...), so a shell-string
+// invocation would be injectable.
+const execFileAsync = promisify(execFile);
 
 interface KeywordInfoRequestBody {
   url: unknown;
   command: unknown;
 }
 
+export interface KeywordSection {
+  title: string;
+  keywords: Array<{ name: string; example: string }>;
+}
+
 interface KeywordInfoResponse {
   output: string;
+  sections?: KeywordSection[];
+}
+
+const DASHES_RE = /^-{3,}\s*$/;
+
+/**
+ * Parse the stdout of `gallery-dl --list-keywords` into structured sections.
+ *
+ * The output is a series of sections, each introduced by a header line
+ * ("Keywords for directory names:") immediately followed by a line of dashes,
+ * then keyword/example pairs where the keyword sits at column 0 and its example
+ * value is on the next line, indented by two spaces (the example may be empty).
+ * Keyword names may be nested dict/list paths, e.g. `account['id']` or
+ * `media_asset['variants'][N]['url']`; these are preserved verbatim so wrapping
+ * them in braces yields a valid gallery-dl format string.
+ *
+ * Defensive: returns `null` when nothing sensible was parsed (e.g. the input is
+ * `--extractor-info` output or an error blob), so the caller can fall back to
+ * the raw text view.
+ */
+function parseListKeywords(raw: string): KeywordSection[] | null {
+  const lines = raw.split('\n');
+  const sections: KeywordSection[] = [];
+  let current: KeywordSection | null = null;
+  let i = 0;
+
+  while (i < lines.length) {
+    const line = lines[i];
+    const next = i + 1 < lines.length ? lines[i + 1] : '';
+
+    // Section header: non-indented, non-empty line followed by a dashes line.
+    if (line.trim() !== '' && !/^\s/.test(line) && DASHES_RE.test(next)) {
+      current = { title: line.replace(/:\s*$/, '').trim(), keywords: [] };
+      sections.push(current);
+      i += 2; // skip header + dashes
+      continue;
+    }
+
+    // Keyword / example pair: a non-indented, non-empty, non-dashes line whose
+    // example value is the (indented) line that follows.
+    if (current && line.trim() !== '' && !/^\s/.test(line) && !DASHES_RE.test(line)) {
+      const name = line.trim();
+      let example = '';
+      if (i + 1 < lines.length && /^\s/.test(lines[i + 1])) {
+        example = lines[i + 1].trim();
+        i += 2;
+      } else {
+        i += 1;
+      }
+      current.keywords.push({ name, example });
+      continue;
+    }
+
+    i += 1; // blank line / separator / unexpected content
+  }
+
+  const usable = sections.filter((section) => section.keywords.length > 0);
+  return usable.length > 0 ? usable : null;
 }
 
 export const POST: RequestHandler = async ({ request }: RequestEvent): Promise<Response> => {
@@ -69,7 +137,7 @@ export const POST: RequestHandler = async ({ request }: RequestEvent): Promise<R
   logger.info(`Executing keyword info command: ${PATHS.BIN_FILE} ${commandArgs.join(' ')}`);
 
   try {
-    const { stdout, stderr } = await execAsync(`${PATHS.BIN_FILE} ${commandArgs.join(' ')}`, {
+    const { stdout, stderr } = await execFileAsync(PATHS.BIN_FILE, commandArgs, {
       timeout: 30000, // 30 second timeout
       maxBuffer: 1024 * 1024 * 5, // 5MB buffer
     });
@@ -88,6 +156,18 @@ export const POST: RequestHandler = async ({ request }: RequestEvent): Promise<R
     const response: KeywordInfoResponse = {
       output,
     };
+
+    // For list-keywords, attach structured sections alongside the raw output.
+    // Parse from stdout only (stderr may hold warnings). If parsing yields
+    // nothing usable, omit `sections` and the client falls back to raw text
+    if (command === 'list-keywords') {
+      const sections = parseListKeywords(stdout);
+      if (sections) {
+        response.sections = sections;
+      } else {
+        logger.warn(`Could not parse --list-keywords output into sections for URL: ${url}`);
+      }
+    }
 
     return createApiResponse(response);
   } catch (error: unknown) {
