@@ -9,34 +9,16 @@
  */
 
 import { fail } from '@sveltejs/kit';
-import type { PageServerLoad, Actions } from './$types';
+import type { Actions } from './$types';
 import { serverLogger as logger } from '$lib/server/logger';
+import { createPageLoad } from '$lib/utils/page-load';
 import { DEFAULT_VERSION_INFO, type VersionInfo } from '$lib/server/version/versionManager';
 
-export const load: PageServerLoad = async ({ fetch }) => {
-  try {
-    const response = await fetch('/api/settings/version');
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-    const { success, data, error } = await response.json();
-    if (!success) {
-      throw new Error(error || 'Failed to load version information');
-    }
-    const versionInfo: VersionInfo = data;
-    return {
-      success: true,
-      versionInfo,
-    };
-  } catch (error) {
-    logger.error('Error loading version info via API:', error);
-    return {
-      success: false,
-      versionInfo: DEFAULT_VERSION_INFO,
-      error: 'Failed to load version information',
-    };
-  }
-};
+export const load = createPageLoad({
+  endpoint: '/api/settings/version',
+  fallback: DEFAULT_VERSION_INFO,
+  errorMessage: 'Failed to load version information',
+});
 
 export const actions: Actions = {
   checkForUpdates: async ({ fetch }) => {

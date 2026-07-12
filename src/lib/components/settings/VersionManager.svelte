@@ -9,7 +9,6 @@
   -->
 
 <script lang="ts">
-  import { onMount } from 'svelte';
   import {
     versionStore,
     type StoreActionResult,
@@ -18,13 +17,36 @@
   import { toastStore } from '$lib/stores/toast';
   import { Button, Info } from '$lib/components/ui';
   import { formatRelativeTime } from '$lib/utils/relativeTime';
+  import type { SourceInfo } from '$lib/server/version/versionManager';
 
-  onMount(async () => {
-    const result: StoreActionResult = await versionStore.loadStatus();
+  interface VersionPageData {
+    success: boolean;
+    current?: string | null;
+    latestAvailable?: string | null;
+    lastChecked?: number | null;
+    source?: SourceInfo | null;
+    binaryExists?: boolean;
+    error?: string;
+  }
 
-    if (!result.success) {
-      toastStore.error('Load Failed', result.message);
-    }
+  interface Props {
+    data: VersionPageData;
+  }
+
+  const { data }: Props = $props();
+
+  // Seed the store from the data the route's server load already fetched
+  // instead of re-fetching /api/settings/version
+  // Runs client-side only
+  $effect(() => {
+    versionStore.initialize({
+      current: data.current ?? null,
+      latestAvailable: data.latestAvailable ?? null,
+      lastChecked: data.lastChecked ?? null,
+      source: data.source ?? null,
+      binaryExists: data.binaryExists ?? true,
+      error: data.success ? null : (data.error ?? 'Failed to load version information'),
+    });
   });
 
   function formatTimestamp(timestamp: number | null): string {

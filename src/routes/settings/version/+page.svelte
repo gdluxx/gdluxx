@@ -12,6 +12,19 @@
   import { VersionManager } from '$lib/components/settings';
   import { Icon } from '$lib/components';
   import { PageLayout } from '$lib/components/ui';
+  import type { SourceInfo } from '$lib/server/version/versionManager';
+
+  interface PageData {
+    success: boolean;
+    current?: string | null;
+    latestAvailable?: string | null;
+    lastChecked?: number | null;
+    source?: SourceInfo | null;
+    binaryExists?: boolean;
+    error?: string;
+  }
+
+  const { data }: { data: PageData } = $props();
 </script>
 
 <PageLayout
@@ -25,5 +38,5 @@
       ariaLabel="versionIcon"
     />
   {/snippet}
-  <VersionManager />
+  <VersionManager {data} />
 </PageLayout>

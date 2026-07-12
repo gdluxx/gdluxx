@@ -92,20 +92,6 @@
     return `${filteredCount} of ${total}`;
   });
 
-  // statistics
-  const aggregateStats = $derived(() => {
-    const stats = {
-      total: allJobs.length,
-      running: allJobs.filter((job) => job.status === 'running').length,
-      success: allJobs.filter((job) => job.status === 'success').length,
-      skips: allJobs.filter((job) => job.status === 'no_action').length,
-      error: allJobs.filter((job) => job.status === 'error').length,
-      totalDownloads: allJobs.reduce((sum, job) => sum + (job.downloadCount ?? 0), 0),
-      totalSkips: allJobs.reduce((sum, job) => sum + (job.skipCount ?? 0), 0),
-    };
-    return stats;
-  });
-
   function getStatusTooltip(job: ClientJob): string {
     switch (job.status) {
       case 'running':
@@ -260,7 +246,7 @@
           <span class="text-md font-medium text-accent-foreground">Running</span>
         </div>
         <div class="mt-1 flex justify-center text-xl font-semibold text-primary">
-          {aggregateStats().running}
+          {jobStore.runningJobCount}
         </div>
       </button>
 
@@ -278,7 +264,7 @@
           <span class="text-md font-medium text-accent-foreground">Success</span>
         </div>
         <div class="mt-1 flex justify-center text-xl font-semibold text-primary">
-          {aggregateStats().success}
+          {jobStore.successJobCount}
         </div>
       </button>
 
@@ -296,7 +282,7 @@
           <span class="text-md font-medium text-accent-foreground">Skipped</span>
         </div>
         <div class="mt-1 flex justify-center text-xl font-semibold text-primary">
-          {aggregateStats().skips}
+          {jobStore.noActionJobCount}
         </div>
       </button>
 
@@ -314,7 +300,7 @@
           <span class="text-md font-medium text-accent-foreground">Errors</span>
         </div>
         <div class="mt-1 flex justify-center text-xl font-semibold text-primary">
-          {aggregateStats().error}
+          {jobStore.errorJobCount}
         </div>
       </button>
 
@@ -329,7 +315,7 @@
           <span class="text-md font-medium text-accent-foreground">Downloads</span>
         </div>
         <div class="mt-1 flex justify-center text-xl font-semibold text-primary">
-          {aggregateStats().totalDownloads}
+          {jobStore.totalDownloads}
         </div>
       </div>
 
@@ -344,7 +330,7 @@
           <span class="text-md font-medium text-accent-foreground">Skipped</span>
         </div>
         <div class="mt-1 flex justify-center text-xl font-semibold text-primary">
-          {aggregateStats().totalSkips}
+          {jobStore.totalSkips}
         </div>
       </div>
     </div>

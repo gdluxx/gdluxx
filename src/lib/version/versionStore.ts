@@ -89,27 +89,28 @@ function createVersionStore() {
   return {
     subscribe,
     // Get current version
-    loadStatus: async (): Promise<StoreActionResult> => {
-      setLoading(true);
-      try {
-        const response: Response = await fetch('/api/settings/version');
-        if (!response.ok) {
-          return await handleApiError(response, 'Failed to fetch status');
+    initialize: (
+      data: VersionInfo & {
+        source?: SourceInfo | null;
+        binaryExists?: boolean;
+        error?: string | null;
+      },
+    ): void =>
+      update((s) => {
+        if (s.loading || s.updateInProgress) {
+          return s;
         }
-        const payload = await response.json();
-        if (!payload.success) {
-          return await handleApiError(response, payload.error || 'Failed to fetch status');
-        }
-        const data: VersionInfo = payload.data;
-        setData(data);
-        return { success: true, message: 'Version status loaded.', data, type: 'info' };
-      } catch (e) {
-        const errorMsg: string =
-          e instanceof Error ? e.message : 'Unknown error loading version status';
-        setError(errorMsg);
-        return { success: false, message: errorMsg, type: 'error' };
-      }
-    },
+        return {
+          ...s,
+          current: data.current,
+          latestAvailable: data.latestAvailable,
+          lastChecked: data.lastChecked,
+          source: data.source ?? s.source,
+          binaryExists: data.binaryExists ?? s.binaryExists,
+          error: data.error ?? null,
+          loading: false,
+        };
+      }),
 
     checkForUpdates: async (): Promise<StoreActionResult> => {
       setLoading(true);

@@ -12,13 +12,25 @@
   import { GeneralManager } from '$lib/components/settings';
   import { Icon } from '$lib/components';
   import { PageLayout } from '$lib/components/ui';
-  import type { PageData } from './$types';
+  import type { UserSettings } from '$lib/server/userSettingsManager';
+
+  interface GeneralPageData {
+    warnOnSiteRuleOverride?: boolean;
+    selectedTheme?: UserSettings['selectedTheme'];
+    maxBatchUrls?: number;
+  }
 
   interface Props {
-    data: PageData;
+    data: GeneralPageData;
   }
 
   const { data }: Props = $props();
+
+  const userSettings: UserSettings = $derived({
+    warnOnSiteRuleOverride: data.warnOnSiteRuleOverride ?? false,
+    selectedTheme: data.selectedTheme ?? 'indigo',
+    maxBatchUrls: data.maxBatchUrls ?? 200,
+  });
 </script>
 
 <PageLayout title="General">
@@ -29,5 +41,5 @@
     />
   {/snippet}
 
-  <GeneralManager userSettings={data.userSettings} />
+  <GeneralManager {userSettings} />
 </PageLayout>

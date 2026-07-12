@@ -13,16 +13,14 @@ import { siteConfigManager } from '$lib/server/siteConfigManager';
 
 export const load: PageServerLoad = async () => {
   try {
-    const [configs, supportedSites, categories] = await Promise.all([
+    const [configs, supportedSites] = await Promise.all([
       siteConfigManager.getSiteConfigsAll(),
       siteConfigManager.getSupportedSites(),
-      siteConfigManager.getSupportedSiteCategories(),
     ]);
 
     return {
       configs,
       supportedSites,
-      categories,
     };
   } catch (error) {
     // eslint-disable-next-line no-console
@@ -30,7 +28,6 @@ export const load: PageServerLoad = async () => {
     return {
       configs: [],
       supportedSites: [],
-      categories: [],
     };
   }
 };

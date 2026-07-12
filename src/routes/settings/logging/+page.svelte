@@ -12,6 +12,15 @@
   import { LogManager } from '$lib/components/settings';
   import { Icon } from '$lib/components';
   import { PageLayout } from '$lib/components/ui';
+  import type { ServerLoggingConfig } from '$lib/server/loggingManager';
+
+  interface PageData {
+    success: boolean;
+    serverConfig: ServerLoggingConfig | null;
+    error?: string;
+  }
+
+  const { data }: { data: PageData } = $props();
 </script>
 
 <PageLayout title="Logging">
@@ -23,5 +32,5 @@
     />
   {/snippet}
 
-  <LogManager />
+  <LogManager {data} />
 </PageLayout>

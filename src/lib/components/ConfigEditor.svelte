@@ -11,39 +11,9 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { hasJsonLintErrors } from '$lib/stores/lint';
-  import {
-    EditorView,
-    keymap,
-    lineNumbers,
-    highlightActiveLineGutter,
-    highlightSpecialChars,
-    drawSelection,
-    dropCursor,
-    rectangularSelection,
-    crosshairCursor,
-    highlightActiveLine,
-  } from '@codemirror/view';
+  import { EditorView } from '@codemirror/view';
   import { EditorState, StateEffect } from '@codemirror/state';
-  import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
-  import { searchKeymap, highlightSelectionMatches } from '@codemirror/search';
-  import {
-    autocompletion,
-    completionKeymap,
-    closeBrackets,
-    closeBracketsKeymap,
-  } from '@codemirror/autocomplete';
-  import { json, jsonParseLinter } from '@codemirror/lang-json';
-  import {
-    bracketMatching,
-    defaultHighlightStyle,
-    syntaxHighlighting,
-    indentOnInput,
-    foldGutter,
-    foldKeymap,
-  } from '@codemirror/language';
-  import { lintGutter, linter } from '@codemirror/lint';
-  import { codemirrorLight } from '$lib/themes/codemirror/codemirror-light';
-  import { codemirrorDark } from '$lib/themes/codemirror/codemirror-dark';
+  import { buildJsonEditorExtensions } from './config-editor-extensions';
   import { Button, ConfirmModal, Chip, Tooltip, Info } from '$lib/components/ui';
   import { Icon, UploadModal } from '$lib/components';
   import { invalidateAll } from '$app/navigation';
@@ -120,8 +90,6 @@
   // Track if content has changed
   const isDirty = $derived(value !== initialValue);
 
-  const jsonLinter = linter(jsonParseLinter());
-
   // format relative time
   function formatRelativeTime(isoString: string): string {
     const now = new Date();
@@ -144,57 +112,17 @@
     }
   }
 
-  function getBasicSetup() {
-    return [
-      lineNumbers(),
-      highlightActiveLineGutter(),
-      highlightSpecialChars(),
-      history(),
-      foldGutter(),
-      drawSelection(),
-      dropCursor(),
-      EditorState.allowMultipleSelections.of(true),
-      indentOnInput(),
-      syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
-      bracketMatching(),
-      closeBrackets(),
-      autocompletion(),
-      rectangularSelection(),
-      crosshairCursor(),
-      highlightActiveLine(),
-      highlightSelectionMatches(),
-      keymap.of([
-        ...closeBracketsKeymap,
-        ...defaultKeymap,
-        ...searchKeymap,
-        ...historyKeymap,
-        ...foldKeymap,
-        ...completionKeymap,
-        indentWithTab,
-      ]),
-    ];
-  }
-
   function createEditorState(initialValue: string) {
     const editorHeight = isFullscreen ? 'calc(100vh - 120px)' : height;
-    const extensions = [
-      ...getBasicSetup(),
-      json(),
-      jsonLinter,
-      lintGutter(),
-      EditorView.updateListener.of((update) => {
-        if (update.docChanged) {
-          value = update.state.doc.toString();
-          checkLintErrors();
-        }
-      }),
-      EditorState.readOnly.of(readonly),
-      theme === 'dark' ? codemirrorDark : codemirrorLight,
-      EditorView.theme({
-        '&': { height: editorHeight },
-        '.cm-scroller': { overflow: 'auto' },
-      }),
-    ];
+    const extensions = buildJsonEditorExtensions({
+      theme,
+      readonly,
+      editorHeight,
+      onDocChange: (doc) => {
+        value = doc;
+        checkLintErrors();
+      },
+    });
 
     return EditorState.create({
       doc: initialValue,
@@ -488,24 +416,17 @@
     if (editor && (theme || readonly || height || isFullscreen)) {
       const editorHeight = isFullscreen ? 'calc(100vh - 120px)' : height;
       editor.dispatch({
-        effects: StateEffect.reconfigure.of([
-          ...getBasicSetup(),
-          json(),
-          jsonLinter,
-          lintGutter(),
-          EditorView.updateListener.of((update) => {
-            if (update.docChanged) {
-              value = update.state.doc.toString();
+        effects: StateEffect.reconfigure.of(
+          buildJsonEditorExtensions({
+            theme,
+            readonly,
+            editorHeight,
+            onDocChange: (doc) => {
+              value = doc;
               checkLintErrors();
-            }
+            },
           }),
-          EditorState.readOnly.of(readonly),
-          theme === 'dark' ? codemirrorDark : codemirrorLight,
-          EditorView.theme({
-            '&': { height: editorHeight },
-            '.cm-scroller': { overflow: 'auto' },
-          }),
-        ]),
+        ),
       });
     }
   });

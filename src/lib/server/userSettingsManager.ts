@@ -19,7 +19,7 @@ export interface UserSettings {
   maxBatchUrls: number;
 }
 
-const DEFAULT_SETTINGS: UserSettings = {
+export const DEFAULT_SETTINGS: UserSettings = {
   warnOnSiteRuleOverride: false,
   selectedTheme: 'indigo',
   maxBatchUrls: 200,

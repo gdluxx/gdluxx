@@ -27,7 +27,6 @@
   import type { SiteConfig, SupportedSite } from '$lib/server/siteConfigManager';
 
   const { data } = $props<{ data: PageData }>();
-  const _categories = $derived(data.categories);
 
   let configs = $state<SiteConfig[]>([]);
   let supportedSites = $state<typeof data.supportedSites>([]);

@@ -8,19 +8,11 @@
  * as published by the Free Software Foundation.
  */
 
-import type { PageServerLoad } from './$types';
-import { userSettingsManager, type UserSettings } from '$lib/server/userSettingsManager';
+import { createPageLoad } from '$lib/utils/page-load';
+import { DEFAULT_SETTINGS } from '$lib/server/userSettingsManager';
 
-export const load: PageServerLoad = async ({ locals }) => {
-  const user = locals.user;
-
-  if (!user) {
-    throw new Error('User not authenticated');
-  }
-
-  const userSettings: UserSettings = userSettingsManager.getUserSettings(user.id);
-
-  return {
-    userSettings,
-  };
-};
+export const load = createPageLoad({
+  endpoint: '/api/settings/user',
+  fallback: DEFAULT_SETTINGS,
+  errorMessage: 'Failed to load user settings',
+});

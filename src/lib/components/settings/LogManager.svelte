@@ -13,11 +13,11 @@
   import { clientLogger } from '$lib/client/logger';
   import type { ServerLoggingConfig } from '$lib/server/loggingManager';
   import type { ClientLogConfig } from '$lib/client/config/logger-config';
-  import { Button, Toggle, Tooltip, Spinner } from '$lib/components/ui';
+  import { Button, Toggle, Tooltip } from '$lib/components/ui';
   import { toastStore } from '$lib/stores/toast';
   import { Icon } from '$lib/components';
 
-  let serverConfig = $state({
+  const DEFAULT_SERVER_CONFIG: ServerLoggingConfig = {
     enabled: true,
     level: 'info',
     format: 'json',
@@ -28,7 +28,27 @@
     fileMaxFiles: '7d',
     performanceLogging: true,
     slowQueryThreshold: 1000,
-  } as ServerLoggingConfig);
+  };
+
+  interface LoggingPageData {
+    success: boolean;
+    serverConfig: ServerLoggingConfig | null;
+    error?: string;
+  }
+
+  interface Props {
+    data: LoggingPageData;
+  }
+
+  const { data }: Props = $props();
+
+  let serverConfig = $state<ServerLoggingConfig>({ ...DEFAULT_SERVER_CONFIG });
+
+  $effect(() => {
+    if (data.success && data.serverConfig) {
+      serverConfig = data.serverConfig;
+    }
+  });
 
   let clientConfig = $state({
     enabled: false,
@@ -50,27 +70,17 @@
   } | null>(null);
 
   onMount(async () => {
-    await loadConfigurations();
+    if (!data.success) {
+      toastStore.error(
+        'Configuration Load Failed',
+        data.error ?? 'Failed to load logging configurations',
+      );
+    }
+
+    clientConfig = clientLogger.getConfig();
+
     await detectDockerEnvironment();
   });
-
-  async function loadConfigurations() {
-    try {
-      loading = true;
-
-      const serverResponse = await fetch('/api/settings/server-logging');
-      if (serverResponse.ok) {
-        serverConfig = await serverResponse.json();
-      }
-
-      clientConfig = clientLogger.getConfig();
-    } catch (error) {
-      toastStore.error('Configuration Load Failed', 'Failed to load logging configurations');
-      clientLogger.error('Failed to load logging configurations:', error);
-    } finally {
-      loading = false;
-    }
-  }
 
   async function updateServerConfig() {
     const validation = validateServerConfig();
@@ -247,435 +257,423 @@
 </svelte:head>
 
 <div class="container mx-auto max-w-4xl space-y-8 p-6">
-  {#if loading}
-    <div class="py-8 text-center">
-      <Spinner
-        variant="ring"
-        size={32}
-        border="bottom"
-        class="inline-block border-strong"
-      />
-      <p class="mt-2 text-foreground">Loading...</p>
+  <!-- Server logging config -->
+  <div class="content-panel">
+    <div class="mb-4 flex items-center justify-between">
+      <h2 class="">Server Logging</h2>
+      <Button
+        onclick={updateServerConfig}
+        disabled={loading}
+        variant="outline-primary"
+        size="sm"
+      >
+        Update Server Config
+      </Button>
     </div>
-  {:else}
-    <!-- Server logging config -->
-    <div class="content-panel">
-      <div class="mb-4 flex items-center justify-between">
-        <h2 class="">Server Logging</h2>
-        <Button
-          onclick={updateServerConfig}
-          disabled={loading}
-          variant="outline-primary"
+
+    <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+      <div class="space-y-4">
+        <Toggle
+          bind:checked={serverConfig.enabled}
+          label="Enable Server Logging"
+          tooltipContent={tooltipVars.server.enable}
+          variant="primary"
           size="sm"
-        >
-          Update Server Config
-        </Button>
-      </div>
+        />
 
-      <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
-        <div class="space-y-4">
-          <Toggle
-            bind:checked={serverConfig.enabled}
-            label="Enable Server Logging"
-            tooltipContent={tooltipVars.server.enable}
-            variant="primary"
-            size="sm"
-          />
-
-          <div>
-            <div class="flex flex-row items-center gap-2">
-              <label
-                for="server-log-level"
-                class="mb-1 block text-sm font-medium text-muted-foreground"
-              >
-                Log Level
-                <Tooltip
-                  maxWidth="32rem"
-                  class="!min-w-80 !whitespace-normal"
-                  content={tooltipVars.server.level}
-                >
-                  <Icon
-                    iconName="question"
-                    size={20}
-                    class="text-muted-foreground"
-                  />
-                </Tooltip>
-              </label>
-            </div>
-            <select
-              id="server-log-level"
-              bind:value={serverConfig.level}
-              class="form-select"
+        <div>
+          <div class="flex flex-row items-center gap-2">
+            <label
+              for="server-log-level"
+              class="mb-1 block text-sm font-medium text-muted-foreground"
             >
-              <option value="debug">Debug</option>
-              <option value="info">Info</option>
-              <option value="warn">Warning</option>
-              <option value="error">Error</option>
-            </select>
-          </div>
-
-          <div>
-            <div class="flex flex-row items-center gap-2">
-              <label
-                for="server-format"
-                class="mb-1 block text-sm font-medium text-muted-foreground"
+              Log Level
+              <Tooltip
+                maxWidth="32rem"
+                class="!min-w-80 !whitespace-normal"
+                content={tooltipVars.server.level}
               >
-                Log Format
-                <Tooltip
-                  maxWidth="32rem"
-                  class="!min-w-80 !whitespace-normal"
-                  content={tooltipVars.server.format}
-                >
-                  <Icon
-                    iconName="question"
-                    size={20}
-                    class="text-muted-foreground"
-                  />
-                </Tooltip>
-              </label>
-            </div>
-            <select
-              id="server-format"
-              bind:value={serverConfig.format}
-              class="form-select"
-            >
-              <option value="simple">Simple</option>
-              <option value="json">JSON</option>
-            </select>
+                <Icon
+                  iconName="question"
+                  size={20}
+                  class="text-muted-foreground"
+                />
+              </Tooltip>
+            </label>
           </div>
-
-          <Toggle
-            bind:checked={serverConfig.consoleEnabled}
-            label="Console Output"
-            tooltipContent={tooltipVars.server.console}
-            variant="primary"
-            size="sm"
-          />
+          <select
+            id="server-log-level"
+            bind:value={serverConfig.level}
+            class="form-select"
+          >
+            <option value="debug">Debug</option>
+            <option value="info">Info</option>
+            <option value="warn">Warning</option>
+            <option value="error">Error</option>
+          </select>
         </div>
 
-        <div class="space-y-4">
-          <Toggle
-            bind:checked={serverConfig.fileEnabled}
-            label="File Output"
-            tooltipContent={tooltipVars.server.file}
-            variant="primary"
-            size="sm"
-          />
-
-          {#if serverConfig.fileEnabled}
-            <div>
-              <label
-                for="server-file-directory"
-                class="mb-1 block text-sm font-medium text-muted-foreground"
+        <div>
+          <div class="flex flex-row items-center gap-2">
+            <label
+              for="server-format"
+              class="mb-1 block text-sm font-medium text-muted-foreground"
+            >
+              Log Format
+              <Tooltip
+                maxWidth="32rem"
+                class="!min-w-80 !whitespace-normal"
+                content={tooltipVars.server.format}
               >
-                Log Directory
-                <Tooltip
-                  maxWidth=""
-                  content={tooltipVars.server.directory}
-                >
-                  <Icon
-                    iconName="question"
-                    size={20}
-                    class="text-muted-foreground"
-                  />
-                </Tooltip>
-              </label>
-              <input
-                id="server-file-directory"
-                type="text"
-                bind:value={serverConfig.fileDirectory}
-                class="form-input"
-              />
+                <Icon
+                  iconName="question"
+                  size={20}
+                  class="text-muted-foreground"
+                />
+              </Tooltip>
+            </label>
+          </div>
+          <select
+            id="server-format"
+            bind:value={serverConfig.format}
+            class="form-select"
+          >
+            <option value="simple">Simple</option>
+            <option value="json">JSON</option>
+          </select>
+        </div>
 
-              <!-- Docker path preview -->
-              {#if isDockerEnvironment && pathPreview}
-                <div class="mt-2 rounded-sm bg-surface-elevated p-3 text-sm border-strong">
-                  <div class="mb-1 flex items-center gap-2">
-                    <Icon
-                      iconName="settings"
-                      size={16}
-                      class="text-foreground"
-                    />
-                    <span class="font-medium text-foreground"> Docker Environment Detected </span>
-                  </div>
+        <Toggle
+          bind:checked={serverConfig.consoleEnabled}
+          label="Console Output"
+          tooltipContent={tooltipVars.server.console}
+          variant="primary"
+          size="sm"
+        />
+      </div>
 
-                  {#if pathPreview.wasTransformed}
-                    <div class="ml-6">
-                      <div class="text-info">
-                        Transformed path: <code
-                          class="rounded bg-primary/10 px-1 py-0.5 font-mono text-xs"
-                        >
-                          {pathPreview.path}
-                        </code>
-                      </div>
+      <div class="space-y-4">
+        <Toggle
+          bind:checked={serverConfig.fileEnabled}
+          label="File Output"
+          tooltipContent={tooltipVars.server.file}
+          variant="primary"
+          size="sm"
+        />
 
-                      <!-- Warnings for special transformations -->
-                      {#each pathPreview.warnings as warning, index (index)}
-                        <div class="mt-1 flex items-start gap-1 text-warning">
-                          <Icon
-                            iconName="question"
-                            size={14}
-                            class="mt-0.5 flex-shrink-0"
-                          />
-                          <span class="text-xs">{warning}</span>
-                        </div>
-                      {/each}
+        {#if serverConfig.fileEnabled}
+          <div>
+            <label
+              for="server-file-directory"
+              class="mb-1 block text-sm font-medium text-muted-foreground"
+            >
+              Log Directory
+              <Tooltip
+                maxWidth=""
+                content={tooltipVars.server.directory}
+              >
+                <Icon
+                  iconName="question"
+                  size={20}
+                  class="text-muted-foreground"
+                />
+              </Tooltip>
+            </label>
+            <input
+              id="server-file-directory"
+              type="text"
+              bind:value={serverConfig.fileDirectory}
+              class="form-input"
+            />
 
-                      <!-- Errors if any -->
-                      {#each pathPreview.errors as error, index (index)}
-                        <div class="mt-1 flex items-start gap-1 text-error">
-                          <Icon
-                            iconName="close"
-                            size={14}
-                            class="mt-0.5 flex-shrink-0"
-                          />
-                          <span class="text-xs">{error}</span>
-                        </div>
-                      {/each}
-                    </div>
-                  {:else}
-                    <div class="ml-6 text-xs text-foreground">
-                      Path is already compatible with Docker environment
-                    </div>
-                  {/if}
-                </div>
-              {:else if isDockerEnvironment}
-                <div class="mt-2 rounded bg-primary/10 p-2 text-xs text-foreground border-strong">
+            <!-- Docker path preview -->
+            {#if isDockerEnvironment && pathPreview}
+              <div class="mt-2 rounded-sm bg-surface-elevated p-3 text-sm border-strong">
+                <div class="mb-1 flex items-center gap-2">
                   <Icon
                     iconName="settings"
-                    size={14}
-                    class="mr-1 inline"
+                    size={16}
+                    class="text-foreground"
                   />
-                  Docker environment detected - paths will be automatically transformed
+                  <span class="font-medium text-foreground"> Docker Environment Detected </span>
                 </div>
-              {/if}
-            </div>
 
-            <div>
-              <label
-                for="server-file-max-size"
-                class="mb-1 block text-sm font-medium text-muted-foreground"
-              >
-                Max File Size
-                <Tooltip
-                  maxWidth="32rem"
-                  class="!min-w-80 !whitespace-normal"
-                  content={tooltipVars.server.fileSize}
-                >
-                  <Icon
-                    iconName="question"
-                    size={20}
-                    class="text-muted-foreground"
-                  />
-                </Tooltip>
-              </label>
-              <input
-                id="server-file-max-size"
-                type="text"
-                bind:value={serverConfig.fileMaxSize}
-                placeholder="10m"
-                class="form-input"
-              />
-              <p class="mt-1 text-xs text-muted-foreground">e.g. 10m, 1g</p>
-            </div>
+                {#if pathPreview.wasTransformed}
+                  <div class="ml-6">
+                    <div class="text-info">
+                      Transformed path: <code
+                        class="rounded bg-primary/10 px-1 py-0.5 font-mono text-xs"
+                      >
+                        {pathPreview.path}
+                      </code>
+                    </div>
 
-            <div>
-              <label
-                for="server-file-max-files"
-                class="mb-1 block text-sm font-medium text-muted-foreground"
-              >
-                Retention
-                <Tooltip
-                  maxWidth="32rem"
-                  class="!min-w-80 !whitespace-normal"
-                  content={tooltipVars.server.fileRetention}
-                >
-                  <Icon
-                    iconName="question"
-                    size={20}
-                    class="text-muted-foreground"
-                  />
-                </Tooltip>
-              </label>
-              <input
-                id="server-file-max-files"
-                type="text"
-                bind:value={serverConfig.fileMaxFiles}
-                placeholder="7d"
-                class="form-input"
-              />
-              <p class="mt-1 text-xs text-muted-foreground">
-                Number of files (e.g. 14) or duration (e.g. 7d)
-              </p>
-            </div>
-          {/if}
+                    <!-- Warnings for special transformations -->
+                    {#each pathPreview.warnings as warning, index (index)}
+                      <div class="mt-1 flex items-start gap-1 text-warning">
+                        <Icon
+                          iconName="question"
+                          size={14}
+                          class="mt-0.5 flex-shrink-0"
+                        />
+                        <span class="text-xs">{warning}</span>
+                      </div>
+                    {/each}
 
-          <Toggle
-            bind:checked={serverConfig.performanceLogging}
-            label="Performance Logging"
-            tooltipContent={tooltipVars.server.performance}
-            variant="primary"
-            size="sm"
-          />
-
-          {#if serverConfig.performanceLogging}
-            <div>
-              <label
-                for="server-slow-query-threshold"
-                class="mb-1 block text-sm font-medium text-muted-foreground"
-              >
-                Slow Query Threshold (ms)
-                <Tooltip
-                  maxWidth="32rem"
-                  class="!min-w-80 !whitespace-normal"
-                  content={tooltipVars.server.queryThreshold}
-                >
-                  <Icon
-                    iconName="question"
-                    size={20}
-                    class="text-muted-foreground"
-                  />
-                </Tooltip>
-              </label>
-              <input
-                id="server-slow-query-threshold"
-                type="number"
-                bind:value={serverConfig.slowQueryThreshold}
-                min="0"
-                class="form-input"
-              />
-            </div>
-          {/if}
-        </div>
-      </div>
-    </div>
-
-    <!-- Client log config -->
-    <div class="content-panel">
-      <div class="mb-4 flex items-center justify-between">
-        <h2 class="">Client Logging</h2>
-        <Button
-          onclick={updateClientConfig}
-          variant="outline-primary"
-          size="sm"
-          class=""
-        >
-          Update Client Config
-        </Button>
-      </div>
-
-      <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
-        <div class="space-y-4">
-          <Toggle
-            bind:checked={clientConfig.enabled}
-            label="Enable Client Logging"
-            tooltipContent={tooltipVars.client.enable}
-            variant="primary"
-            size="sm"
-          />
+                    <!-- Errors if any -->
+                    {#each pathPreview.errors as error, index (index)}
+                      <div class="mt-1 flex items-start gap-1 text-error">
+                        <Icon
+                          iconName="close"
+                          size={14}
+                          class="mt-0.5 flex-shrink-0"
+                        />
+                        <span class="text-xs">{error}</span>
+                      </div>
+                    {/each}
+                  </div>
+                {:else}
+                  <div class="ml-6 text-xs text-foreground">
+                    Path is already compatible with Docker environment
+                  </div>
+                {/if}
+              </div>
+            {:else if isDockerEnvironment}
+              <div class="mt-2 rounded bg-primary/10 p-2 text-xs text-foreground border-strong">
+                <Icon
+                  iconName="settings"
+                  size={14}
+                  class="mr-1 inline"
+                />
+                Docker environment detected - paths will be automatically transformed
+              </div>
+            {/if}
+          </div>
 
           <div>
             <label
-              for="client-log-level"
-              class="mb-1 block text-sm font-medium text-muted-foreground">Log Level</label
+              for="server-file-max-size"
+              class="mb-1 block text-sm font-medium text-muted-foreground"
             >
-            <select
-              id="client-log-level"
-              bind:value={clientConfig.level}
-              class="form-select"
+              Max File Size
+              <Tooltip
+                maxWidth="32rem"
+                class="!min-w-80 !whitespace-normal"
+                content={tooltipVars.server.fileSize}
+              >
+                <Icon
+                  iconName="question"
+                  size={20}
+                  class="text-muted-foreground"
+                />
+              </Tooltip>
+            </label>
+            <input
+              id="server-file-max-size"
+              type="text"
+              bind:value={serverConfig.fileMaxSize}
+              placeholder="10m"
+              class="form-input"
+            />
+            <p class="mt-1 text-xs text-muted-foreground">e.g. 10m, 1g</p>
+          </div>
+
+          <div>
+            <label
+              for="server-file-max-files"
+              class="mb-1 block text-sm font-medium text-muted-foreground"
             >
-              <option value="debug">Debug</option>
-              <option value="info">Info</option>
-              <option value="warn">Warning</option>
-              <option value="error">Error</option>
-            </select>
+              Retention
+              <Tooltip
+                maxWidth="32rem"
+                class="!min-w-80 !whitespace-normal"
+                content={tooltipVars.server.fileRetention}
+              >
+                <Icon
+                  iconName="question"
+                  size={20}
+                  class="text-muted-foreground"
+                />
+              </Tooltip>
+            </label>
+            <input
+              id="server-file-max-files"
+              type="text"
+              bind:value={serverConfig.fileMaxFiles}
+              placeholder="7d"
+              class="form-input"
+            />
+            <p class="mt-1 text-xs text-muted-foreground">
+              Number of files (e.g. 14) or duration (e.g. 7d)
+            </p>
+          </div>
+        {/if}
+
+        <Toggle
+          bind:checked={serverConfig.performanceLogging}
+          label="Performance Logging"
+          tooltipContent={tooltipVars.server.performance}
+          variant="primary"
+          size="sm"
+        />
+
+        {#if serverConfig.performanceLogging}
+          <div>
+            <label
+              for="server-slow-query-threshold"
+              class="mb-1 block text-sm font-medium text-muted-foreground"
+            >
+              Slow Query Threshold (ms)
+              <Tooltip
+                maxWidth="32rem"
+                class="!min-w-80 !whitespace-normal"
+                content={tooltipVars.server.queryThreshold}
+              >
+                <Icon
+                  iconName="question"
+                  size={20}
+                  class="text-muted-foreground"
+                />
+              </Tooltip>
+            </label>
+            <input
+              id="server-slow-query-threshold"
+              type="number"
+              bind:value={serverConfig.slowQueryThreshold}
+              min="0"
+              class="form-input"
+            />
+          </div>
+        {/if}
+      </div>
+    </div>
+  </div>
+
+  <!-- Client log config -->
+  <div class="content-panel">
+    <div class="mb-4 flex items-center justify-between">
+      <h2 class="">Client Logging</h2>
+      <Button
+        onclick={updateClientConfig}
+        variant="outline-primary"
+        size="sm"
+        class=""
+      >
+        Update Client Config
+      </Button>
+    </div>
+
+    <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+      <div class="space-y-4">
+        <Toggle
+          bind:checked={clientConfig.enabled}
+          label="Enable Client Logging"
+          tooltipContent={tooltipVars.client.enable}
+          variant="primary"
+          size="sm"
+        />
+
+        <div>
+          <label
+            for="client-log-level"
+            class="mb-1 block text-sm font-medium text-muted-foreground">Log Level</label
+          >
+          <select
+            id="client-log-level"
+            bind:value={clientConfig.level}
+            class="form-select"
+          >
+            <option value="debug">Debug</option>
+            <option value="info">Info</option>
+            <option value="warn">Warning</option>
+            <option value="error">Error</option>
+          </select>
+        </div>
+
+        <Toggle
+          bind:checked={clientConfig.sendToServer}
+          label="Send Logs to Server"
+          tooltipContent={tooltipVars.client.sendToServer}
+          variant="primary"
+          size="sm"
+        />
+
+        <Toggle
+          bind:checked={clientConfig.includeUrl}
+          label="Include URL in Logs"
+          tooltipContent={tooltipVars.client.includeUrl}
+          variant="primary"
+          size="sm"
+        />
+      </div>
+
+      <div class="space-y-4">
+        {#if clientConfig.sendToServer}
+          <div>
+            <label
+              for="client-buffer-size"
+              class="mb-1 block text-sm font-medium text-muted-foreground"
+            >
+              Buffer Size
+              <Tooltip
+                maxWidth="32rem"
+                class="!min-w-80 !whitespace-normal"
+                content={tooltipVars.client.bufferSize}
+              >
+                <Icon
+                  iconName="question"
+                  size={20}
+                  class="text-muted-foreground"
+                />
+              </Tooltip>
+            </label>
+            <input
+              id="client-buffer-size"
+              type="number"
+              bind:value={clientConfig.bufferSize}
+              min="1"
+              max="1000"
+              class="form-input"
+            />
+          </div>
+
+          <div>
+            <label
+              for="client-batch-interval"
+              class="mb-1 block text-sm font-medium text-muted-foreground"
+            >
+              Batch Interval (ms)
+              <Tooltip
+                maxWidth="32rem"
+                class="!min-w-80 !whitespace-normal"
+                content={tooltipVars.client.batchInterval}
+              >
+                <Icon
+                  iconName="question"
+                  size={20}
+                  class="text-muted-foreground"
+                />
+              </Tooltip>
+            </label>
+            <input
+              id="client-batch-interval"
+              type="number"
+              bind:value={clientConfig.batchInterval}
+              min="1000"
+              max="60000"
+              class="form-input"
+            />
           </div>
 
           <Toggle
-            bind:checked={clientConfig.sendToServer}
-            label="Send Logs to Server"
-            tooltipContent={tooltipVars.client.sendToServer}
+            bind:checked={clientConfig.includeUserAgent}
+            label="Include User Agent"
+            tooltipContent={tooltipVars.client.userAgent}
             variant="primary"
             size="sm"
           />
-
-          <Toggle
-            bind:checked={clientConfig.includeUrl}
-            label="Include URL in Logs"
-            tooltipContent={tooltipVars.client.includeUrl}
-            variant="primary"
-            size="sm"
-          />
-        </div>
-
-        <div class="space-y-4">
-          {#if clientConfig.sendToServer}
-            <div>
-              <label
-                for="client-buffer-size"
-                class="mb-1 block text-sm font-medium text-muted-foreground"
-              >
-                Buffer Size
-                <Tooltip
-                  maxWidth="32rem"
-                  class="!min-w-80 !whitespace-normal"
-                  content={tooltipVars.client.bufferSize}
-                >
-                  <Icon
-                    iconName="question"
-                    size={20}
-                    class="text-muted-foreground"
-                  />
-                </Tooltip>
-              </label>
-              <input
-                id="client-buffer-size"
-                type="number"
-                bind:value={clientConfig.bufferSize}
-                min="1"
-                max="1000"
-                class="form-input"
-              />
-            </div>
-
-            <div>
-              <label
-                for="client-batch-interval"
-                class="mb-1 block text-sm font-medium text-muted-foreground"
-              >
-                Batch Interval (ms)
-                <Tooltip
-                  maxWidth="32rem"
-                  class="!min-w-80 !whitespace-normal"
-                  content={tooltipVars.client.batchInterval}
-                >
-                  <Icon
-                    iconName="question"
-                    size={20}
-                    class="text-muted-foreground"
-                  />
-                </Tooltip>
-              </label>
-              <input
-                id="client-batch-interval"
-                type="number"
-                bind:value={clientConfig.batchInterval}
-                min="1000"
-                max="60000"
-                class="form-input"
-              />
-            </div>
-
-            <Toggle
-              bind:checked={clientConfig.includeUserAgent}
-              label="Include User Agent"
-              tooltipContent={tooltipVars.client.userAgent}
-              variant="primary"
-              size="sm"
-            />
-          {/if}
-        </div>
+        {/if}
       </div>
     </div>
-  {/if}
+  </div>
 </div>
