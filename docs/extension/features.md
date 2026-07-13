@@ -1,293 +1,293 @@
 # Extension Features
 
 The extension gives you multiple ways to send URLs to gdluxx without leaving
-your browser.
+your browser, plus a full toolkit for extracting, filtering, rewriting, and
+previewing media on the page you're viewing.
 
-## Sending URLs from Your Current Tab
+## Opening the Overlay
 
-The quickest way to send a URL.
+There are three ways to bring up the overlay:
 
-### Using the Popup
+1. **Toolbar popup** — click the extension icon, then **Open overlay in this
+   tab**.
+2. **Keyboard shortcut** — press your configured hotkey (see
+   [Hotkeys](#hotkeys)).
+3. **Right-click menu** — right-click anywhere on the page and choose **Open
+   gdluxx**.
 
-1. Click the extension icon in your toolbar
-2. Your current page's URL appears in the popup
-3. Click **Send URL**
-4. You'll see a success message
-5. A new job starts in gdluxx
+The overlay renders inside a Shadow DOM modal (or fullscreen, depending on your
+[display mode](#appearance)) and immediately extracts images and links from the
+current page.
 
-### Using the Keyboard Shortcut
+### Sending the Current Tab Without Opening the Overlay
 
-1. Press your hotkey (default: **Alt+L**)
-2. The overlay appears on your page
-3. Click **Send URL** or just close the overlay if you only needed to verify
-   it's working
+If you just want to send the page you're on, you don't need to open the overlay
+at all:
 
-::: warning  
-This feature is can be especially dangerous. In that you'll be able to process
-so many URLs. _It's wild._  
-:::
+- **From the popup**: click **Send current tab to gdluxx**.
+- **From the keyboard**: enable the "send current tab" hotkey in **Settings >
+  Hotkeys** and press it. This sends the tab's URL directly, no overlay
+  required.
 
-## Using the Overlay UI
+Both require a server URL and API key to already be configured (see
+[gdluxx Connection](#gdluxx-connection)).
+
+### Sending Individual Images or Links via Right-Click
+
+Right-click any image or link on a page for a direct shortcut:
+
+- **gdluxx: send image** — appears when you right-click an image; sends that
+  image's URL.
+- **gdluxx: send URL** — appears when you right-click a link; sends the linked
+  URL (HTTP/HTTPS only).
+
+Both send immediately without opening the overlay, and show a browser
+notification when the job is created.
+
+## The Main View
 
-The overlay is the extension's main interface. It appears when you press your
-keyboard shortcut or click the `Open overlay` button in the extension popup.
+Once open, the overlay extracts every image and link on the page and splits them
+into **Images** and **URLs** tabs, each showing a live count.
 
-### What You See
-
-- **Current page URL** displayed at the top
-- **Send URL** button to submit immediately
-- **Settings button** to adjust configuration (API key, server, hotkey)
-- **Close button** to dismiss the overlay
-
-### Why Use It?
-
-- Send URLs without clicking the toolbar icon
-- Keep browsing while the overlay is open
-- Keyboard-friendly workflow
-
-### Customizing the Overlay
-
-The overlay automatically adapts to your theme selection (see [Themes](#themes)
-below).
-
-## Sending Individual Images
-
-Right-click any image on a webpage to send just that image directly to gdluxx.
-
-### How It Works
-
-1. Right-click on any image
-2. A context menu appears
-3. Click **"Send Image to gdluxx"**
-4. The image URL is sent as a job
-
-This is perfect for downloading a single image without processing the whole
-page.
-
-### When to Use It
-
-- You see one cool image you want
-- You're browsing a site with lots of content but only want specific images
-- You want to skip the job creation form entirely
-
-## Batch URL Sending
-
-Need to send multiple URLs at once? The overlay supports batch sending.
-
-### How to Batch Send
-
-1. Open the overlay (press your hotkey)
-2. In the URL field, you can paste multiple URLs
-3. Separate them by:
-   - New lines (press Enter between URLs)
-   - Spaces
-4. Click **Send**
-5. Each URL becomes a separate job in gdluxx
-
-### Practical Examples
-
-```
-https://example.com/gallery1
-https://example.com/gallery2
-https://example.com/gallery3
-```
-
-Or on one line with spaces:
-
-```
-https://example.com/gallery1 https://example.com/gallery2 https://example.com/gallery3
-```
-
-Both work the same way.
-
-## URL Substitution
-
-Sometimes a URL works better in a different form. URL substitution automatically
-rewrites URLs before sending them to gdluxx.
-
-### What It Does
-
-Let's say you're on a mobile site but want desktop URLs. You can create a rule:
-
-- When you see: `https://mobile.example.com/...`
-- Replace with: `https://www.example.com/...`
-
-The extension rewrites the URL before sending it.
-
-### Creating a Substitution Rule
-
-1. Open the extension popup
-2. Go to **Settings > URL Substitution** (if the tab exists in your version)
-3. Click **Add Rule**
-4. Enter the pattern to match (what you want to find)
-5. Enter the replacement (what you want to replace it with)
-6. Save
-
-### Pattern Matching
-
-Patterns use simple find-and-replace logic:
-
-- `mobile.` → finds "mobile."
-- `.com` → finds ".com"
-- Just enter the exact text you want to find
-
-### Common Uses
-
-- **Mobile to desktop**: `mobile.twitter.com` → `twitter.com`
-- **www variations**: `www.example.com` → `example.com`
-- **Protocol changes**: `http://` → `https://`
-
-## CLI Options Through the Extension
-
-Want to add gallery-dl options for this specific send? The extension lets you
-add CLI flags without leaving your browser.
-
-### How It Works
-
-1. Open the overlay (press your hotkey)
-2. Look for a **"CLI Options"** field (if available)
-3. Enter gallery-dl flags like you would on the command line:
-   - `--range 1-10` (download first 10 items)
-   - `--verbose` (more detailed output)
-   - `--write-metadata` (save metadata files)
-4. Click **Send**
-
-These options apply only to this job.
-
-### Common Options
-
-- `--range 1-10` - Limit to first 10 items
-- `--verbose` - Show detailed output
-- `--write-metadata` - Save metadata alongside downloads
-- `--no-skip` - Re-download even if files exist
-
-See the [Run Page documentation](../user-guide/run-page.md) for more options.
-
-## Custom Download Directories
-
-You can specify where downloads go for each job sent through the extension.
-
-### How to Set a Custom Directory
-
-1. Open the overlay (press your hotkey)
-2. Look for a **"Download To"** field (if available)
-3. Enter a path (relative to your default download location)
-4. The download goes there instead of your default directory
-
-### Example
-
-If your downloads normally go to `/app/data/downloads/`, entering
-`special-project/` would save to `/app/data/downloads/special-project/`.
-
-> **Note**: This feature might not be available in all versions. Check your
-> extension's overlay UI.
-
-## Site Directory
-
-Automatically organize downloads into a subfolder named after the site you're
-on.
-
-### How It Works
-
-When enabled, the extension reads the hostname of the current page (e.g.
-`example.com`) and passes it to gdluxx as a subdirectory. Downloads from that
-send are placed inside a folder matching the hostname. The hostname named
-directory will be located in the `base-directory` established in your config
-file.
-
-### How to Enable It
-
-1. Open the overlay
-2. Click the **earth icon** button in the action bar
-   - Action bar only appears after configuring gdluxx URL + API key
-3. The button shows the current hostname when active (e.g. `example.com`)
-4. Click it again to disable
-
-The toggle state is remembered between sessions.
-
-### Combining with Custom Directory
-
-If you also have a **Custom Directory** set, it becomes a subdirectory inside
-the site hostname folder:
-
-| Site Directory | Custom Directory | Result                      |
-| -------------- | ---------------- | --------------------------- |
-| `example.com`  | _(not set)_      | `example.com/`              |
-| `example.com`  | `photos`         | `example.com/photos/`       |
-| `example.com`  | `archive-2025`   | `example.com/archive-2025/` |
-
-This allows for organization similar to the how gallery-dl config file does.
-
-## Themes
-
-Match the extension's appearance to your preference.
-
-### Changing Themes
-
-1. Open the extension popup
-2. Go to **Settings > Appearance** (or **Themes**)
-3. Choose from available themes
-4. Changes apply immediately
-
-### Available Themes
-
-The extension includes 30+ DaisyUI themes:
-
-- **Basic**: light, dark
-- **Colorful**: cupcake, emerald, corporate, retro, valentine, garden, aqua,
-  pastel, fantasy
-- **Dark**: cyberpunk, halloween, forest, black, luxury, dracula, business,
-  night, coffee, dim
-- **Professional**: wireframe, cmyk, autumn
-- **Fun**: acid, lemonade, winter, nord, sunset
-
-Pick whichever matches your style.
+- **Filter by keyword** — the search field above the list narrows results by
+  substring match as you type.
+- **Selection dropdown** — select **All**, **None**, or **Invert** across the
+  currently visible (filtered) items.
+- **Compact rows** — toggle in the status bar at the bottom to switch to a
+  denser table layout.
+- **Duplicate counts** — items that appear more than once on the page show a
+  `×N` badge.
+- **Modified badge** — items rewritten by an active substitution rule show a
+  "Modified" badge; hovering it reveals the original URL.
+
+Click any row to toggle its selection; the status bar tracks how many items are
+visible and how many are currently selected.
+
+## Sending, Copying, and Downloading Selections
+
+Once you've selected one or more images or links, the action bar (visible once
+your gdluxx connection is configured) gives you three ways to act on them:
+
+- **Send to gdluxx** — sends the selected URLs as jobs. A confirmation dialog
+  shows the count before sending. Up to 25 URLs can be sent per request.
+- **Copy** — copies the selected URLs to your clipboard, newline-separated.
+- **Download** — saves the selected URLs to a local `.txt` file.
+
+### Site Directory
+
+Click the earth icon in the action bar to toggle **Site Directory**. When
+enabled, the extension reads the hostname of the current page (e.g.
+`example.com`) and passes it to gdluxx as a subdirectory, so downloads from that
+send land inside a folder matching the hostname, under the `base-directory` set
+in your gallery-dl config. The button shows the current hostname while active,
+and the toggle state is remembered between sessions.
+
+### Custom Folder
+
+Click **Custom folder** to reveal a text field for a folder name; downloads from
+that send go into that subfolder instead of (or in combination with) Site
+Directory:
+
+| Site Directory | Custom Folder  | Result                      |
+|----------------|----------------|-----------------------------|
+| `example.com`  | _(not set)_    | `example.com/`              |
+| `example.com`  | `photos`       | `example.com/photos/`       |
+| `example.com`  | `archive-2025` | `example.com/archive-2025/` |
+
+This mirrors the way gallery-dl's own config organizes downloads by site.
+
+## Extraction: Range and Targeted Modes
+
+Click the filter icon in the header to open the **Extraction** panel, which
+controls exactly what gets pulled from the page. It has two modes:
+
+- **Range** — restrict extraction to content between two CSS selectors (**Start
+  selector** / **End selector**). Leave both empty to scan the entire page. A
+  live hint reports whether each selector was found and how many links/images
+  fell inside the range.
+- **Targeted** — extracts images only (the URLs tab is empty in this mode).
+  Configure:
+  - **Container via**: **Page body**, **CSS Selector**, or **String Markers**
+    (begin/end text markers) to scope the search area.
+  - **Images via**: **CSS Selector** (with a configurable attribute, default
+    `src`) or **String Markers**.
+
+Both modes have **Apply** and **Reset** buttons; selector inputs are validated
+as you type.
+
+## URL Substitution Rules
+
+Below the extraction controls, the same panel lets you add regex-based
+substitution rules that rewrite selected URLs before you send, copy, or download
+them:
+
+- Each rule has a **regex pattern** field and a **substitution text** field (use
+  `$1`, `$2`, etc. for capture groups).
+- Toggle a rule **On**/**Off**, reorder rules with the up/down arrows, or delete
+  them. Rules run in order from top to bottom.
+- Flag checkboxes per rule: **global** (replace all matches) and **ignore
+  case**.
+- **Add Rule** — add another rule, up to 20 per profile.
+- **Apply substitutions** — rewrites the currently selected URLs.
+- **Reset URLs** — restores originals for anything currently modified.
+- A **Preview** section shows before/after for up to 5 selected URLs before you
+  apply anything.
+- A **Regex help** button opens a cheat sheet with common patterns, example
+  substitutions, and flag explanations.
+
+### Auto-Applying Saved Rules
+
+If you've saved an extraction/substitution profile for the current host, origin,
+or path (see below), it's applied automatically the moment the overlay opens on
+a matching page — including running its substitution rules against the freshly
+extracted URLs. You don't need to reapply it manually each visit.
+
+## Extraction Profiles
+
+Settings and profile management for the extraction/substitution rules above
+lives in **Settings > Extraction Profiles**:
+
+- **Save Profile** / **Update Profile** — saves the current extraction config
+  and rules, scoped to **Host**, **Origin**, or **Path** (a help button explains
+  the difference). Saved profiles for the current site show "In sync" or
+  "Unsaved changes", and auto-applied ones are flagged "Auto-applied".
+- **Delete** — removes the active profile.
+- **Ignore** — stops an auto-applied profile from reapplying for the rest of the
+  session (available only when a profile was auto-applied).
+- **Apply to previews** — a checkbox controlling whether substitution results
+  also affect the image preview thumbnails, not just the sent URLs.
+- **Quick apply** — a dropdown of saved profiles for the current host, for
+  applying one without matching by scope.
+- **Manage extraction profiles** — **Refresh**, **Export** (downloads a JSON
+  file of all saved profiles), **Import** (paste exported JSON; profiles merge
+  with existing entries), and **Clear All**.
+- **Saved profiles list** — search by host/scope/name, apply or delete any saved
+  profile, and give it an optional display name.
+- **Gallery display defaults** — global defaults for the floating gallery (see
+  below): thumbnail sizes, grid gap, modal border width, and button corner.
+  These can be overridden per saved profile.
+
+### Syncing Profiles to gdluxx
+
+If you've configured your gdluxx server URL and API key, the same tab lets you
+back up your saved profiles server-side:
+
+- **Save to gdluxx** — uploads all saved profiles as a backup.
+- **Restore from gdluxx** — fetches the remote backup and shows a preview of
+  what will be added/overwritten/skipped before you confirm.
+- **Check remote status** — reports the last backup time and who saved it.
+- **Clear remote backup** — deletes the server-side backup.
+
+These backups can also be managed directly on the gdluxx server at **Settings >
+Extension Profiles**.
+
+## The Floating Gallery (Gallerized)
+
+Independent of the overlay, a small floating button appears on every permitted
+page (position configurable via the gallery display defaults above). Clicking
+**🖼 Gallery** opens a grid of every image discovered on the page using your
+current extraction/targeted-mode settings and substitution rules.
+
+- A thumbnail-size button (⊞) next to the gallery button lets you pick between
+  the small/default/large sizes configured in Gallery display defaults.
+- Click any thumbnail to open the **Lightbox**, a full-size viewer with
+  Previous/Next navigation and a counter (`3 / 42`). Arrow keys navigate, Escape
+  closes.
+- The gallery badge shows the current image count once discovered.
+
+## Settings
+
+Settings are organized into five tabs, opened via the settings icon in the
+overlay header.
+
+### Preview
+
+- **Image Preview** — show inline thumbnails for image results in the Images
+  tab.
+- **Hover Preview** — a floating preview shown when hovering an image row, with
+  size options: **off**, **small**, **medium**, **large**.
+
+### gdluxx Connection
+
+- **Server URL** and **API Key** — required to send URLs, sync extraction
+  profiles, or use remote backups.
+- **Test Connection** — verifies the server URL/API key before saving.
+- **Save Settings** / **Reset**.
+
+### Appearance
+
+- **Display Mode** — switch between the modal overlay and a fullscreen overlay.
+- **Theme Selection** — the extension ships with 29 DaisyUI themes: `light`,
+  `dark`, `cupcake`, `emerald`, `corporate`, `retro`, `valentine`, `garden`,
+  `aqua`, `pastel`, `fantasy`, `cyberpunk`, `halloween`, `forest`, `black`,
+  `luxury`, `dracula`, `business`, `night`, `coffee`, `dim`, `wireframe`,
+  `cmyk`, `autumn`, `acid`, `lemonade`, `winter`, `nord`, and `sunset`.
+  Selecting one applies it immediately. These are the extension's own themes and
+  are independent of the gdluxx web app's theme.
+
+### Hotkeys
+
+- **Enable overlay hotkey** — toggle whether the hotkey opens/closes the overlay
+  (default **Alt+L**); takes effect on next page load.
+- **Enable "send current tab" hotkey** — a separate, independently configurable
+  hotkey that sends the current page's URL to gdluxx directly, without opening
+  the overlay.
+
+Click either hotkey's display to record a new combination; a hotkey must include
+at least one modifier (Ctrl/Alt/Shift/Meta) plus a key.
+
+### Extraction Profiles
+
+Covered above under [Extraction Profiles](#extraction-profiles).
+
+## Permissions
+
+The extension only runs where you've granted it access. From the popup you can:
+
+- **Enable on current site** / **Enable on all sites** — grant host permissions
+  (each requires a confirmation).
+- **Disable on current site** / **Disable on all sites** — revoke them.
+- **Manage all permissions** — opens your browser's extension permissions page
+  directly.
+
+The popup also shows the current tab's URL and whether the overlay is currently
+permitted on it.
 
 ## Keyboard Navigation
 
-The overlay supports keyboard navigation for power users.
-
-### Keyboard Shortcuts (in overlay)
-
-- **Tab** - Move between fields
-- **Enter** - Submit (send URL)
-- **Escape** - Close overlay
-- **Alt+L** (or your custom hotkey) - Toggle overlay
-
-No mouse required if you prefer keyboard control.
+- **Tab** - move between fields in the overlay
+- **Escape** - close the overlay, or close the lightbox/gallery if open
+- **Ctrl+Enter** - apply extraction selectors while focused in a selector field
+- Your configured overlay hotkey (default **Alt+L**) toggles the overlay from
+  anywhere on the page
+- Arrow keys navigate the gallery lightbox
 
 ## Tips & Tricks
 
 ### Workflow: Browsing & Sending
 
-1. Encounter a site you want to download
-2. Press your hotkey
-3. Verify the URL is correct
-4. Press Enter (or click Send)
+1. Encounter a page with content you want
+2. Open the overlay (hotkey, popup, or right-click)
+3. Select the images/links you want, or use **Selection > All**
+4. Click **Send to gdluxx**
 5. Continue browsing immediately
 
-### Workflow: Bulk Downloading
+### Workflow: One-Off Sends
 
-1. Keep multiple interesting URLs
-2. Open overlay when you have a list
-3. Paste all URLs at once
-4. Send them as batch
+1. Right-click a single image or link
+2. Choose **gdluxx: send image** or **gdluxx: send URL**
+3. Move on — no overlay needed
 
-### Workflow: Image Hunting
+### Workflow: Recurring Sites
 
-1. Right-click any image you find
-2. "Send Image to gdluxx" - one click
-3. Move to next image
-4. Repeat as much as you want
+1. Set up Range or Targeted extraction plus any substitution rules for a site
+   you visit often
+2. Save it as an Extraction Profile scoped to Host or Origin
+3. It auto-applies (and auto-rewrites URLs) every time you open the overlay
+   there afterward
 
-### Pro Tip: Save Your Settings
+### Pro Tip: Back Up Your Profiles
 
-Once configured, the extension remembers everything:
-
-- Server URL
-- API key
-- Hotkey preference
-- Theme choice
-- Substitution rules
-
-You only configure it once.
+Once you've built up several extraction profiles, use **Save to gdluxx** in the
+Extraction Profiles tab so they're recoverable if you switch browsers or
+reinstall the extension.

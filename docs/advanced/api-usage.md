@@ -1,6 +1,7 @@
 # API Usage
 
-The gdluxx API lets you send download jobs from anywhere—scripts, applications, mobile apps, etc.
+The gdluxx API lets you send download jobs from anywhere—scripts, applications,
+mobile apps, etc.
 
 ## Getting Started
 
@@ -25,6 +26,7 @@ curl -X POST \
 ```
 
 Replace:
+
 - `YOUR_API_KEY` with your actual key
 - `https://your-gdluxx-url` with your gdluxx server address
 
@@ -111,13 +113,31 @@ Each URL becomes a separate job.
 
 ### URL Limits
 
-- **Maximum URLs per request**: 200
+The number of URLs allowed in a single batch request is controlled by a per-user
+setting, **Max Batch URLs**, found in **Settings > General Manager**. It
+defaults to 200 and accepts any whole number from 1 to 10,000. There's also an
+absolute hard cap of 10,000 URLs per request that no setting can raise.
+
+This limit is enforced. Requests with more URLs than your configured maximum are
+rejected with a 400 response before any jobs are started - see `Too many URLs`
+below.
 
 ## Error Responses
 
+Every error response follows the same shape:
+
+```json
+{
+  "success": false,
+  "error": "...",
+  "timestamp": "..."
+}
+```
+
 ### Authentication Errors
 
-**Missing Authorization Header**:
+**Missing or malformed Authorization header** (400):
+
 ```json
 {
   "success": false,
@@ -125,15 +145,8 @@ Each URL becomes a separate job.
 }
 ```
 
-**Invalid API Key**:
-```json
-{
-  "success": false,
-  "error": "Invalid API key"
-}
-```
+**Empty Bearer token** (400):
 
-**Empty Bearer Token**:
 ```json
 {
   "success": false,
@@ -141,17 +154,19 @@ Each URL becomes a separate job.
 }
 ```
 
-### Validation Errors
+**Invalid, expired, or revoked API key** (401):
 
-**Invalid URL Format**:
 ```json
 {
   "success": false,
-  "error": "Invalid URL format. Must be HTTP or HTTPS"
+  "error": "Invalid API key"
 }
 ```
 
-**Invalid JSON**:
+### Validation Errors
+
+**Malformed JSON body** (400):
+
 ```json
 {
   "success": false,
@@ -159,11 +174,43 @@ Each URL becomes a separate job.
 }
 ```
 
-**Missing Required Field**:
+**Body is valid JSON but not an object** (400):
+
 ```json
 {
   "success": false,
-  "error": "Missing required field: urlToProcess or urls"
+  "error": "Invalid request body. Expected a JSON object."
+}
+```
+
+**Schema validation failed** (400) - returned for things like a malformed
+`urlToProcess`/`urls` entry, or a `customDirectory`/`siteDirectory` that fails
+its length or character checks. The response doesn't include the specific
+reason:
+
+```json
+{
+  "success": false,
+  "error": "Invalid input provided."
+}
+```
+
+**No URLs after normalization** (400) - both `urlToProcess` and `urls` were
+empty or missing:
+
+```json
+{
+  "success": false,
+  "error": "At least one URL is required"
+}
+```
+
+**Too many URLs** (400) - the batch exceeded your Max Batch URLs setting:
+
+```json
+{
+  "success": false,
+  "error": "Too many URLs. Max allowed is 200."
 }
 ```
 
@@ -177,6 +224,7 @@ Each URL becomes a separate job.
 ### Request Body
 
 Single URL:
+
 ```json
 {
   "urlToProcess": "https://example.com/gallery"
@@ -184,12 +232,10 @@ Single URL:
 ```
 
 Multiple URLs:
+
 ```json
 {
-  "urls": [
-    "https://example.com/gallery1",
-    "https://example.com/gallery2"
-  ]
+  "urls": ["https://example.com/gallery1", "https://example.com/gallery2"]
 }
 ```
 
@@ -226,24 +272,24 @@ else:
 ```javascript
 const fetch = require('node-fetch');
 
-const apiKey = "YOUR_API_KEY";
-const server = "http://localhost:7755";
-const url = "https://example.com/gallery";
+const apiKey = 'YOUR_API_KEY';
+const server = 'http://localhost:7755';
+const url = 'https://example.com/gallery';
 
 fetch(`${server}/api/extension/external`, {
-  method: "POST",
+  method: 'POST',
   headers: {
-    "Authorization": `Bearer ${apiKey}`,
-    "Content-Type": "application/json"
+    Authorization: `Bearer ${apiKey}`,
+    'Content-Type': 'application/json',
   },
-  body: JSON.stringify({ urlToProcess: url })
+  body: JSON.stringify({ urlToProcess: url }),
 })
-  .then(r => r.json())
-  .then(data => {
+  .then((r) => r.json())
+  .then((data) => {
     if (data.success) {
-      console.log("Job created:", data.data.results[0].jobId);
+      console.log('Job created:', data.data.results[0].jobId);
     } else {
-      console.error("Error:", data.error);
+      console.error('Error:', data.error);
     }
   });
 ```

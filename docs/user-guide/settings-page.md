@@ -21,6 +21,15 @@ Having a conflict does not mean you can't still run jobs.
 
 - [See Site Rules & Manual Options](/user-guide/run-page#site-rules-manual-options)
 
+### Max Batch URLs
+
+Controls how many URLs the browser extension can submit in a single request
+(e.g. sending an entire page of links at once). Defaults to 200 and accepts any
+whole number between 1 and 10,000.
+
+See [API Limits](#api-limits) below for how this setting interacts with the
+external API.
+
 ### Theme Selection
 
 1.  Click your preferred theme
@@ -37,9 +46,11 @@ This manages the _gallery-dl_ binary that does the actual downloading.
 1.  Go to **Settings > Version Manager**
 2.  You'll see:
     - Your current gallery-dl version
-    - The latest available version on GitHub (after clicking "Check for
-      Updates")
+    - The latest available version (after clicking "Check for Updates")
     - Whether you're up to date
+    - The release source gdluxx is checking, with a link to it - either GitHub
+      or Codeberg, depending on your build
+    - An **ARM64** badge if you're running the ARM64 build
 
 ### Update gallery-dl
 
@@ -122,11 +133,11 @@ Useful for:
 
 ### API Limits
 
-Theoretical limits on API requests:
-
-- **Max URLs per request**: 200 (in single batch)
-  - I've not stress tested gdluxx. Perhaps it'll crash at a mere 100 URLs or
-    maybe it could handle 2000. This is merely a precaution
+- **Max Batch URLs**: 200 by default, configurable per-user in **Settings >
+  General Manager**. Accepts any whole number from 1 to 10,000, and there's an
+  absolute hard cap of 10,000 that can't be raised.
+- This limit **is enforced**. A request with more URLs than your configured
+  maximum is rejected outright, rather than silently truncated or queued.
 
 ::: tip Note  
 While you can go wild with gdluxx, be mindful some sites may rate limit,
@@ -134,6 +145,39 @@ temporarily ban, or outright ban you if you hammer their site.
 
 Be respectful, be smart  
 :::
+
+## Extension Profiles
+
+- Go to **Settings > Extension Profiles**
+
+This tab shows the extraction profile backups synced from the gdluxx browser
+extension, the per-site rules the extension uses to pull content out of a page
+(start/end selectors, substitution rules, gallery display options). Backups are
+stored per API key, so pick the key you want to inspect from the dropdown at the
+top.
+
+### What You Can Do
+
+- **View profiles**: See every synced extraction profile for the selected key -
+  its scope (host, origin, or path), extraction mode, substitution rule count,
+  and when it was last synced or used.
+- **Edit or create profiles**: Use **New profile** or **Edit** to change a
+  profile's selectors, substitution rules, and gallery display options directly
+  in gdluxx, without touching the extension.
+- **Delete a profile or a whole backup**: Remove a single profile, or wipe the
+  entire backup for that API key.
+- **Export/Import**: **Export profiles** downloads the backup as JSON; **Import
+  profiles** lets you paste or upload JSON to restore it. Profiles with a
+  matching ID are overwritten - everything else is left alone.
+
+::: tip Note  
+Restoring a backup into the extension (rather than editing it here) shows a
+preview of what will change before anything is overwritten. That preview happens
+in the extension's own UI, not on this settings page. :::
+
+Older extension versions synced separate "selector" and "substitution" backups
+instead of extraction profiles. If you still have any, they appear in a
+collapsed **Legacy backups** section so you can review or delete them.
 
 ## Log Manager
 

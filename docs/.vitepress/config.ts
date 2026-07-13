@@ -5,7 +5,7 @@ export default defineConfig({
   title: 'gdluxx',
   description: 'A self-hosted browser based gui for gallery-dl',
 
-  head: [['link', { rel: 'icon', href: '/favicon.ico' }]],
+  head: [['link', { rel: 'icon', href: '/gdl-ico.png' }]],
 
   themeConfig: {
     search: { provider: 'local' },
@@ -43,6 +43,7 @@ export default defineConfig({
           { text: 'Overview & Installation', link: '/extension/index' },
           { text: 'Setup & Configuration', link: '/extension/setup' },
           { text: 'Features', link: '/extension/features' },
+          { text: 'Troubleshooting', link: '/extension/troubleshooting' },
         ],
       },
       {
@@ -50,6 +51,13 @@ export default defineConfig({
         items: [
           { text: 'Using the API', link: '/advanced/api-usage' },
           { text: 'Reverse Proxy Guide', link: '/advanced/reverse-proxy' },
+        ],
+      },
+      {
+        text: 'Troubleshooting',
+        items: [
+          { text: 'Common Errors', link: '/troubleshooting/common-errors' },
+          { text: 'FAQ', link: '/troubleshooting/faq' },
         ],
       },
       {
