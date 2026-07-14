@@ -31,7 +31,8 @@ Then update your compose `volumes` to: `- ~/Documents/gdluxx:/app/data`
     ```
 
 2.  Copy environment file.
-    - Or you can [copy it from here](https://github.com/gdluxx/gdluxx/blob/main/.env.example)
+    - Or you can
+      [copy it from here](https://github.com/gdluxx/gdluxx/blob/main/.env.example)
 
     ```bash
     cp .env.example .env
@@ -51,9 +52,8 @@ Then update your compose `volumes` to: `- ~/Documents/gdluxx:/app/data`
 
 5.  Configure your `ORIGIN`.
 
-    The `ORIGIN` environment variable is **mandatory**. It
-    tells _gdluxx_ what domain to expect for all requests. This helps prevent
-    CSRF issues.
+    The `ORIGIN` environment variable is **mandatory**. It tells _gdluxx_ what
+    domain to expect for all requests. This helps prevent CSRF issues.
 
     In your `.env` file, set `ORIGIN` to the URL you will use to access the
     application.
@@ -97,6 +97,33 @@ Then update your compose `volumes` to: `- ~/Documents/gdluxx:/app/data`
     ```bash
     docker compose up -d
     ```
+
+### Custom download location
+
+By default, downloads are saved inside `/app/data/downloads` in the container
+(so they land in `./data/downloads` on your host). If you want downloads to go
+somewhere else entirely, such as a second drive, set the `DOWNLOAD_PATH`
+environment variable and add a second bind mount for it.
+
+```yaml
+services:
+  gdluxx:
+    volumes:
+      - ./data:/app/data
+      - /path/to/big/drive:/app/downloads
+    environment:
+      - DOWNLOAD_PATH=/app/downloads
+```
+
+When `DOWNLOAD_PATH` is set, gdluxx rewrites your `config.json` paths
+(`extractor.base-directory`, `path`, `part-directory`) to point at that location
+instead of `/app/data/downloads`. The value must be an absolute path inside the
+container (it must start with `/`), like `/app/downloads` above. If you don't
+set it, nothing changes, everything defaults to `/app/data/downloads` as before.
+
+If you're adding `DOWNLOAD_PATH` to an existing install, open the Config page
+and re-save your config, gdluxx will migrate the download paths to the new
+location for you.
 
 {#windows-note}
 

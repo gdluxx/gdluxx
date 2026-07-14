@@ -96,7 +96,8 @@ Only Docker installation is supported.
 
 > [!TIP]  
 > See [install guide](https://gdluxx.app/getting-started/installation) for
-> details on ORIGIN configuration and custom paths
+> details on ORIGIN configuration and custom paths, including redirecting
+> downloads to a separate drive/volume via `DOWNLOAD_PATH`
 
 ## Extension Install
 

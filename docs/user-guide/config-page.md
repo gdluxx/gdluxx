@@ -43,8 +43,8 @@ To help prevent having to scroll as much, you can "full screen" the editor
 3. Click the button again to exit full-screen
 
 ::: info  
-It is not actual full screen It just fills up your browser window. It
-doesn't affect the browser, taskbar, or anything of the sort  
+It is not actual full screen It just fills up your browser window. It doesn't
+affect the browser, taskbar, or anything of the sort  
 :::
 
 ### Import an Existing Config File
@@ -88,6 +88,14 @@ When you save, these paths are automatically rewritten:
 
 This happens automatically so you don't have to worry about Docker container
 paths vs your host machine. Everything "just works". (famous last words)
+
+::: info Custom download location  
+If you've set the `DOWNLOAD_PATH` environment variable (see
+[install guide](../getting-started/installation.md#custom-download-location)),
+downloads and part-directory get rewritten to that location instead of
+`/app/data/downloads`. Paths already pointing somewhere under your configured
+`DOWNLOAD_PATH` are left untouched, so you won't see them rewritten again.  
+:::
 
 ### Examples
 

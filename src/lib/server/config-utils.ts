@@ -18,6 +18,57 @@ export const DATA_PATH = process.env.FILE_STORAGE_PATH ?? './data';
 export const CONFIG_FILE = 'config.json';
 export const EXAMPLE_CONFIG_FILE = './static/config-example.json';
 
+const DEFAULT_DOWNLOAD_ROOT = '/app/data/downloads';
+
+interface DownloadRoot {
+  base: string;
+  partDirectory: string;
+}
+
+let downloadRootCache: DownloadRoot | null = null;
+
+// Resolve the Docker download root and part-directory target.
+// Lazily computed and cached so the fallback warning is
+// logged on first use rather than at import time, avoiding
+// logger circular dependency
+export function getDownloadRoot(): DownloadRoot {
+  if (downloadRootCache) {
+    return downloadRootCache;
+  }
+
+  const envValue = process.env.DOWNLOAD_PATH;
+
+  // Unset/empty use defaults silently
+  if (!envValue) {
+    downloadRootCache = {
+      base: DEFAULT_DOWNLOAD_ROOT,
+      partDirectory: '/app/data/temp',
+    };
+    return downloadRootCache;
+  }
+
+  const trimmedRoot = envValue.trim().replace(/\/+$/, '');
+
+  if (trimmedRoot.startsWith('/')) {
+    downloadRootCache = {
+      base: trimmedRoot,
+      partDirectory: `${trimmedRoot}/temp`,
+    };
+    return downloadRootCache;
+  }
+
+  // Set, but invalid (relative, ~/..., or empty/whitespace-only after trim).
+  logger.warn(
+    `Invalid DOWNLOAD_PATH "${envValue}": must be an absolute path. Falling back to default (${DEFAULT_DOWNLOAD_ROOT}).`,
+  );
+
+  downloadRootCache = {
+    base: DEFAULT_DOWNLOAD_ROOT,
+    partDirectory: '/app/data/temp',
+  };
+  return downloadRootCache;
+}
+
 export interface ConfigReadResult {
   content: string;
   source: 'config' | 'example';
@@ -36,10 +87,20 @@ export interface ConfigWriteResult {
 }
 
 interface KeyPathConfig {
-  replacementPath: string;
+  replacementPath: string | (() => string);
   preserveFilename?: boolean;
   customTransform?: (value: string) => string;
   logConflictAvoidance?: boolean;
+  // True only for the download-target keys (base-directory, path,
+  // part-directory) that follow the DOWNLOAD_PATH override. When a custom
+  // download root is active, these keys migrate existing /app/data/* values
+  // to the new root instead of skipping them.
+  usesDownloadRoot?: boolean;
+}
+
+function resolveReplacementPath(config?: KeyPathConfig): string {
+  const replacementPath = config?.replacementPath ?? '/app/data';
+  return typeof replacementPath === 'function' ? replacementPath() : replacementPath;
 }
 
 const keyConfigs: Record<string, KeyPathConfig> = {
@@ -51,20 +112,23 @@ const keyConfigs: Record<string, KeyPathConfig> = {
 
   // Download directory
   'extractor.base-directory': {
-    replacementPath: '/app/data/downloads',
+    replacementPath: () => getDownloadRoot().base,
     preserveFilename: false,
+    usesDownloadRoot: true,
   },
 
   // General paths
   path: {
-    replacementPath: '/app/data/downloads',
+    replacementPath: () => getDownloadRoot().base,
     preserveFilename: false,
+    usesDownloadRoot: true,
   },
 
   // Part directories
   'part-directory': {
-    replacementPath: '/app/data/temp',
+    replacementPath: () => getDownloadRoot().partDirectory,
     preserveFilename: false,
+    usesDownloadRoot: true,
   },
 
   // Cookie files
@@ -123,8 +187,18 @@ export function transformPath(originalPath: string, config?: KeyPathConfig): str
       return false;
     }
 
-    // Skip if already using `/app/data`
-    if (value.startsWith('/app/data')) {
+    const { base: downloadRoot } = getDownloadRoot();
+    const customRootActive = downloadRoot !== DEFAULT_DOWNLOAD_ROOT && config?.usesDownloadRoot;
+
+    if (customRootActive) {
+      // Download-target keys with a custom root: the only skip is "already
+      // at/under the root". Existing /app/data/* values (from earlier saves)
+      // must migrate to the new location.
+      if (value === downloadRoot || value.startsWith(`${downloadRoot}/`)) {
+        return false;
+      }
+    } else if (value.startsWith('/app/data')) {
+      // Skip if already using `/app/data`
       return false;
     }
 
@@ -140,7 +214,7 @@ export function transformPath(originalPath: string, config?: KeyPathConfig): str
     return config.customTransform(originalPath);
   }
 
-  const replacementPath = config?.replacementPath || '/app/data';
+  const replacementPath = resolveReplacementPath(config);
   const preserveFilename = config?.preserveFilename ?? false;
 
   if (preserveFilename) {
@@ -285,11 +359,15 @@ export async function readConfigFile(): Promise<ConfigReadResult> {
           path: CONFIG_FILE,
           message: 'Loaded example configuration. Save to create your config file.',
         };
-      } catch (_exampleError) {
-        throw new Error('Both config.json and config-example.json are unavailable');
+      } catch (exampleError) {
+        throw new Error('Both config.json and config-example.json are unavailable', {
+          cause: exampleError,
+        });
       }
     } else {
-      throw new Error(`Failed to read configuration file: ${(configError as Error).message}`);
+      throw new Error(`Failed to read configuration file: ${(configError as Error).message}`, {
+        cause: configError,
+      });
     }
   }
 }

@@ -55,4 +55,4 @@ VOLUME ["/app/data"]
 
 STOPSIGNAL SIGTERM
 
-CMD ["sh", "-c", "[ -w /app/data ] || (echo 'ERROR: /app/data not writable' && exit 1) && node build/index.js"]
+CMD ["sh", "-c", "[ -w /app/data ] || (echo 'ERROR: /app/data not writable' && exit 1) && if [ -n \"$DOWNLOAD_PATH\" ]; then mkdir -p \"$DOWNLOAD_PATH\" && [ -w \"$DOWNLOAD_PATH\" ] || (echo \"ERROR: DOWNLOAD_PATH ($DOWNLOAD_PATH) is not writable or could not be created\" && exit 1); fi && node build/index.js"]

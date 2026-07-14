@@ -18,6 +18,9 @@ Inside the `./data` directory you created. The exact subfolder depends on your
 _gallery-dl_ config. If you haven't changed it, _gallery-dl_ usually creates
 folders based on the site and author/gallery name. Regardless, unless you did
 something special, anything downloaded should be in the `downloads/` directory.
+If you've set the `DOWNLOAD_PATH` environment variable, your downloads will be
+wherever you pointed that instead, see
+[install guide](../getting-started/installation.md#custom-download-location).
 
 ### Why bind mounts instead of Docker volumes?
 

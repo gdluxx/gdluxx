@@ -1,19 +1,21 @@
-name: gdluxx
+name: gdluxx-dev
 
 services:
   gdluxx:
     build: .
-    image: gdluxx
-    container_name: gdluxx
+    image: gdluxx-dev
+    container_name: gdluxx-dev
     ports:
-      - '7755:7755'
+      - '7765:7755'
     volumes:
       - ./data:/app/data
+      # - /host/path/to/downloads:/app/downloads
     environment:
       # - PORT=${PORT}
       # - HOST=${HOST}
       - AUTH_SECRET=${AUTH_SECRET}
       - ORIGIN=${ORIGIN:-http://localhost:7755}
+      # - DOWNLOAD_PATH=/app/downloads
     env_file:
       - .env
     restart: unless-stopped
