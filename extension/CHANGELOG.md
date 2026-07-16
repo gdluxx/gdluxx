@@ -1,5 +1,21 @@
 # Changelog
 
+# [1.6.0](https://github.com/gdluxx/gdluxx/compare/extension-v1.5.1...extension-v1.6.0) (2026-07-16)
+
+
+### Bug Fixes
+
+* **ci:** pin Node via .nvmrc in release workflows and fix dead assignment in gallerizedUtils ([244c2c9](https://github.com/gdluxx/gdluxx/commit/244c2c9bce1bd341bb8ed5dc23b38c6ba96cc310))
+* **extension:** Substitutions weren't being applied correctly after feature consolidation ([a0e86d2](https://github.com/gdluxx/gdluxx/commit/a0e86d2c9652492bb6b662d26ded1c1e2e66edc0))
+
+
+### Features
+
+* add "gallerized" feature ([9431a60](https://github.com/gdluxx/gdluxx/commit/9431a609eb59647402fdc2d64cf581ecf0f1d70d))
+* consolidating extension features + "gallerized" ([eeefc2e](https://github.com/gdluxx/gdluxx/commit/eeefc2ed48f7be23a354d59eb80c90c73145ca27))
+* **extension-profiles:** add backup editing and restore preview ([0163bc3](https://github.com/gdluxx/gdluxx/commit/0163bc3d4b89fedd38a32d78ab08b9e1d8bbca40))
+* wire in "gallerized" ui ([6e663b8](https://github.com/gdluxx/gdluxx/commit/6e663b825fca2cbe6b6daa468e46dc253dd2db6c))
+
 ## [1.5.1](https://github.com/gdluxx/gdluxx/compare/extension-v1.5.0...extension-v1.5.1) (2026-04-05)
 
 
