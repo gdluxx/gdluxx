@@ -29,7 +29,7 @@ export function discoverImages(config: ExtractionConfig): string[] {
 
 function discoverTargetedImages(config: TargetedExtractionConfig): string[] {
   const urls = new Set<string>();
-  let containerHtml = '';
+  let containerHtml: string;
   let containerEl: Element | null = null;
 
   const { container } = config;
