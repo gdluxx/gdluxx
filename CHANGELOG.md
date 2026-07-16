@@ -1,5 +1,38 @@
 # Changelog
 
+# [0.11.0](https://github.com/gdluxx/gdluxx/compare/v0.10.0...v0.11.0) (2026-07-16)
+
+
+### Bug Fixes
+
+* after updating deps, vite was tree-shaking away theme CSS imports ([cb87e0d](https://github.com/gdluxx/gdluxx/commit/cb87e0d3490e2cf84df625b3e8001201b8c83aa6))
+* API key table migration for Better Auth schema changes ([8e88b1c](https://github.com/gdluxx/gdluxx/commit/8e88b1c8a927c844933642cc52af9b044ba2e936))
+* **ci:** pin Node via .nvmrc in release workflows and fix dead assignment in gallerizedUtils ([244c2c9](https://github.com/gdluxx/gdluxx/commit/244c2c9bce1bd341bb8ed5dc23b38c6ba96cc310))
+* **deps:** dedupe [@lezer](https://github.com/lezer) packages to restore config editor syntax highlighting ([7b0fcc8](https://github.com/gdluxx/gdluxx/commit/7b0fcc867ba14659b366146b858299500bc370f9))
+* Fix modal Escape handling and tooltip focus behavior ([30e7e0d](https://github.com/gdluxx/gdluxx/commit/30e7e0d2b5290213d6e62a269ee8605b8757b0c9))
+* theme selector selected-state reactivity ([9c0b6f5](https://github.com/gdluxx/gdluxx/commit/9c0b6f540ad09001879c6e5cfec8a1183c45a92a))
+* **ui:** replace old phantom theme classes breaking CopyTooltip visibility ([ab7b42d](https://github.com/gdluxx/gdluxx/commit/ab7b42ddb896181756f6c5a9714511793ab5be8e))
+
+
+### Features
+
+* add "gallerized" feature ([9431a60](https://github.com/gdluxx/gdluxx/commit/9431a609eb59647402fdc2d64cf581ecf0f1d70d))
+* add import/export to extension profile mgr ([7e3e787](https://github.com/gdluxx/gdluxx/commit/7e3e787a5d1d01965c5b8ec5994c8bcd7ec0ce95))
+* **config:** add DOWNLOAD_PATH env var for custom download location ([d78cfda](https://github.com/gdluxx/gdluxx/commit/d78cfdaba42b4e5550cf3ac0371939189430f15d)), closes [#4](https://github.com/gdluxx/gdluxx/issues/4)
+* consolidating extension features + "gallerized" ([eeefc2e](https://github.com/gdluxx/gdluxx/commit/eeefc2ed48f7be23a354d59eb80c90c73145ca27))
+* **extension-profiles:** add backup editing and restore preview ([0163bc3](https://github.com/gdluxx/gdluxx/commit/0163bc3d4b89fedd38a32d78ab08b9e1d8bbca40))
+* **options:** make the options panel easier to use ([d06851e](https://github.com/gdluxx/gdluxx/commit/d06851eb4d08e7e1248b7a16efe8b8926848751f))
+* **run:** restore options manager and surface job activity on the Run page ([4fc4d23](https://github.com/gdluxx/gdluxx/commit/4fc4d23cccea1954b06a790f828e02161df3791e))
+* server side groundwork for feature consolidation ([4f0b059](https://github.com/gdluxx/gdluxx/commit/4f0b0597c36a4757f2457e055ab5407f9596bc4b))
+* **ui:** compact left aligned page headers and other minor UI changes ([a9885ea](https://github.com/gdluxx/gdluxx/commit/a9885ea8bc8e0e5b7a86d7eece6c0f133f4de338))
+* **ui:** structured keyword output, site rules polish, jobs toolbar tooltips ([3fcede3](https://github.com/gdluxx/gdluxx/commit/3fcede3f9d657c2a8ca8753fd2571d3c565a7ea8))
+* wire in "gallerized" ui ([6e663b8](https://github.com/gdluxx/gdluxx/commit/6e663b825fca2cbe6b6daa468e46dc253dd2db6c))
+
+
+### Performance Improvements
+
+* **jobs:** paginate jobs list and stop holding all job output in memory ([b353099](https://github.com/gdluxx/gdluxx/commit/b353099ffb6f0a9081ae49e271acd110b2bbee13))
+
 # [0.10.0](https://github.com/gdluxx/gdluxx/compare/v0.9.1...v0.10.0) (2026-05-28)
 
 

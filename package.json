@@ -5,7 +5,7 @@
     "src/lib/themes/css/index.ts"
   ],
   "private": true,
-  "version": "0.10.0",
+  "version": "0.11.0",
   "repository": {
     "type": "git",
     "url": "git@github.com:gdluxx/gdluxx.git"
