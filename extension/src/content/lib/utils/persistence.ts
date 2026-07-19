@@ -19,6 +19,7 @@ const IGNORE_EXTRACTION_KEY = 'gdluxx_ignored_extraction_profiles';
 const CUSTOM_DIR_ENABLED_KEY = 'customDirectory_enabled';
 const CUSTOM_DIR_VALUE_KEY = 'customDirectory_value';
 const SITE_DIR_ENABLED_KEY = 'siteDirectory_enabled';
+const GALLERY_THUMB_SIZE_KEY = 'gdluxx_us_gallery_thumb_size';
 
 export async function readThemePreference(defaultTheme: string): Promise<string> {
   try {
@@ -92,4 +93,16 @@ export async function loadSiteDirectory(): Promise<{ enabled: boolean }> {
 
 export async function saveSiteDirectory(enabled: boolean): Promise<void> {
   await setValue(SITE_DIR_ENABLED_KEY, enabled);
+}
+
+export async function readGalleryThumbSize(fallback: number): Promise<number> {
+  try {
+    return await getValue<number>(GALLERY_THUMB_SIZE_KEY, fallback);
+  } catch {
+    return fallback;
+  }
+}
+
+export async function persistGalleryThumbSize(size: number): Promise<void> {
+  await setValue(GALLERY_THUMB_SIZE_KEY, size);
 }

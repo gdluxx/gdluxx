@@ -9,6 +9,8 @@
  */
 
 import { discoverImages } from '#utils/gallerizedUtils';
+import { persistGalleryThumbSize } from '#utils/persistence';
+import { DEFAULT_GALLERY_CONFIG } from '#utils/storageExtractionProfiles';
 import { applySubRules } from '#utils/substitution';
 import type { ExtractionConfig } from '#src/content/types';
 import type { SubRule } from '#utils/substitution';
@@ -21,7 +23,7 @@ export function createGallerizedStore(
   let lbIndex = $state(0);
   let open = $state(false);
   let lightboxOpen = $state(false);
-  let activeThumbSize = $state(200);
+  let activeThumbSize = $state(DEFAULT_GALLERY_CONFIG.thumbSizes[1]);
   let sdOpen = $state(false);
 
   return {
@@ -80,6 +82,11 @@ export function createGallerizedStore(
     },
 
     setThumbSize(size: number): void {
+      activeThumbSize = size;
+      void persistGalleryThumbSize(size);
+    },
+
+    hydrateThumbSize(size: number): void {
       activeThumbSize = size;
     },
 
