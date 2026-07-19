@@ -52,13 +52,21 @@ export default defineContentScript({
   main: async () => {
     let overlayInstance: ReturnType<typeof mount> | null = null;
     let galleryInstance: ReturnType<typeof mount> | null = null;
+    let galleryToggle: (() => void) | null = null;
     let hotkeyListenerAttached = false;
 
     const mountGallery = (): void => {
       if (galleryInstance) return;
       const { root, container } = ensureGalleryShadowHost();
       injectCssIntoShadow(root, galleryCss, 'gz-gallery-styles');
-      galleryInstance = mount(GalleryApp, { target: container });
+      galleryInstance = mount(GalleryApp, {
+        target: container,
+        props: {
+          onRegisterToggle: (toggle: () => void) => {
+            galleryToggle = toggle;
+          },
+        },
+      });
     };
 
     const closeOverlay = (): void => {
@@ -156,6 +164,16 @@ export default defineContentScript({
           if (shouldIgnoreForTyping(document.activeElement)) return;
           event.preventDefault();
           void sendCurrentTabToGdluxx(); // Intentionally ignore returned promise
+          return;
+        }
+      }
+
+      // Check gallery hotkey third
+      if (settings.galleryHotkeyEnabled && settings.galleryHotkey) {
+        if (matchesHotkey(event, settings.galleryHotkey)) {
+          if (shouldIgnoreForTyping(document.activeElement)) return;
+          event.preventDefault();
+          galleryToggle?.();
           return;
         }
       }

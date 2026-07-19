@@ -17,6 +17,12 @@
   import GalleryModal from './GalleryModal.svelte';
   import type { GalleryDisplayConfig } from '#src/content/types';
 
+  interface Props {
+    onRegisterToggle?: (toggle: () => void) => void;
+  }
+
+  const { onRegisterToggle }: Props = $props();
+
   const extractionProfiles = createExtractionProfileStore();
   const store = createGallerizedStore(
     () => extractionProfiles.extraction,
@@ -56,6 +62,8 @@
   }
 
   onMount(async () => {
+    onRegisterToggle?.(() => store.toggleGallery());
+
     if (typeof window !== 'undefined') {
       await extractionProfiles.initialize(window.location.href);
 

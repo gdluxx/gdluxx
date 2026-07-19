@@ -194,6 +194,29 @@ export function createSettingsViewModel(appStore: AppStore, settings: Settings) 
     }
   }
 
+  async function toggleGalleryHotkey(next: boolean, target?: HTMLInputElement) {
+    const previous = settings.galleryHotkeyEnabled;
+    settings.galleryHotkeyEnabled = next;
+    try {
+      await saveSettings({ galleryHotkeyEnabled: next });
+    } catch (error) {
+      console.error('Failed to save galleryHotkeyEnabled', error);
+      settings.galleryHotkeyEnabled = previous;
+      if (target) target.checked = previous;
+    }
+  }
+
+  async function setGalleryHotkey(newHotkey: string) {
+    const previous = settings.galleryHotkey;
+    settings.galleryHotkey = newHotkey;
+    try {
+      await saveSettings({ galleryHotkey: newHotkey });
+    } catch (error) {
+      console.error('Failed to save galleryHotkey', error);
+      settings.galleryHotkey = previous;
+    }
+  }
+
   function clearServerUrlError() {
     serverUrlError = false;
   }
@@ -234,6 +257,8 @@ export function createSettingsViewModel(appStore: AppStore, settings: Settings) 
     setHotkey,
     toggleSendTabHotkey,
     setSendTabHotkey,
+    toggleGalleryHotkey,
+    setGalleryHotkey,
     setServerUrl,
     setApiKey,
     clearServerUrlError,

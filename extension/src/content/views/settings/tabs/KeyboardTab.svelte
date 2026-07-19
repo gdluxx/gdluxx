@@ -10,7 +10,7 @@
 
 <script lang="ts">
   import type { Settings } from '#utils/settings';
-  import { captureHotkey } from '#utils/hotkeys';
+  import { captureHotkey, findHotkeyConflict } from '#utils/hotkeys';
 
   interface Props {
     settings: Settings;
@@ -18,6 +18,8 @@
     onHotkeyChange: (hotkey: string) => void;
     onToggleSendTabHotkey: (event: Event) => void;
     onSendTabHotkeyChange: (hotkey: string) => void;
+    onToggleGalleryHotkey: (event: Event) => void;
+    onGalleryHotkeyChange: (hotkey: string) => void;
   }
 
   const {
@@ -26,6 +28,8 @@
     onHotkeyChange,
     onToggleSendTabHotkey,
     onSendTabHotkeyChange,
+    onToggleGalleryHotkey,
+    onGalleryHotkeyChange,
   }: Props = $props();
   let isEditing = $state(false);
   let hotkeyInput = $state<HTMLInputElement | null>(null);
@@ -33,6 +37,9 @@
   let isSendTabEditing = $state(false);
   let sendTabHotkeyInput = $state<HTMLInputElement | null>(null);
   let sendTabValidationError = $state<string | null>(null);
+  let isGalleryEditing = $state(false);
+  let galleryHotkeyInput = $state<HTMLInputElement | null>(null);
+  let galleryValidationError = $state<string | null>(null);
 
   $effect(() => {
     if (isEditing && hotkeyInput) {
@@ -46,6 +53,12 @@
     }
   });
 
+  $effect(() => {
+    if (isGalleryEditing && galleryHotkeyInput) {
+      galleryHotkeyInput.focus();
+    }
+  });
+
   function handleHotkeyKeydown(event: KeyboardEvent): void {
     event.preventDefault();
     const captured = captureHotkey(event);
@@ -53,6 +66,12 @@
     if (!captured) {
       validationError =
         'Hotkey must include at least one modifier (Ctrl/Alt/Shift/Meta) and one key';
+      return;
+    }
+
+    const conflict = findHotkeyConflict(captured, settings, 'hotkey');
+    if (conflict) {
+      validationError = `Already used by: ${conflict}`;
       return;
     }
 
@@ -81,6 +100,12 @@
       return;
     }
 
+    const conflict = findHotkeyConflict(captured, settings, 'sendTabHotkey');
+    if (conflict) {
+      sendTabValidationError = `Already used by: ${conflict}`;
+      return;
+    }
+
     onSendTabHotkeyChange(captured);
     sendTabValidationError = null;
     isSendTabEditing = false;
@@ -94,6 +119,37 @@
   function handleSendTabBlur(): void {
     isSendTabEditing = false;
     sendTabValidationError = null;
+  }
+
+  function handleGalleryHotkeyKeydown(event: KeyboardEvent): void {
+    event.preventDefault();
+    const captured = captureHotkey(event);
+
+    if (!captured) {
+      galleryValidationError =
+        'Hotkey must include at least one modifier (Ctrl/Alt/Shift/Meta) and one key';
+      return;
+    }
+
+    const conflict = findHotkeyConflict(captured, settings, 'galleryHotkey');
+    if (conflict) {
+      galleryValidationError = `Already used by: ${conflict}`;
+      return;
+    }
+
+    onGalleryHotkeyChange(captured);
+    galleryValidationError = null;
+    isGalleryEditing = false;
+  }
+
+  function handleGalleryKbdClick(): void {
+    isGalleryEditing = true;
+    galleryValidationError = null;
+  }
+
+  function handleGalleryBlur(): void {
+    isGalleryEditing = false;
+    galleryValidationError = null;
   }
 </script>
 
@@ -179,6 +235,49 @@
         {/if}
         {#if sendTabValidationError}
           <p class="text-error mt-1 text-sm">{sendTabValidationError}</p>
+        {/if}
+      </div>
+    </div>
+  </div>
+
+  <div class="card bg-base-200 mb-4 shadow-xl">
+    <div class="card-body">
+      <div class="card-title">Enable gallery hotkey</div>
+      <div class="flex flex-row justify-between">
+        <div class="flex-start flex">
+          <p>Toggles the gallery on the current page</p>
+        </div>
+        <input
+          id="gallery-hotkey-enabled"
+          type="checkbox"
+          class="toggle toggle-accent toggle-sm"
+          checked={settings.galleryHotkeyEnabled}
+          onchange={onToggleGalleryHotkey}
+        />
+      </div>
+      <div class="card-actions justify-end">
+        {#if isGalleryEditing}
+          <input
+            class="input focus:input-primary mt-4 transition-all"
+            placeholder="Press keys..."
+            aria-label="Gallery hotkey combination"
+            bind:value={settings.galleryHotkey}
+            style="max-width: 160px;"
+            onkeydown={handleGalleryHotkeyKeydown}
+            onblur={handleGalleryBlur}
+            bind:this={galleryHotkeyInput}
+          />
+        {:else}
+          <button
+            class="kbd kbd-xl mt-4 mb-2 cursor-pointer hover:opacity-80"
+            onclick={handleGalleryKbdClick}
+            aria-label="Click to edit gallery hotkey"
+          >
+            {settings.galleryHotkey || 'Click to set'}
+          </button>
+        {/if}
+        {#if galleryValidationError}
+          <p class="text-error mt-1 text-sm">{galleryValidationError}</p>
         {/if}
       </div>
     </div>

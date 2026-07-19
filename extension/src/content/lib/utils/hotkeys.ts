@@ -8,6 +8,8 @@
  * as published by the Free Software Foundation.
  */
 
+import type { Settings } from './settings';
+
 export interface ParsedHotkey {
   key: string;
   ctrl: boolean;
@@ -42,6 +44,43 @@ export function matchesHotkey(event: KeyboardEvent, definition: string): boolean
   if (!!hotkey.shift !== event.shiftKey) return false;
   if (!!hotkey.meta !== event.metaKey) return false;
   return (event.key ?? '').toLowerCase() === hotkey.key;
+}
+
+type HotkeySlot = 'hotkey' | 'sendTabHotkey' | 'galleryHotkey';
+
+const HOTKEY_LABELS: Record<HotkeySlot, string> = {
+  hotkey: 'Overlay toggle',
+  sendTabHotkey: 'Send current tab',
+  galleryHotkey: 'Gallery',
+};
+
+function hotkeysEqual(a: string, b: string): boolean {
+  const pa = parseHotkey(a);
+  const pb = parseHotkey(b);
+  return (
+    pa.key === pb.key &&
+    pa.ctrl === pb.ctrl &&
+    pa.alt === pb.alt &&
+    pa.shift === pb.shift &&
+    pa.meta === pb.meta
+  );
+}
+
+export function findHotkeyConflict(
+  candidate: string,
+  settings: Pick<Settings, HotkeySlot>,
+  exclude: HotkeySlot,
+): string | null {
+  const slots = Object.keys(HOTKEY_LABELS) as HotkeySlot[];
+
+  for (const slot of slots) {
+    if (slot === exclude) continue;
+    const combo = settings[slot];
+    if (!combo || combo.trim() === '') continue;
+    if (hotkeysEqual(candidate, combo)) return HOTKEY_LABELS[slot];
+  }
+
+  return null;
 }
 
 export function captureHotkey(event: KeyboardEvent): string | null {

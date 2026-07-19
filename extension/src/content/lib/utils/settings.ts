@@ -17,6 +17,8 @@ export interface Settings {
   hotkeyEnabled: boolean;
   sendTabHotkey: string;
   sendTabHotkeyEnabled: boolean;
+  galleryHotkey: string;
+  galleryHotkeyEnabled: boolean;
   showImagePreviews: boolean;
   showImageHoverPreview: 'off' | 'small' | 'medium' | 'large';
 }
@@ -28,6 +30,8 @@ const DEFAULTS: Settings = {
   hotkeyEnabled: true,
   sendTabHotkey: '',
   sendTabHotkeyEnabled: false,
+  galleryHotkey: '',
+  galleryHotkeyEnabled: false,
   showImagePreviews: false,
   showImageHoverPreview: 'off',
 };
@@ -40,6 +44,8 @@ const KEYS = {
   hotkeyEnabled: `${KEY_PREFIX}hotkey_enabled`,
   sendTabHotkey: `${KEY_PREFIX}send_tab_hotkey`,
   sendTabHotkeyEnabled: `${KEY_PREFIX}send_tab_hotkey_enabled`,
+  galleryHotkey: `${KEY_PREFIX}gallery_hotkey`,
+  galleryHotkeyEnabled: `${KEY_PREFIX}gallery_hotkey_enabled`,
   showImagePreviews: `${KEY_PREFIX}show_image_previews`,
   showImageHoverPreview: `${KEY_PREFIX}show_image_hover_preview`,
 };
@@ -52,6 +58,8 @@ export async function loadSettings(): Promise<Settings> {
     hotkeyEnabled,
     sendTabHotkey,
     sendTabHotkeyEnabled,
+    galleryHotkey,
+    galleryHotkeyEnabled,
     showImagePreviews,
     showImageHoverPreview,
   ] = await Promise.all([
@@ -61,6 +69,8 @@ export async function loadSettings(): Promise<Settings> {
     getValue(KEYS.hotkeyEnabled, DEFAULTS.hotkeyEnabled),
     getValue(KEYS.sendTabHotkey, DEFAULTS.sendTabHotkey),
     getValue(KEYS.sendTabHotkeyEnabled, DEFAULTS.sendTabHotkeyEnabled),
+    getValue(KEYS.galleryHotkey, DEFAULTS.galleryHotkey),
+    getValue(KEYS.galleryHotkeyEnabled, DEFAULTS.galleryHotkeyEnabled),
     getValue(KEYS.showImagePreviews, DEFAULTS.showImagePreviews),
     getValue(KEYS.showImageHoverPreview, DEFAULTS.showImageHoverPreview),
   ]);
@@ -72,6 +82,8 @@ export async function loadSettings(): Promise<Settings> {
     hotkeyEnabled,
     sendTabHotkey,
     sendTabHotkeyEnabled,
+    galleryHotkey,
+    galleryHotkeyEnabled,
     showImagePreviews,
     showImageHoverPreview,
   };
@@ -87,6 +99,10 @@ export async function saveSettings(settings: Partial<Settings>): Promise<void> {
     await setValue(KEYS.sendTabHotkey, settings.sendTabHotkey);
   if (settings.sendTabHotkeyEnabled !== undefined)
     await setValue(KEYS.sendTabHotkeyEnabled, settings.sendTabHotkeyEnabled);
+  if (settings.galleryHotkey !== undefined)
+    await setValue(KEYS.galleryHotkey, settings.galleryHotkey);
+  if (settings.galleryHotkeyEnabled !== undefined)
+    await setValue(KEYS.galleryHotkeyEnabled, settings.galleryHotkeyEnabled);
   if (settings.showImagePreviews !== undefined)
     await setValue(KEYS.showImagePreviews, settings.showImagePreviews);
   if (settings.showImageHoverPreview !== undefined)

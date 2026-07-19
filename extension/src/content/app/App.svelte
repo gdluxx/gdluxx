@@ -243,6 +243,15 @@
     await settingsVM.setSendTabHotkey(newHotkey);
   }
 
+  async function onToggleGalleryHotkey(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    await settingsVM.toggleGalleryHotkey(input.checked, input);
+  }
+
+  async function onGalleryHotkeyChange(newHotkey: string): Promise<void> {
+    await settingsVM.setGalleryHotkey(newHotkey);
+  }
+
   function onServerUrlChange(value: string) {
     settingsVM.setServerUrl(value);
     settingsVM.clearServerUrlError();
@@ -552,6 +561,8 @@
             {onHotkeyChange}
             {onToggleSendTabHotkey}
             {onSendTabHotkeyChange}
+            {onToggleGalleryHotkey}
+            {onGalleryHotkeyChange}
           />
         {/if}
         {#if activeSettingsTab === 'extraction-profiles'}

@@ -29,6 +29,8 @@ const DEFAULT_SETTINGS: Settings = {
   hotkeyEnabled: true,
   sendTabHotkey: '',
   sendTabHotkeyEnabled: false,
+  galleryHotkey: '',
+  galleryHotkeyEnabled: false,
   showImagePreviews: false,
   showImageHoverPreview: 'off',
 };

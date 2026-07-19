@@ -41,6 +41,8 @@ export function attachSettingsListener(): void {
       'gdluxx_hotkey_enabled',
       'gdluxx_send_tab_hotkey',
       'gdluxx_send_tab_hotkey_enabled',
+      'gdluxx_gallery_hotkey',
+      'gdluxx_gallery_hotkey_enabled',
       'gdluxx_show_image_previews',
       'gdluxx_show_image_hover_preview',
     ];
