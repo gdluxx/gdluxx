@@ -24,6 +24,8 @@
   let pastedJson = $state('');
   let errorMessage = $state('');
   let submitting = $state(false);
+  let loadedFileName = $state('');
+  let fileInputEl: HTMLInputElement | undefined = $state();
 
   function handleFileChange(event: Event): void {
     const input = event.currentTarget as HTMLInputElement;
@@ -31,10 +33,24 @@
     if (!file) {
       return;
     }
-    file.text().then((text) => {
-      pastedJson = text;
-      errorMessage = '';
-    });
+    file
+      .text()
+      .then((text) => {
+        pastedJson = text;
+        loadedFileName = file.name;
+        errorMessage = '';
+      })
+      .catch(() => {
+        errorMessage = 'Could not read the selected file.';
+      });
+  }
+
+  function clearLoadedFile(): void {
+    pastedJson = '';
+    loadedFileName = '';
+    if (fileInputEl) {
+      fileInputEl.value = '';
+    }
   }
 
   async function handleSubmit(): Promise<void> {
@@ -100,23 +116,36 @@
     <div class="space-y-4">
       <div>
         <label
-          class="mb-1 block text-sm font-medium"
+          class="mb-1 block text-sm font-medium text-muted-foreground"
           for="import-file-picker"
         >
           Choose a file
         </label>
         <input
           id="import-file-picker"
+          bind:this={fileInputEl}
           type="file"
           accept="application/json,.json"
           class="block w-full text-sm text-muted-foreground file:mr-3 file:cursor-pointer file:rounded file:border-0 file:bg-surface-active file:px-3 file:py-1.5 file:text-sm file:font-medium hover:file:bg-surface-hover"
           onchange={handleFileChange}
         />
+        {#if loadedFileName}
+          <p class="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
+            <span>Loaded {loadedFileName} — editing below replaces its contents.</span>
+            <Button
+              variant="default"
+              size="sm"
+              onclick={clearLoadedFile}
+            >
+              Clear
+            </Button>
+          </p>
+        {/if}
       </div>
 
       <div>
         <label
-          class="mb-1 block text-sm font-medium"
+          class="mb-1 block text-sm font-medium text-muted-foreground"
           for="import-textarea"
         >
           Or paste JSON
@@ -125,10 +154,10 @@
           id="import-textarea"
           bind:value={pastedJson}
           rows={14}
-          class="focus:ring-ring w-full rounded border border-border bg-background px-3 py-2 font-mono text-xs focus:ring-2 focus:outline-none"
+          class="form-textarea font-mono text-xs"
           placeholder="Paste exported JSON here…"
           spellcheck="false"
-        ></textarea>
+          oninput={() => (loadedFileName = '')}></textarea>
       </div>
 
       {#if errorMessage}

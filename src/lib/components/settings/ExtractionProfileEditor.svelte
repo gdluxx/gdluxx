@@ -372,11 +372,15 @@
   size="xl"
   {onClose}
 >
-  <div class="p-6">
-    <h2 class="mb-3 text-xl font-semibold text-accent-foreground">
-      {isEdit ? 'Edit extraction profile' : 'New extraction profile'}
-    </h2>
+  {#snippet header()}
+    <div class="border-b-strong px-6 py-4 pr-14">
+      <h2 class="text-xl font-semibold text-accent-foreground">
+        {isEdit ? 'Edit extraction profile' : 'New extraction profile'}
+      </h2>
+    </div>
+  {/snippet}
 
+  <div class="p-6">
     {#if error}
       <div class="mb-4">
         <Info variant="error">
@@ -425,6 +429,11 @@
           placeholder="example.com"
           disabled={isEdit}
         />
+        {#if isEdit}
+          <p class="mt-1 text-xs text-muted-foreground">
+            Locked — set when the profile was created.
+          </p>
+        {/if}
       </div>
 
       {#if scope === 'origin'}
@@ -443,6 +452,11 @@
             placeholder="https://example.com"
             disabled={isEdit}
           />
+          {#if isEdit}
+            <p class="mt-1 text-xs text-muted-foreground">
+              Locked — set when the profile was created.
+            </p>
+          {/if}
         </div>
       {:else if scope === 'path'}
         <div>
@@ -460,6 +474,11 @@
             placeholder="/gallery/123"
             disabled={isEdit}
           />
+          {#if isEdit}
+            <p class="mt-1 text-xs text-muted-foreground">
+              Locked — set when the profile was created.
+            </p>
+          {/if}
         </div>
       {/if}
 
@@ -480,14 +499,14 @@
       </div>
 
       <div class="flex flex-wrap gap-6">
-        <label class="flex items-center gap-3 text-sm">
-          <Toggle bind:checked={autoApply} />
-          <span>Auto-apply on matching pages</span>
-        </label>
-        <label class="flex items-center gap-3 text-sm">
-          <Toggle bind:checked={applyToPreview} />
-          <span>Apply to previews</span>
-        </label>
+        <Toggle
+          label="Auto-apply on matching pages"
+          bind:checked={autoApply}
+        />
+        <Toggle
+          label="Apply to previews"
+          bind:checked={applyToPreview}
+        />
       </div>
 
       <div>
@@ -785,10 +804,11 @@
                   </div>
                 </div>
                 <div class="mt-2 flex items-center justify-between gap-2">
-                  <label class="flex items-center gap-2 text-xs">
-                    <Toggle bind:checked={rule.enabled} />
-                    <span>Enabled</span>
-                  </label>
+                  <Toggle
+                    label="Enabled"
+                    size="sm"
+                    bind:checked={rule.enabled}
+                  />
                   <Button
                     variant="outline-danger"
                     onclick={() => removeRule(rule.id)}
@@ -914,8 +934,10 @@
         {/if}
       </div>
     </div>
+  </div>
 
-    <div class="mt-6 flex justify-end gap-2">
+  {#snippet footer()}
+    <div class="flex justify-end gap-2 border-t-strong px-6 py-4">
       <Button
         variant="default"
         onclick={onClose}
@@ -929,5 +951,5 @@
         {saving ? 'Saving…' : isEdit ? 'Save changes' : 'Create'}
       </Button>
     </div>
-  </div>
+  {/snippet}
 </Modal>

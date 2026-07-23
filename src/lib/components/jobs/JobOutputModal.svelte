@@ -14,7 +14,7 @@
   import DOMPurify from 'dompurify';
   import type { ClientJob } from '$lib/stores/jobs.svelte';
   import { jobStore } from '$lib/stores/jobs.svelte';
-  import { CopyTooltip, Modal } from '$lib/components/ui';
+  import { Button, ConfirmModal, CopyTooltip, Modal } from '$lib/components/ui';
   import { Icon } from '$lib/components/index';
   import { getStatusColor, getStatusText } from '$lib/utils/jobStatus';
   import { copyToClipboard } from '$lib/utils/clipboard';
@@ -27,6 +27,7 @@
 
   let outputContainer: HTMLElement | null = $state(null);
   let userScrolledUp = $state(false);
+  let showDeleteConfirm = $state(false);
 
   const tooltip = $state({
     visible: false,
@@ -75,7 +76,16 @@
   }
 
   function handleDismiss() {
+    showDeleteConfirm = true;
+  }
+
+  function confirmDelete() {
     jobStore.deleteJob(job.id);
+    showDeleteConfirm = false;
+  }
+
+  function cancelDelete() {
+    showDeleteConfirm = false;
   }
 
   function formatOutput(output: (typeof job.output)[0]): string {
@@ -254,8 +264,21 @@
     <!-- Footer -->
     <div class="px-3 py-2 text-xs border-t-strong sm:px-6 sm:py-3 sm:text-sm">
       <!-- Mobile layout -->
-      <div class="flex items-start justify-between sm:hidden">
-        <div class="flex flex-col gap-1">
+      <div class="flex items-start justify-between gap-2 sm:hidden">
+        <Button
+          variant="outline-danger"
+          size="sm"
+          onclick={handleDismiss}
+          aria-label="Delete job"
+          class="flex-shrink-0 gap-1.5"
+        >
+          <Icon
+            iconName="delete"
+            size={16}
+          />
+          Delete job
+        </Button>
+        <div class="flex flex-col items-end gap-1 text-right">
           <div class="text-accent-foreground">
             Status: {job.status}
             {#if job.exitCode !== undefined}
@@ -269,22 +292,24 @@
             {/if}
           </div>
         </div>
-        <button
-          onclick={handleDismiss}
-          aria-label="Delete Job"
-          class="ml-2 cursor-pointer p-1 text-muted-foreground transition-all duration-200 hover:scale-120 hover:text-error"
-          title="Delete"
-        >
-          <Icon
-            iconName="delete"
-            size={20}
-          />
-        </button>
       </div>
 
       <!-- Desktop layout -->
-      <div class="hidden sm:block">
-        <div class="flex items-center justify-between">
+      <div class="hidden sm:flex sm:items-center sm:justify-between sm:gap-4">
+        <Button
+          variant="outline-danger"
+          size="sm"
+          onclick={handleDismiss}
+          aria-label="Delete job"
+          class="gap-1.5"
+        >
+          <Icon
+            iconName="delete"
+            size={18}
+          />
+          Delete job
+        </Button>
+        <div class="flex items-center gap-4">
           <div class="text-muted-foreground">
             Status: {job.status}
             {#if job.exitCode !== undefined}
@@ -298,20 +323,19 @@
             {/if}
           </div>
         </div>
-        <div class="mt-2 flex justify-end">
-          <button
-            onclick={handleDismiss}
-            aria-label="Delete Job"
-            class="cursor-pointer rounded-sm p-0.5 text-error transition-colors hover:bg-error/50 hover:text-foreground focus:outline-none sm:py-2"
-            title="Delete"
-          >
-            <Icon
-              iconName="delete"
-              size={32}
-            />
-          </button>
-        </div>
       </div>
     </div>
   </div>
 </Modal>
+
+<ConfirmModal
+  show={showDeleteConfirm}
+  title="Delete job?"
+  message="This will permanently delete the job and its output history. This action cannot be reversed."
+  confirmText="Delete job"
+  cancelText="Cancel"
+  confirmVariant="outline-danger"
+  cancelVariant="default"
+  onConfirm={confirmDelete}
+  onCancel={cancelDelete}
+/>

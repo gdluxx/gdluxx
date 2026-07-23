@@ -189,7 +189,14 @@
       </div>
     </div>
 
-    <div class="mt-6 flex gap-3 sm:flex-row-reverse">
+    <div class="mt-6 flex gap-3 sm:justify-end">
+      <Button
+        onclick={onCancel}
+        disabled={isSaving}
+        class="w-full sm:w-auto"
+      >
+        Cancel
+      </Button>
       <Button
         onclick={handleSave}
         disabled={isSaving ||
@@ -204,13 +211,6 @@
         {:else}
           Save Rule
         {/if}
-      </Button>
-      <Button
-        onclick={onCancel}
-        disabled={isSaving}
-        class="w-full sm:w-auto"
-      >
-        Cancel
       </Button>
     </div>
   </div>

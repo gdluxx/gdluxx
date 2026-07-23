@@ -18,11 +18,21 @@
     show: boolean;
     size?: ModalSize;
     closeOnEscape?: boolean;
+    header?: Snippet;
     children?: Snippet;
+    footer?: Snippet;
     onClose?: () => void;
   }
 
-  const { show, size = 'md', closeOnEscape = true, children, onClose }: ModalProps = $props();
+  const {
+    show,
+    size = 'md',
+    closeOnEscape = true,
+    header,
+    children,
+    footer,
+    onClose,
+  }: ModalProps = $props();
 
   let dialogElement = $state<HTMLDialogElement>();
 
@@ -85,19 +95,40 @@
   bind:this={dialogElement}
   class="modal m-auto w-[calc(100vw-2rem)] {sizeClasses[
     size
-  ]} max-h-[90vh] overflow-auto rounded-lg bg-surface-elevated p-0 shadow-xl"
+  ]} flex max-h-[90vh] flex-col overflow-hidden rounded-lg bg-surface-elevated p-0 shadow-xl"
   oncancel={handleCancel}
   onclick={handleClick}
 >
   <!-- Content wrapper: fills the dialog so inner clicks never equal the dialog
-       target, and is `relative` so the close button positions against it. -->
-  <div class="relative">
-    {#if children}
-      {@render children()}
+       target, and is `relative` so the close button positions against it. Laid
+       out as a flex column so an optional header/footer stay pinned while only
+       the body region scrolls. min-h-0 lets the scroll region shrink; the whole
+       column stays content-driven up to the dialog's 90vh cap. -->
+  <div class="relative flex min-h-0 w-full flex-1 flex-col">
+    {#if header}
+      <div class="flex-shrink-0">
+        {@render header()}
+      </div>
+    {/if}
+
+    <!-- Single scroll container. min-h-0 allows it to shrink below its content
+         height so the header/footer keep their space and only this region
+         scrolls. -->
+    <div class="min-h-0 flex-1 overflow-y-auto">
+      {#if children}
+        {@render children()}
+      {/if}
+    </div>
+
+    {#if footer}
+      <div class="flex-shrink-0">
+        {@render footer()}
+      </div>
     {/if}
 
     <!-- Close button rendered after content so it does not steal initial focus
-         from the first form field; absolute positioning keeps it top-right. -->
+         from the first form field; absolute positioning keeps it pinned to the
+         non-scrolling wrapper (top-right). -->
     {#if onClose}
       <div class="absolute top-4 right-4 z-10">
         <button

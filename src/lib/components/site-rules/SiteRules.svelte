@@ -120,35 +120,15 @@
   class="space-y-6"
 >
   <div>
-    <label
-      for="site_pattern"
-      class="mb-2 block text-sm font-medium text-foreground"
-    >
-      Site Pattern
-    </label>
-    <input
-      list="supportedSites"
-      id="site_pattern"
-      name="site_pattern"
-      bind:value={formData.site_pattern}
-      placeholder="Type site name, or enter pattern like *.youtube.com, twitter.com, or *"
-      class="form-input"
-      class:border-error={errors.site_pattern}
-      class:bg-input-invalid={errors.site_pattern}
-      autocomplete="off"
-    />
-    <datalist id="supportedSites">
-      {#each supportedSites as site (site.url)}
-        <option value={site.url}>{site.name} - {site.url}</option>
-      {/each}
-    </datalist>
-    {#if errors.site_pattern}
-      <p class="mt-1 text-sm text-error">{errors.site_pattern}</p>
-    {/if}
-
-    <div class="mt-2 mr-1.5 flex justify-end">
+    <div class="mb-2 flex items-center gap-1.5">
+      <label
+        for="site_pattern"
+        class="block text-sm font-medium text-foreground"
+      >
+        Site Pattern
+      </label>
       <Tooltip
-        placement="left"
+        placement="top"
         maxWidth="32rem"
         class="!min-w-80 bg-surface-elevated !whitespace-normal"
       >
@@ -171,6 +151,25 @@
         />
       </Tooltip>
     </div>
+    <input
+      list="supportedSites"
+      id="site_pattern"
+      name="site_pattern"
+      bind:value={formData.site_pattern}
+      placeholder="Type site name, or enter pattern like *.youtube.com, twitter.com, or *"
+      class="form-input"
+      class:border-error={errors.site_pattern}
+      class:bg-input-invalid={errors.site_pattern}
+      autocomplete="off"
+    />
+    <datalist id="supportedSites">
+      {#each supportedSites as site (site.url)}
+        <option value={site.url}>{site.name} - {site.url}</option>
+      {/each}
+    </datalist>
+    {#if errors.site_pattern}
+      <p class="mt-1 text-sm text-error">{errors.site_pattern}</p>
+    {/if}
   </div>
 
   <div>
@@ -300,6 +299,12 @@
 
   <div class="flex justify-end gap-4">
     <Button
+      type="button"
+      onclick={onCancel}
+      variant="outline-primary"
+      size="sm">Cancel</Button
+    >
+    <Button
       type="submit"
       disabled={isSubmitting}
       variant="primary"
@@ -315,11 +320,5 @@
         Save Rule
       {/if}
     </Button>
-    <Button
-      type="button"
-      onclick={onCancel}
-      variant="outline-primary"
-      size="sm">Cancel</Button
-    >
   </div>
 </form>

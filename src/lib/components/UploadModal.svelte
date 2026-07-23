@@ -162,7 +162,7 @@
 >
   <div class="flex w-full flex-col">
     <!-- Header -->
-    <div class="flex items-center border-b px-6 py-4 pr-14">
+    <div class="flex items-center border-b-strong px-6 py-4 pr-14">
       <h3
         id="modal-title"
         class="text-lg font-semibold text-foreground"
@@ -251,7 +251,7 @@
 
     <!-- Footer -->
     {#if selectedFile}
-      <div class="flex items-center justify-end gap-3 border-t px-6 py-4">
+      <div class="flex items-center justify-end gap-3 border-t-strong px-6 py-4">
         <Button
           variant="outline-warning"
           size="sm"
