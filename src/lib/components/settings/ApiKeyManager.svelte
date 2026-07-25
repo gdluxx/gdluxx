@@ -479,7 +479,7 @@
   {@const keyName = apiKeys.find((k) => k.id === keyToDelete)?.name ?? 'Unknown'}
   <ConfirmModal
     show={!!keyToDelete}
-    title="Delete API Key?"
+    title="Delete API key?"
     confirmText="Delete"
     cancelText="Cancel"
     confirmVariant="danger"

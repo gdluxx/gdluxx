@@ -522,28 +522,18 @@
   </div>
 
   <!-- Add/Edit Modal -->
-  <Modal
+  <SiteRules
     show={showAddModal}
-    onClose={closeModal}
-    size="xl"
-  >
-    <div class="content-panel">
-      <h2 class="mb-4 cursor-default text-xl font-bold text-primary">
-        {editingConfig ? 'Edit' : 'Add'} Site Rule
-      </h2>
-      <SiteRules
-        config={editingConfig}
-        {supportedSites}
-        onSave={handleSaveConfig}
-        onCancel={closeModal}
-      />
-    </div>
-  </Modal>
+    config={editingConfig}
+    {supportedSites}
+    onSave={handleSaveConfig}
+    onCancel={closeModal}
+  />
 
   <!-- Delete modal -->
   <ConfirmModal
     show={showDeleteConfirm}
-    title="Delete Site Rule?"
+    title="Delete site rule?"
     confirmText="Delete"
     cancelText="Cancel"
     confirmVariant="danger"
@@ -571,19 +561,24 @@
     onClose={closeSupportedSitesModal}
     size="lg"
   >
+    {#snippet header()}
+      <div class="border-b-strong px-6 py-4 pr-14">
+        <h2 class="mb-3 cursor-default text-xl font-bold text-primary">Supported sites</h2>
+        <input
+          type="text"
+          bind:value={supportedSitesSearch}
+          placeholder="Search by name, URL, or category..."
+          aria-label="Search supported sites"
+          class="form-input"
+        />
+        <p class="mt-2 cursor-default text-sm text-muted-foreground">
+          Showing {filteredSupportedSites.length} of {supportedSites.length} sites
+        </p>
+      </div>
+    {/snippet}
+
     <div class="content-panel">
-      <h2 class="mb-4 cursor-default text-xl font-bold text-primary">Supported Sites</h2>
-      <input
-        type="text"
-        bind:value={supportedSitesSearch}
-        placeholder="Search by name, URL, or category..."
-        aria-label="Search supported sites"
-        class="form-input mb-3"
-      />
-      <p class="mb-2 cursor-default text-sm text-muted-foreground">
-        Showing {filteredSupportedSites.length} of {supportedSites.length} sites
-      </p>
-      <div class="max-h-96 overflow-y-auto pr-1">
+      <div class="pr-1">
         {#each filteredSupportedSites as site, index (site.id ?? site.url)}
           <div
             class="px-1 py-2 hover:bg-surface-hover"

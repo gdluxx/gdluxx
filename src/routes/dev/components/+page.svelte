@@ -19,6 +19,7 @@
   import ConfirmModalExamples from './examples/ConfirmModalExamples.svelte';
   import CopyTooltipExamples from './examples/CopyTooltipExamples.svelte';
   import EmptyStateExamples from './examples/EmptyStateExamples.svelte';
+  import FileDropzoneExamples from './examples/FileDropzoneExamples.svelte';
   import IconExamples from './examples/IconExamples.svelte';
   import InfoExamples from './examples/InfoExamples.svelte';
   import ModalExamples from './examples/ModalExamples.svelte';
@@ -86,6 +87,8 @@
       <CopyTooltipExamples />
     {:else if activeKey === 'empty-state'}
       <EmptyStateExamples />
+    {:else if activeKey === 'file-dropzone'}
+      <FileDropzoneExamples />
     {:else if activeKey === 'icon'}
       <IconExamples />
     {:else if activeKey === 'info'}

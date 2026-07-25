@@ -55,7 +55,7 @@
     children,
     cancelText = 'Cancel',
     confirmText = 'Confirm',
-    cancelVariant = 'outline-primary',
+    cancelVariant = 'default',
     confirmVariant = 'primary',
     size = 'md',
     // showCloseButton/preventBackdropClose are kept for API stability. The
@@ -119,7 +119,6 @@
         variant={cancelVariant}
         onclick={onCancel}
         type="button"
-        size="sm"
       >
         {cancelText}
       </Button>
@@ -128,7 +127,6 @@
         variant={confirmVariant}
         onclick={onConfirm}
         type="button"
-        size="sm"
       >
         {confirmText}
       </Button>

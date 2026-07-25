@@ -9,7 +9,7 @@
   -->
 
 <script lang="ts">
-  import { Modal, Button, Info } from '$lib/components/ui';
+  import { Modal, Button, FileDropzone, Info } from '$lib/components/ui';
   import { toastStore } from '$lib/stores/toast';
 
   interface Props {
@@ -25,14 +25,9 @@
   let errorMessage = $state('');
   let submitting = $state(false);
   let loadedFileName = $state('');
-  let fileInputEl: HTMLInputElement | undefined = $state();
+  let selectedFile = $state<File | null>(null);
 
-  function handleFileChange(event: Event): void {
-    const input = event.currentTarget as HTMLInputElement;
-    const file = input.files?.[0];
-    if (!file) {
-      return;
-    }
+  function handleFileSelect(file: File): void {
     file
       .text()
       .then((text) => {
@@ -48,9 +43,12 @@
   function clearLoadedFile(): void {
     pastedJson = '';
     loadedFileName = '';
-    if (fileInputEl) {
-      fileInputEl.value = '';
-    }
+    selectedFile = null;
+  }
+
+  function handleTextareaInput(): void {
+    loadedFileName = '';
+    selectedFile = null;
   }
 
   async function handleSubmit(): Promise<void> {
@@ -106,28 +104,26 @@
   size="lg"
   {onClose}
 >
-  <div class="p-6">
-    <h2 class="mb-1 text-lg font-semibold">Import profiles</h2>
-    <p class="mb-4 text-sm text-muted-foreground">
-      Importing into key: <span class="font-medium text-foreground">{apiKeyName}</span>. Existing
-      profiles with the same id will be overwritten; others are preserved.
-    </p>
+  {#snippet header()}
+    <div class="border-b-strong px-6 py-4 pr-14">
+      <h2 class="text-xl font-semibold text-accent-foreground">Import profiles</h2>
+      <p class="mt-1 text-sm text-muted-foreground">
+        Importing into key: <span class="font-medium text-foreground">{apiKeyName}</span>. Existing
+        profiles with the same id will be overwritten; others are preserved.
+      </p>
+    </div>
+  {/snippet}
 
+  <div class="p-6">
     <div class="space-y-4">
       <div>
-        <label
-          class="mb-1 block text-sm font-medium text-muted-foreground"
-          for="import-file-picker"
-        >
-          Choose a file
-        </label>
-        <input
-          id="import-file-picker"
-          bind:this={fileInputEl}
-          type="file"
+        <span class="mb-1 block text-sm font-medium text-muted-foreground"> Choose a file </span>
+        <FileDropzone
+          bind:selectedFile
           accept="application/json,.json"
-          class="block w-full text-sm text-muted-foreground file:mr-3 file:cursor-pointer file:rounded file:border-0 file:bg-surface-active file:px-3 file:py-1.5 file:text-sm file:font-medium hover:file:bg-surface-hover"
-          onchange={handleFileChange}
+          prompt="Click to upload or drag and drop an export"
+          ariaLabel="Select an exported profiles JSON file"
+          onSelect={handleFileSelect}
         />
         {#if loadedFileName}
           <p class="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
@@ -157,7 +153,7 @@
           class="form-textarea font-mono text-xs"
           placeholder="Paste exported JSON here…"
           spellcheck="false"
-          oninput={() => (loadedFileName = '')}></textarea>
+          oninput={handleTextareaInput}></textarea>
       </div>
 
       {#if errorMessage}
@@ -165,23 +161,25 @@
           <p class="text-sm whitespace-pre-wrap">{errorMessage}</p>
         </Info>
       {/if}
-
-      <div class="flex justify-end gap-2">
-        <Button
-          variant="default"
-          onclick={onClose}
-          disabled={submitting}
-        >
-          Cancel
-        </Button>
-        <Button
-          variant="primary"
-          onclick={handleSubmit}
-          disabled={submitting || !pastedJson.trim()}
-        >
-          {submitting ? 'Importing…' : 'Import'}
-        </Button>
-      </div>
     </div>
   </div>
+
+  {#snippet footer()}
+    <div class="flex items-center justify-end gap-3 border-t-strong px-6 py-4">
+      <Button
+        variant="default"
+        onclick={onClose}
+        disabled={submitting}
+      >
+        Cancel
+      </Button>
+      <Button
+        variant="primary"
+        onclick={handleSubmit}
+        disabled={submitting || !pastedJson.trim()}
+      >
+        {submitting ? 'Importing…' : 'Import'}
+      </Button>
+    </div>
+  {/snippet}
 </Modal>

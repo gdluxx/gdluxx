@@ -660,12 +660,11 @@
 
 <ConfirmModal
   show={showConfirmModal}
-  title="Save with Errors?"
+  title="Save with errors?"
   message="The JSON contains syntax errors. Are you sure you want to save?"
-  confirmText="Save Anyway"
+  confirmText="Save anyway"
   cancelText="Cancel"
   confirmVariant="warning"
-  cancelVariant="outline-warning"
   onConfirm={confirmSaveWithErrors}
   onCancel={cancelSave}
 />
@@ -681,24 +680,22 @@
 
 <ConfirmModal
   show={showReloadConfirmModal}
-  title="Reload Configuration?"
+  title="Reload configuration?"
   message="Discard unsaved changes and reload from disk? This action cannot be undone."
   confirmText="Reload"
   cancelText="Cancel"
   confirmVariant="warning"
-  cancelVariant="outline-warning"
   onConfirm={confirmReload}
   onCancel={cancelReload}
 />
 
 <ConfirmModal
   show={showRestoreConfirmModal}
-  title="Restore Default Configuration?"
+  title="Restore default configuration?"
   message="Replace current editor content with the example configuration? This does not save automatically."
-  confirmText="Restore Defaults"
+  confirmText="Restore defaults"
   cancelText="Cancel"
   confirmVariant="warning"
-  cancelVariant="outline-warning"
   onConfirm={confirmRestoreDefaults}
   onCancel={cancelRestoreDefaults}
 />

@@ -14,6 +14,7 @@ export const componentCatalog = [
   { key: 'confirm-modal', label: 'ConfirmModal' },
   { key: 'copy-tooltip', label: 'CopyTooltip' },
   { key: 'empty-state', label: 'EmptyState' },
+  { key: 'file-dropzone', label: 'FileDropzone' },
   { key: 'icon', label: 'Icon' },
   { key: 'info', label: 'Info' },
   { key: 'modal', label: 'Modal' },

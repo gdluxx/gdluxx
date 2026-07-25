@@ -501,10 +501,12 @@
       <div class="flex flex-wrap gap-6">
         <Toggle
           label="Auto-apply on matching pages"
+          variant="primary"
           bind:checked={autoApply}
         />
         <Toggle
           label="Apply to previews"
+          variant="primary"
           bind:checked={applyToPreview}
         />
       </div>
@@ -807,6 +809,7 @@
                   <Toggle
                     label="Enabled"
                     size="sm"
+                    variant="primary"
                     bind:checked={rule.enabled}
                   />
                   <Button
@@ -827,7 +830,10 @@
 
       <div>
         <label class="flex items-center gap-3 text-sm">
-          <Toggle bind:checked={galleryEnabled} />
+          <Toggle
+            variant="primary"
+            bind:checked={galleryEnabled}
+          />
           <span class="font-semibold text-foreground">Override gallery display</span>
         </label>
 

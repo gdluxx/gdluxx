@@ -118,7 +118,7 @@
             iconName="save"
             size={20}
           />
-          Save Options as Site Rule
+          Save options as site rule
         </h3>
 
         <div
@@ -209,7 +209,7 @@
         {#if isSaving}
           Saving...
         {:else}
-          Save Rule
+          Save rule
         {/if}
       </Button>
     </div>

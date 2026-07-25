@@ -13,6 +13,7 @@ export { default as Chip } from './Chip.svelte';
 export { default as ConfirmModal } from './ConfirmModal.svelte';
 export { default as CopyTooltip } from './CopyTooltip.svelte';
 export { default as EmptyState } from './EmptyState.svelte';
+export { default as FileDropzone } from './FileDropzone.svelte';
 export { default as Info } from './Info.svelte';
 export { default as Modal } from './Modal.svelte';
 export { default as PageLayout } from './PageLayout.svelte';

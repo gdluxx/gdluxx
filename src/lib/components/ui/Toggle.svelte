@@ -72,7 +72,7 @@
   const variantClasses: Record<ToggleVariant, { trackOff: string; trackOn: string }> = {
     default: {
       trackOff: 'bg-border-strong',
-      trackOn: 'peer-checked:bg-text-muted',
+      trackOn: 'peer-checked:bg-foreground',
     },
     primary: {
       trackOff: 'bg-border-strong',

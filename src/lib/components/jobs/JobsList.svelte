@@ -544,18 +544,17 @@
 <ConfirmModal
   show={showDeleteConfirm}
   title={deleteAction === 'all'
-    ? 'Delete all Jobs?'
+    ? 'Delete all jobs?'
     : deleteAction === 'selected'
-      ? 'Delete Selected Jobs?'
-      : 'Delete Job?'}
+      ? 'Delete selected jobs?'
+      : 'Delete job?'}
   confirmText={deleteAction === 'all'
-    ? 'Delete All Jobs'
+    ? 'Delete all jobs'
     : deleteAction === 'selected'
-      ? `Delete ${selectedCount} Jobs`
-      : 'Delete Job'}
+      ? `Delete ${selectedCount} jobs`
+      : 'Delete job'}
   cancelText="Cancel"
   confirmVariant="outline-danger"
-  cancelVariant="default"
   onConfirm={confirmDelete}
   onCancel={cancelDelete}
 >

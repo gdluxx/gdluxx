@@ -9,7 +9,7 @@
   -->
 
 <script lang="ts">
-  import { Button, Chip, Toggle, Tooltip, Spinner } from '$lib/components/ui';
+  import { Button, Chip, Modal, Toggle, Tooltip, Spinner } from '$lib/components/ui';
   import { Icon } from '$lib/components/index';
   import optionsData from '$lib/assets/options.json';
   import type { Option, OptionsData } from '$lib/types/options';
@@ -18,13 +18,16 @@
   const typedOptionsData = optionsData as OptionsData;
 
   interface Props {
+    show?: boolean;
     config?: SiteConfig | null;
     supportedSites?: Array<{ name: string; url: string }>;
     onSave: (config: Partial<SiteConfig>) => Promise<void>;
     onCancel: () => void;
   }
 
-  const { config = null, supportedSites = [], onSave, onCancel }: Props = $props();
+  const { show = false, config = null, supportedSites = [], onSave, onCancel }: Props = $props();
+
+  const FORM_ID = 'site-rule-form';
 
   const formData = $state({
     site_pattern: '',
@@ -115,210 +118,226 @@
   }
 </script>
 
-<form
-  onsubmit={handleSubmit}
-  class="space-y-6"
+<Modal
+  {show}
+  size="xl"
+  onClose={onCancel}
 >
-  <div>
-    <div class="mb-2 flex items-center gap-1.5">
-      <label
-        for="site_pattern"
-        class="block text-sm font-medium text-foreground"
-      >
-        Site Pattern
-      </label>
-      <Tooltip
-        placement="top"
-        maxWidth="32rem"
-        class="!min-w-80 bg-surface-elevated !whitespace-normal"
-      >
-        {#snippet tooltipContent()}
-          <div class="space-y-2">
-            <div class="text-sm opacity-90">
-              <p class="mt-1 cursor-default text-sm text-muted-foreground">
-                Select from <b class="text-primary">{supportedSites.length}</b> supported sites or
-                enter custom pattern
-                <br />- * for all sites
-                <br />- *.domain.com
-              </p>
-            </div>
-          </div>
-        {/snippet}
-        <Icon
-          iconName="question"
-          size={20}
-          class="text-primary"
-        />
-      </Tooltip>
+  {#snippet header()}
+    <div class="border-b-strong px-6 py-4 pr-14">
+      <h2 class="cursor-default text-xl font-bold text-primary">
+        {config ? 'Edit' : 'Add'} site rule
+      </h2>
     </div>
-    <input
-      list="supportedSites"
-      id="site_pattern"
-      name="site_pattern"
-      bind:value={formData.site_pattern}
-      placeholder="Type site name, or enter pattern like *.youtube.com, twitter.com, or *"
-      class="form-input"
-      class:border-error={errors.site_pattern}
-      class:bg-input-invalid={errors.site_pattern}
-      autocomplete="off"
-    />
-    <datalist id="supportedSites">
-      {#each supportedSites as site (site.url)}
-        <option value={site.url}>{site.name} - {site.url}</option>
-      {/each}
-    </datalist>
-    {#if errors.site_pattern}
-      <p class="mt-1 text-sm text-error">{errors.site_pattern}</p>
-    {/if}
-  </div>
+  {/snippet}
 
-  <div>
-    <label
-      for="display_name"
-      class="mb-2 block text-sm font-medium text-foreground"
-    >
-      Display Name
-    </label>
-    <input
-      id="display_name"
-      type="text"
-      bind:value={formData.display_name}
-      placeholder="YouTube, Twitter, etc."
-      class="form-input {errors.display_name ? 'border-red-300 dark:border-red-700' : ''}"
-    />
-    {#if errors.display_name}
-      <p class="mt-1 text-sm text-error">{errors.display_name}</p>
-    {/if}
-  </div>
-
-  <!-- Enable rule -->
-  <div class="space-y-4">
-    <label
-      for="enabled"
-      class="cursor-pointer"
-    >
-      <div class="flex items-center justify-between rounded-sm bg-primary/25 p-3">
-        <span class="font-medium text-foreground">
-          Rule {formData.enabled ? 'Enabled' : 'Disabled'}
-        </span>
-        <div class="relative ml-4 inline-block h-4 w-[26px]">
-          <Toggle
-            id="enabled"
-            bind:checked={formData.enabled}
-            size="sm"
-            variant="primary"
+  <form
+    id={FORM_ID}
+    onsubmit={handleSubmit}
+    class="space-y-6 p-6"
+  >
+    <div>
+      <div class="mb-2 flex items-center gap-1.5">
+        <label
+          for="site_pattern"
+          class="block text-sm font-medium text-foreground"
+        >
+          Site Pattern
+        </label>
+        <Tooltip
+          placement="top"
+          maxWidth="32rem"
+          class="!min-w-80 bg-surface-elevated !whitespace-normal"
+        >
+          {#snippet tooltipContent()}
+            <div class="space-y-2">
+              <div class="text-sm opacity-90">
+                <p class="mt-1 cursor-default text-sm text-muted-foreground">
+                  Select from <b class="text-primary">{supportedSites.length}</b> supported sites or
+                  enter custom pattern
+                  <br />- * for all sites
+                  <br />- *.domain.com
+                </p>
+              </div>
+            </div>
+          {/snippet}
+          <Icon
+            iconName="question"
+            size={20}
+            class="text-primary"
           />
-        </div>
+        </Tooltip>
       </div>
-    </label>
-  </div>
+      <input
+        list="supportedSites"
+        id="site_pattern"
+        name="site_pattern"
+        bind:value={formData.site_pattern}
+        placeholder="Type site name, or enter pattern like *.youtube.com, twitter.com, or *"
+        class="form-input"
+        class:border-error={errors.site_pattern}
+        class:bg-input-invalid={errors.site_pattern}
+        autocomplete="off"
+      />
+      <datalist id="supportedSites">
+        {#each supportedSites as site (site.url)}
+          <option value={site.url}>{site.name} - {site.url}</option>
+        {/each}
+      </datalist>
+      {#if errors.site_pattern}
+        <p class="mt-1 text-sm text-error">{errors.site_pattern}</p>
+      {/if}
+    </div>
 
-  <!-- CLI Options Selection -->
-  <div>
-    <h3 class="mb-4 cursor-default text-lg font-medium text-foreground">CLI Options</h3>
-    <div class="max-h-96 overflow-y-auto rounded border bg-surface p-4">
-      {#each Object.entries(typedOptionsData) as [_categoryKey, category] (_categoryKey)}
-        <details class="mb-4">
-          <summary class="cursor-pointer font-medium text-foreground hover:text-primary">
-            {category.title}
-          </summary>
-          <div class="mt-2 space-y-2">
-            {#each category.options as option (option.id)}
-              <div class="flex items-start gap-2 rounded bg-surface-elevated p-2">
-                <!-- slider -->
-                <div class="relative inline-block h-4 w-[26px]">
-                  <Toggle
-                    id="option-{option.id}"
-                    checked={formData.cli_options.has(option.id)}
-                    onchange={() => toggleOption(option)}
-                    variant="primary"
-                    size="sm"
-                  />
-                </div>
+    <div>
+      <label
+        for="display_name"
+        class="mb-2 block text-sm font-medium text-foreground"
+      >
+        Display Name
+      </label>
+      <input
+        id="display_name"
+        type="text"
+        bind:value={formData.display_name}
+        placeholder="YouTube, Twitter, etc."
+        class="form-input {errors.display_name ? 'border-red-300 dark:border-red-700' : ''}"
+      />
+      {#if errors.display_name}
+        <p class="mt-1 text-sm text-error">{errors.display_name}</p>
+      {/if}
+    </div>
 
-                <!-- Label and description -->
-                <div class="flex-1">
-                  <label
-                    for="option-{option.id}"
-                    class="cursor-pointer font-medium text-foreground"
-                  >
-                    {option.command}
-                  </label>
-                  <p class="text-sm text-muted-foreground">
-                    {option.description}
-                  </p>
-                </div>
+    <!-- Enable rule -->
+    <div class="space-y-4">
+      <label
+        for="enabled"
+        class="cursor-pointer"
+      >
+        <div class="flex items-center justify-between rounded-sm border bg-surface p-3">
+          <span class="font-medium text-foreground">
+            Rule {formData.enabled ? 'Enabled' : 'Disabled'}
+          </span>
+          <div class="relative ml-4 inline-block h-4 w-[26px]">
+            <Toggle
+              id="enabled"
+              bind:checked={formData.enabled}
+              size="sm"
+              variant="primary"
+            />
+          </div>
+        </div>
+      </label>
+    </div>
 
-                <!-- Input fields -->
-                <div class="w-48 flex-shrink-0 text-right">
-                  <!-- Option value input for non-boolean options -->
-                  {#if formData.cli_options.has(option.id) && option.type !== 'boolean'}
-                    {#if option.type === 'string'}
-                      <input
-                        type="text"
-                        value={formData.cli_options.get(option.id) ?? ''}
-                        oninput={(e) => handleOptionInputChange(e, option.id, 'string')}
-                        placeholder="Enter value..."
-                        class="form-input w-full px-2 py-1 text-sm"
-                      />
-                    {:else if option.type === 'number'}
-                      <input
-                        type="number"
-                        value={formData.cli_options.get(option.id) ?? ''}
-                        oninput={(e) => handleOptionInputChange(e, option.id, 'number')}
-                        placeholder="Enter number..."
-                        class="form-input w-full px-2 py-1 text-sm"
-                      />
-                    {:else if option.type === 'range'}
-                      <input
-                        type="text"
-                        value={formData.cli_options.get(option.id) ?? ''}
-                        oninput={(e) => handleOptionInputChange(e, option.id, 'string')}
-                        placeholder={option.placeholder}
-                        class="form-input w-full px-2 py-1 text-sm"
+    <!-- CLI Options Selection -->
+    <div>
+      <h3 class="mb-4 cursor-default text-lg font-medium text-foreground">CLI Options</h3>
+      <div class="rounded border bg-surface p-4">
+        {#each Object.entries(typedOptionsData) as [_categoryKey, category] (_categoryKey)}
+          <details class="mb-4">
+            <summary class="cursor-pointer font-medium text-foreground hover:text-primary">
+              {category.title}
+            </summary>
+            <div class="mt-2 space-y-2">
+              {#each category.options as option (option.id)}
+                <div class="flex items-start gap-2 rounded bg-surface-elevated p-2">
+                  <!-- slider -->
+                  <div class="relative inline-block h-4 w-[26px]">
+                    <Toggle
+                      id="option-{option.id}"
+                      checked={formData.cli_options.has(option.id)}
+                      onchange={() => toggleOption(option)}
+                      variant="primary"
+                      size="sm"
+                    />
+                  </div>
+
+                  <!-- Label and description -->
+                  <div class="flex-1">
+                    <label
+                      for="option-{option.id}"
+                      class="cursor-pointer font-medium text-foreground"
+                    >
+                      {option.command}
+                    </label>
+                    <p class="text-sm text-muted-foreground">
+                      {option.description}
+                    </p>
+                  </div>
+
+                  <!-- Input fields -->
+                  <div class="w-48 flex-shrink-0 text-right">
+                    <!-- Option value input for non-boolean options -->
+                    {#if formData.cli_options.has(option.id) && option.type !== 'boolean'}
+                      {#if option.type === 'string'}
+                        <input
+                          type="text"
+                          value={formData.cli_options.get(option.id) ?? ''}
+                          oninput={(e) => handleOptionInputChange(e, option.id, 'string')}
+                          placeholder="Enter value..."
+                          class="form-input w-full px-2 py-1 text-sm"
+                        />
+                      {:else if option.type === 'number'}
+                        <input
+                          type="number"
+                          value={formData.cli_options.get(option.id) ?? ''}
+                          oninput={(e) => handleOptionInputChange(e, option.id, 'number')}
+                          placeholder="Enter number..."
+                          class="form-input w-full px-2 py-1 text-sm"
+                        />
+                      {:else if option.type === 'range'}
+                        <input
+                          type="text"
+                          value={formData.cli_options.get(option.id) ?? ''}
+                          oninput={(e) => handleOptionInputChange(e, option.id, 'string')}
+                          placeholder={option.placeholder}
+                          class="form-input w-full px-2 py-1 text-sm"
+                        />
+                      {/if}
+                    {/if}
+
+                    <!-- Show value for boolean options when enabled -->
+                    {#if formData.cli_options.has(option.id) && option.type === 'boolean'}
+                      <Chip
+                        label="Enabled"
+                        size="sm"
+                        variant="outline-primary"
                       />
                     {/if}
-                  {/if}
-
-                  <!-- Show value for boolean options when enabled -->
-                  {#if formData.cli_options.has(option.id) && option.type === 'boolean'}
-                    <Chip
-                      label="Enabled"
-                      size="sm"
-                      variant="outline-primary"
-                    />
-                  {/if}
+                  </div>
                 </div>
-              </div>
-            {/each}
-          </div>
-        </details>
-      {/each}
+              {/each}
+            </div>
+          </details>
+        {/each}
+      </div>
     </div>
-  </div>
+  </form>
 
-  <div class="flex justify-end gap-4">
-    <Button
-      type="button"
-      onclick={onCancel}
-      variant="outline-primary"
-      size="sm">Cancel</Button
-    >
-    <Button
-      type="submit"
-      disabled={isSubmitting}
-      variant="primary"
-      size="sm"
-    >
-      {#if isSubmitting}
-        <Spinner
-          size={16}
-          class="mr-2"
-        />
-        Saving...
-      {:else}
-        Save Rule
-      {/if}
-    </Button>
-  </div>
-</form>
+  {#snippet footer()}
+    <div class="flex items-center justify-end gap-3 border-t-strong px-6 py-4">
+      <Button
+        type="button"
+        onclick={onCancel}
+        variant="default">Cancel</Button
+      >
+      <Button
+        type="submit"
+        form={FORM_ID}
+        disabled={isSubmitting}
+        variant="primary"
+      >
+        {#if isSubmitting}
+          <Spinner
+            size={16}
+            class="mr-2"
+          />
+          Saving...
+        {:else}
+          Save rule
+        {/if}
+      </Button>
+    </div>
+  {/snippet}
+</Modal>

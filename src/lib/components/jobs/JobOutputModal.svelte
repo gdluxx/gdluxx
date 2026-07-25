@@ -170,8 +170,8 @@
   size="xl"
   onClose={handleMinimize}
 >
-  <div class="flex max-h-[90vh] w-full flex-col overflow-hidden">
-    <!-- Header -->
+  {#snippet header()}
+    <!-- Status row -->
     <div class="flex items-center justify-between px-4 py-3 pr-14 sm:px-6 sm:py-4 sm:pr-16">
       <div class="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
         <div class={`h-4 w-4 flex-shrink-0 rounded-full ${getStatusColor(job.status)}`}></div>
@@ -203,71 +203,70 @@
           </div>
         {/if}
       </div>
-
-      <div class="flex flex-shrink-0 items-center gap-2 sm:gap-3">
-        <button
-          onclick={(event: MouseEvent) => handleCopy(job.url, event)}
-          aria-label="Copy Job URL"
-          class="cursor-pointer p-1 text-muted-foreground transition-all duration-200 hover:scale-110 hover:text-foreground sm:p-2"
-          title="Copy Job URL"
-        >
-          <Icon
-            iconName="copy-clipboard"
-            size={20}
-          />
-        </button>
-        <CopyTooltip
-          x={tooltip.x}
-          y={tooltip.y}
-          visible={tooltip.visible}
-          text={tooltip.text}
-        />
-      </div>
     </div>
 
     <!-- Job URL section -->
-    <div class="bg-surface-elevated px-4 py-2 border-b-strong border-t-strong sm:px-6">
+    <div
+      class="flex items-center gap-2 bg-surface-elevated px-4 py-2 border-b-strong border-t-strong sm:px-6"
+    >
       <p
-        class="text-sm break-all text-foreground"
+        class="min-w-0 flex-1 text-sm break-all text-foreground"
         title={job.url}
       >
         {job.url}
       </p>
+      <button
+        onclick={(event: MouseEvent) => handleCopy(job.url, event)}
+        aria-label="Copy Job URL"
+        class="flex-shrink-0 cursor-pointer p-1 text-muted-foreground transition-all duration-200 hover:scale-110 hover:text-foreground"
+        title="Copy Job URL"
+      >
+        <Icon
+          iconName="copy-clipboard"
+          size={20}
+        />
+      </button>
+      <CopyTooltip
+        x={tooltip.x}
+        y={tooltip.y}
+        visible={tooltip.visible}
+        text={tooltip.text}
+      />
     </div>
+  {/snippet}
 
-    <!-- Container -->
-    <div
-      bind:this={outputContainer}
-      class="flex-1 overflow-y-auto bg-surface-sunken p-3 font-mono text-xs sm:p-4 sm:text-sm"
-    >
-      {#if job.output.length === 0}
-        <p class="text-muted-foreground">Waiting for output...</p>
-      {:else}
-        {#each job.output as output (output)}
-          <div class={`break-words whitespace-pre-wrap ${getOutputStyle(output.type)}`}>
-            <span class="text-muted-foreground select-none">
-              [{new Date(output.timestamp).toLocaleTimeString([], {
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-              })}]
-            </span>
-            <span>
-              <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-              {@html formatOutput(output)}
-            </span>
-          </div>
-        {/each}
-      {/if}
-    </div>
+  <!-- Container -->
+  <div
+    bind:this={outputContainer}
+    class="h-full overflow-y-auto bg-surface-sunken p-3 font-mono text-xs sm:p-4 sm:text-sm"
+  >
+    {#if job.output.length === 0}
+      <p class="text-muted-foreground">Waiting for output...</p>
+    {:else}
+      {#each job.output as output (output)}
+        <div class={`break-words whitespace-pre-wrap ${getOutputStyle(output.type)}`}>
+          <span class="text-muted-foreground select-none">
+            [{new Date(output.timestamp).toLocaleTimeString([], {
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit',
+            })}]
+          </span>
+          <span>
+            <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+            {@html formatOutput(output)}
+          </span>
+        </div>
+      {/each}
+    {/if}
+  </div>
 
-    <!-- Footer -->
+  {#snippet footer()}
     <div class="px-3 py-2 text-xs border-t-strong sm:px-6 sm:py-3 sm:text-sm">
       <!-- Mobile layout -->
       <div class="flex items-start justify-between gap-2 sm:hidden">
         <Button
           variant="outline-danger"
-          size="sm"
           onclick={handleDismiss}
           aria-label="Delete job"
           class="flex-shrink-0 gap-1.5"
@@ -298,7 +297,6 @@
       <div class="hidden sm:flex sm:items-center sm:justify-between sm:gap-4">
         <Button
           variant="outline-danger"
-          size="sm"
           onclick={handleDismiss}
           aria-label="Delete job"
           class="gap-1.5"
@@ -325,7 +323,7 @@
         </div>
       </div>
     </div>
-  </div>
+  {/snippet}
 </Modal>
 
 <ConfirmModal
@@ -335,7 +333,6 @@
   confirmText="Delete job"
   cancelText="Cancel"
   confirmVariant="outline-danger"
-  cancelVariant="default"
   onConfirm={confirmDelete}
   onCancel={cancelDelete}
 />
