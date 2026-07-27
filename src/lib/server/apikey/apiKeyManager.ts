@@ -12,6 +12,8 @@ import { auth } from '$lib/server/auth/better-auth';
 import { serverLogger as logger } from '$lib/server/logger';
 import { deleteProfileBackup } from '$lib/server/extensionProfileBackupManager';
 import { deleteSubBackup } from '$lib/server/extensionSubBackupManager';
+import { getCookieBackup } from '$lib/server/cookieBackupManager';
+import { removeCachedCookieFile } from '$lib/server/cookieFileManager';
 import type { ApiKey } from '$lib/apikey/types';
 import type BetterSqlite3 from 'better-sqlite3';
 import type { RunResult, Statement } from 'better-sqlite3';
@@ -135,6 +137,10 @@ export async function listApiKeys(): Promise<ApiKey[]> {
 
 export async function deleteApiKey(keyId: string): Promise<void> {
   try {
+    // cookie backup row is FK-cascaded with the apiKey row; capture its
+    // domains first so the cached files can still be cleaned up afterward
+    const cookieBackup = getCookieBackup(keyId);
+
     // better-auth delete not working as expected, revisit
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const db = (auth as any).options.database as BetterSqlite3.Database;
@@ -147,6 +153,12 @@ export async function deleteApiKey(keyId: string): Promise<void> {
 
     deleteProfileBackup(keyId);
     deleteSubBackup(keyId);
+
+    if (cookieBackup) {
+      for (const domain of Object.keys(cookieBackup.bundle.domains ?? {})) {
+        await removeCachedCookieFile(domain);
+      }
+    }
 
     logger.info(`Deleted API key: ${keyId}`);
   } catch (error) {

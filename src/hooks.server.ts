@@ -22,6 +22,7 @@ const extensionApiRoutes = [
   '/api/extension/profiles',
   '/api/extension/subs',
   '/api/extension/ping',
+  '/api/extension/cookies',
 ];
 
 function isExtensionApiRoute(pathname: string): boolean {
