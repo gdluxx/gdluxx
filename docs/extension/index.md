@@ -12,6 +12,8 @@ Instead of copying URLs and switching back to gdluxx, you can:
 - **Use a keyboard shortcut**
 - **Send multiple URLs at once**
 - **Set custom download directories**
+- **Sync your login session** so gdluxx can download from sites that require
+  you to be signed in
 
 It's built to streamline the process.
 

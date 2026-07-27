@@ -95,3 +95,20 @@ You can disable these warnings if you find them annoying:
    - Uncheck it
 
 See [Site Rules](./site-rules.md) for more information.
+
+## Cookies & Authenticated Downloads
+
+If you've synced cookies for a site from the browser extension, gdluxx
+applies them to matching jobs automatically - no `--cookies` option needed on
+your part.
+
+If you add your own `--cookies` option (or a site rule does), yours takes
+priority and the synced cookies are skipped for that job:
+
+- You synced cookies for `example.com`, no manual `--cookies` set: gdluxx
+  injects your synced cookies.
+- You synced cookies for `example.com`, and manually add
+  `--cookies /path/to/other.txt`: your file is used instead.
+
+See [Cookie Sync](./cookies.md) for how to sync cookies and how domain
+matching works.

@@ -66,17 +66,22 @@ shortcuts like `Ctrl+C`, `Ctrl+V`, `Ctrl+S`, etc.
 
 The extension needs certain permissions to work.
 
-| Permission           | Why?                                                |
-|:---------------------|:----------------------------------------------------|
-| **Read tab URL**     | To send the current page's URL to gdluxx            |
-| **Inject overlay**   | To show the overlay UI when you press your hotkey   |
-| **Storage**          | To save your settings (server URL, API key, hotkey) |
-| **Access all sites** | To work on any website you visit                    |
-| **Context menu**     | To show "Send Image to gdluxx" when you right-click |
+| Permission                  | Why?                                                   |
+|:----------------------------|:-------------------------------------------------------|
+| **Read tab URL**            | To send the current page's URL to gdluxx               |
+| **Inject overlay**          | To show the overlay UI when you press your hotkey      |
+| **Storage**                 | To save your settings (server URL, API key, hotkey)    |
+| **Access all sites**        | To work on any website you visit                       |
+| **Context menu**            | To show "Send Image to gdluxx" when you right-click    |
+| **Read cookies** (optional) | To sync your login session for a site with Cookie Sync |
 
 ::: info  
 Alternatively, you can enable gdluxx permissions for sites on an individual/specific basis.   
 :::
+
+Unlike the permissions above, **Read cookies** isn't requested upfront. It's
+requested on demand, per site, the first time you click "Sync cookies" in the
+overlay's Cookies tab - see [Cookie Sync](../user-guide/cookies.md).
 
 ### Granting Permissions
 

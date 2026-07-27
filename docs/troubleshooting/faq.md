@@ -33,3 +33,11 @@ volume or the container itself.
 Probably, I've never used it myself. Use `podman-compose` with the same
 `docker-compose.yml`. Just remember to create the `data` directory with the
 right permissions first, same as with Docker.
+
+### How do I download from sites that require login?
+
+Sync your cookies from the browser extension. Log into the site in your
+browser as normal, open the overlay, go to the **Cookies** tab in settings,
+and click **Sync cookies for current site**. gdluxx applies them
+automatically to jobs for that site from then on. See
+[Cookie Sync](../user-guide/cookies.md).

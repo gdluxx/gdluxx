@@ -25,6 +25,8 @@ file, and monitor jobs without touching the command line.
   both Chrome and Firefox.
 - **Overlay UI**: Extension provides an overlay for sending URLs without leaving
   your current page.
+- **Cookie Sync**: Sync your browser session from the extension so gallery-dl
+  can download from sites that require you to be logged in.
 - **API Access**: Endpoint available if you want to write your own scripts.
   - Yes, I understand you don't need gdluxx for this.
 - **Version Management**: Update the gallery-dl binary from the app.

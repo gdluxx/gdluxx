@@ -197,7 +197,7 @@ current extraction/targeted-mode settings and substitution rules.
 
 ## Settings
 
-Settings are organized into five tabs, opened via the settings icon in the
+Settings are organized into six tabs, opened via the settings icon in the
 overlay header.
 
 ### Preview
@@ -240,6 +240,30 @@ at least one modifier (Ctrl/Alt/Shift/Meta) plus a key.
 
 Covered above under [Extraction Profiles](#extraction-profiles).
 
+### Cookies
+
+- **Sync cookies for current site** — captures cookies for the site you're
+  currently on and uploads them to gdluxx (the button label shows the actual
+  domain, e.g. "Sync cookies for example.com"). The first time you use this on
+  a given site, your browser asks for a one-time permission to read that
+  site's cookies — the same on-demand model the extension already uses for
+  host permissions elsewhere.
+- **Synced domains** — lists every domain you've synced from this browser,
+  with cookie counts, expired counts, and last-synced time.
+- **Delete** / **Clear all** — remove a single domain's synced cookies, or
+  wipe everything synced under the connected API key.
+
+::: info  
+Cookie values are never sent back to the extension or shown anywhere in
+gdluxx once synced. To refresh a session or fix expired cookies, sync again —
+there's no separate "restore."  
+:::
+
+Requires a server URL and API key to already be configured (see
+[gdluxx Connection](#gdluxx-connection)). See
+[Cookie Sync](../user-guide/cookies.md) for how these are applied to your
+downloads once synced.
+
 ## Permissions
 
 The extension only runs where you've granted it access. From the popup you can:
@@ -252,6 +276,10 @@ The extension only runs where you've granted it access. From the popup you can:
 
 The popup also shows the current tab's URL and whether the overlay is currently
 permitted on it.
+
+Cookie access is a separate, optional permission — granting host access here
+doesn't also grant cookie access. That's requested on its own the first time
+you use Cookie Sync on a site (see [Cookies](#cookies) above).
 
 ## Keyboard Navigation
 

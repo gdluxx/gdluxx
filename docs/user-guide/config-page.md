@@ -211,6 +211,13 @@ This tells gallery-dl to:
 }
 ```
 
+::: tip  
+Instead of hand-editing cookies into your config, the browser extension can
+sync them for you and gdluxx will apply them automatically at job time - into
+the same `/app/data/cookies/` directory mentioned above. See
+[Cookie Sync](./cookies.md).  
+:::
+
 ## More Info
 
 For complete documentation, see gallery-dl docs:

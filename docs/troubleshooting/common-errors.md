@@ -29,3 +29,7 @@
   2.  **Check for _gallery-dl_ updates** in the Version Manager settings. The
       site you're targeting may require a newer version.
       - Sites frequently change their APIs, requiring gallery-dl updates
+  3.  **Site requires login?** If the output mentions needing to sign in, or
+      you get empty/blocked results from a site you can normally browse while
+      logged in, sync your cookies from the browser extension and try again.
+      - See [Cookie Sync](../user-guide/cookies.md)

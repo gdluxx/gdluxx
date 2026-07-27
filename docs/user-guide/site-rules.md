@@ -185,6 +185,10 @@ Example:
 
 This lets you fine-tune without recreating rules.
 
+A `--cookies` option in a site rule works the same way: it overrides any
+cookies gdluxx would otherwise auto-inject from a [synced domain](./cookies.md),
+just like a manual `--cookies` option would.
+
 ### Override Warnings
 
 By default, gdluxx warns you when your manual options might override a site

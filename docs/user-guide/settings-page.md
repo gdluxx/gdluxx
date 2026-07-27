@@ -179,6 +179,30 @@ Older extension versions synced separate "selector" and "substitution" backups
 instead of extraction profiles. If you still have any, they appear in a
 collapsed **Legacy backups** section so you can review or delete them.
 
+## Cookies
+
+- Go to **Settings > Cookies**
+
+This page shows the cookies synced from the browser extension's Cookies tab,
+organized per API key since that's how the extension authenticates. Pick a
+key from the dropdown to see which domains have synced cookies, how many, and
+when they were last updated.
+
+You can delete a single domain's cookies or clear an entire key's backup.
+Deleting doesn't touch your browser - sync again from the extension's overlay
+if you want them back.
+
+See [Cookie Sync](./cookies.md) for how synced cookies get applied to your
+downloads.
+
+::: warning Security Note  
+Cookies are session-equivalent secrets. gdluxx stores them as plain text in
+the database and in the cookie files it writes for gallery-dl - there's no
+encryption at rest. **Treat your gdluxx data directory with the same care as
+your browser's own cookie store.** Cookie values are never shown or returned
+by the API once synced.  
+:::
+
 ## Log Manager
 
 Configure if, where, and how gdluxx logs its activity.
