@@ -22,6 +22,40 @@ export async function ensureOrigins(origins: string[]): Promise<boolean> {
   }
 }
 
+export type CookieAccessCheck =
+  | { ok: true }
+  | { ok: false; reason: 'cookies' | 'origin' | 'error'; detail?: string };
+
+/**
+ * Report whether cookie capture is currently permitted for an origin
+ *
+ * Deliberately check-only, `permissions.request()` must run inside a user
+ * input handler, and `runtime.onMessage` is not one, so requesting from the
+ * background would throw. The `cookies` permission is granted from the popup
+ * instead and the origin from the popup's existing enable buttons.
+ *
+ * The two `contains()` calls are kept separate caller can tell user
+ * which grant is actually missing
+ */
+export async function checkCookieAccess(originPattern: string): Promise<CookieAccessCheck> {
+  try {
+    const hasCookies = await browser.permissions.contains({ permissions: ['cookies'] });
+    if (!hasCookies) return { ok: false, reason: 'cookies' };
+
+    const hasOrigin = await browser.permissions.contains({ origins: [originPattern] });
+    if (!hasOrigin) return { ok: false, reason: 'origin' };
+
+    return { ok: true };
+  } catch (error) {
+    console.error('Failed to check cookie permissions', error);
+    return {
+      ok: false,
+      reason: 'error',
+      detail: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
 export async function registerOverlayForOrigins(origins: string[]): Promise<void> {
   if (!origins.length) return;
 

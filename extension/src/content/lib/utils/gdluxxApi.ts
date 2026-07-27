@@ -12,6 +12,8 @@ import type {
   ProfileBackupData,
   SubBackupData,
   ExtractionBackupData,
+  CookieBackupData,
+  CookiePermissionState,
   ProxyApiResult,
 } from '#src/background/apiProxy';
 import { loadSettings, validateServerUrl } from '#utils/persistence';
@@ -24,6 +26,8 @@ export type ApiResult<T = unknown> = ProxyApiResult<T>;
 export type ProfileBackupPayload = ProfileBackupData;
 export type SubBackupPayload = SubBackupData;
 export type ExtractionBackupPayload = ExtractionBackupData;
+export type CookieBackupPayload = CookieBackupData;
+export type CookiePermissionPayload = CookiePermissionState;
 
 type DeletePayload = { deleted: boolean };
 
@@ -289,5 +293,90 @@ export async function deleteExtractionBackup(
     action: 'deleteExtraction',
     serverUrl,
     apiKey,
+  });
+}
+
+export async function fetchCookieBackup(
+  serverUrl: string,
+  apiKey: string,
+): Promise<ApiResult<CookieBackupPayload>> {
+  if (!serverUrl || !apiKey) {
+    return { success: false, error: 'Server URL and API key are required' };
+  }
+
+  const validation = validateServerUrl(serverUrl);
+  if (!validation.valid) {
+    return { success: false, error: validation.error };
+  }
+
+  return sendBackgroundRequest<CookieBackupPayload>({
+    action: 'getCookies',
+    serverUrl,
+    apiKey,
+  });
+}
+
+export async function checkCookiePermission(
+  originPattern: string,
+): Promise<ApiResult<CookiePermissionState>> {
+  if (!originPattern) {
+    return { success: false, error: 'Unable to determine the current site.' };
+  }
+
+  return sendBackgroundRequest<CookiePermissionState>({
+    action: 'checkCookiePermission',
+    originPattern,
+  });
+}
+
+export async function syncCookiesForDomain(
+  serverUrl: string,
+  apiKey: string,
+  domain: string,
+  originPattern: string,
+  syncedBy?: string,
+): Promise<ApiResult<CookieBackupPayload>> {
+  if (!serverUrl || !apiKey) {
+    return { success: false, error: 'Server URL and API key are required' };
+  }
+
+  const validation = validateServerUrl(serverUrl);
+  if (!validation.valid) {
+    return { success: false, error: validation.error };
+  }
+
+  if (!domain || !originPattern) {
+    return { success: false, error: 'Unable to determine the current site.' };
+  }
+
+  return sendBackgroundRequest<CookieBackupPayload>({
+    action: 'syncCookies',
+    serverUrl,
+    apiKey,
+    domain,
+    originPattern,
+    syncedBy,
+  });
+}
+
+export async function deleteCookieBackup(
+  serverUrl: string,
+  apiKey: string,
+  domain?: string,
+): Promise<ApiResult<DeletePayload>> {
+  if (!serverUrl || !apiKey) {
+    return { success: false, error: 'Server URL and API key are required' };
+  }
+
+  const validation = validateServerUrl(serverUrl);
+  if (!validation.valid) {
+    return { success: false, error: validation.error };
+  }
+
+  return sendBackgroundRequest<DeletePayload>({
+    action: 'deleteCookies',
+    serverUrl,
+    apiKey,
+    domain,
   });
 }

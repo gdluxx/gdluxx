@@ -27,8 +27,11 @@ export default defineConfig({
   manifest: ({ browser }) => ({
     permissions: ['activeTab', 'storage', 'contextMenus', 'notifications', 'scripting'],
     ...(browser === 'firefox'
-      ? { optional_permissions: ['<all_urls>'] } // Firefox MV2
-      : { optional_host_permissions: ['<all_urls>'] }), // Chrome MV3
+      ? { optional_permissions: ['<all_urls>', 'cookies'] } // Firefox MV2
+      : {
+          optional_permissions: ['cookies'],
+          optional_host_permissions: ['<all_urls>'],
+        }), // Chrome MV3
     name: 'gdluxx-extension',
     description: 'companion browser extension for gdluxx, a self-hosted browser GUI for gallery-dl',
     browser_specific_settings: {

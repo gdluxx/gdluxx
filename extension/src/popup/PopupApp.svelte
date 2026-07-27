@@ -13,9 +13,8 @@
   import { onDestroy, onMount } from 'svelte';
   import { SvelteSet } from 'svelte/reactivity';
   import { loadSettings } from '#utils/settings';
+  import { ALL_URLS, formatOriginPattern } from '#src/shared/originPattern';
 
-  const ALL_URLS = '<all_urls>';
-  const SUPPORTED_PERMISSION_PROTOCOLS = new Set(['http:', 'https:', 'ws:', 'wss:', 'ftp:']);
   const UNSUPPORTED_PAGE_MESSAGE = 'Overlay not supported on this page';
 
   type StatusKind = 'success' | 'error' | 'info';
@@ -35,13 +34,14 @@
   let revokeCurrentVisible = $state(false);
   let revokeAllVisible = $state(false);
   let managePermissionsVisible = $state(false);
+  let cookiesGranted = $state(false);
 
   // Send current tab state
   let serverUrl = $state<string>('');
   let apiKey = $state<string>('');
   let isSending = $state(false);
 
-  const statusClasses = $derived(() => {
+  const statusClasses = $derived.by(() => {
     switch (statusKind) {
       case 'success':
         return 'bg-green-100 text-green-800 border border-green-200';
@@ -114,18 +114,6 @@
     return tabs[0];
   }
 
-  function formatOriginPattern(url: string): string | null {
-    try {
-      const parsed = new URL(url);
-      if (!SUPPORTED_PERMISSION_PROTOCOLS.has(parsed.protocol) || parsed.origin === 'null') {
-        return null;
-      }
-      return `${parsed.origin}/*`;
-    } catch {
-      return null;
-    }
-  }
-
   async function syncOverlayRegistration(): Promise<void> {
     try {
       await browser.runtime.sendMessage({ action: 'syncOverlayRegistration' });
@@ -162,6 +150,13 @@
 
     if (hasAllUrls) {
       message = 'Overlay enabled on all sites.';
+    }
+
+    try {
+      cookiesGranted = await browser.permissions.contains({ permissions: ['cookies'] });
+    } catch (error) {
+      console.error('Failed to read cookie permission state', error);
+      cookiesGranted = false;
     }
 
     permissionMessage = message;
@@ -367,6 +362,54 @@
     );
   }
 
+  // The cookies permission is requested here rather than from the overlay
+  // because permissions.request() only works inside a user input handler, and
+  // the overlay reaches the background through runtime.onMessage, which is not
+  // one. Requested on its own, pairing it with an origin would trigger a
+  // needless host-access prompt, host access stays governed by the buttons above.
+  async function handleAllowCookies(): Promise<void> {
+    const hasAccess = await browser.permissions.contains({ permissions: ['cookies'] });
+    if (hasAccess) {
+      showStatus('Cookie sync already enabled', 'info');
+      await updatePermissionStatus();
+      return;
+    }
+
+    showConfirmPrompt(
+      'Allow gdluxx to read cookies? This lets the overlay capture your logged-in session for a site and sync it to your gdluxx server, so gallery-dl can download private content. Cookies are only read for sites you have enabled.',
+      async () => {
+        try {
+          const granted = await browser.permissions.request({ permissions: ['cookies'] });
+          if (granted) {
+            showStatus('Cookie sync enabled', 'success');
+            await updatePermissionStatus();
+          } else {
+            showStatus('Permission denied', 'error');
+          }
+        } catch (error) {
+          console.error('Cookie permission request error', error);
+          const errorMsg = error instanceof Error ? error.message : String(error);
+          showStatus(`Error: ${errorMsg}`, 'error');
+        }
+      },
+    );
+  }
+
+  async function handleRevokeCookies(): Promise<void> {
+    try {
+      const removed = await browser.permissions.remove({ permissions: ['cookies'] });
+      if (removed) {
+        showStatus('Cookie sync disabled', 'success');
+        await updatePermissionStatus();
+      } else {
+        showStatus('Failed to remove permission', 'error');
+      }
+    } catch (error) {
+      console.error('Failed to revoke cookie permission', error);
+      showStatus('Failed to revoke permission', 'error');
+    }
+  }
+
   async function handleRevokeCurrent(): Promise<void> {
     const tab = await getActiveTab();
     if (!tab?.url) {
@@ -545,6 +588,24 @@
             onclick={() => void handleRevokeAll()}
           >
             Disable on all sites
+          </button>
+        {/if}
+
+        {#if !cookiesGranted}
+          <button
+            class="btn btn-neutral w-full"
+            type="button"
+            onclick={() => void handleAllowCookies()}
+          >
+            Enable cookie sync
+          </button>
+        {:else}
+          <button
+            class="btn btn-outline btn-error w-full"
+            type="button"
+            onclick={() => void handleRevokeCookies()}
+          >
+            Disable cookie sync
           </button>
         {/if}
 

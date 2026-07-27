@@ -23,6 +23,12 @@ export {
   saveExtractionBackup,
   deleteExtractionBackup,
   type ExtractionBackupPayload,
+  fetchCookieBackup,
+  syncCookiesForDomain,
+  deleteCookieBackup,
+  checkCookiePermission,
+  type CookieBackupPayload,
+  type CookiePermissionPayload,
   type ApiResult,
 } from './gdluxxApi';
 

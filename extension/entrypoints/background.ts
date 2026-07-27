@@ -8,7 +8,12 @@
  * as published by the Free Software Foundation.
  */
 
-import { ensureOrigins, syncOverlayRegistrationFromPermissions } from '#src/background/permissions';
+import {
+  checkCookieAccess,
+  ensureOrigins,
+  syncOverlayRegistrationFromPermissions,
+} from '#src/background/permissions';
+import { formatOriginPattern } from '#src/shared/originPattern';
 import type { ProfilesBundle, SubsBundle } from '#src/background/apiProxy';
 import type { ExtractionBundle } from '#src/content/types';
 import {
@@ -23,8 +28,12 @@ import {
   proxyExtractionGet,
   proxyExtractionPut,
   proxyExtractionDelete,
+  proxyCookiesGet,
+  proxyCookiesPut,
+  proxyCookiesDelete,
   type ProxyApiResult,
 } from '#src/background/apiProxy';
+import { captureCookiesForDomain } from '#src/background/cookieCapture';
 
 interface SendUrlMessage {
   action: 'sendUrl';
@@ -119,6 +128,34 @@ interface DeleteExtractionMessage {
   apiKey: string;
 }
 
+interface SyncCookiesMessage {
+  action: 'syncCookies';
+  serverUrl: string;
+  apiKey: string;
+  domain: string;
+  // A full match pattern (`https://example.com/*`) never a bare origin
+  originPattern: string;
+  syncedBy?: string;
+}
+
+interface CheckCookiePermissionMessage {
+  action: 'checkCookiePermission';
+  originPattern: string;
+}
+
+interface GetCookiesMessage {
+  action: 'getCookies';
+  serverUrl: string;
+  apiKey: string;
+}
+
+interface DeleteCookiesMessage {
+  action: 'deleteCookies';
+  serverUrl: string;
+  apiKey: string;
+  domain?: string;
+}
+
 interface ApiResponse {
   success: boolean;
   message: string;
@@ -136,23 +173,21 @@ type ProxyMessage =
   | DeleteSubsMessage
   | GetExtractionMessage
   | SaveExtractionMessage
-  | DeleteExtractionMessage;
+  | DeleteExtractionMessage
+  | SyncCookiesMessage
+  | GetCookiesMessage
+  | DeleteCookiesMessage;
 
 type MessageType =
-  SendUrlMessage | ShowNotificationMessage | SyncOverlayRegistrationMessage | ProxyMessage;
+  | SendUrlMessage
+  | ShowNotificationMessage
+  | SyncOverlayRegistrationMessage
+  | CheckCookiePermissionMessage
+  | ProxyMessage;
 
 type BackgroundResponse = ApiResponse | ProxyApiResult<unknown>;
 
 export default defineBackground((): void => {
-  function formatOriginPattern(url: string): string | null {
-    try {
-      const { origin } = new URL(url);
-      return `${origin}/*`;
-    } catch {
-      return null;
-    }
-  }
-
   async function toggleOverlayInTab(tabId: number): Promise<void> {
     try {
       await browser.tabs.sendMessage(tabId, { action: 'toggleOverlay' });
@@ -212,7 +247,7 @@ export default defineBackground((): void => {
   browser.runtime.onMessage.addListener(
     (
       message: MessageType,
-      _sender,
+      sender,
       sendResponse: (response?: BackgroundResponse) => void,
     ): true | undefined => {
       if (isSendUrlMessage(message)) {
@@ -351,6 +386,57 @@ export default defineBackground((): void => {
         case 'deleteExtraction':
           (async () => {
             sendResponse(await proxyExtractionDelete(message.serverUrl, message.apiKey));
+          })();
+          return true;
+        case 'checkCookiePermission':
+          (async () => {
+            const access = await checkCookieAccess(message.originPattern);
+            sendResponse({
+              success: true,
+              data: access.ok
+                ? { granted: true }
+                : { granted: false, reason: access.reason, detail: access.detail },
+            });
+          })();
+          return true;
+        case 'syncCookies':
+          (async () => {
+            // Firefox-only on Tabs.Tab while undefined elsewhere leaves getAll on
+            // its default store, which is correct for Chrome
+            const storeId = (sender.tab as { cookieStoreId?: string } | undefined)?.cookieStoreId;
+            const capture = await captureCookiesForDomain(
+              message.domain,
+              message.originPattern,
+              storeId,
+            );
+            if (!capture.success || !capture.cookies) {
+              sendResponse({
+                success: false,
+                error: capture.error ?? 'Failed to capture cookies',
+              });
+              return;
+            }
+            sendResponse(
+              await proxyCookiesPut(
+                message.serverUrl,
+                message.apiKey,
+                message.domain,
+                capture.cookies,
+                message.syncedBy,
+              ),
+            );
+          })();
+          return true;
+        case 'getCookies':
+          (async () => {
+            sendResponse(await proxyCookiesGet(message.serverUrl, message.apiKey));
+          })();
+          return true;
+        case 'deleteCookies':
+          (async () => {
+            sendResponse(
+              await proxyCookiesDelete(message.serverUrl, message.apiKey, message.domain),
+            );
           })();
           return true;
         default:

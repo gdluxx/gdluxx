@@ -51,6 +51,45 @@ export interface ExtractionBackupData {
   updatedAt: number | null;
 }
 
+export type CookieSameSite = 'no_restriction' | 'lax' | 'strict' | 'unspecified';
+
+export interface CookiePermissionState {
+  granted: boolean;
+  reason?: 'cookies' | 'origin' | 'error';
+  detail?: string;
+}
+
+export interface CookiePayload {
+  name: string;
+  value: string;
+  domain: string;
+  path: string;
+  secure: boolean;
+  httpOnly: boolean;
+  hostOnly?: boolean;
+  sameSite?: CookieSameSite;
+  session?: boolean;
+  expirationDate?: number;
+}
+
+export interface CookieDomainMetadata {
+  domain: string;
+  cookieCount: number;
+  expiredCount: number;
+  earliestExpiry: number | null;
+  syncedBy: string | null;
+  updatedAt: number;
+}
+
+export interface CookieBackupData {
+  hasBackup: boolean;
+  domains: CookieDomainMetadata[];
+  domainCount: number;
+  cookieCount: number;
+  syncedBy: string | null;
+  updatedAt: number | null;
+}
+
 interface BatchUrlResult {
   jobId?: string;
   url: string;
@@ -73,6 +112,7 @@ const PING_ENDPOINT = '/api/extension/ping';
 const PROFILE_BACKUP_ENDPOINT = '/api/extension/profiles';
 const SUB_BACKUP_ENDPOINT = '/api/extension/subs';
 const EXTRACTION_BACKUP_ENDPOINT = '/api/extension/extraction';
+const COOKIES_ENDPOINT = '/api/extension/cookies';
 
 function ensureHttpScheme(url: string): string {
   if (url.startsWith('http://') || url.startsWith('https://')) {
@@ -650,6 +690,165 @@ export async function proxyExtractionDelete(
       message: deleted
         ? 'Removed extraction profile backup from gdluxx'
         : 'No extraction backup existed on gdluxx',
+    };
+  } catch (error) {
+    return networkError(error);
+  }
+}
+
+export async function proxyCookiesGet(
+  serverUrl: string,
+  apiKey: string,
+): Promise<ProxyApiResult<CookieBackupData>> {
+  try {
+    const response = await fetch(buildUrl(serverUrl, COOKIES_ENDPOINT), {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+      },
+    });
+
+    const payload = await parseJsonSafe<{
+      success?: boolean;
+      error?: string;
+      data?: CookieBackupData;
+    }>(response);
+
+    if (!response.ok) {
+      if (response.status === 401 || response.status === 403) {
+        return {
+          success: false,
+          error: payload?.error ?? 'Invalid API key',
+        };
+      }
+      return {
+        success: false,
+        error: payload?.error ?? `Server error: ${response.status}`,
+      };
+    }
+
+    if (!payload?.success || !payload.data) {
+      return {
+        success: false,
+        error: payload?.error ?? 'Failed to load cookie backup',
+      };
+    }
+
+    const count = payload.data.domainCount;
+    return {
+      success: true,
+      data: payload.data,
+      message: payload.data.hasBackup
+        ? `Found ${count} domain${count === 1 ? '' : 's'} with synced cookies on gdluxx`
+        : 'No cookies synced to gdluxx',
+    };
+  } catch (error) {
+    return networkError(error);
+  }
+}
+
+export async function proxyCookiesPut(
+  serverUrl: string,
+  apiKey: string,
+  domain: string,
+  cookies: CookiePayload[],
+  syncedBy?: string,
+): Promise<ProxyApiResult<CookieBackupData>> {
+  try {
+    const response = await fetch(buildUrl(serverUrl, COOKIES_ENDPOINT), {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({ domain, cookies, syncedBy }),
+    });
+
+    const payload = await parseJsonSafe<{
+      success?: boolean;
+      error?: string;
+      data?: CookieBackupData;
+    }>(response);
+
+    if (!response.ok) {
+      if (response.status === 401 || response.status === 403) {
+        return {
+          success: false,
+          error: payload?.error ?? 'Invalid API key',
+        };
+      }
+      return {
+        success: false,
+        error: payload?.error ?? `Server error: ${response.status}`,
+      };
+    }
+
+    if (!payload?.success || !payload.data) {
+      return {
+        success: false,
+        error: payload?.error ?? 'Failed to sync cookies',
+      };
+    }
+
+    const normalizedDomain = domain.trim().toLowerCase();
+    const domainEntry = payload.data.domains.find((entry) => entry.domain === normalizedDomain);
+    const count = domainEntry?.cookieCount ?? cookies.length;
+
+    return {
+      success: true,
+      data: payload.data,
+      message: `Synced ${count} cookie${count === 1 ? '' : 's'} for ${domain} to gdluxx`,
+    };
+  } catch (error) {
+    return networkError(error);
+  }
+}
+
+export async function proxyCookiesDelete(
+  serverUrl: string,
+  apiKey: string,
+  domain?: string,
+): Promise<ProxyApiResult<DeleteResponse>> {
+  try {
+    const endpoint = domain
+      ? `${COOKIES_ENDPOINT}?domain=${encodeURIComponent(domain)}`
+      : COOKIES_ENDPOINT;
+
+    const response = await fetch(buildUrl(serverUrl, endpoint), {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+      },
+    });
+
+    const payload = await parseJsonSafe<{
+      success?: boolean;
+      error?: string;
+      data?: DeleteResponse;
+    }>(response);
+
+    if (!response.ok) {
+      if (response.status === 401 || response.status === 403) {
+        return {
+          success: false,
+          error: payload?.error ?? 'Invalid API key',
+        };
+      }
+      return {
+        success: false,
+        error: payload?.error ?? `Server error: ${response.status}`,
+      };
+    }
+
+    const deleted = payload?.data?.deleted ?? false;
+    return {
+      success: true,
+      data: { deleted },
+      message: deleted
+        ? domain
+          ? `Removed cookies for ${domain} from gdluxx`
+          : 'Removed cookie backup from gdluxx'
+        : 'No cookie backup existed on gdluxx',
     };
   } catch (error) {
     return networkError(error);
