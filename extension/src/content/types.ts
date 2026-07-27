@@ -15,7 +15,8 @@ import type { SubRule } from '#utils/substitution.ts';
 
 export type DisplayMode = 'modal' | 'fullscreen';
 export type AppTab = 'links' | 'images' | 'settings';
-export type SettingsTab = 'appearance' | 'gdluxx' | 'keyboard' | 'preview' | 'extraction-profiles';
+export type SettingsTab =
+  'appearance' | 'gdluxx' | 'keyboard' | 'preview' | 'extraction-profiles' | 'cookies';
 export type HoverPreviewMode = 'off' | 'small' | 'medium' | 'large';
 export type HotkeyString = string;
 

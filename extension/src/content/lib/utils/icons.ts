@@ -31,11 +31,13 @@ import filterIcon from '@iconify-icons/mdi/filter-outline';
 import replaceIcon from '@iconify-icons/mdi/find-replace';
 import earthIcon from '@iconify-icons/mdi/earth';
 import imageMultipleIcon from '@iconify-icons/mdi/image-multiple';
+import cookieIcon from '@iconify-icons/mdi/cookie';
 
 export type IconName =
   | 'box-add'
   | 'chevron-down'
   | 'close'
+  | 'cookie'
   | 'copy'
   | 'download-arrow'
   | 'filter-outline'
@@ -61,6 +63,7 @@ type IconifyIconData = typeof closeIcon;
 
 export const iconMap: Record<IconName, IconifyIconData> = {
   close: closeIcon,
+  cookie: cookieIcon,
   question: helpCircleIcon,
   'chevron-down': chevronDownIcon,
   copy: contentCopyIcon,

@@ -17,6 +17,7 @@
   import HelpModals from '#views/shared/modals/HelpModals.svelte';
   import {
     AppearanceTab,
+    CookiesTab,
     ExtractionProfilesTab,
     GdluxxTab,
     KeyboardTab,
@@ -568,6 +569,12 @@
         {#if activeSettingsTab === 'extraction-profiles'}
           <ExtractionProfilesTab
             extractionStore={extractionProfiles}
+            {settings}
+            {isConfigured}
+          />
+        {/if}
+        {#if activeSettingsTab === 'cookies'}
+          <CookiesTab
             {settings}
             {isConfigured}
           />

@@ -9,6 +9,7 @@
  */
 
 export { default as AppearanceTab } from './AppearanceTab.svelte';
+export { default as CookiesTab } from './CookiesTab.svelte';
 export { default as ExtractionProfilesTab } from './ExtractionProfilesTab.svelte';
 export { default as GdluxxTab } from './GdluxxTab.svelte';
 export { default as KeyboardTab } from './KeyboardTab.svelte';

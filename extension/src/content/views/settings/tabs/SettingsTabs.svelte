@@ -93,5 +93,18 @@
       />
       Extraction Profiles
     </button>
+    <button
+      class="text-base-content/70 hover:text-base-content flex cursor-pointer items-center gap-2 border-b-2 border-transparent px-4 py-3 text-sm transition-all duration-200"
+      class:border-b-primary={activeTab === 'cookies'}
+      class:text-primary={activeTab === 'cookies'}
+      class:font-semibold={activeTab === 'cookies'}
+      onclick={() => select('cookies')}
+    >
+      <Icon
+        iconName="cookie"
+        size={18}
+      />
+      Cookies
+    </button>
   </div>
 </div>
