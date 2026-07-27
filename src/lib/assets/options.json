@@ -81,6 +81,15 @@
         "sensitive": true
       },
       {
+        "id": "cookies",
+        "command": "--cookies",
+        "description": "File to load additional cookies from",
+        "type": "string",
+        "placeholder": "e.g. /app/data/cookies/example.com.txt",
+        "defaultValue": "",
+        "sensitive": true
+      },
+      {
         "id": "user-agent",
         "command": "--user-agent",
         "description": "User-Agent request header",

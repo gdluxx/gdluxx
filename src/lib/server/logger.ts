@@ -19,10 +19,11 @@ const REDACT_PATTERNS = [
   /token["\s]*[=:]["\s]*([^"'\s,}]+)/gi,
   /key["\s]*[=:]["\s]*([^"'\s,}]+)/gi,
   /secret["\s]*[=:]["\s]*([^"'\s,}]+)/gi,
+  /cookies?["\s]*[=:]["\s]*([^"'\s,}]+)/gi,
   /Bearer\s+([^\s]+)/gi,
   /Authorization:\s*([^\s,}]+)/gi,
-  /--(?:password|token|secret|key)\s+(\S+)/gi,
-  /"--(?:password|token|secret|key)"\s*,\s*"([^"]+)"/gi,
+  /--(?:password|token|secret|key|cookies)\s+(\S+)/gi,
+  /"--(?:password|token|secret|key|cookies)"\s*,\s*"([^"]+)"/gi,
 ];
 
 function sanitizeMessage(message: string): string {

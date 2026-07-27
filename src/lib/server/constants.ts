@@ -34,6 +34,7 @@ function createPaths() {
     BIN_FILE: path.join(cwd, 'data', 'gallery-dl.bin'),
     DATA_DIR: path.join(cwd, 'data'),
     CONFIG_FILE: path.join(cwd, 'data', 'config.json'),
+    COOKIES_DIR: path.join(cwd, 'data', 'cookies'),
   } as const;
 }
 
@@ -53,6 +54,9 @@ export const PATHS = {
   },
   get CONFIG_FILE() {
     return getPaths().CONFIG_FILE;
+  },
+  get COOKIES_DIR() {
+    return getPaths().COOKIES_DIR;
   },
 } as const;
 

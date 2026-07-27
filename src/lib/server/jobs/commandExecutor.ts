@@ -14,11 +14,21 @@ import { jobManager } from './jobManager';
 import { serverLogger as logger } from '$lib/server/logger';
 import { PATHS, TERMINAL } from '$lib/server/constants';
 import { redactSensitiveArgs } from '$lib/server/validation/option-validation';
+import { getCookieFileForUrl } from '$lib/server/cookieFileManager';
 
 export interface CommandExecutionResult {
   success: boolean;
   jobId?: string;
   error?: string;
+}
+
+async function withCookieArgs(url: string, cliArgs: string[]): Promise<string[]> {
+  if (cliArgs.includes('--cookies')) {
+    return cliArgs;
+  }
+
+  const cookieFile = await getCookieFileForUrl(url);
+  return cookieFile ? [...cliArgs, '--cookies', cookieFile] : cliArgs;
 }
 
 export async function executeGalleryDlCommand(
@@ -30,7 +40,8 @@ export async function executeGalleryDlCommand(
     const jobId = await jobManager.createJob(url);
 
     // Build process arguments: [cliOptions..., --config, configPath, url]
-    const processArgs = [...cliArgs, '--config', PATHS.CONFIG_FILE, url];
+    const argsWithCookies = await withCookieArgs(url, cliArgs);
+    const processArgs = [...argsWithCookies, '--config', PATHS.CONFIG_FILE, url];
 
     logger.info(
       `Starting gallery-dl process for job ${jobId} with args:`,
@@ -90,7 +101,8 @@ export async function executeGalleryDlBatchCommand(
 ): Promise<CommandExecutionResult> {
   try {
     const jobId = await jobManager.createBatchJob(urls);
-    const processArgs = [...cliArgs, '--config', PATHS.CONFIG_FILE, ...urls];
+    const argsWithCookies = urls[0] ? await withCookieArgs(urls[0], cliArgs) : cliArgs;
+    const processArgs = [...argsWithCookies, '--config', PATHS.CONFIG_FILE, ...urls];
 
     logger.info(`Starting gallery-dl batch process for job ${jobId} with ${urls.length} URL(s)`);
 

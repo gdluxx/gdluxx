@@ -141,6 +141,17 @@ CREATE TABLE IF NOT EXISTS extension_extraction_backups (
     updated_at INTEGER NOT NULL
 );
 
+/* EXTENSION COOKIE BACKUP */
+CREATE TABLE IF NOT EXISTS extension_cookie_backups (
+    api_key_id TEXT PRIMARY KEY REFERENCES apiKey(id) ON DELETE CASCADE,
+    bundle_json TEXT NOT NULL,
+    domain_count INTEGER NOT NULL DEFAULT 0,
+    cookie_count INTEGER NOT NULL DEFAULT 0,
+    synced_by TEXT,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL
+);
+
 /* SITE_CONFIGS */
 CREATE TABLE IF NOT EXISTS site_configs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
