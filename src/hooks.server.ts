@@ -15,6 +15,7 @@ import { DATABASE_PATH, openDatabase } from '$lib/server/database';
 import { existsSync } from 'node:fs';
 
 const publicRoutes = ['/auth/login', '/auth/setup', '/api/auth'];
+const deniedAuthRoutes = new Set(['/api/auth/change-email', '/api/auth/list-sessions']);
 
 const extensionApiRoutes = [
   '/api/extension/external',
@@ -60,6 +61,10 @@ async function getUserCount(): Promise<number> {
 export const handle: Handle = async ({ event, resolve }) => {
   if (event.url.pathname.startsWith('/.well-known/appspecific/com.chrome.devtools')) {
     return new Response(null, { status: 204 });
+  }
+
+  if (deniedAuthRoutes.has(event.url.pathname)) {
+    return json({ error: 'Not found' }, { status: 404 });
   }
 
   // Skip auth for browser extension API endpoint

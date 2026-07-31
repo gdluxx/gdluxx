@@ -8,10 +8,10 @@
  * as published by the Free Software Foundation.
  */
 
+export { default as AccountManager } from './AccountManager.svelte';
 export { default as ApiKeyManager } from './ApiKeyManager.svelte';
 export { default as CookiesManager } from './CookiesManager.svelte';
 export { default as ExtensionProfilesManager } from './ExtensionProfilesManager.svelte';
 export { default as GeneralManager } from './GeneralManager.svelte';
 export { default as LogManager } from './LogManager.svelte';
-export { default as UserManager } from './UserManager.svelte';
 export { default as VersionManager } from './VersionManager.svelte';

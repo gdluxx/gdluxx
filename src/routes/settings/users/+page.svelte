@@ -10,12 +10,14 @@
 
 <script lang="ts">
   import { PageLayout } from '$lib/components/ui';
-  import { UserManager } from '$lib/components/settings';
+  import { AccountManager } from '$lib/components/settings';
   import { Icon } from '$lib/components';
+  import type { PageData } from './$types';
 
-  const { data } = $props();
+  const { data }: { data: PageData } = $props();
 
   const user = $derived(data.user);
+  const sessions = $derived(data.sessions);
 </script>
 
 <PageLayout title="Account">
@@ -26,5 +28,8 @@
       ariaLabel="userIcon"
     />
   {/snippet}
-  <UserManager {user} />
+  <AccountManager
+    {user}
+    {sessions}
+  />
 </PageLayout>
