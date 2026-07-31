@@ -26,7 +26,7 @@ const REDACT_PATTERNS = [
   /"--(?:password|token|secret|key|cookies)"\s*,\s*"([^"]+)"/gi,
 ];
 
-function sanitizeMessage(message: string): string {
+export function sanitizeMessage(message: string): string {
   let sanitized = message;
   REDACT_PATTERNS.forEach((pattern) => {
     sanitized = sanitized.replace(pattern, (match, group1) => {
