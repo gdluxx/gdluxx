@@ -35,3 +35,16 @@ export function openDatabase(): Database.Database {
   mkdirSync(PATHS.DATA_DIR, { recursive: true });
   return new Database(DATABASE_PATH);
 }
+
+let sharedDatabase: Database.Database | null = null;
+
+/**
+ * This handle must NEVER be closed: it is shared by every module that holds it,
+ * and closing it invalidates their cached prepared statements.
+ */
+export function getSharedDatabase(): Database.Database {
+  if (!sharedDatabase) {
+    sharedDatabase = openDatabase();
+  }
+  return sharedDatabase;
+}

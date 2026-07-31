@@ -9,9 +9,9 @@
  */
 
 import type { Statement } from 'better-sqlite3';
-import { openDatabase } from '$lib/server/database';
+import { getSharedDatabase } from '$lib/server/database';
 
-const db = openDatabase();
+const db = getSharedDatabase();
 
 export function getCurrentTimestamp(): number {
   return Date.now();
