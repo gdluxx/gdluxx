@@ -71,6 +71,7 @@ export const POST: RequestHandler = async ({ request }): Promise<Response> => {
         userId: result.userId,
         createdAt: new Date(result.createdAt).toISOString(),
         expiresAt: result.expiresAt ? new Date(result.expiresAt).toISOString() : null,
+        lastUsedAt: null,
       },
       plainKey: result.key,
     };

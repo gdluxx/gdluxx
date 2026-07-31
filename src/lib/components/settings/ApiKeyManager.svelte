@@ -11,9 +11,10 @@
 <script lang="ts">
   import { enhance } from '$app/forms';
   import { SuccessIcon } from '$lib/components/icons';
-  import { Button, Info, ConfirmModal, Toggle, Spinner, EmptyState } from '$lib/components/ui';
+  import { Button, Info, ConfirmModal, Toggle, EmptyState, Chip, Field } from '$lib/components/ui';
   import { Icon } from '$lib/components/index';
   import { API_KEY_VALIDATION, validateApiKeyInput, type ApiKey } from '$lib/apikey';
+  import { formatRelativeTime } from '$lib/utils/relativeTime';
   import {
     type ApiKeyCreateSuccessResult,
     type ApiKeyDeleteSuccessResult,
@@ -31,21 +32,73 @@
 
   const { initialData }: { initialData: InitialData } = $props();
 
+  const DEFAULT_EXPIRY_DAYS = 90;
+
+  type SortKey = 'createdAt' | 'lastUsedAt';
+  type SortDir = 'asc' | 'desc';
+  type ExpirationVariant = 'danger' | 'warning' | 'outline-info' | 'outline-primary';
+
   let apiKeys = $state<ApiKey[]>([]);
   let newKeyName = $state('');
   let expirationDate = $state('');
-  let neverExpires = $state(true);
-  let isLoading = $state(false);
+  let neverExpires = $state(false);
+  let creating = $state(false);
+  let deleting = $state(false);
   let error = $state<string | null>(null);
   let copyFeedback = $state<string | null>(null);
   let justCreatedKey = $state<{ key: string; name: string } | null>(null);
   let keyToDelete = $state<string | null>(null);
+  let searchQuery = $state('');
+  let sortKey = $state<SortKey>('createdAt');
+  let sortDir = $state<SortDir>('desc');
   const clipboard = navigator.clipboard;
 
   $effect(() => {
     apiKeys = initialData.success ? (initialData.apiKeys ?? []) : [];
     error = initialData.success ? null : (initialData.error ?? null);
   });
+
+  const searchedKeys = $derived(
+    apiKeys.filter((key) => key.name.toLowerCase().includes(searchQuery.trim().toLowerCase())),
+  );
+
+  const sortedKeys = $derived(
+    [...searchedKeys].sort((a, b) => {
+      const aValue = sortKey === 'createdAt' ? a.createdAt : a.lastUsedAt;
+      const bValue = sortKey === 'createdAt' ? b.createdAt : b.lastUsedAt;
+      const aTime = aValue ? new Date(aValue).getTime() : Number.NEGATIVE_INFINITY;
+      const bTime = bValue ? new Date(bValue).getTime() : Number.NEGATIVE_INFINITY;
+      if (aTime === bTime) {
+        return 0;
+      }
+      return sortDir === 'asc' ? aTime - bTime : bTime - aTime;
+    }),
+  );
+
+  // Local-time (not UTC) "YYYY-MM-DDTHH:mm" formatter
+  function toLocalDatetimeInputValue(date: Date): string {
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(
+      date.getHours(),
+    )}:${pad(date.getMinutes())}`;
+  }
+
+  function computeDefaultExpiresAt(): string {
+    const msPerDay = 24 * 60 * 60 * 1000;
+    return toLocalDatetimeInputValue(new Date(Date.now() + DEFAULT_EXPIRY_DAYS * msPerDay));
+  }
+
+  function computeMinExpiresAt(): string {
+    return toLocalDatetimeInputValue(new Date(Date.now() + 60000));
+  }
+
+  function resetCreateForm(): void {
+    newKeyName = '';
+    neverExpires = false;
+    expirationDate = computeDefaultExpiresAt();
+  }
+
+  resetCreateForm();
 
   function isExpired(expiresAt: string | null | undefined): boolean {
     if (!expiresAt) {
@@ -54,12 +107,12 @@
     return new Date(expiresAt) <= new Date();
   }
 
-  function getExpirationStatus(expiresAt: string | null | undefined): {
-    text: string;
-    color: string;
+  function getExpirationChip(expiresAt: string | null | undefined): {
+    label: string;
+    variant: ExpirationVariant;
   } {
     if (!expiresAt) {
-      return { text: 'Never expires', color: 'text-foreground' };
+      return { label: 'Never expires', variant: 'outline-info' };
     }
 
     const expDate = new Date(expiresAt);
@@ -67,21 +120,50 @@
     const diffDays = Math.ceil((expDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 
     if (diffDays < 0) {
-      return { text: 'Expired', color: 'text-error' };
+      return { label: 'Expired', variant: 'danger' };
     } else if (diffDays <= 7) {
       return {
-        text: `Expires in ${diffDays} day${diffDays === 1 ? '' : 's'}`,
-        color: 'text-warning',
+        label: `Expires in ${diffDays} day${diffDays === 1 ? '' : 's'}`,
+        variant: 'warning',
       };
     } else {
-      return { text: `Expires on ${expDate.toLocaleDateString()}`, color: 'text-foreground' };
+      return { label: `Expires ${expDate.toLocaleDateString()}`, variant: 'outline-primary' };
     }
   }
 
+  function formatLastUsed(lastUsedAt: string | null): string {
+    return lastUsedAt ? formatRelativeTime(lastUsedAt) : 'Never used';
+  }
+
+  function toggleSort(key: SortKey): void {
+    if (sortKey === key) {
+      sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+      sortKey = key;
+      sortDir = 'desc';
+    }
+  }
+
+  function ariaSortFor(key: SortKey): 'ascending' | 'descending' | 'none' {
+    if (sortKey !== key) {
+      return 'none';
+    }
+    return sortDir === 'asc' ? 'ascending' : 'descending';
+  }
+
+  function sortLabelFor(key: SortKey): string {
+    if (sortKey !== key) {
+      return 'not sorted';
+    }
+    return sortDir === 'asc' ? 'ascending' : 'descending';
+  }
+
+  function clearSearch(): void {
+    searchQuery = '';
+  }
+
   function handleDismiss(): void {
-    newKeyName = '';
-    expirationDate = '';
-    neverExpires = true;
+    resetCreateForm();
   }
 
   function validateInput(): string | null {
@@ -137,149 +219,134 @@
   }
 </script>
 
-{#if isLoading}
-  <div
-    class="flex items-center justify-center py-12"
-    role="status"
-    aria-live="polite"
+<!-- API key info box -->
+{#if justCreatedKey}
+  {@const createdKey = justCreatedKey}
+  <Info
+    variant="warning"
+    title="API Key Created Successfully!"
+    dismissible
+    onDismiss={dismissNewKey}
+    class="my-8"
   >
-    <Spinner
-      variant="ring"
-      size={32}
-      border="bottom"
-    />
-    <span class="ml-3 text-foreground">Loading API keys...</span>
-  </div>
-{:else}
-  <!-- API key info box -->
-  {#if justCreatedKey}
-    {@const createdKey = justCreatedKey}
-    <Info
-      variant="warning"
-      title="API Key Created Successfully!"
-      dismissible
-      onDismiss={dismissNewKey}
-      class="my-8"
-    >
-      {#snippet icon()}
-        <SuccessIcon />
-      {/snippet}
-      <strong>Important:</strong> This is the only time you'll be able to see your API key. Make
-      sure to copy it now and store it securely.
+    {#snippet icon()}
+      <SuccessIcon />
+    {/snippet}
+    <strong>Important:</strong> This is the only time you'll be able to see your API key. Make sure
+    to copy it now and store it securely.
 
-      <div class="-success my-4 rounded-sm p-3">
-        <div class="flex items-center justify-between">
-          <code class="mr-4 flex-1 font-mono text-lg break-all text-foreground">
-            {createdKey.key}
-          </code>
-          {#if clipboard !== undefined}
-            <button
-              onclick={() => copyApiKey(createdKey.key, createdKey.name)}
-              class="cursor-pointer rounded p-2 text-success transition-colors focus:ring-1 focus:ring-success focus:outline-none"
-              aria-label={`Copy API key for ${createdKey.name} to clipboard`}
-            >
-              <Icon
-                iconName="copy-clipboard"
-                size={20}
-              />
-            </button>
-          {/if}
-        </div>
+    <div class="-success my-4 rounded-sm p-3">
+      <div class="flex items-center justify-between">
+        <code class="mr-4 flex-1 font-mono text-lg break-all text-foreground">
+          {createdKey.key}
+        </code>
+        {#if clipboard !== undefined}
+          <button
+            onclick={() => copyApiKey(createdKey.key, createdKey.name)}
+            class="cursor-pointer rounded p-2 text-success transition-colors focus:ring-1 focus:ring-success focus:outline-none"
+            aria-label={`Copy API key for ${createdKey.name} to clipboard`}
+          >
+            <Icon
+              iconName="copy-clipboard"
+              size={20}
+            />
+          </button>
+        {/if}
       </div>
-      <p class="text-sm text-success">
-        Key name: <strong>{createdKey.name}</strong>
-      </p>
-    </Info>
-  {/if}
+    </div>
+    <p class="text-sm text-success">
+      Key name: <strong>{createdKey.name}</strong>
+    </p>
+  </Info>
+{/if}
 
-  {#if copyFeedback}
-    <Info
-      variant="success"
-      size="sm"
-      class="my-8"
-    >
-      {copyFeedback}
-    </Info>
-  {/if}
+{#if copyFeedback}
+  <Info
+    variant="success"
+    size="sm"
+    class="my-8"
+  >
+    {copyFeedback}
+  </Info>
+{/if}
 
-  {#if error}
-    <Info
-      variant="warning"
-      title="Error"
-      dismissible
-      onDismiss={handleDismiss}
-      class="my-8"
-    >
-      <div class="whitespace-pre-line">
-        {error}
-      </div>
-    </Info>
-  {/if}
+{#if error}
+  <Info
+    variant="warning"
+    title="Error"
+    dismissible
+    onDismiss={handleDismiss}
+    class="my-8"
+  >
+    <div class="whitespace-pre-line">
+      {error}
+    </div>
+  </Info>
+{/if}
 
-  <section class="data-list">
-    <header class="data-list-header">
-      <h2>
-        Your API Keys ({apiKeys.length})
-      </h2>
-      <!-- Create API key -->
-      <form
-        method="POST"
-        action="?/create"
-        use:enhance={({ cancel }) => {
-          const validationError = validateInput();
-          if (validationError) {
-            error = validationError;
-            cancel();
-            return;
-          }
+<section class="data-list">
+  <header class="data-list-header">
+    <h2>
+      Your API Keys ({apiKeys.length})
+    </h2>
+    <!-- Create API key -->
+    <form
+      method="POST"
+      action="?/create"
+      use:enhance={({ cancel }) => {
+        const validationError = validateInput();
+        if (validationError) {
+          error = validationError;
+          cancel();
+          return;
+        }
 
-          isLoading = true;
-          error = null;
-          copyFeedback = null;
+        creating = true;
+        error = null;
+        copyFeedback = null;
 
-          return async ({ result }) => {
-            isLoading = false;
+        return async ({ result }) => {
+          creating = false;
 
-            if (result.type === 'success' && result.data) {
-              if (isApiKeyCreateSuccess(result.data)) {
-                const data: ApiKeyCreateSuccessResult = result.data;
+          if (result.type === 'success' && result.data) {
+            if (isApiKeyCreateSuccess(result.data)) {
+              const data: ApiKeyCreateSuccessResult = result.data;
 
-                if (data.success && data.apiKey && data.plainKey) {
-                  apiKeys = [...apiKeys, data.apiKey];
-                  justCreatedKey = {
-                    key: data.plainKey,
-                    name: data.apiKey.name,
-                  };
-                  newKeyName = '';
-                  expirationDate = '';
-                  neverExpires = true;
-                  error = null;
-                }
+              if (data.success && data.apiKey && data.plainKey) {
+                apiKeys = [...apiKeys, data.apiKey];
+                justCreatedKey = {
+                  key: data.plainKey,
+                  name: data.apiKey.name,
+                };
+                resetCreateForm();
+                error = null;
               }
-            } else if (result.type === 'failure' && result.data) {
-              if (isFormFailure(result.data)) {
-                const data: FormFailureResult = result.data;
-                error = data.error ?? 'Failed to create API key';
-              }
-            } else {
-              error = 'An unexpected error occurred';
             }
-          };
-        }}
-      >
-        <div class="flex gap-4">
-          <div class="flex-1">
-            <label
-              for="keyName"
-              class="mb-2 ml-2 block text-xs font-medium text-accent-foreground"
+          } else if (result.type === 'failure' && result.data) {
+            if (isFormFailure(result.data)) {
+              const data: FormFailureResult = result.data;
+              error = data.error ?? 'Failed to create API key';
+            }
+          } else {
+            error = 'An unexpected error occurred';
+          }
+        };
+      }}
+    >
+      <div class="flex gap-4">
+        <div class="flex-1">
+          <p class="mb-2 ml-2 text-xs font-medium text-accent-foreground">Create New API Key</p>
+          <div class="space-y-4">
+            <!-- API Key Name -->
+            <Field
+              label="Key name"
+              required
+              id="keyName"
+              description="Letters, numbers, underscores, and hyphens only."
             >
-              Create New API Key
-            </label>
-            <div class="space-y-4">
-              <!-- API Key Name -->
-              <div>
+              {#snippet control({ id, describedBy, invalid, required })}
                 <input
-                  id="keyName"
+                  {id}
                   name="name"
                   type="text"
                   bind:value={newKeyName}
@@ -287,64 +354,106 @@
                   placeholder="Enter a descriptive name..."
                   maxlength={API_KEY_VALIDATION.NAME.MAX_LENGTH}
                   class="form-input"
-                  aria-describedby="keyNameHelp"
+                  aria-describedby={describedBy}
+                  aria-invalid={invalid ? 'true' : undefined}
+                  aria-required={required ? 'true' : undefined}
                 />
+              {/snippet}
+            </Field>
+            <div class="flex w-full flex-col gap-4 sm:flex-row sm:justify-between">
+              <!-- Expiration -->
+              <div class="flex flex-col">
+                <div
+                  class="flex flex-col items-start justify-start space-y-3 sm:flex-row sm:items-center"
+                >
+                  <label class="ml-2 flex items-center">
+                    <Toggle
+                      name="neverExpires"
+                      bind:checked={neverExpires}
+                      variant="primary"
+                      size="sm"
+                    ></Toggle>
+                    <span class="ml-2 text-sm text-muted-foreground"> Never expires? </span>
+                  </label>
+
+                  {#if !neverExpires}
+                    <div class="ml-2 w-full sm:w-auto">
+                      <Field
+                        label="Expires"
+                        id="expiresAt"
+                        description="Defaults to 90 days from now; adjust as needed."
+                      >
+                        {#snippet control({ id, describedBy })}
+                          <input
+                            {id}
+                            type="datetime-local"
+                            name="expiresAt"
+                            bind:value={expirationDate}
+                            min={computeMinExpiresAt()}
+                            class="form-input h-10"
+                            aria-describedby={describedBy}
+                          />
+                        {/snippet}
+                      </Field>
+                    </div>
+                  {/if}
+                </div>
               </div>
-              <div class="flex w-full flex-col gap-4 sm:flex-row sm:justify-between">
-                <!-- Expiration -->
-                <div class="flex flex-col">
-                  <div
-                    class="flex flex-col items-start justify-start space-y-3 sm:flex-row sm:items-center"
-                  >
-                    <label class="ml-2 flex items-center">
-                      <Toggle
-                        name="neverExpires"
-                        bind:checked={neverExpires}
-                        variant="primary"
-                        size="sm"
-                      ></Toggle>
-                      <span class="ml-2 text-sm text-muted-foreground"> Never expires? </span>
-                    </label>
 
-                    {#if !neverExpires}
-                      <div class="ml-2 flex w-full items-center sm:justify-end">
-                        <input
-                          type="datetime-local"
-                          name="expiresAt"
-                          bind:value={expirationDate}
-                          min={new Date(Date.now() + 60000).toISOString().slice(0, 16)}
-                          class="form-input h-10"
-                          aria-describedby="expirationHelp"
-                        />
-                        <p
-                          id="expirationHelp"
-                          class="mt-1 ml-2 text-xs text-muted-foreground"
-                        >
-                          Set expiration date
-                        </p>
-                      </div>
-                    {/if}
-                  </div>
-                </div>
-
-                <!-- Generate Button -->
-                <div class="mr-2 flex flex-col justify-end">
-                  <Button
-                    type="submit"
-                    size="sm"
-                    disabled={!newKeyName.trim() || isLoading}
-                    variant="primary"
-                    aria-label="Generate new API key"
-                  >
-                    Generate Key
-                  </Button>
-                </div>
+              <!-- Generate Button -->
+              <div class="mr-2 flex flex-col justify-end">
+                <Button
+                  type="submit"
+                  size="sm"
+                  disabled={!newKeyName.trim() || creating}
+                  loading={creating}
+                  variant="primary"
+                  aria-label="Generate new API key"
+                >
+                  Generate Key
+                </Button>
               </div>
             </div>
           </div>
         </div>
-      </form>
-    </header>
+      </div>
+    </form>
+  </header>
+
+  <div class="p-4">
+    {#if apiKeys.length > 0}
+      <!-- Search -->
+      <div class="data-list-controls mb-4">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div class="relative w-full sm:max-w-xs">
+            <input
+              type="text"
+              bind:value={searchQuery}
+              placeholder="Search by name..."
+              aria-label="Search API keys by name"
+              class="form-input pl-9"
+            />
+            <Icon
+              iconName="magnifying-glass"
+              size={16}
+              class="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 transform text-muted-foreground"
+            />
+          </div>
+          {#if searchQuery}
+            <Button
+              variant="outline-primary"
+              size="sm"
+              onclick={clearSearch}
+            >
+              Clear search
+            </Button>
+          {/if}
+          <p class="text-sm text-muted-foreground">
+            Showing {sortedKeys.length} of {apiKeys.length} keys
+          </p>
+        </div>
+      </div>
+    {/if}
 
     <!-- API Keys list -->
     {#if apiKeys.length === 0}
@@ -355,80 +464,139 @@
         description="Create your first API key to get started."
         class="p-8"
       />
+    {:else if sortedKeys.length === 0}
+      <EmptyState
+        icon="magnifying-glass"
+        iconSize={40}
+        title="No matching API keys"
+        description={`No keys match "${searchQuery}".`}
+        class="p-8"
+      >
+        <Button
+          variant="outline-primary"
+          size="sm"
+          class="mt-4"
+          onclick={clearSearch}
+        >
+          Clear search
+        </Button>
+      </EmptyState>
     {:else}
-      <div>
-        {#each apiKeys as apiKey (apiKey.id)}
-          <article class="data-list-item">
-            <div class="flex items-start justify-between">
-              <div class="min-w-0 flex-1">
-                <h3 class="mb-2 text-lg font-medium text-foreground">
-                  {apiKey.name}
-                </h3>
-
-                <!--                <div -->
-                <!--                  class="bg-surface-selected rounded-sm border-strong p-3 mb-3 flex items-center justify-between" -->
-                <!--                > -->
-                <!--                  <div class="flex items-center flex-1"> -->
-                <!--                    <Icon iconName="lock" size={16} class="text-foreground mr-2" /> -->
-                <!--                    <span class="text-sm text-muted-foreground select-none"> -->
-                <!--                      API key is securely stored -->
-                <!--                    </span> -->
-                <!--                  </div> -->
-                <!--                </div> -->
-                <div class="relative">
-                  <input
-                    type="text"
-                    placeholder="API key is securely stored"
-                    class="form-input cursor-default pl-10"
-                    disabled
-                    readonly
-                  />
-                  <Icon
-                    iconName="lock"
-                    size={16}
-                    class="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 transform text-muted-foreground"
-                  />
-                </div>
-
-                <div class="mt-3 flex flex-row justify-between space-y-1">
-                  <p class="text-sm text-accent-foreground">
-                    <time datetime={apiKey.createdAt}>
-                      Created: {new Date(apiKey.createdAt).toLocaleString()}
-                    </time>
-                  </p>
-                  {#if apiKey.expiresAt}
-                    {@const status = getExpirationStatus(apiKey.expiresAt)}
-                    <p
-                      class="text-sm text-accent-foreground {status.color}"
-                      class:font-medium={isExpired(apiKey.expiresAt)}
-                    >
-                      Expires: {status.text}
-                    </p>
-                  {:else}
-                    <p class="text-sm text-accent-foreground">Expires: Never</p>
-                  {/if}
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onclick={() => confirmDelete(apiKey.id)}
-                class="ml-4 cursor-pointer rounded-sm p-1 text-error transition-colors hover:bg-error/75 hover:text-foreground focus:outline-none"
-                class:opacity-75={isExpired(apiKey.expiresAt)}
-                aria-label={`Delete API key for ${apiKey.name}`}
+      <div class="overflow-x-auto rounded-sm border-strong">
+        <table class="min-w-full">
+          <thead class="border-b-strong bg-surface">
+            <tr>
+              <th
+                scope="col"
+                class="px-4 py-3 text-left text-xs font-medium tracking-wider text-foreground uppercase"
               >
-                <Icon
-                  iconName="delete"
-                  size={20}
-                />
-              </button>
-            </div>
-          </article>
-        {/each}
+                Name
+              </th>
+              <th
+                scope="col"
+                aria-sort={ariaSortFor('createdAt')}
+                class="px-4 py-3 text-left text-xs font-medium tracking-wider text-foreground uppercase"
+              >
+                <button
+                  type="button"
+                  onclick={() => toggleSort('createdAt')}
+                  class="inline-flex cursor-pointer items-center gap-1 rounded-xs hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  aria-label={`Sort by creation time (currently ${sortLabelFor('createdAt')})`}
+                >
+                  Created
+                  <span aria-hidden="true">
+                    {#if sortKey === 'createdAt'}{sortDir === 'asc' ? '▲' : '▼'}{/if}
+                  </span>
+                </button>
+              </th>
+              <th
+                scope="col"
+                class="px-4 py-3 text-left text-xs font-medium tracking-wider text-foreground uppercase"
+              >
+                Expires
+              </th>
+              <th
+                scope="col"
+                aria-sort={ariaSortFor('lastUsedAt')}
+                class="px-4 py-3 text-left text-xs font-medium tracking-wider text-foreground uppercase"
+              >
+                <button
+                  type="button"
+                  onclick={() => toggleSort('lastUsedAt')}
+                  class="inline-flex cursor-pointer items-center gap-1 rounded-xs hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  aria-label={`Sort by last used time (currently ${sortLabelFor('lastUsedAt')})`}
+                >
+                  Last used
+                  <span aria-hidden="true">
+                    {#if sortKey === 'lastUsedAt'}{sortDir === 'asc' ? '▲' : '▼'}{/if}
+                  </span>
+                </button>
+              </th>
+              <th
+                scope="col"
+                class="relative px-4 py-3"
+              >
+                <span class="sr-only">Actions</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody class="divide-y bg-surface-elevated">
+            {#each sortedKeys as apiKey (apiKey.id)}
+              {@const chip = getExpirationChip(apiKey.expiresAt)}
+              <tr class="transition-colors hover:bg-surface-hover">
+                <td class="px-4 py-3 text-sm font-medium whitespace-nowrap text-foreground">
+                  {apiKey.name}
+                </td>
+                <td class="px-4 py-3 text-sm whitespace-nowrap text-accent-foreground">
+                  <time
+                    datetime={apiKey.createdAt}
+                    title={new Date(apiKey.createdAt).toLocaleString()}
+                  >
+                    {new Date(apiKey.createdAt).toLocaleDateString()}
+                  </time>
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap">
+                  <Chip
+                    size="sm"
+                    label={chip.label}
+                    variant={chip.variant}
+                    class={isExpired(apiKey.expiresAt) ? 'opacity-75' : ''}
+                  />
+                </td>
+                <td class="px-4 py-3 text-sm whitespace-nowrap">
+                  {#if apiKey.lastUsedAt}
+                    <span
+                      class="text-foreground"
+                      title={new Date(apiKey.lastUsedAt).toLocaleString()}
+                    >
+                      {formatLastUsed(apiKey.lastUsedAt)}
+                    </span>
+                  {:else}
+                    <span class="text-muted-foreground italic">Never used</span>
+                  {/if}
+                </td>
+                <td class="px-4 py-3 text-right whitespace-nowrap">
+                  <button
+                    type="button"
+                    onclick={() => confirmDelete(apiKey.id)}
+                    disabled={deleting}
+                    class="cursor-pointer rounded-sm p-1 text-error transition-colors hover:bg-error/75 hover:text-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50"
+                    aria-label={`Delete API key for ${apiKey.name}`}
+                  >
+                    <Icon
+                      iconName="delete"
+                      size={18}
+                    />
+                  </button>
+                </td>
+              </tr>
+            {/each}
+          </tbody>
+        </table>
       </div>
     {/if}
-  </section>
-{/if}
+  </div>
+</section>
 
 <!-- Hidden delete form -->
 <form
@@ -437,12 +605,12 @@
   action="?/delete"
   style:display="none"
   use:enhance={() => {
-    isLoading = true;
+    deleting = true;
     error = null;
     copyFeedback = null;
 
     return async ({ result }) => {
-      isLoading = false;
+      deleting = false;
 
       if (result.type === 'success' && result.data) {
         if (isApiKeyDeleteSuccess(result.data)) {
@@ -488,8 +656,15 @@
   >
     <p class="mb-4 text-foreground">
       This will permanently delete API key
-      <span class="text-xl font-bold text-warning">{keyName}</span>.
+      <span class="text-xl font-bold text-warning">{keyName}</span>
+      and all data synced with it, including:
     </p>
+    <ul class="mb-4 list-disc space-y-1 pl-5 text-sm text-foreground">
+      <li>Selector profile backups</li>
+      <li>Substitution profile backups</li>
+      <li>Extraction profile backups</li>
+      <li>Cookie backups, including cached cookie files used by jobs</li>
+    </ul>
     <Info variant="error">This is a destructive action that cannot be reversed.</Info>
   </ConfirmModal>
 {/if}

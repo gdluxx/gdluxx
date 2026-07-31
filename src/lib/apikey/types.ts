@@ -14,6 +14,7 @@ export interface ApiKey {
   userId: string;
   createdAt: string;
   expiresAt?: string | null;
+  lastUsedAt: string | null;
 }
 
 export interface NewApiKeyResponse {

@@ -51,7 +51,7 @@ export const actions: Actions = {
       const formData = await request.formData();
       const name = formData.get('name') as string;
       const expiresAt = formData.get('expiresAt') as string;
-      const neverExpires = formData.get('neverExpires') === 'true';
+      const neverExpires = formData.get('neverExpires') !== null;
 
       if (!name?.trim()) {
         return fail(400, {
@@ -98,6 +98,7 @@ export const actions: Actions = {
           userId: result.userId,
           createdAt: new Date(result.createdAt).toISOString(),
           expiresAt: result.expiresAt ? new Date(result.expiresAt).toISOString() : null,
+          lastUsedAt: null,
         },
         plainKey: result.key,
       };

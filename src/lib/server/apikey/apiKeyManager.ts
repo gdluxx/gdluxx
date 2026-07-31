@@ -115,9 +115,9 @@ export async function listApiKeys(): Promise<ApiKey[]> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const db = (auth as any).options.database as BetterSqlite3.Database;
     const stmt = db.prepare(`
-			SELECT id, name, referenceId AS userId, createdAt, expiresAt 
-			FROM apiKey 
-			WHERE referenceId = ? 
+			SELECT id, name, referenceId AS userId, createdAt, expiresAt, lastRequest
+			FROM apiKey
+			WHERE referenceId = ?
 			ORDER BY createdAt DESC
 	`);
     const rows = stmt.all(userId) as ApiKeyRow[];
@@ -128,6 +128,7 @@ export async function listApiKeys(): Promise<ApiKey[]> {
       userId: row.userId,
       createdAt: new Date(row.createdAt).toISOString(),
       expiresAt: row.expiresAt ? new Date(row.expiresAt).toISOString() : null,
+      lastUsedAt: row.lastRequest ? new Date(row.lastRequest).toISOString() : null,
     }));
   } catch (error) {
     logger.error('Error listing API keys:', error);
@@ -174,8 +175,8 @@ export async function findApiKeyByName(name: string): Promise<ApiKey | null> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const db = (auth as any).options.database as BetterSqlite3.Database;
     const stmt: Statement = db.prepare(`
-			SELECT id, name, referenceId AS userId, createdAt, expiresAt 
-			FROM apiKey 
+			SELECT id, name, referenceId AS userId, createdAt, expiresAt, lastRequest
+			FROM apiKey
 			WHERE referenceId = ? AND name = ?
 	`);
     const row = stmt.get(userId, name) as ApiKeyRow | undefined;
@@ -190,6 +191,7 @@ export async function findApiKeyByName(name: string): Promise<ApiKey | null> {
       userId: row.userId,
       createdAt: new Date(row.createdAt).toISOString(),
       expiresAt: row.expiresAt ? new Date(row.expiresAt).toISOString() : null,
+      lastUsedAt: row.lastRequest ? new Date(row.lastRequest).toISOString() : null,
     };
   } catch (error) {
     logger.error('Error finding API key by name:', error);
