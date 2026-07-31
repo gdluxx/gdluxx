@@ -11,20 +11,9 @@
 import { getCurrentTimestamp } from './settingsManager';
 import { openDatabase } from './database';
 import { transformLogPath } from './config-utils';
+import type { ServerLoggingConfig } from '$lib/logging';
 
-// Server logging
-export interface ServerLoggingConfig {
-  enabled: boolean;
-  level: 'debug' | 'info' | 'warn' | 'error';
-  format: 'json' | 'simple';
-  consoleEnabled: boolean;
-  fileEnabled: boolean;
-  fileDirectory: string;
-  fileMaxSize: string;
-  fileMaxFiles: string;
-  performanceLogging: boolean;
-  slowQueryThreshold: number;
-}
+export type { ServerLoggingConfig };
 
 export const DEFAULT_SERVER_LOGGING_CONFIG: ServerLoggingConfig = {
   enabled: true,
@@ -126,28 +115,8 @@ export async function writeServerLoggingConfig(config: ServerLoggingConfig): Pro
   }
 }
 
-// Validating log dir path
-export function validateLogDirectory(path: string): { valid: boolean; error?: string } {
-  if (!path?.trim()) {
-    return { valid: false, error: 'Path cannot be empty' };
-  }
-
-  if (path.includes('..')) {
-    return { valid: false, error: 'Path traversal not allowed' };
-  }
-
-  if (path.length > 255) {
-    return { valid: false, error: 'Path too long (max 255 characters)' };
-  }
-
-  // Extra validation for problematic characters
-  const problematicChars = /[<>:"|?*]/;
-  if (problematicChars.test(path)) {
-    return { valid: false, error: 'Path contains invalid characters' };
-  }
-
-  return { valid: true };
-}
+// Log directory validation now lives in `$lib/logging` (validateLogDirectory)
+// so the endpoint, the settings UI, and the log tail all apply identical rules.
 
 // called when logger is initiated to ensure paths work in Docker and non-docker environments
 export function getTransformedLoggingConfig(config: ServerLoggingConfig): ServerLoggingConfig {

@@ -10,15 +10,16 @@
 
 import type { PageServerLoad } from './$types';
 import { serverLogger as logger } from '$lib/server/logger';
-import { readServerLoggingConfig, type ServerLoggingConfig } from '$lib/server/loggingManager';
+import { readServerLoggingConfig } from '$lib/server/loggingManager';
+import type { ServerLoggingConfig } from '$lib/logging';
 
-// NOTE: This does not use `createPageLoad` (see $lib/utils/page-load.ts) because
-// GET /api/settings/server-logging returns a bare ServerLoggingConfig object
-// instead of the standard { success, data } envelope. createPageLoad assumes the envelope
-// shape, so reusing it here would misreport every successful load as a failure.
-// Reading the config directly via the manager (the same function the endpoint
-// itself calls) avoids an unnecessary internal HTTP round trip and still moves
-// this data into the server load so the client no longer has to fetch it onMount.
+// NOTE: GET /api/settings/server-logging now returns the standard
+// { success, data } envelope, so `createPageLoad` (see $lib/utils/page-load.ts)
+// would work here. It is deliberately not used: `createPageLoad` spreads
+// `data` into the page payload, which would flatten the config's ten fields
+// into the top level, and it would cost an internal HTTP round trip to reach
+// the very function this load already calls. Reading through the manager keeps
+// `serverConfig` a single nested object and keeps the fetch off the client.
 export const load: PageServerLoad = async () => {
   try {
     const serverConfig: ServerLoggingConfig = await readServerLoggingConfig();

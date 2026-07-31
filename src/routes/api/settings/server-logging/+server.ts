@@ -8,57 +8,60 @@
  * as published by the Free Software Foundation.
  */
 
-import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { serverLogger } from '$lib/server/logger';
-import {
-  readServerLoggingConfig,
-  writeServerLoggingConfig,
-  validateLogDirectory,
-  type ServerLoggingConfig,
-} from '$lib/server/loggingManager';
+import { createApiError, createApiResponse } from '$lib/server/api-utils';
+import { parseJson } from '$lib/server/validation/zod';
+import { serverLoggingConfigSchema, type ServerLoggingConfig } from '$lib/logging';
+import { readServerLoggingConfig, writeServerLoggingConfig } from '$lib/server/loggingManager';
 
 export const GET: RequestHandler = async () => {
   try {
     const config = await readServerLoggingConfig();
-    return json(config);
+    return createApiResponse<ServerLoggingConfig>(config);
   } catch (error) {
     serverLogger.error('Failed to get server logging config:', error);
-    return json({ error: 'Failed to load server logging configuration' }, { status: 500 });
+    return createApiError('Failed to load server logging configuration', 500);
   }
 };
 
 export const POST: RequestHandler = async ({ request }) => {
   try {
-    const config: ServerLoggingConfig = await request.json();
-
-    if (config.fileEnabled) {
-      const validation = validateLogDirectory(config.fileDirectory);
-      if (!validation.valid) {
-        return json({ error: validation.error }, { status: 400 });
-      }
+    // Validated before anything is persisted. A bad fileMaxSize/fileMaxFiles
+    // used to reach SQLite first and only blow up when the transport was
+    // rebuilt leaving a stored config that breaks file logging on every boot
+    const parsed = await parseJson(request, serverLoggingConfigSchema);
+    if ('errorResponse' in parsed) {
+      return parsed.errorResponse;
     }
 
-    if (config.slowQueryThreshold < 0) {
-      return json({ error: 'Slow query threshold must be a positive number' }, { status: 400 });
-    }
-
-    if (!['debug', 'info', 'warn', 'error'].includes(config.level)) {
-      return json({ error: 'Invalid log level' }, { status: 400 });
-    }
-
-    if (!['json', 'simple'].includes(config.format)) {
-      return json({ error: 'Invalid log format' }, { status: 400 });
-    }
+    const config: ServerLoggingConfig = parsed.data;
+    const previousConfig = await readServerLoggingConfig();
 
     await writeServerLoggingConfig(config);
 
-    await serverLogger.updateConfig(config);
+    try {
+      await serverLogger.updateConfig(config);
+    } catch (transportError) {
+      serverLogger.error('Failed to apply logging configuration, rolling back:', transportError);
 
-    serverLogger.info('Server logging configuration updated', { config });
-    return json({ success: true });
+      try {
+        await writeServerLoggingConfig(previousConfig);
+        await serverLogger.updateConfig(previousConfig);
+      } catch (rollbackError) {
+        serverLogger.error('Failed to roll back logging configuration:', rollbackError);
+      }
+
+      return createApiError(
+        'Logging configuration could not be applied and was reverted. Check the file output settings.',
+        500,
+      );
+    }
+
+    serverLogger.info('Server logging configuration updated');
+    return createApiResponse<ServerLoggingConfig>(await readServerLoggingConfig());
   } catch (error) {
     serverLogger.error('Failed to update server logging config:', error);
-    return json({ error: 'Failed to update server logging configuration' }, { status: 500 });
+    return createApiError('Failed to update server logging configuration', 500);
   }
 };

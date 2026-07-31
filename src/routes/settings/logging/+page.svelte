@@ -12,7 +12,7 @@
   import { LogManager } from '$lib/components/settings';
   import { Icon } from '$lib/components';
   import { PageLayout } from '$lib/components/ui';
-  import type { ServerLoggingConfig } from '$lib/server/loggingManager';
+  import type { ServerLoggingConfig } from '$lib/logging';
 
   interface PageData {
     success: boolean;
