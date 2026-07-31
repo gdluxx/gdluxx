@@ -28,6 +28,7 @@
     maxBatchUrls: 200,
   });
   let isUpdating = $state(false);
+  let isUpdatingMaxBatchUrls = $state(false);
 
   let isUpdatingTheme = $state(false);
 
@@ -91,6 +92,7 @@
     }
 
     settings.maxBatchUrls = value;
+    isUpdatingMaxBatchUrls = true;
 
     try {
       const response = await fetch('/api/settings/user', {
@@ -109,6 +111,8 @@
       toastStore.error('Settings Error', 'Failed to save settings. Please try again.');
       settings.maxBatchUrls = oldValue;
       input.value = String(oldValue);
+    } finally {
+      isUpdatingMaxBatchUrls = false;
     }
   }
 
@@ -145,6 +149,8 @@
 </script>
 
 <div class="space-y-6">
+  <p class="text-xs text-muted-foreground">Changes on this page save automatically.</p>
+
   <!-- CommandForm options -->
   <div class="content-panel">
     <h2 class="">Run</h2>
@@ -198,7 +204,8 @@
             max="10000"
             value={settings.maxBatchUrls}
             onblur={handleMaxBatchUrlsBlur}
-            class="w-32 rounded-sm border border-border bg-surface px-3 py-1.5 text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-hidden"
+            disabled={isUpdatingMaxBatchUrls}
+            class="w-32 rounded-sm border border-border bg-surface px-3 py-1.5 text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-hidden disabled:opacity-50"
           />
         </div>
         <p class="mt-1 text-xs text-muted-foreground">

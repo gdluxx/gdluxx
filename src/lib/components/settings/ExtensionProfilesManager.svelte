@@ -38,8 +38,8 @@
   let selectedKeyId = $state<string | null>(null);
   let selectorDeleteId = $state<string | null>(null);
   let subDeleteId = $state<string | null>(null);
-  let actionError = $state<string | null>(null);
-  let busy = $state(false);
+  let selectorDeleteBusy = $state(false);
+  let subDeleteBusy = $state(false);
   let exportBusy = $state(false);
   let importOpen = $state(false);
   let extractionDeleteBusy = $state(false);
@@ -135,8 +135,7 @@
     if (!selectedKeyId || !selectorDeleteId) {
       return;
     }
-    busy = true;
-    actionError = null;
+    selectorDeleteBusy = true;
     try {
       const response = await fetch(
         `/api/settings/extension-profiles/${encodeURIComponent(selectedKeyId)}/selectors/${encodeURIComponent(selectorDeleteId)}`,
@@ -144,15 +143,16 @@
       );
       const payload = await response.json().catch(() => null);
       if (!response.ok || !payload?.success) {
-        actionError = payload?.error ?? `Server error: ${response.status}`;
+        toastStore.error('Delete failed', payload?.error ?? `Server error: ${response.status}`);
         return;
       }
+      toastStore.success('Selector profile deleted');
       selectorDeleteId = null;
       await invalidateAll();
     } catch (err) {
-      actionError = err instanceof Error ? err.message : 'Unknown error';
+      toastStore.error('Delete failed', err instanceof Error ? err.message : 'Unknown error');
     } finally {
-      busy = false;
+      selectorDeleteBusy = false;
     }
   }
 
@@ -160,8 +160,7 @@
     if (!selectedKeyId || !subDeleteId) {
       return;
     }
-    busy = true;
-    actionError = null;
+    subDeleteBusy = true;
     try {
       const response = await fetch(
         `/api/settings/extension-profiles/${encodeURIComponent(selectedKeyId)}/subs/${encodeURIComponent(subDeleteId)}`,
@@ -169,15 +168,16 @@
       );
       const payload = await response.json().catch(() => null);
       if (!response.ok || !payload?.success) {
-        actionError = payload?.error ?? `Server error: ${response.status}`;
+        toastStore.error('Delete failed', payload?.error ?? `Server error: ${response.status}`);
         return;
       }
+      toastStore.success('Substitution profile deleted');
       subDeleteId = null;
       await invalidateAll();
     } catch (err) {
-      actionError = err instanceof Error ? err.message : 'Unknown error';
+      toastStore.error('Delete failed', err instanceof Error ? err.message : 'Unknown error');
     } finally {
-      busy = false;
+      subDeleteBusy = false;
     }
   }
 
@@ -416,14 +416,6 @@
           extension uses extraction profile backups instead.
         </p>
 
-        {#if actionError}
-          <div class="mt-3">
-            <Info variant="error">
-              <p class="text-sm">{actionError}</p>
-            </Info>
-          </div>
-        {/if}
-
         {#if selectorProfiles.length > 0}
           <section class="mt-4">
             <h3 class="mb-2 text-sm font-semibold">Selectors ({selectorProfiles.length})</h3>
@@ -563,7 +555,7 @@
     show={selectorDeleteId !== null}
     title="Delete legacy selector profile?"
     message="This removes the legacy selector profile from the gdluxx server. Current extension versions do not use selector backups."
-    confirmText={busy ? 'Deleting…' : 'Delete'}
+    confirmText={selectorDeleteBusy ? 'Deleting…' : 'Delete'}
     confirmVariant="danger"
     onCancel={() => (selectorDeleteId = null)}
     onConfirm={confirmDeleteSelector}
@@ -573,7 +565,7 @@
     show={subDeleteId !== null}
     title="Delete legacy substitution profile?"
     message="This removes the legacy substitution profile from the gdluxx server. Current extension versions do not use substitution backups."
-    confirmText={busy ? 'Deleting…' : 'Delete'}
+    confirmText={subDeleteBusy ? 'Deleting…' : 'Delete'}
     confirmVariant="danger"
     onCancel={() => (subDeleteId = null)}
     onConfirm={confirmDeleteSub}
