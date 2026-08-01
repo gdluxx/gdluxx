@@ -10,7 +10,7 @@
 
 <script lang="ts">
   import { enhance } from '$app/forms';
-  import { SuccessIcon } from '$lib/components/icons';
+  import { clientLogger as logger } from '$lib/client/logger';
   import { Button, Info, ConfirmModal, Toggle, EmptyState, Chip, Field } from '$lib/components/ui';
   import { Icon } from '$lib/components/index';
   import { API_KEY_VALIDATION, validateApiKeyInput, type ApiKey } from '$lib/apikey';
@@ -181,7 +181,7 @@
         copyFeedback = null;
       }, 3000);
     } catch (err) {
-      console.error('Failed to copy API key:', err);
+      logger.error('Failed to copy API key:', err);
       error = 'Failed to copy API key to clipboard';
     }
   }
@@ -230,7 +230,10 @@
     class="my-8"
   >
     {#snippet icon()}
-      <SuccessIcon />
+      <Icon
+        iconName="success"
+        size={20}
+      />
     {/snippet}
     <strong>Important:</strong> This is the only time you'll be able to see your API key. Make sure
     to copy it now and store it securely.

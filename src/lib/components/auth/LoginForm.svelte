@@ -11,11 +11,38 @@
 <script lang="ts">
   import { signIn } from '$lib/auth-client';
   import { toastStore } from '$lib/stores/toast';
+  import { clientLogger as logger } from '$lib/client/logger';
   import { Button, Field } from '$lib/components/ui';
+  import { submitOnEnter, withLoadingGuard } from './auth-form';
 
   let email = $state('');
   let password = $state('');
   let isLoading = $state(false);
+
+  const submitLogin = withLoadingGuard(
+    async () => {
+      try {
+        const result = await signIn.email({
+          email,
+          password,
+        });
+
+        if (result.error) {
+          toastStore.error('Login failed', result.error.message);
+        } else {
+          toastStore.success('Login successful');
+          window.location.href = '/';
+        }
+      } catch (error) {
+        toastStore.error('Login failed', 'An unexpected error occurred');
+        logger.error('Login error:', error);
+      }
+    },
+    {
+      isLoading: () => isLoading,
+      setLoading: (value) => (isLoading = value),
+    },
+  );
 
   async function handleLogin() {
     if (!email || !password) {
@@ -23,33 +50,10 @@
       return;
     }
 
-    isLoading = true;
-
-    try {
-      const result = await signIn.email({
-        email,
-        password,
-      });
-
-      if (result.error) {
-        toastStore.error('Login failed', result.error.message);
-      } else {
-        toastStore.success('Login successful');
-        window.location.href = '/';
-      }
-    } catch (error) {
-      toastStore.error('Login failed', 'An unexpected error occurred');
-      console.error('Login error:', error);
-    } finally {
-      isLoading = false;
-    }
+    await submitLogin();
   }
 
-  function handleKeyPress(event: KeyboardEvent) {
-    if (event.key === 'Enter') {
-      handleLogin();
-    }
-  }
+  const handleKeyPress = submitOnEnter(handleLogin);
 
   function clearForm() {
     email = '';

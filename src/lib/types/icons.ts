@@ -62,4 +62,5 @@ export type IconName =
   | 'import'
   | 'reload'
   | 'restore'
-  | 'cookies';
+  | 'cookies'
+  | 'success';

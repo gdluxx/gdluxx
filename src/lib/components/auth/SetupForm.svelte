@@ -11,13 +11,41 @@
 <script lang="ts">
   import { signUp } from '$lib/auth-client';
   import { toastStore } from '$lib/stores/toast';
+  import { clientLogger as logger } from '$lib/client/logger';
   import { Button, Field } from '$lib/components/ui';
+  import { submitOnEnter, withLoadingGuard } from './auth-form';
 
   let email = $state('');
   let password = $state('');
   let confirmPassword = $state('');
   let name = $state('');
   let isLoading = $state(false);
+
+  const submitSetup = withLoadingGuard(
+    async () => {
+      try {
+        const result = await signUp.email({
+          email,
+          password,
+          name,
+        });
+
+        if (result.error) {
+          toastStore.error('Setup failed', result.error.message);
+        } else {
+          toastStore.success('Account created successfully');
+          window.location.href = '/';
+        }
+      } catch (error) {
+        toastStore.error('Setup failed', 'An unexpected error occurred');
+        logger.error('Setup error:', error);
+      }
+    },
+    {
+      isLoading: () => isLoading,
+      setLoading: (value) => (isLoading = value),
+    },
+  );
 
   async function handleSetup() {
     if (!email || !password || !confirmPassword || !name) {
@@ -35,34 +63,10 @@
       return;
     }
 
-    isLoading = true;
-
-    try {
-      const result = await signUp.email({
-        email,
-        password,
-        name,
-      });
-
-      if (result.error) {
-        toastStore.error('Setup failed', result.error.message);
-      } else {
-        toastStore.success('Account created successfully');
-        window.location.href = '/';
-      }
-    } catch (error) {
-      toastStore.error('Setup failed', 'An unexpected error occurred');
-      console.error('Setup error:', error);
-    } finally {
-      isLoading = false;
-    }
+    await submitSetup();
   }
 
-  function handleKeyPress(event: KeyboardEvent) {
-    if (event.key === 'Enter') {
-      handleSetup();
-    }
-  }
+  const handleKeyPress = submitOnEnter(handleSetup);
 
   function clearForm() {
     email = '';

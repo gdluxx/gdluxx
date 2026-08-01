@@ -13,43 +13,50 @@
   import { PageLayout } from '$lib/components/ui';
   import { Button } from '$lib/components/ui';
   import { Icon } from '$lib/components';
-  import { VersionIcon, LogIcon, KeyIcon } from '$lib/components/icons';
   import type { IconName } from '$lib/types/icons';
 
-  const settingsPages = [
+  interface SettingsPage {
+    name: string;
+    title: string;
+    description: string;
+    icon: IconName;
+    href: string;
+  }
+
+  const settingsPages: SettingsPage[] = [
     {
       name: 'General',
       title: 'General',
       description: 'Manage general application preferences',
-      icon: 'settings' as IconName,
+      icon: 'settings',
       href: resolve('/settings/general'),
     },
     {
       name: 'Version',
       title: 'Version',
       description: 'Manage your gallery-dl version',
-      icon: VersionIcon,
+      icon: 'version',
       href: resolve('/settings/version'),
     },
     {
       name: 'Account',
       title: 'Account',
       description: 'Manage user accounts',
-      icon: 'user' as IconName,
+      icon: 'user',
       href: resolve('/settings/users'),
     },
     {
       name: 'API Keys',
       title: 'API Keys',
       description: 'Manage your API keys',
-      icon: KeyIcon,
+      icon: 'key',
       href: resolve('/settings/apikey'),
     },
     {
       name: 'Logging',
       title: 'Logging',
       description: 'Manage your log settings',
-      icon: LogIcon,
+      icon: 'log',
       href: resolve('/settings/logging'),
     },
   ];
@@ -57,7 +64,7 @@
 
 <PageLayout title="Settings">
   {#snippet icon()}
-    <VersionIcon />
+    <Icon iconName="version" />
   {/snippet}
 
   <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-2">
@@ -66,18 +73,11 @@
         <div class="flex items-start justify-between">
           <div class="flex items-center">
             <div class="flex-shrink-0">
-              {#if typeof page.icon === 'string'}
-                <Icon
-                  iconName={page.icon}
-                  size={32}
-                  class="text-accent-foreground"
-                />
-              {:else}
-                <page.icon
-                  size={32}
-                  class="text-accent-foreground"
-                />
-              {/if}
+              <Icon
+                iconName={page.icon}
+                size={32}
+                class="text-accent-foreground"
+              />
             </div>
             <div class="ml-4">
               <h3 class="text-lg font-medium text-foreground">

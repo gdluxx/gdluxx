@@ -11,7 +11,7 @@
 <script lang="ts">
   import { CommandForm } from '$lib/components';
   import { PageLayout } from '$lib/components/ui';
-  import { RunIcon } from '$lib/components/icons';
+  import { Icon } from '$lib/components';
   import { RecentJobs } from '$lib/components/jobs';
 </script>
 
@@ -24,7 +24,7 @@
   description="Download media from one or more URLs"
 >
   {#snippet icon()}
-    <RunIcon />
+    <Icon iconName="run" />
   {/snippet}
   <div class="space-y-6">
     <CommandForm />
