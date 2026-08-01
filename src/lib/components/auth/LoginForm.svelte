@@ -11,7 +11,7 @@
 <script lang="ts">
   import { signIn } from '$lib/auth-client';
   import { toastStore } from '$lib/stores/toast';
-  import { Button } from '$lib/components/ui';
+  import { Button, Field } from '$lib/components/ui';
 
   let email = $state('');
   let password = $state('');
@@ -65,31 +65,47 @@
     }}
     class="space-y-6"
   >
-    <div>
-      <input
-        id="email"
-        type="email"
-        bind:value={email}
-        onkeydown={handleKeyPress}
-        required
-        class="bg-input w-full rounded-sm border px-3 py-2 text-sm text-foreground"
-        placeholder="email"
-        disabled={isLoading}
-      />
-    </div>
+    <Field
+      label="Email"
+      id="email"
+      required
+    >
+      {#snippet control({ id, describedBy, invalid, required })}
+        <input
+          {id}
+          type="email"
+          bind:value={email}
+          onkeydown={handleKeyPress}
+          {required}
+          class="form-input"
+          aria-describedby={describedBy}
+          aria-invalid={invalid}
+          placeholder="email"
+          disabled={isLoading}
+        />
+      {/snippet}
+    </Field>
 
-    <div>
-      <input
-        id="password"
-        type="password"
-        bind:value={password}
-        onkeydown={handleKeyPress}
-        required
-        class="bg-input w-full rounded-sm border px-3 py-2 text-sm text-foreground"
-        placeholder="password"
-        disabled={isLoading}
-      />
-    </div>
+    <Field
+      label="Password"
+      id="password"
+      required
+    >
+      {#snippet control({ id, describedBy, invalid, required })}
+        <input
+          {id}
+          type="password"
+          bind:value={password}
+          onkeydown={handleKeyPress}
+          {required}
+          class="form-input"
+          aria-describedby={describedBy}
+          aria-invalid={invalid}
+          placeholder="password"
+          disabled={isLoading}
+        />
+      {/snippet}
+    </Field>
 
     <div class="m-4 flex justify-end gap-6">
       <Button

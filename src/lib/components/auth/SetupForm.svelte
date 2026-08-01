@@ -11,7 +11,7 @@
 <script lang="ts">
   import { signUp } from '$lib/auth-client';
   import { toastStore } from '$lib/stores/toast';
-  import { Button } from '$lib/components/ui';
+  import { Button, Field } from '$lib/components/ui';
 
   let email = $state('');
   let password = $state('');
@@ -80,57 +80,89 @@
     }}
     class="space-y-6"
   >
-    <div>
-      <input
-        id="name"
-        type="text"
-        bind:value={name}
-        onkeydown={handleKeyPress}
-        required
-        class="bg-input w-full rounded-sm border px-3 py-2 text-sm text-foreground"
-        placeholder="username"
-        disabled={isLoading}
-      />
-    </div>
+    <Field
+      label="Username"
+      id="name"
+      required
+    >
+      {#snippet control({ id, describedBy, invalid, required })}
+        <input
+          {id}
+          type="text"
+          bind:value={name}
+          onkeydown={handleKeyPress}
+          {required}
+          class="form-input"
+          aria-describedby={describedBy}
+          aria-invalid={invalid}
+          placeholder="username"
+          disabled={isLoading}
+        />
+      {/snippet}
+    </Field>
 
-    <div>
-      <input
-        id="email"
-        type="email"
-        bind:value={email}
-        onkeydown={handleKeyPress}
-        required
-        class="bg-input w-full rounded-sm border px-3 py-2 text-sm text-foreground"
-        placeholder="email address"
-        disabled={isLoading}
-      />
-    </div>
+    <Field
+      label="Email"
+      id="email"
+      required
+    >
+      {#snippet control({ id, describedBy, invalid, required })}
+        <input
+          {id}
+          type="email"
+          bind:value={email}
+          onkeydown={handleKeyPress}
+          {required}
+          class="form-input"
+          aria-describedby={describedBy}
+          aria-invalid={invalid}
+          placeholder="email address"
+          disabled={isLoading}
+        />
+      {/snippet}
+    </Field>
 
-    <div>
-      <input
-        id="password"
-        type="password"
-        bind:value={password}
-        onkeydown={handleKeyPress}
-        required
-        class="bg-input w-full rounded-sm border px-3 py-2 text-sm text-foreground"
-        placeholder="password (min 8 characters)"
-        disabled={isLoading}
-      />
-    </div>
+    <Field
+      label="Password"
+      id="password"
+      required
+    >
+      {#snippet control({ id, describedBy, invalid, required })}
+        <input
+          {id}
+          type="password"
+          bind:value={password}
+          onkeydown={handleKeyPress}
+          {required}
+          class="form-input"
+          aria-describedby={describedBy}
+          aria-invalid={invalid}
+          placeholder="password (min 8 characters)"
+          disabled={isLoading}
+        />
+      {/snippet}
+    </Field>
 
-    <div>
-      <input
-        id="confirmPassword"
-        type="password"
-        bind:value={confirmPassword}
-        onkeydown={handleKeyPress}
-        required
-        class="bg-input w-full rounded-sm border px-3 py-2 text-sm text-foreground"
-        placeholder="Confirm password"
-        disabled={isLoading}
-      />
-    </div>
+    <Field
+      label="Confirm password"
+      id="confirmPassword"
+      required
+    >
+      {#snippet control({ id, describedBy, invalid, required })}
+        <input
+          {id}
+          type="password"
+          bind:value={confirmPassword}
+          onkeydown={handleKeyPress}
+          {required}
+          class="form-input"
+          aria-describedby={describedBy}
+          aria-invalid={invalid}
+          placeholder="Confirm password"
+          disabled={isLoading}
+        />
+      {/snippet}
+    </Field>
 
     <div class="m-4 flex justify-end gap-6">
       <Button

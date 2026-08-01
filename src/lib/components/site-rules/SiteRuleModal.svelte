@@ -9,7 +9,7 @@
   -->
 
 <script lang="ts">
-  import { Button, Modal } from '$lib/components/ui';
+  import { Button, Field, Modal } from '$lib/components/ui';
   import type { OptionWithSource } from '$lib/types/command-form';
   import { Icon } from '$lib/components/index';
 
@@ -125,41 +125,43 @@
           class="mt-4 space-y-4"
           id="modal-description"
         >
-          <div>
-            <label
-              for="site-pattern"
-              class="mb-1 block text-sm font-medium text-foreground"
-            >
-              Site Pattern:
-            </label>
-            <select
-              id="site-pattern"
-              bind:value={selectedPattern}
-              disabled={isSaving}
-              class="bg-input w-full rounded-sm border px-3 py-2 text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:ring-offset-1 disabled:opacity-50"
-            >
-              {#each detectedPatterns as pattern (pattern)}
-                <option value={pattern}>{pattern}</option>
-              {/each}
-            </select>
-          </div>
+          <Field
+            label="Site Pattern:"
+            id="site-pattern"
+          >
+            {#snippet control({ id, describedBy, invalid })}
+              <select
+                {id}
+                bind:value={selectedPattern}
+                disabled={isSaving}
+                class="form-select"
+                aria-describedby={describedBy}
+                aria-invalid={invalid}
+              >
+                {#each detectedPatterns as pattern (pattern)}
+                  <option value={pattern}>{pattern}</option>
+                {/each}
+              </select>
+            {/snippet}
+          </Field>
 
-          <div>
-            <label
-              for="rule-name"
-              class="mb-1 block text-sm font-medium text-foreground"
-            >
-              Rule Name:
-            </label>
-            <input
-              id="rule-name"
-              type="text"
-              bind:value={displayName}
-              disabled={isSaving}
-              placeholder="My custom rule"
-              class="bg-input w-full rounded-sm border px-3 py-2 text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:ring-offset-1 disabled:opacity-50"
-            />
-          </div>
+          <Field
+            label="Rule Name:"
+            id="rule-name"
+          >
+            {#snippet control({ id, describedBy, invalid })}
+              <input
+                {id}
+                type="text"
+                bind:value={displayName}
+                disabled={isSaving}
+                placeholder="My custom rule"
+                class="form-input"
+                aria-describedby={describedBy}
+                aria-invalid={invalid}
+              />
+            {/snippet}
+          </Field>
 
           {#if getUserOptions().length > 0}
             <div class="options-preview rounded-sm border bg-primary/10 p-3">

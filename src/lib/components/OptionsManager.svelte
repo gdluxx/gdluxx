@@ -407,11 +407,8 @@
                             }
                           }}
                           placeholder={option.placeholder ?? ''}
-                          class="bg-input w-full rounded-sm px-2 py-1 text-sm text-foreground focus:ring-primary {emptyValueOptionIds.has(
-                            option.id,
-                          )
-                            ? 'border-warning'
-                            : 'border-strong'}"
+                          class="form-input"
+                          class:border-warning={emptyValueOptionIds.has(option.id)}
                         />
                         {#if emptyValueOptionIds.has(option.id)}
                           <p class="mt-1 text-xs text-warning">Value required</p>

@@ -205,7 +205,7 @@
             value={settings.maxBatchUrls}
             onblur={handleMaxBatchUrlsBlur}
             disabled={isUpdatingMaxBatchUrls}
-            class="w-32 rounded-sm border border-border bg-surface px-3 py-1.5 text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-hidden disabled:opacity-50"
+            class="form-input form-input-sm w-32"
           />
         </div>
         <p class="mt-1 text-xs text-muted-foreground">
