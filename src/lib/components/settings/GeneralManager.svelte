@@ -10,12 +10,12 @@
 
 <script lang="ts">
   import { Toggle, Spinner } from '$lib/components/ui';
-  import { clientLogger as logger } from '$lib/client/logger';
   import { toastStore } from '$lib/stores/toast';
   import type { UserSettings } from '$lib/server/userSettingsManager';
   import { AVAILABLE_THEMES, type ThemeName } from '$lib/themes/themeUtils';
   import { themeStore } from '$lib/themes/themeStore';
   import { Icon } from '$lib/components';
+  import { createSettingsSaver } from '$lib/utils/settings-save.svelte';
 
   interface Props {
     userSettings: UserSettings;
@@ -27,10 +27,10 @@
     selectedTheme: 'indigo',
     maxBatchUrls: 200,
   });
-  let isUpdating = $state(false);
-  let isUpdatingMaxBatchUrls = $state(false);
 
-  let isUpdatingTheme = $state(false);
+  const toggleSaver = createSettingsSaver();
+  const maxBatchUrlsSaver = createSettingsSaver();
+  const themeSaver = createSettingsSaver();
 
   const sortedThemes = Object.values(AVAILABLE_THEMES).sort((a, b) =>
     a.displayName.localeCompare(b.displayName),
@@ -45,30 +45,20 @@
   async function handleToggleChange(checked: boolean) {
     const newSetting = checked;
     const oldSetting = settings.warnOnSiteRuleOverride;
+    const actionText = newSetting ? 'enabled' : 'disabled';
 
-    settings.warnOnSiteRuleOverride = newSetting;
-    isUpdating = true;
-
-    try {
-      const response = await fetch('/api/settings/user', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ warnOnSiteRuleOverride: newSetting }),
-      });
-
-      if (response.ok) {
-        const actionText = newSetting ? 'enabled' : 'disabled';
-        toastStore.success('Settings Updated', `Site rule override warnings ${actionText}`);
-      } else {
-        throw new Error('Failed to save settings');
-      }
-    } catch (error) {
-      logger.error('Failed to save settings:', error);
-      toastStore.error('Settings Error', 'Failed to save settings. Please try again.');
-      settings.warnOnSiteRuleOverride = oldSetting;
-    } finally {
-      isUpdating = false;
-    }
+    await toggleSaver.save({
+      endpoint: '/api/settings/user',
+      body: { warnOnSiteRuleOverride: newSetting },
+      apply: () => {
+        settings.warnOnSiteRuleOverride = newSetting;
+      },
+      rollback: () => {
+        settings.warnOnSiteRuleOverride = oldSetting;
+      },
+      successTitle: 'Settings Updated',
+      successMessage: `Site rule override warnings ${actionText}`,
+    });
   }
 
   async function handleMaxBatchUrlsBlur(event: FocusEvent) {
@@ -91,60 +81,40 @@
       return;
     }
 
-    settings.maxBatchUrls = value;
-    isUpdatingMaxBatchUrls = true;
-
-    try {
-      const response = await fetch('/api/settings/user', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ maxBatchUrls: value }),
-      });
-
-      if (response.ok) {
-        toastStore.success('Settings Updated', 'Max batch URLs saved');
-      } else {
-        throw new Error('Failed to save settings');
-      }
-    } catch (error) {
-      logger.error('Failed to save max batch URLs setting:', error);
-      toastStore.error('Settings Error', 'Failed to save settings. Please try again.');
-      settings.maxBatchUrls = oldValue;
-      input.value = String(oldValue);
-    } finally {
-      isUpdatingMaxBatchUrls = false;
-    }
+    await maxBatchUrlsSaver.save({
+      endpoint: '/api/settings/user',
+      body: { maxBatchUrls: value },
+      apply: () => {
+        settings.maxBatchUrls = value;
+      },
+      rollback: () => {
+        settings.maxBatchUrls = oldValue;
+        input.value = String(oldValue);
+      },
+      successTitle: 'Settings Updated',
+      successMessage: 'Max batch URLs saved',
+    });
   }
 
   async function handleThemeChange(newTheme: ThemeName) {
     const oldTheme = settings.selectedTheme;
+    const themeConfig = AVAILABLE_THEMES[newTheme];
 
-    settings.selectedTheme = newTheme;
-    isUpdatingTheme = true;
-
-    try {
-      await themeStore.setTheme(newTheme);
-
-      const response = await fetch('/api/settings/user', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ selectedTheme: newTheme }),
-      });
-
-      if (response.ok) {
-        const themeConfig = AVAILABLE_THEMES[newTheme];
-        toastStore.success('Theme Updated', `Switched to ${themeConfig.displayName} theme`);
-      } else {
-        throw new Error('Failed to save theme setting');
-      }
-    } catch (error) {
-      logger.error('Failed to save theme setting:', error);
-      toastStore.error('Theme Error', 'Failed to save theme setting. Please try again.');
-      settings.selectedTheme = oldTheme;
-      await themeStore.setTheme(oldTheme);
-    } finally {
-      isUpdatingTheme = false;
-    }
+    await themeSaver.save({
+      endpoint: '/api/settings/user',
+      body: { selectedTheme: newTheme },
+      apply: async () => {
+        settings.selectedTheme = newTheme;
+        await themeStore.setTheme(newTheme);
+      },
+      rollback: async () => {
+        settings.selectedTheme = oldTheme;
+        await themeStore.setTheme(oldTheme);
+      },
+      successTitle: 'Theme Updated',
+      successMessage: `Switched to ${themeConfig.displayName} theme`,
+      errorTitle: 'Theme Error',
+    });
   }
 </script>
 
@@ -173,7 +143,7 @@
         <Toggle
           id="warn-toggle"
           checked={settings.warnOnSiteRuleOverride}
-          disabled={isUpdating}
+          disabled={toggleSaver.saving}
           onchange={handleToggleChange}
           variant="primary"
         />
@@ -204,7 +174,7 @@
             max="10000"
             value={settings.maxBatchUrls}
             onblur={handleMaxBatchUrlsBlur}
-            disabled={isUpdatingMaxBatchUrls}
+            disabled={maxBatchUrlsSaver.saving}
             class="form-input form-input-sm w-32"
           />
         </div>
@@ -225,7 +195,7 @@
       </p>
     </div>
 
-    <div class="relative {isUpdatingTheme ? 'pointer-events-none opacity-50' : ''}">
+    <div class="relative {themeSaver.saving ? 'pointer-events-none opacity-50' : ''}">
       <div
         role="radiogroup"
         aria-labelledby="theme-selection-heading"
@@ -238,7 +208,7 @@
             aria-checked={settings.selectedTheme === theme.name}
             aria-describedby="theme-{theme.name}-description"
             onclick={() => handleThemeChange(theme.name)}
-            disabled={isUpdatingTheme}
+            disabled={themeSaver.saving}
             class="relative cursor-pointer rounded-sm border-2 p-4 text-left transition-all hover:shadow-md focus:ring-2 focus:ring-primary focus:ring-offset-2 {settings.selectedTheme ===
             theme.name
               ? 'border-primary bg-surface-selected'
@@ -275,7 +245,7 @@
           </button>
         {/each}
       </div>
-      {#if isUpdatingTheme}
+      {#if themeSaver.saving}
         <div class="absolute inset-0 flex items-center justify-center bg-surface/50">
           <div
             class="flex items-center gap-2 rounded border bg-surface-elevated px-3 py-2 shadow-md"
