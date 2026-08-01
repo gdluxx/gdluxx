@@ -18,6 +18,8 @@
   import { Icon, UploadModal } from '$lib/components';
   import { invalidateAll } from '$app/navigation';
   import { clientLogger } from '$lib/client/logger';
+  import { toastStore } from '$lib/stores/toast';
+  import { fetchConfigContent, fetchExampleConfig } from '$lib/api/config-editor';
 
   interface Props {
     value?: string;
@@ -166,10 +168,12 @@
         saveStatus = '';
       }, 3000);
     } catch (error) {
-      saveStatus = `Error: ${error instanceof Error ? error.message : 'Unknown error'}`;
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      saveStatus = `Error: ${message}`;
       setTimeout(() => {
         saveStatus = '';
       }, 5000);
+      toastStore.error('Save failed', message);
     } finally {
       isSaving = false;
     }
@@ -193,18 +197,9 @@
       isUploading = true;
       clientLogger.info('Config upload completed, refreshing content', { filename: file.name });
 
-      const response = await fetch(uploadEndpoint, { method: 'GET' });
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const result = await response.json();
-      if (result?.success && result?.data?.content) {
-        value = result.data.content;
-        clientLogger.info('Config content updated successfully after upload');
-      } else {
-        throw new Error('Invalid response format from server');
-      }
+      const result = await fetchConfigContent(uploadEndpoint);
+      value = result.content;
+      clientLogger.info('Config content updated successfully after upload');
 
       if (invalidateAfterUpload) {
         await invalidateAll();
@@ -213,8 +208,10 @@
       onUploadSuccess?.(file);
       showUploadModal = false;
     } catch (error) {
-      clientLogger.error('Error during upload success handling:', error);
-      onUploadError?.(error instanceof Error ? error : new Error('Upload handling failed'));
+      const err = error instanceof Error ? error : new Error('Upload handling failed');
+      clientLogger.error('Error during upload success handling:', err);
+      toastStore.error('Upload failed', err.message);
+      onUploadError?.(err);
     } finally {
       isUploading = false;
       showUploadModal = false;
@@ -263,36 +260,29 @@
       isReloading = true;
       clientLogger.info('Reloading config from disk');
 
-      const response = await fetch(reloadEndpoint, { method: 'GET' });
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      const result = await fetchConfigContent(reloadEndpoint);
+      const newContent = result.content;
+      value = newContent;
+      initialValue = newContent;
+
+      if (result.source) {
+        currentSource = result.source;
       }
 
-      const result = await response.json();
-      if (result?.success && result?.data?.content) {
-        const newContent = result.data.content;
-        value = newContent;
-        initialValue = newContent;
-
-        if (result?.data?.source) {
-          currentSource = result.data.source;
-        }
-
-        if (result?.data?.mtimeISO) {
-          onLastSavedChange?.(result.data.mtimeISO);
-        } else {
-          // If no mtime it's probably the example config
-          onLastSavedChange?.(undefined);
-        }
-
-        clientLogger.info('Config reloaded successfully');
-        onReloadSuccess?.(newContent);
+      if (result.mtimeISO) {
+        onLastSavedChange?.(result.mtimeISO);
       } else {
-        throw new Error('Invalid response format from server');
+        // If no mtime it's probably the example config
+        onLastSavedChange?.(undefined);
       }
+
+      clientLogger.info('Config reloaded successfully');
+      onReloadSuccess?.(newContent);
     } catch (error) {
-      clientLogger.error('Error during config reload:', error);
-      onReloadError?.(error instanceof Error ? error : new Error('Config reload failed'));
+      const err = error instanceof Error ? error : new Error('Config reload failed');
+      clientLogger.error('Error during config reload:', err);
+      toastStore.error('Reload failed', err.message);
+      onReloadError?.(err);
     } finally {
       isReloading = false;
       showReloadConfirmModal = false;
@@ -317,18 +307,7 @@
       isRestoring = true;
       clientLogger.info('Restoring default configuration');
 
-      const response = await fetch('/config-example.json');
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const exampleContent = await response.text();
-
-      try {
-        JSON.parse(exampleContent);
-      } catch {
-        throw new Error('Invalid JSON format in example configuration');
-      }
+      const exampleContent = await fetchExampleConfig();
 
       value = exampleContent;
       currentSource = 'example';
@@ -336,8 +315,10 @@
       clientLogger.info('Default configuration loaded successfully');
       onRestoreSuccess?.(exampleContent);
     } catch (error) {
-      clientLogger.error('Error during restore defaults:', error);
-      onRestoreError?.(error instanceof Error ? error : new Error('Restore defaults failed'));
+      const err = error instanceof Error ? error : new Error('Restore defaults failed');
+      clientLogger.error('Error during restore defaults:', err);
+      toastStore.error('Restore defaults failed', err.message);
+      onRestoreError?.(err);
     } finally {
       isRestoring = false;
       showRestoreConfirmModal = false;

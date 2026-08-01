@@ -14,6 +14,7 @@
   import { authClient, signOut } from '$lib/auth-client';
   import { Button, Chip, ConfirmModal, Field, Info, Toggle } from '$lib/components/ui';
   import { formatRelativeTime } from '$lib/utils/relativeTime';
+  import { clientLogger } from '$lib/client/logger';
 
   interface AccountUser {
     id: string;
@@ -203,7 +204,7 @@
 
       await invalidateAll();
     } catch (error) {
-      console.error('Password change failed:', error);
+      clientLogger.error('Password change failed:', error);
       passwordError = 'The password could not be changed.';
     } finally {
       passwordSaving = false;
@@ -715,7 +716,7 @@
             // This device's session and cookie are still live, so navigating
             // to the login page would claim an "everywhere" sign-out that did
             // not happen. Stay put and surface the failure instead.
-            console.error('Sign out failed:', error);
+            clientLogger.error('Sign out failed:', error);
             sessionBusy = false;
             signOutAfterRevoke = false;
             sessionError =

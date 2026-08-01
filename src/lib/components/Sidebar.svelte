@@ -13,6 +13,7 @@
   import { Icon } from '$lib/components';
   import { signOut } from '$lib/auth-client';
   import { toastStore } from '$lib/stores/toast';
+  import { clientLogger } from '$lib/client/logger';
 
   interface NavItem {
     id: string;
@@ -107,7 +108,7 @@
       window.location.href = '/auth/login';
     } catch (error) {
       toastStore.error('Logout failed', 'An error occurred while logging out');
-      console.error('Logout error:', error);
+      clientLogger.error('Logout error:', error);
     }
   }
 </script>

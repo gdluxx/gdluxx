@@ -13,6 +13,7 @@
   import { Icon } from '$lib/components';
   import { keywordInfoStore } from '$lib/stores/keyword-info.svelte';
   import { copyToClipboard } from '$lib/utils/clipboard';
+  import { clientLogger } from '$lib/client/logger';
 
   type Mode = 'list-keywords' | 'extractor-info';
 
@@ -76,7 +77,7 @@
         tooltip.visible = false;
       }, 1500);
     } catch (err) {
-      console.error('Copy failed:', err);
+      clientLogger.error('Copy failed:', err);
       tooltip.text = 'Copy failed';
       tooltip.x = x;
       tooltip.y = y;
