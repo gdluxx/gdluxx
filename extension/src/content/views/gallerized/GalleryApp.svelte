@@ -61,6 +61,58 @@
     if (!insideSd) store.closeSd();
   }
 
+  const NAV_COOLDOWN_MS = 150;
+  let lastNavTs = 0;
+
+  function normalizeDeltaY(e: WheelEvent): number {
+    if (e.deltaMode === WheelEvent.DOM_DELTA_LINE) return e.deltaY * 16;
+    if (e.deltaMode === WheelEvent.DOM_DELTA_PAGE) {
+      return e.deltaY * (store.gridEl?.clientHeight ?? window.innerHeight);
+    }
+    return e.deltaY;
+  }
+
+  function handleWheel(e: WheelEvent): void {
+    if (!store.open) return;
+
+    if (store.lightboxOpen) {
+      e.preventDefault();
+      if (e.deltaY === 0) return;
+      const now = Date.now();
+      if (now - lastNavTs < NAV_COOLDOWN_MS) return;
+      lastNavTs = now;
+      store.navigateLightbox(e.deltaY > 0 ? 1 : -1);
+      return;
+    }
+
+    // Over the grid: native scrolling; overscroll-behavior contains chaining
+    const overGrid = e.composedPath().some((el) => el instanceof Element && el.id === 'gz-grid');
+    if (overGrid) return;
+
+    // Anywhere else on screen: capture the wheel and scroll the grid
+    e.preventDefault();
+    if (store.gridEl && e.deltaY !== 0) {
+      store.gridEl.scrollBy({ top: normalizeDeltaY(e) });
+    }
+  }
+
+  $effect(() => {
+    document.addEventListener('keydown', handleKeydown);
+    document.addEventListener('click', handleGlobalClick);
+    return () => {
+      document.removeEventListener('keydown', handleKeydown);
+      document.removeEventListener('click', handleGlobalClick);
+    };
+  });
+
+  $effect(() => {
+    if (!store.open) return;
+    document.addEventListener('wheel', handleWheel, { passive: false, capture: true });
+    return () => {
+      document.removeEventListener('wheel', handleWheel, { capture: true });
+    };
+  });
+
   onMount(async () => {
     onRegisterToggle?.(() => store.toggleGallery());
 
@@ -71,14 +123,6 @@
       const persisted = await readGalleryThumbSize(sizes[1]);
       store.hydrateThumbSize(sizes.includes(persisted) ? persisted : sizes[1]);
     }
-
-    document.addEventListener('keydown', handleKeydown);
-    document.addEventListener('click', handleGlobalClick);
-
-    return () => {
-      document.removeEventListener('keydown', handleKeydown);
-      document.removeEventListener('click', handleGlobalClick);
-    };
   });
 </script>
 

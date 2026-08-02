@@ -59,7 +59,10 @@
     </button>
   </div>
 
-  <div id="gz-grid">
+  <div
+    id="gz-grid"
+    bind:this={store.gridEl}
+  >
     {#each store.urls ?? [] as url, i (url)}
       <div
         class="gz-cell"

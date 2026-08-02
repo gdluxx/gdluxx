@@ -26,6 +26,9 @@ export function createGallerizedStore(
   let activeThumbSize = $state(DEFAULT_GALLERY_CONFIG.thumbSizes[1]);
   let sdOpen = $state(false);
 
+  // Plain reference no rune: only read imperatively by the wheel handler
+  let gridEl: HTMLDivElement | null = null;
+
   return {
     get urls() {
       return urls;
@@ -44,6 +47,12 @@ export function createGallerizedStore(
     },
     get sdOpen() {
       return sdOpen;
+    },
+    get gridEl() {
+      return gridEl;
+    },
+    set gridEl(el: HTMLDivElement | null) {
+      gridEl = el;
     },
 
     toggleGallery(): void {

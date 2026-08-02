@@ -141,6 +141,7 @@
 /* IMAGE GRID */
 #gz-grid {
   overflow-y: auto;
+  overscroll-behavior: contain;
   flex: 1;
   display: grid;
   grid-template-columns: repeat(auto-fill, var(--gz-thumb, 200px));
@@ -248,7 +249,7 @@
 }
 .gz-lb-counter {
   position: absolute;
-  bottom: 12px;
+  bottom: 20px;
   left: 50%;
   transform: translateX(-50%);
   color: rgba(255, 255, 255, 0.6);
