@@ -11,6 +11,7 @@
 import { SvelteDate, SvelteMap, SvelteSet } from 'svelte/reactivity';
 import { toastStore } from '#stores/toast';
 import type {
+  DirectorySource,
   ExtractionConfig,
   ExtractionProfile,
   ExtractionBundle,
@@ -21,7 +22,7 @@ import type {
 import {
   applyExtractionImportPlan,
   buildProfileId,
-  clearActiveConfig,
+  clearDraftConfig,
   clearExtractionProfiles,
   DEFAULT_EXTRACTION_CONFIG,
   DEFAULT_GALLERY_CONFIG,
@@ -36,11 +37,11 @@ import {
   isTargetedConfigValid,
   planExtractionImport,
   type ExtractionImportPlan,
-  loadActiveConfig,
+  loadDraftConfig,
   loadExtractionProfiles,
   loadGalleryDefaults,
   MAX_RULES_PER_PROFILE,
-  persistActiveConfig,
+  persistDraftConfig,
   renameExtractionProfile,
   resolveScopeParts,
   saveExtractionProfile,
@@ -90,6 +91,7 @@ export function createExtractionProfileStore() {
   let rules = $state<SubRule[]>([]);
   let applyToPreview = $state(false);
   let scope = $state<ProfileScope>('host');
+  let directorySource = $state<DirectorySource | undefined>(undefined);
 
   // Profile management
   let activeProfileId = $state<string | null>(null);
@@ -131,6 +133,7 @@ export function createExtractionProfileStore() {
   let initialized = $state(false);
   let currentUrl = $state('');
   let configLoaded = $state(false);
+  let draftHost = $state('');
 
   // Derived
 
@@ -145,10 +148,18 @@ export function createExtractionProfileStore() {
     rules.some((r) => r.enabled && r.pattern.trim().length > 0),
   );
 
+  const hasDirectorySource = $derived(() => !!directorySource?.selector.trim());
+
   const activeProfileDiffers = $derived(() => {
     if (!activeProfile) return false;
     if (activeProfile.applyToPreview !== applyToPreview) return true;
     if (!extractionConfigsEqual(activeProfile.extraction, extraction)) return true;
+    if (
+      JSON.stringify(activeProfile.directorySource ?? null) !==
+      JSON.stringify(directorySource ?? null)
+    ) {
+      return true;
+    }
     return rulesDiffer(activeProfile.rules, rules);
   });
 
@@ -252,6 +263,7 @@ export function createExtractionProfileStore() {
         extraction,
         rules,
         applyToPreview,
+        directorySource,
       };
     }
     const resolved = resolveScopeParts(currentUrl);
@@ -263,6 +275,7 @@ export function createExtractionProfileStore() {
       extraction,
       rules,
       applyToPreview,
+      directorySource,
     };
   }
 
@@ -318,6 +331,10 @@ export function createExtractionProfileStore() {
     applyToPreview = value;
   }
 
+  function setDirectorySource(source: DirectorySource | undefined) {
+    directorySource = source;
+  }
+
   function setProfileSearch(value: string) {
     profileSearch = value;
   }
@@ -371,12 +388,15 @@ export function createExtractionProfileStore() {
       rules: rules.slice(0, MAX_RULES_PER_PROFILE),
       applyToPreview,
       autoApply: true,
+      directorySource,
       createdAt: now,
       updatedAt: now,
     };
 
     if (!hasExtractionContent(candidate)) {
-      toastStore.warning('Add selectors, rules, or gallery settings before saving.');
+      toastStore.warning(
+        'Add selectors, rules, a directory source, or gallery settings before saving.',
+      );
       return;
     }
 
@@ -470,6 +490,7 @@ export function createExtractionProfileStore() {
     extraction = profile.extraction;
     rules = profile.rules.slice().sort((a, b) => a.order - b.order);
     applyToPreview = profile.applyToPreview;
+    directorySource = profile.directorySource;
     activeProfileId = profile.id;
     activeProfile = profile;
     scope = profile.scope;
@@ -1047,6 +1068,29 @@ export function createExtractionProfileStore() {
     }
   }
 
+  async function loadDraftForHost(host: string): Promise<void> {
+    try {
+      const draft = host ? await loadDraftConfig(host) : null;
+      if (draft) {
+        extraction = draft.extraction;
+        rules = draft.rules.slice().sort((a, b) => a.order - b.order);
+        applyToPreview = draft.applyToPreview;
+        directorySource = draft.directorySource;
+      } else {
+        extraction = { ...DEFAULT_EXTRACTION_CONFIG };
+        rules = [createSubRule('', '', 'g', 0)];
+        applyToPreview = false;
+        directorySource = undefined;
+      }
+    } catch (error) {
+      console.error('Failed to load extraction draft for host', error);
+      extraction = { ...DEFAULT_EXTRACTION_CONFIG };
+      rules = [createSubRule('', '', 'g', 0)];
+      applyToPreview = false;
+      directorySource = undefined;
+    }
+  }
+
   async function autoApplyMatchingProfile(): Promise<void> {
     if (!initialized || !currentUrl) return;
     if (activeProfileId && !ignoredProfileIds.has(activeProfileId)) return;
@@ -1057,6 +1101,7 @@ export function createExtractionProfileStore() {
         extraction = match.profile.extraction;
         rules = match.profile.rules.slice().sort((a, b) => a.order - b.order);
         applyToPreview = match.profile.applyToPreview;
+        directorySource = match.profile.directorySource;
         activeProfileId = match.id;
         activeProfile = match.profile;
         scope = match.profile.scope;
@@ -1074,28 +1119,26 @@ export function createExtractionProfileStore() {
 
     currentUrl = url;
 
-    if (!initialized) {
-      // Load active config
-      try {
-        const active = await loadActiveConfig();
-        if (active) {
-          extraction = active.extraction;
-          rules = active.rules.sort((a, b) => a.order - b.order);
-          applyToPreview = active.applyToPreview;
-        } else {
-          extraction = { ...DEFAULT_EXTRACTION_CONFIG };
-          rules = [createSubRule('', '', 'g', 0)];
-          applyToPreview = false;
-        }
-      } catch (error) {
-        console.error('Failed to load active extraction config', error);
-        extraction = { ...DEFAULT_EXTRACTION_CONFIG };
-        rules = [createSubRule('', '', 'g', 0)];
-        applyToPreview = false;
-      } finally {
-        configLoaded = true;
-      }
+    if (urlChanged) {
+      // Reset profile-match state so autoApplyMatchingProfile's
+      // already applied guard doesn't block auto-apply for the new host
+      activeProfileId = null;
+      activeProfile = null;
+      statusMessage = null;
+      autoAppliedProfile = false;
+    }
 
+    // Load, or reset to defaults, the draft for this host. Runs on first
+    // init and on every host change - precedence is unchanged: the draft
+    // loads first, then a matching profile auto apply overwrites in memory
+    configLoaded = false;
+    const resolved = resolveScopeParts(url);
+    const nextHost = resolved?.host ?? '';
+    await loadDraftForHost(nextHost);
+    draftHost = nextHost;
+    configLoaded = true;
+
+    if (!initialized) {
       // Load preferred scope
       try {
         const pref = await getPreferredScope();
@@ -1133,13 +1176,15 @@ export function createExtractionProfileStore() {
     await loadAllProfilesInternal();
   }
 
-  // Active config persistence effect
+  // Draft persistence effect
 
   $effect(() => {
-    if (!configLoaded || !currentUrl) return;
-    persistActiveConfig({ extraction, rules, applyToPreview }).catch((error) => {
-      console.error('Failed to persist active extraction config', error);
-    });
+    if (!configLoaded || !draftHost) return;
+    persistDraftConfig(draftHost, { extraction, rules, applyToPreview, directorySource }).catch(
+      (error) => {
+        console.error('Failed to persist extraction draft', error);
+      },
+    );
   });
 
   $effect(() => {
@@ -1162,6 +1207,9 @@ export function createExtractionProfileStore() {
     },
     get scope() {
       return scope;
+    },
+    get directorySource() {
+      return directorySource;
     },
 
     // Profile state
@@ -1261,6 +1309,9 @@ export function createExtractionProfileStore() {
     get hasActiveRules() {
       return hasActiveRules();
     },
+    get hasDirectorySource() {
+      return hasDirectorySource();
+    },
     get activeProfileDiffers() {
       return activeProfileDiffers();
     },
@@ -1276,6 +1327,7 @@ export function createExtractionProfileStore() {
     setImageSource,
     setScope,
     setApplyToPreview,
+    setDirectorySource,
 
     // Rule management
     addRule,
@@ -1305,7 +1357,7 @@ export function createExtractionProfileStore() {
 
     // Gallery defaults
     saveGalleryDefaults: saveGalleryDefaultsToStorage,
-    clearActiveConfig,
+    clearDraftConfig: () => clearDraftConfig(draftHost),
 
     // Remote backup
     fetchBackupMeta,

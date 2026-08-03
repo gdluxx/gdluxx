@@ -10,6 +10,7 @@
 
 <script lang="ts">
   /* global Event, HTMLSelectElement */
+  import { untrack } from 'svelte';
   import { Icon } from '#components/ui';
   import { ToastContainer } from '#components/ui';
   import { registerGlobalEffects, focusElementOnce } from '#utils/globalEffects';
@@ -41,7 +42,8 @@
   import { createExtractionProfileStore } from '#stores/extractionProfileStore.svelte';
   import { createSettingsViewModel } from '#stores/settingsViewModel.svelte';
   import { createExtractionController } from '../lib/controllers/extractionController.svelte';
-  import type { AppTab, SettingsTab } from '#src/content/types';
+  import { readDirAutoFillOptOuts, resolveDirectoryFromSource } from '#utils/directorySource';
+  import type { AppTab, DirectorySource, SettingsTab } from '#src/content/types';
 
   const { onclose, shadowContainer } = $props();
 
@@ -76,7 +78,9 @@
   // Advanced section (unified extraction + rules panel)
   let advancedExpanded = $state(false);
   const hasActiveContent = $derived(
-    extractionProfiles.hasActiveFilters || extractionProfiles.hasActiveRules,
+    extractionProfiles.hasActiveFilters ||
+      extractionProfiles.hasActiveRules ||
+      extractionProfiles.hasDirectorySource,
   );
   let showSelectorHelp = $state(false);
   let showScopeHelp = $state(false);
@@ -270,6 +274,39 @@
     return extractionProfiles.applyToPreview ? modification.modifiedUrl : modification.initialUrl;
   }
 
+  function applyDirectorySourceAutoFill(source: DirectorySource | undefined) {
+    // An empty selector is "no source" everywhere else (storage strips it), so
+    // it must not surface as a resolution failure here either.
+    if (!source?.selector.trim()) {
+      selection.clearAutoFilledDirectory();
+      return;
+    }
+    if (typeof window === 'undefined') return;
+    // Dismissed on this page earlier in the session - stay out of the way
+    if (readDirAutoFillOptOuts().has(window.location.href)) return;
+    // Never overwrite a manually set directory name
+    if (!selection.canAcceptAutoFill) return;
+
+    const { value, reason } = resolveDirectoryFromSource(source);
+    if (value) {
+      selection.autoFillDirectory(value);
+    } else {
+      selection.autoFillDirectoryFailed(reason ?? 'Could not read a folder name from this page');
+    }
+  }
+
+  // Auto-fill is keyed on the active profile: initial auto-apply, manual apply,
+  // ignore and delete all move through activeProfileId
+  let lastDirSourceProfileId: string | null | undefined;
+  $effect(() => {
+    const profileId = extractionProfiles.activeProfileId;
+    untrack(() => {
+      if (lastDirSourceProfileId === profileId) return;
+      lastDirSourceProfileId = profileId;
+      applyDirectorySourceAutoFill(extractionProfiles.directorySource);
+    });
+  });
+
   // Accessibility: focus filter on open, Esc to close
   let filterEl = $state<HTMLInputElement | null>(null);
   let didFocus = false;
@@ -286,7 +323,9 @@
       canSaveProfile: () =>
         !(
           extractionProfiles.isSaving ||
-          (!extractionProfiles.hasActiveFilters && !extractionProfiles.hasActiveRules) ||
+          (!extractionProfiles.hasActiveFilters &&
+            !extractionProfiles.hasActiveRules &&
+            !extractionProfiles.hasDirectorySource) ||
           (!!extractionProfiles.activeProfileId && !extractionProfiles.activeProfileDiffers)
         ),
       saveProfile: () => onSaveProfile(),
@@ -425,7 +464,9 @@
             modifiedUrls={extractionProfiles.modifiedUrls}
             selectedItems={selection.selected}
             previewCount={extractionProfiles.previewCount}
+            directorySource={extractionProfiles.directorySource}
             onmodechange={(mode) => extractionProfiles.setExtractionMode(mode)}
+            ondirectorysourcechange={(src) => extractionProfiles.setDirectorySource(src)}
             onstartselectorchange={(val) => extractionProfiles.setStartSelector(val)}
             onendselectorchange={(val) => extractionProfiles.setEndSelector(val)}
             oncontainersourcechange={(src) => extractionProfiles.setContainerSource(src)}
@@ -471,6 +512,8 @@
         siteDirEnabled={selection.siteDirEnabled}
         onSiteDirToggle={() => selection.setSiteDirectory(!selection.siteDirEnabled)}
         currentHostname={typeof window !== 'undefined' ? window.location.hostname : ''}
+        autoFillFailedReason={selection.autoFillFailedReason}
+        isAutoFilled={selection.isAutoFilled}
       />
 
       <ContentTabs

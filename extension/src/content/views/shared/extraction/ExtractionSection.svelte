@@ -11,12 +11,14 @@
 <script lang="ts">
   import { AdvancedSection, Info } from '#components/ui';
   import ContainerModeTab from './ContainerModeTab.svelte';
+  import DirectorySourceConfig from './DirectorySourceConfig.svelte';
   import RuleList from './RuleList.svelte';
   import SubPreview from './SubPreview.svelte';
   import ProfileControls from './ProfileControls.svelte';
   import QuickApply from './QuickApply.svelte';
   import type {
     ContainerSource,
+    DirectorySource,
     ExtractionConfig,
     ExtractionProfile,
     ImageSource,
@@ -42,8 +44,10 @@
     modifiedUrls?: ReadonlySet<string>;
     selectedItems?: ReadonlySet<string>;
     previewCount?: number;
+    directorySource?: DirectorySource;
 
     onmodechange?: (mode: 'range' | 'targeted') => void;
+    ondirectorysourcechange?: (source: DirectorySource | undefined) => void;
     onstartselectorchange?: (value: string) => void;
     onendselectorchange?: (value: string) => void;
     oncontainersourcechange?: (source: ContainerSource) => void;
@@ -83,8 +87,10 @@
     modifiedUrls = new Set<string>(),
     selectedItems = new Set<string>(),
     previewCount = 0,
+    directorySource = undefined,
 
     onmodechange,
+    ondirectorysourcechange,
     onstartselectorchange,
     onendselectorchange,
     oncontainersourcechange,
@@ -151,6 +157,17 @@
         onapply={onapplysubstitutions}
         {onreset}
         {onshowregexhelp}
+      />
+    </div>
+
+    <div class="space-y-2 pt-2">
+      <p class="text-base-content/70 text-sm">
+        Download folder from page - reads a folder name off this page and fills the custom folder
+        field when the profile is applied.
+      </p>
+      <DirectorySourceConfig
+        {directorySource}
+        {ondirectorysourcechange}
       />
     </div>
 

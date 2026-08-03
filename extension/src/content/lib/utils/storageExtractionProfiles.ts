@@ -12,6 +12,7 @@ import { getValue, removeValue, setValue } from './storage';
 import type {
   ActiveExtractionConfig,
   ContainerSource,
+  DirectorySource,
   ExtractionBundle,
   ExtractionConfig,
   ExtractionProfile,
@@ -39,6 +40,7 @@ export interface SaveExtractionProfileInput {
   autoApply?: boolean;
   name?: string;
   gallery?: GalleryDisplayConfig;
+  directorySource?: DirectorySource;
 }
 
 export interface ExtractionProfileLookupResult {
@@ -57,12 +59,14 @@ const STORAGE_KEY = 'gdluxx_extraction_profiles';
 const VERSION_KEY = 'gdluxx_extraction_profiles_version';
 const SCOPE_PREF_KEY = 'gdluxx_extraction_scope_preference';
 const ACTIVE_CONFIG_KEY = 'gdluxx_extraction_active_config';
+const DRAFT_CONFIGS_KEY = 'gdluxx_extraction_draft_configs';
 const GALLERY_DEFAULTS_KEY = 'gdluxx_extraction_gallery_defaults';
 
 const BUNDLE_VERSION = 1 as const;
-const MAX_TOTAL_PROFILES = 500;
+const MAX_TOTAL_PROFILES = 1000;
 const MAX_PROFILES_PER_HOST = 50;
-export const MAX_RULES_PER_PROFILE = 20;
+const MAX_DRAFT_HOSTS = 50;
+export const MAX_RULES_PER_PROFILE = 500;
 
 export const DEFAULT_EXTRACTION_CONFIG: ExtractionConfig = {
   mode: 'range',
@@ -175,6 +179,28 @@ function cloneGalleryConfig(
   };
 }
 
+// An empty selector means "no source", the UI can toggle the section on
+// before anything is typed, and that should never round trip to storage
+function cloneDirectorySource(source: DirectorySource | undefined): DirectorySource | undefined {
+  if (!source) return undefined;
+  const selector = normaliseString(source.selector).trim();
+  if (!selector) return undefined;
+  const attr = normaliseString(source.attr).trim();
+  const pattern = normaliseString(source.transform?.pattern).trim();
+  return {
+    via: 'selector',
+    selector,
+    attr: attr || undefined,
+    transform: pattern
+      ? {
+          pattern,
+          replacement: normaliseString(source.transform?.replacement),
+          flags: normaliseString(source.transform?.flags) || undefined,
+        }
+      : undefined,
+  };
+}
+
 function cloneExtractionProfile(profile: ExtractionProfile): ExtractionProfile {
   return {
     id: normaliseString(profile.id),
@@ -188,6 +214,7 @@ function cloneExtractionProfile(profile: ExtractionProfile): ExtractionProfile {
     autoApply: profile.autoApply !== false,
     name: profile.name?.trim() || undefined,
     gallery: cloneGalleryConfig(profile.gallery),
+    directorySource: cloneDirectorySource(profile.directorySource),
     createdAt: typeof profile.createdAt === 'number' ? profile.createdAt : Date.now(),
     updatedAt: typeof profile.updatedAt === 'number' ? profile.updatedAt : Date.now(),
     lastUsed: typeof profile.lastUsed === 'number' ? profile.lastUsed : undefined,
@@ -207,6 +234,7 @@ function cloneActiveConfig(config: ActiveExtractionConfig): ActiveExtractionConf
     extraction: cloneExtractionConfig(config.extraction),
     rules: cloneRules(config.rules),
     applyToPreview: config.applyToPreview === true,
+    directorySource: cloneDirectorySource(config.directorySource),
   };
 }
 
@@ -259,6 +287,7 @@ export function hasExtractionContent(profile: ExtractionProfile): boolean {
   }
   if (rules.some((r) => r.pattern.trim().length > 0)) return true;
   if (gallery !== undefined) return true;
+  if (profile.directorySource?.selector.trim()) return true;
   return false;
 }
 
@@ -386,6 +415,7 @@ export async function saveExtractionProfile(
     autoApply: input.autoApply ?? existing?.autoApply ?? true,
     name: input.name ?? existing?.name,
     gallery: cloneGalleryConfig(input.gallery ?? existing?.gallery),
+    directorySource: cloneDirectorySource(input.directorySource),
     createdAt: existing?.createdAt ?? now,
     updatedAt: now,
     lastUsed: now,
@@ -500,6 +530,7 @@ function normaliseIncomingProfile(profile: ExtractionProfile): ExtractionProfile
     autoApply: profile.autoApply ?? true,
     name: profile.name?.trim() || undefined,
     gallery: cloneGalleryConfig(profile.gallery),
+    directorySource: cloneDirectorySource(profile.directorySource),
     createdAt: profile.createdAt ?? Date.now(),
     updatedAt: profile.updatedAt ?? Date.now(),
     lastUsed: profile.lastUsed,
@@ -612,22 +643,105 @@ export async function setPreferredScope(scope: ProfileScope): Promise<void> {
   }
 }
 
-export async function loadActiveConfig(): Promise<ActiveExtractionConfig | null> {
+interface DraftConfigEntry {
+  config: ActiveExtractionConfig;
+  savedAt: number;
+}
+
+type DraftConfigsMap = Record<string, DraftConfigEntry>;
+
+function cloneDraftEntry(entry: unknown): DraftConfigEntry | null {
+  if (!entry || typeof entry !== 'object') return null;
+  const candidate = entry as { config?: ActiveExtractionConfig; savedAt?: unknown };
+  if (!candidate.config || typeof candidate.config !== 'object') return null;
+  return {
+    config: cloneActiveConfig(candidate.config),
+    savedAt: typeof candidate.savedAt === 'number' ? candidate.savedAt : Date.now(),
+  };
+}
+
+function cloneDraftConfigsMap(stored: Record<string, unknown>): DraftConfigsMap {
+  const map: DraftConfigsMap = {};
+  for (const [host, entry] of Object.entries(stored)) {
+    const cloned = cloneDraftEntry(entry);
+    if (cloned) map[host] = cloned;
+  }
+  return map;
+}
+
+// Drops the lowest-savedAt entries beyond MAX_DRAFT_HOSTS, mirroring the
+// pruneByLimits above, host is the key here, so this is a single flat
+// prune rather than a per host grouped one
+function pruneDraftConfigs(map: DraftConfigsMap): void {
+  const entries = Object.entries(map);
+  if (entries.length <= MAX_DRAFT_HOSTS) return;
+  entries
+    .sort(([, a], [, b]) => a.savedAt - b.savedAt)
+    .slice(0, entries.length - MAX_DRAFT_HOSTS)
+    .forEach(([host]) => {
+      delete map[host];
+    });
+}
+
+async function loadDraftConfigsMap(): Promise<DraftConfigsMap> {
   try {
-    const stored = await getValue<ActiveExtractionConfig | null>(ACTIVE_CONFIG_KEY, null);
-    if (!stored || typeof stored !== 'object') return null;
-    return cloneActiveConfig(stored);
+    const stored = await getValue<Record<string, unknown> | null>(DRAFT_CONFIGS_KEY, null);
+    if (!stored || typeof stored !== 'object') return {};
+    return cloneDraftConfigsMap(stored);
+  } catch {
+    return {};
+  }
+}
+
+export async function loadDraftConfig(host: string): Promise<ActiveExtractionConfig | null> {
+  // Legacy global draft can't be attributed to a host, discard it
+  removeValue(ACTIVE_CONFIG_KEY).catch(() => {});
+
+  if (!host) return null;
+  try {
+    const map = await loadDraftConfigsMap();
+    return map[host]?.config ?? null;
   } catch {
     return null;
   }
 }
 
-export async function persistActiveConfig(config: ActiveExtractionConfig): Promise<void> {
-  await setValue(ACTIVE_CONFIG_KEY, cloneActiveConfig(config));
+// No module-level cache: every persist re-reads storage so a long lived
+// GalleryApp instance on one host never clobbers a draft saved for another
+// host in the meantime. Same host last-write-wins is fine for drafts
+export async function persistDraftConfig(
+  host: string,
+  config: ActiveExtractionConfig,
+): Promise<void> {
+  if (!host) return;
+  try {
+    const map = await loadDraftConfigsMap();
+    map[host] = { config: cloneActiveConfig(config), savedAt: Date.now() };
+    pruneDraftConfigs(map);
+    await setValue(DRAFT_CONFIGS_KEY, map);
+    storageStatus = { degraded: false };
+  } catch (error) {
+    storageStatus = {
+      degraded: true,
+      error: error instanceof Error ? error.message : 'Unknown storage error',
+    };
+  }
 }
 
-export async function clearActiveConfig(): Promise<void> {
-  await removeValue(ACTIVE_CONFIG_KEY);
+export async function clearDraftConfig(host: string): Promise<void> {
+  if (!host) return;
+  try {
+    const map = await loadDraftConfigsMap();
+    if (!(host in map)) return;
+    delete map[host];
+    await setValue(DRAFT_CONFIGS_KEY, map);
+    storageStatus = { degraded: false };
+  } catch (error) {
+    storageStatus = {
+      degraded: true,
+      error: error instanceof Error ? error.message : 'Unknown storage error',
+    };
+  }
 }
 
 export async function loadGalleryDefaults(): Promise<GalleryDisplayConfig> {

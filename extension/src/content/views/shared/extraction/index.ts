@@ -11,6 +11,7 @@
 export { default as ExtractionSection } from './ExtractionSection.svelte';
 export { default as ContainerModeTab } from './ContainerModeTab.svelte';
 export { default as ImageTargetConfig } from './ImageTargetConfig.svelte';
+export { default as DirectorySourceConfig } from './DirectorySourceConfig.svelte';
 export { default as RuleList } from './RuleList.svelte';
 export { default as RuleRow } from './RuleRow.svelte';
 export { default as SubPreview } from './SubPreview.svelte';

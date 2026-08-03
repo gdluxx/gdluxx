@@ -18,6 +18,7 @@ import {
   saveSiteDirectory,
 } from '#utils/persistence';
 import { isValidDirectoryName } from '#utils/validation';
+import { persistDirAutoFillOptOut } from '#utils/directorySource';
 import {
   toggleSelection,
   selectAll as selectAllValues,
@@ -33,16 +34,21 @@ export function createSelectionStore() {
   let customDirectoryValue = $state('');
   let siteDirEnabled = $state(false);
 
+  let lastSavedEnabled = false;
   let lastSavedDirectory = '';
   let lastSavedSiteDir = false;
 
+  // Provenance of the current directory value
+  let lastAutoFilledValue: string | null = null;
+  let autoFillFailedReason = $state<string | null>(null);
+
   $effect(() => {
-    // Only save when enabled and value changed
+    // Persist on any change to enabled or value
     if (
-      customDirectoryEnabled &&
-      customDirectoryValue &&
+      customDirectoryEnabled !== lastSavedEnabled ||
       customDirectoryValue !== lastSavedDirectory
     ) {
+      lastSavedEnabled = customDirectoryEnabled;
       lastSavedDirectory = customDirectoryValue;
       saveCustomDirectory(customDirectoryEnabled, customDirectoryValue).catch((err) => {
         console.error('Failed to save custom directory:', err);
@@ -58,6 +64,67 @@ export function createSelectionStore() {
       });
     }
   });
+
+  // Auto-filled values are page-derived, not user intent: sync the save
+  // trackers to the new state so the persistence effect sees no delta and
+  // nothing reaches browser.storage.local
+  function suppressDirectoryPersistence() {
+    lastSavedEnabled = customDirectoryEnabled;
+    lastSavedDirectory = customDirectoryValue;
+  }
+
+  function autoFillDirectory(value: string) {
+    customDirectoryEnabled = true;
+    customDirectoryValue = value;
+    lastAutoFilledValue = value;
+    autoFillFailedReason = null;
+    suppressDirectoryPersistence();
+  }
+
+  function autoFillDirectoryFailed(reason: string) {
+    customDirectoryEnabled = true;
+    customDirectoryValue = '';
+    lastAutoFilledValue = null;
+    autoFillFailedReason = reason;
+    suppressDirectoryPersistence();
+  }
+
+  function clearAutoFilledDirectory() {
+    // Only ever resets state this store filled in; a manual value is untouched
+    if (lastAutoFilledValue === null && autoFillFailedReason === null) return;
+    customDirectoryEnabled = false;
+    customDirectoryValue = '';
+    lastAutoFilledValue = null;
+    autoFillFailedReason = null;
+    suppressDirectoryPersistence();
+  }
+
+  function setCustomDirectory(enabled: boolean, value?: string) {
+    const wasAutoFilled = lastAutoFilledValue !== null || autoFillFailedReason !== null;
+
+    if (!enabled && wasAutoFilled) {
+      // Dismissing an auto-filled, or failed, value opts this page out for the
+      // rest of the session. The resulting {false, ''} write is intended
+      lastAutoFilledValue = null;
+      autoFillFailedReason = null;
+      customDirectoryValue = '';
+      if (typeof window !== 'undefined') {
+        persistDirAutoFillOptOut(window.location.href);
+      }
+    }
+
+    customDirectoryEnabled = enabled;
+
+    if (value !== undefined) {
+      if (value !== lastAutoFilledValue) {
+        // Typed over the auto-filled value - provenance becomes manual and the
+        // value persists normally from here on
+        lastAutoFilledValue = null;
+        autoFillFailedReason = null;
+      }
+      customDirectoryValue = value;
+    }
+  }
 
   function toggle(url: string) {
     const next = toggleSelection(selected, url);
@@ -165,6 +232,7 @@ export function createSelectionStore() {
       const dir = await loadCustomDirectory();
       customDirectoryEnabled = dir.enabled;
       customDirectoryValue = dir.value;
+      lastSavedEnabled = dir.enabled;
       lastSavedDirectory = dir.value;
 
       const siteDir = await loadSiteDirectory();
@@ -194,6 +262,17 @@ export function createSelectionStore() {
     get siteDirEnabled() {
       return siteDirEnabled;
     },
+    get autoFillFailedReason() {
+      return autoFillFailedReason;
+    },
+    get isAutoFilled() {
+      return lastAutoFilledValue !== null && customDirectoryValue === lastAutoFilledValue;
+    },
+    get canAcceptAutoFill() {
+      if (!customDirectoryEnabled) return true;
+      if (!customDirectoryValue.trim()) return true;
+      return lastAutoFilledValue !== null && customDirectoryValue === lastAutoFilledValue;
+    },
 
     setFilter(value: string) {
       filter = value;
@@ -201,15 +280,13 @@ export function createSelectionStore() {
     setCompact(value: boolean) {
       compact = value;
     },
-    setCustomDirectory(enabled: boolean, value?: string) {
-      customDirectoryEnabled = enabled;
-      if (value !== undefined) {
-        customDirectoryValue = value;
-      }
-    },
+    setCustomDirectory,
     setSiteDirectory(enabled: boolean) {
       siteDirEnabled = enabled;
     },
+    autoFillDirectory,
+    autoFillDirectoryFailed,
+    clearAutoFilledDirectory,
 
     toggle,
     selectAll,

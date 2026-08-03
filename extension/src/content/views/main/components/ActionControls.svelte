@@ -27,6 +27,8 @@
     siteDirEnabled = false,
     onSiteDirToggle,
     currentHostname = '',
+    autoFillFailedReason = null,
+    isAutoFilled = false,
   }: {
     isConfigured?: boolean;
     selectionCount?: number;
@@ -41,6 +43,8 @@
     siteDirEnabled?: boolean;
     onSiteDirToggle?: () => void;
     currentHostname?: string;
+    autoFillFailedReason?: string | null;
+    isAutoFilled?: boolean;
   } = $props();
 
   const isValid = $derived(isValidDirectoryName(customDirectoryValue));
@@ -87,7 +91,13 @@
             oninput={(e) => onCustomDirectoryChange?.(e.currentTarget.value)}
             class="input input-secondary input-sm flex-1 {!isValid ? 'input-error' : ''}"
             maxlength="255"
+            title={isAutoFilled
+              ? 'Filled from this page by the active extraction profile. Typing replaces it.'
+              : 'Custom folder for downloads'}
           />
+          {#if isAutoFilled}
+            <span class="text-base-content/50 shrink-0 text-xs">from page</span>
+          {/if}
           <Button
             size="sm"
             square
@@ -101,6 +111,10 @@
         {#if !isValid}
           <span class="text-error absolute top-full left-0 mt-1 text-xs">
             Invalid characters in folder name
+          </span>
+        {:else if autoFillFailedReason}
+          <span class="text-error absolute top-full left-0 mt-1 text-xs">
+            {autoFillFailedReason}
           </span>
         {/if}
       </div>
