@@ -104,6 +104,19 @@ export interface GalleryDisplayConfig {
   buttonCorner: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
 }
 
+export interface DirectoryTransform {
+  pattern: string;
+  replacement: string;
+  flags?: string;
+}
+
+export interface DirectorySource {
+  via: 'selector';
+  selector: string;
+  attr?: string;
+  transform?: DirectoryTransform;
+}
+
 export interface ExtractionProfile {
   id: string;
   name?: string;
@@ -116,6 +129,7 @@ export interface ExtractionProfile {
   applyToPreview: boolean;
   autoApply: boolean;
   gallery?: GalleryDisplayConfig;
+  directorySource?: DirectorySource;
   createdAt: number;
   updatedAt: number;
   lastUsed?: number;

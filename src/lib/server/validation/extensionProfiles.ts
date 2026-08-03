@@ -285,6 +285,21 @@ const imageSourceSchema = z.discriminatedUnion('via', [
   }),
 ]);
 
+const directorySourceSchema = z.discriminatedUnion('via', [
+  z.object({
+    via: z.literal('selector'),
+    selector: z.string().refine((s) => s.trim().length > 0, 'Directory selector must be non-empty'),
+    attr: z.string().optional(),
+    transform: z
+      .object({
+        pattern: z.string().min(1, 'Transform pattern must be non-empty'),
+        replacement: z.string(),
+        flags: z.string().max(10).optional(),
+      })
+      .optional(),
+  }),
+]);
+
 export const extractionConfigSchema = z.discriminatedUnion('mode', [
   z.object({
     mode: z.literal('range'),
@@ -310,6 +325,7 @@ const extractionProfileBaseSchema = z.object({
   applyToPreview: z.boolean(),
   autoApply: z.boolean(),
   gallery: galleryDisplayConfigSchema.optional(),
+  directorySource: directorySourceSchema.optional(),
   createdAt: z.number().int(),
   updatedAt: z.number().int(),
   lastUsed: z.number().int().optional(),
@@ -322,13 +338,14 @@ export const extractionProfileSchema = extractionProfileBaseSchema.superRefine((
         profile.extraction.endSelector.trim().length > 0)) ||
     profile.extraction.mode === 'targeted' ||
     profile.rules.some((r) => r.pattern.trim().length > 0) ||
-    profile.gallery !== undefined;
+    profile.gallery !== undefined ||
+    profile.directorySource !== undefined;
 
   if (!hasContent) {
     ctx.addIssue({
       code: 'custom',
       message:
-        'Profile must have at least one of: non-empty range selector, targeted config, a rule with non-empty pattern, or a gallery override.',
+        'Profile must have at least one of: non-empty range selector, targeted config, a rule with non-empty pattern, a gallery override, or a directory source.',
       path: ['extraction'],
     });
   }
@@ -359,6 +376,7 @@ export const extractionProfileCreateSchema = z.object({
   applyToPreview: z.boolean().default(false),
   autoApply: z.boolean().default(true),
   gallery: galleryDisplayConfigSchema.optional(),
+  directorySource: directorySourceSchema.optional(),
 });
 
 export type ExtractionProfileCreateInput = z.infer<typeof extractionProfileCreateSchema>;
@@ -370,6 +388,7 @@ export const extractionProfileUpdateSchema = z.object({
   applyToPreview: z.boolean(),
   autoApply: z.boolean(),
   gallery: galleryDisplayConfigSchema.optional(),
+  directorySource: directorySourceSchema.optional(),
 });
 
 export type ExtractionProfileUpdateInput = z.infer<typeof extractionProfileUpdateSchema>;

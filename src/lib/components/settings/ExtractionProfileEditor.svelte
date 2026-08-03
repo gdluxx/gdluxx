@@ -265,7 +265,11 @@
       startSelector.trim().length > 0 ||
       endSelector.trim().length > 0 ||
       rules.some((r) => r.pattern.trim().length > 0) ||
-      galleryEnabled;
+      galleryEnabled ||
+      // Directory only profiles, source set in the extension, are otherwise
+      // content-free from this editor's point of view — it never edits
+      // directorySource, so an existing one always counts as content
+      (isEdit && profile?.directorySource !== undefined);
     if (!hasContent) {
       return 'Add selectors, a targeted config, a rule, or a gallery override.';
     }
@@ -497,6 +501,24 @@
           placeholder="Friendly label"
         />
       </div>
+
+      {#if profile?.directorySource}
+        <Info
+          variant="info"
+          size="sm"
+        >
+          <p class="text-sm font-medium text-foreground">Directory from page</p>
+          <p class="mt-1 font-mono text-xs text-muted-foreground">
+            {profile.directorySource.selector}
+            {#if profile.directorySource.attr}
+              [{profile.directorySource.attr}]
+            {/if}
+          </p>
+          <p class="mt-1 text-xs text-muted-foreground">
+            Directory from page — edit in the browser extension.
+          </p>
+        </Info>
+      {/if}
 
       <div class="flex flex-wrap gap-6">
         <Toggle
