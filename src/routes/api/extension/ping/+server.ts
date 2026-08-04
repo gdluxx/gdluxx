@@ -12,6 +12,7 @@ import type { RequestHandler } from '@sveltejs/kit';
 import { serverLogger as logger } from '$lib/server/logger';
 import { validateApiKey } from '$lib/server/auth/apiAuth';
 import { createApiError, createApiResponse } from '$lib/server/api-utils';
+import { userSettingsManager } from '$lib/server/userSettingsManager';
 
 export const POST: RequestHandler = async ({ request }) => {
   const authHeader = request.headers.get('authorization');
@@ -36,9 +37,13 @@ export const POST: RequestHandler = async ({ request }) => {
     `Extension ping succeeded for API key ${authResult.keyInfo?.name} (ID: ${authResult.keyInfo?.id}).`,
   );
 
+  const userId = authResult.keyInfo?.userId;
+  const maxBatchUrls = userId ? userSettingsManager.getUserSettings(userId).maxBatchUrls : 200;
+
   return createApiResponse({
     message: 'Connection successful!',
     keyId: authResult.keyInfo?.id,
     keyName: authResult.keyInfo?.name,
+    maxBatchUrls,
   });
 };

@@ -78,7 +78,12 @@ export function createSettingsViewModel(appStore: AppStore, settings: Settings) 
     }
 
     try {
-      await saveSettings(settings);
+      // maxBatchUrls is background-learned (via ping) and not user editable
+      // here. The in memory `settings` snapshot can be stale relative to what
+      // was last persisted, so exclude it to avoid clobbering the learned value
+      const { maxBatchUrls, ...persistable } = settings;
+      void maxBatchUrls;
+      await saveSettings(persistable);
       toastStore.success('Settings saved successfully!');
     } catch (error) {
       console.error('Save settings error:', error);

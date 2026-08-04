@@ -33,6 +33,7 @@ const DEFAULT_SETTINGS: Settings = {
   galleryHotkeyEnabled: false,
   showImagePreviews: false,
   showImageHoverPreview: 'off',
+  maxBatchUrls: 200,
 };
 
 export function createAppStore() {

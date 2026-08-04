@@ -45,6 +45,7 @@ export function attachSettingsListener(): void {
       'gdluxx_gallery_hotkey_enabled',
       'gdluxx_show_image_previews',
       'gdluxx_show_image_hover_preview',
+      'gdluxx_max_batch_urls',
     ];
 
     if (settingsKeys.some((key) => key in changes)) {

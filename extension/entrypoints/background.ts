@@ -35,6 +35,8 @@ import {
 } from '#src/background/apiProxy';
 import { captureCookiesForDomain } from '#src/background/cookieCapture';
 
+const MAX_BATCH_URLS_KEY = 'gdluxx_max_batch_urls';
+
 interface SendUrlMessage {
   action: 'sendUrl';
   apiUrl: string;
@@ -305,7 +307,12 @@ export default defineBackground((): void => {
       switch (message.action) {
         case 'ping':
           (async () => {
-            sendResponse(await proxyPing(message.serverUrl, message.apiKey));
+            const result = await proxyPing(message.serverUrl, message.apiKey);
+            if (result.success && typeof result.data?.maxBatchUrls === 'number') {
+              const clamped = Math.floor(Math.min(10000, Math.max(1, result.data.maxBatchUrls)));
+              await browser.storage.local.set({ [MAX_BATCH_URLS_KEY]: clamped });
+            }
+            sendResponse(result);
           })();
           return true;
         case 'sendCommand':

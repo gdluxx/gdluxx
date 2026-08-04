@@ -90,7 +90,7 @@ export interface CookieBackupData {
   updatedAt: number | null;
 }
 
-interface BatchUrlResult {
+export interface BatchUrlResult {
   jobId?: string;
   url: string;
   success: boolean;
@@ -98,7 +98,7 @@ interface BatchUrlResult {
   error?: string;
 }
 
-interface ExternalSendResponse {
+export interface ExternalSendResponse {
   overallSuccess: boolean;
   results: BatchUrlResult[];
 }
@@ -145,7 +145,15 @@ function networkError<T>(error: unknown): ProxyApiResult<T> {
   };
 }
 
-export async function proxyPing(serverUrl: string, apiKey: string): Promise<ProxyApiResult> {
+export interface PingData {
+  message?: string;
+  maxBatchUrls?: number;
+}
+
+export async function proxyPing(
+  serverUrl: string,
+  apiKey: string,
+): Promise<ProxyApiResult<PingData>> {
   try {
     const response = await fetch(buildUrl(serverUrl, PING_ENDPOINT), {
       method: 'POST',
@@ -158,7 +166,7 @@ export async function proxyPing(serverUrl: string, apiKey: string): Promise<Prox
     type PingResponse = {
       success?: boolean;
       error?: string;
-      data?: { message?: string };
+      data?: PingData;
     };
 
     const payload = await parseJsonSafe<PingResponse>(response);
@@ -180,6 +188,7 @@ export async function proxyPing(serverUrl: string, apiKey: string): Promise<Prox
       return {
         success: true,
         message: payload.data?.message ?? 'Connection successful!',
+        data: payload.data,
       };
     }
 
@@ -231,7 +240,7 @@ export async function proxyCommand(
       }
       return {
         success: false,
-        error: `Server error: ${response.status}`,
+        error: payload.error ?? `Server error: ${response.status}`,
       };
     }
 

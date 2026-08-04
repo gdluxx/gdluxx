@@ -15,8 +15,10 @@ import type {
   CookieBackupData,
   CookiePermissionState,
   ProxyApiResult,
+  BatchUrlResult,
+  ExternalSendResponse,
 } from '#src/background/apiProxy';
-import { loadSettings, validateServerUrl } from '#utils/persistence';
+import { loadSettings, saveSettings, validateServerUrl, type Settings } from '#utils/persistence';
 import type { ExtractionBundle } from '#src/content/types';
 
 type ProfilesBundle = { version: number; profiles: Record<string, unknown> };
@@ -76,17 +78,145 @@ export async function testConnection(serverUrl: string, apiKey: string): Promise
   });
 }
 
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
+}
+
+function chunkUrls(urls: string[], size: number): string[][] {
+  // Guard against a NaN/fractional/zero size, e.g. a corrupt stored limit,
+  // producing an empty chunk and looping forever below
+  const chunkSize = Math.max(1, Math.floor(Number(size) || 1));
+  const chunks: string[][] = [];
+  for (let i = 0; i < urls.length; i += chunkSize) {
+    chunks.push(urls.slice(i, i + chunkSize));
+  }
+  return chunks;
+}
+
+// Server rejects an oversized batch with `Too many URLs. Max allowed is N.`;
+// parse N so a stale client-side limit can be relearned and retried.
+function parseStaleLimitError(error: string | undefined): number | null {
+  if (!error) return null;
+  const match = error.match(/Max allowed is (\d+)/);
+  if (!match) return null;
+  const value = Number(match[1]);
+  return Number.isFinite(value) ? value : null;
+}
+
+const DIRECTLINK_BATCH_SENTINEL = 'directlink batch';
+
+function expandChunkResults(chunk: string[], resultEntries: BatchUrlResult[]): BatchUrlResult[] {
+  const sentinel = resultEntries.find((entry) => entry.url === DIRECTLINK_BATCH_SENTINEL);
+
+  // The server trims URLs before echoing them back, so key on the trimmed
+  // form on both sides or a whitespace-carrying input URL is misreported.
+  const namedByUrl = new Map<string, BatchUrlResult[]>();
+  for (const entry of resultEntries) {
+    if (entry.url === DIRECTLINK_BATCH_SENTINEL) continue;
+    const key = entry.url.trim();
+    const existing = namedByUrl.get(key);
+    if (existing) {
+      existing.push(entry);
+    } else {
+      namedByUrl.set(key, [entry]);
+    }
+  }
+
+  return chunk.map((url) => {
+    const named = namedByUrl.get(url.trim());
+    if (named?.length) {
+      return named.shift() as BatchUrlResult;
+    }
+    if (sentinel) {
+      return {
+        url,
+        success: sentinel.success,
+        jobId: sentinel.jobId,
+        message: sentinel.message,
+        error: sentinel.error,
+      };
+    }
+    return { url, success: false, error: 'No result returned by server' };
+  });
+}
+
+async function sendChunked(
+  urls: string[],
+  limit: number,
+  settings: Settings,
+  customDirectory: string | undefined,
+  siteDirectory: string | undefined,
+  relearned: boolean,
+): Promise<ApiResult<ExternalSendResponse>> {
+  let currentLimit = limit;
+  let remaining = urls;
+  const results: BatchUrlResult[] = [];
+  let batches = 0;
+  let firstError: string | undefined;
+  let anySucceeded = false;
+
+  while (remaining.length > 0) {
+    for (const chunk of chunkUrls(remaining, currentLimit)) {
+      if (chunk.length === 0) {
+        remaining = []; // no progress possible, stop the outer loop too
+        break;
+      }
+
+      const res = await sendBackgroundRequest<ExternalSendResponse>({
+        action: 'sendCommand',
+        serverUrl: settings.serverUrl,
+        apiKey: settings.apiKey,
+        urls: chunk,
+        customDirectory,
+        siteDirectory,
+      });
+
+      if (res.success) {
+        batches++;
+        anySucceeded = true;
+        remaining = remaining.slice(chunk.length);
+        results.push(...expandChunkResults(chunk, res.data?.results ?? []));
+        continue;
+      }
+
+      const errorText = res.error ?? 'Unknown error';
+      if (firstError === undefined) firstError = errorText;
+
+      const relearnedLimit = !relearned ? parseStaleLimitError(errorText) : null;
+      if (relearnedLimit !== null) {
+        relearned = true;
+        currentLimit = clamp(relearnedLimit, 1, 10000);
+        await saveSettings({ maxBatchUrls: currentLimit });
+        break; // re-chunk the still-unsent remainder at the learned limit
+      }
+
+      batches++;
+      remaining = remaining.slice(chunk.length);
+      for (const url of chunk) results.push({ url, success: false, error: errorText });
+    }
+  }
+
+  const accepted = results.filter((result) => result.success).length;
+  const failed = results.length - accepted;
+
+  if (!anySucceeded) {
+    return { success: false, error: firstError ?? 'Failed to send URLs' };
+  }
+
+  return {
+    success: true,
+    message: `Sent ${urls.length} URLs in ${batches} batches: ${accepted} accepted, ${failed} failed`,
+    data: { overallSuccess: failed === 0, results },
+  };
+}
+
 export async function sendUrls(
   urls: string[],
   customDirectory?: string,
   siteDirectory?: string,
-): Promise<ApiResult> {
+): Promise<ApiResult<ExternalSendResponse>> {
   if (!urls?.length) {
     return { success: false, error: 'No URLs to send' };
-  }
-
-  if (urls.length > 2500) {
-    return { success: false, error: 'Too many URLs. Maximum 25 allowed.' };
   }
 
   const settings = await loadSettings();
@@ -94,14 +224,33 @@ export async function sendUrls(
     return { success: false, error: 'gdluxx is not configured. Please check settings.' };
   }
 
-  return sendBackgroundRequest({
-    action: 'sendCommand',
-    serverUrl: settings.serverUrl,
-    apiKey: settings.apiKey,
-    urls,
-    customDirectory,
-    siteDirectory,
-  });
+  const limit = clamp(settings.maxBatchUrls || 200, 1, 10000);
+
+  if (urls.length <= limit) {
+    const result = await sendBackgroundRequest<ExternalSendResponse>({
+      action: 'sendCommand',
+      serverUrl: settings.serverUrl,
+      apiKey: settings.apiKey,
+      urls,
+      customDirectory,
+      siteDirectory,
+    });
+
+    if (result.success) {
+      return result;
+    }
+
+    const relearnedLimit = parseStaleLimitError(result.error);
+    if (relearnedLimit === null) {
+      return result;
+    }
+
+    const newLimit = clamp(relearnedLimit, 1, 10000);
+    await saveSettings({ maxBatchUrls: newLimit });
+    return sendChunked(urls, newLimit, settings, customDirectory, siteDirectory, true);
+  }
+
+  return sendChunked(urls, limit, settings, customDirectory, siteDirectory, false);
 }
 
 export async function fetchProfileBackup(

@@ -56,7 +56,7 @@
     <Button
       size="sm"
       variant="primary"
-      title="Sends up to 25 URLs per request"
+      title="Send selected URLs to gdluxx (large selections are sent in batches)"
       onclick={onSendSelected}
       disabled={selectionCount === 0 ||
         (customDirectoryEnabled && (!customDirectoryValue.trim() || !isValid))}

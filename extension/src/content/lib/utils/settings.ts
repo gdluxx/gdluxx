@@ -21,6 +21,7 @@ export interface Settings {
   galleryHotkeyEnabled: boolean;
   showImagePreviews: boolean;
   showImageHoverPreview: 'off' | 'small' | 'medium' | 'large';
+  maxBatchUrls: number;
 }
 
 const DEFAULTS: Settings = {
@@ -34,6 +35,7 @@ const DEFAULTS: Settings = {
   galleryHotkeyEnabled: false,
   showImagePreviews: false,
   showImageHoverPreview: 'off',
+  maxBatchUrls: 200,
 };
 
 const KEY_PREFIX = 'gdluxx_';
@@ -48,6 +50,7 @@ const KEYS = {
   galleryHotkeyEnabled: `${KEY_PREFIX}gallery_hotkey_enabled`,
   showImagePreviews: `${KEY_PREFIX}show_image_previews`,
   showImageHoverPreview: `${KEY_PREFIX}show_image_hover_preview`,
+  maxBatchUrls: `${KEY_PREFIX}max_batch_urls`,
 };
 
 export async function loadSettings(): Promise<Settings> {
@@ -62,6 +65,7 @@ export async function loadSettings(): Promise<Settings> {
     galleryHotkeyEnabled,
     showImagePreviews,
     showImageHoverPreview,
+    maxBatchUrls,
   ] = await Promise.all([
     getValue(KEYS.serverUrl, DEFAULTS.serverUrl),
     getValue(KEYS.apiKey, DEFAULTS.apiKey),
@@ -73,6 +77,7 @@ export async function loadSettings(): Promise<Settings> {
     getValue(KEYS.galleryHotkeyEnabled, DEFAULTS.galleryHotkeyEnabled),
     getValue(KEYS.showImagePreviews, DEFAULTS.showImagePreviews),
     getValue(KEYS.showImageHoverPreview, DEFAULTS.showImageHoverPreview),
+    getValue(KEYS.maxBatchUrls, DEFAULTS.maxBatchUrls),
   ]);
 
   return {
@@ -86,6 +91,7 @@ export async function loadSettings(): Promise<Settings> {
     galleryHotkeyEnabled,
     showImagePreviews,
     showImageHoverPreview,
+    maxBatchUrls,
   };
 }
 
@@ -107,6 +113,7 @@ export async function saveSettings(settings: Partial<Settings>): Promise<void> {
     await setValue(KEYS.showImagePreviews, settings.showImagePreviews);
   if (settings.showImageHoverPreview !== undefined)
     await setValue(KEYS.showImageHoverPreview, settings.showImageHoverPreview);
+  if (settings.maxBatchUrls !== undefined) await setValue(KEYS.maxBatchUrls, settings.maxBatchUrls);
 }
 
 export function validateServerUrl(url: string): { valid: boolean; error?: string } {
