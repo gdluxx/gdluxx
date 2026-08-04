@@ -103,6 +103,21 @@ export interface ExternalSendResponse {
   results: BatchUrlResult[];
 }
 
+// Mirror of the server's JobListItem `src/lib/types/jobs.ts`
+export type JobStatus = 'running' | 'success' | 'no_action' | 'error';
+
+export interface JobStatusItem {
+  id: string;
+  url: string;
+  status: JobStatus;
+  startTime: number;
+  endTime?: number;
+  exitCode?: number;
+  downloadCount: number;
+  skipCount: number;
+  batchCount?: number;
+}
+
 interface DeleteResponse {
   deleted: boolean;
 }
@@ -113,8 +128,9 @@ const PROFILE_BACKUP_ENDPOINT = '/api/extension/profiles';
 const SUB_BACKUP_ENDPOINT = '/api/extension/subs';
 const EXTRACTION_BACKUP_ENDPOINT = '/api/extension/extraction';
 const COOKIES_ENDPOINT = '/api/extension/cookies';
+const JOBS_ENDPOINT = '/api/extension/jobs';
 
-function ensureHttpScheme(url: string): string {
+export function ensureHttpScheme(url: string): string {
   if (url.startsWith('http://') || url.startsWith('https://')) {
     return url;
   }
@@ -858,6 +874,49 @@ export async function proxyCookiesDelete(
           ? `Removed cookies for ${domain} from gdluxx`
           : 'Removed cookie backup from gdluxx'
         : 'No cookie backup existed on gdluxx',
+    };
+  } catch (error) {
+    return networkError(error);
+  }
+}
+
+export async function proxyJobsGet(
+  serverUrl: string,
+  apiKey: string,
+  ids: string[],
+): Promise<ProxyApiResult<{ jobs: JobStatusItem[] }>> {
+  try {
+    const query = ids.map((id) => encodeURIComponent(id)).join(',');
+
+    const response = await fetch(buildUrl(serverUrl, `${JOBS_ENDPOINT}?ids=${query}`), {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+      },
+    });
+
+    const payload = await parseJsonSafe<{
+      success?: boolean;
+      error?: string;
+      data?: { jobs: JobStatusItem[] };
+    }>(response);
+
+    if (!response.ok) {
+      if (response.status === 401 || response.status === 403) {
+        return {
+          success: false,
+          error: payload?.error ?? 'Invalid API key',
+        };
+      }
+      return {
+        success: false,
+        error: payload?.error ?? `Server error: ${response.status}`,
+      };
+    }
+
+    return {
+      success: true,
+      data: payload?.data ?? { jobs: [] },
     };
   } catch (error) {
     return networkError(error);

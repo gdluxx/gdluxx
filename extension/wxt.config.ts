@@ -25,7 +25,7 @@ export default defineConfig({
     },
   }),
   manifest: ({ browser }) => ({
-    permissions: ['activeTab', 'storage', 'contextMenus', 'notifications', 'scripting'],
+    permissions: ['activeTab', 'storage', 'contextMenus', 'notifications', 'scripting', 'alarms'],
     ...(browser === 'firefox'
       ? { optional_permissions: ['<all_urls>', 'cookies'] } // Firefox MV2
       : {

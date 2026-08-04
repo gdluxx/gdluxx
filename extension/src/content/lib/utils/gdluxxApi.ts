@@ -20,6 +20,7 @@ import type {
 } from '#src/background/apiProxy';
 import { loadSettings, saveSettings, validateServerUrl, type Settings } from '#utils/persistence';
 import type { ExtractionBundle } from '#src/content/types';
+import { expandJobResults } from '#src/shared/jobResults';
 
 type ProfilesBundle = { version: number; profiles: Record<string, unknown> };
 type SubsBundle = { version: number; profiles: Record<string, unknown> };
@@ -103,43 +104,6 @@ function parseStaleLimitError(error: string | undefined): number | null {
   return Number.isFinite(value) ? value : null;
 }
 
-const DIRECTLINK_BATCH_SENTINEL = 'directlink batch';
-
-function expandChunkResults(chunk: string[], resultEntries: BatchUrlResult[]): BatchUrlResult[] {
-  const sentinel = resultEntries.find((entry) => entry.url === DIRECTLINK_BATCH_SENTINEL);
-
-  // The server trims URLs before echoing them back, so key on the trimmed
-  // form on both sides or a whitespace-carrying input URL is misreported.
-  const namedByUrl = new Map<string, BatchUrlResult[]>();
-  for (const entry of resultEntries) {
-    if (entry.url === DIRECTLINK_BATCH_SENTINEL) continue;
-    const key = entry.url.trim();
-    const existing = namedByUrl.get(key);
-    if (existing) {
-      existing.push(entry);
-    } else {
-      namedByUrl.set(key, [entry]);
-    }
-  }
-
-  return chunk.map((url) => {
-    const named = namedByUrl.get(url.trim());
-    if (named?.length) {
-      return named.shift() as BatchUrlResult;
-    }
-    if (sentinel) {
-      return {
-        url,
-        success: sentinel.success,
-        jobId: sentinel.jobId,
-        message: sentinel.message,
-        error: sentinel.error,
-      };
-    }
-    return { url, success: false, error: 'No result returned by server' };
-  });
-}
-
 async function sendChunked(
   urls: string[],
   limit: number,
@@ -147,6 +111,7 @@ async function sendChunked(
   customDirectory: string | undefined,
   siteDirectory: string | undefined,
   relearned: boolean,
+  batchId: string,
 ): Promise<ApiResult<ExternalSendResponse>> {
   let currentLimit = limit;
   let remaining = urls;
@@ -156,11 +121,16 @@ async function sendChunked(
   let anySucceeded = false;
 
   while (remaining.length > 0) {
-    for (const chunk of chunkUrls(remaining, currentLimit)) {
+    const chunks = chunkUrls(remaining, currentLimit);
+
+    for (let i = 0; i < chunks.length; i++) {
+      const chunk = chunks[i];
       if (chunk.length === 0) {
         remaining = []; // no progress possible, stop the outer loop too
         break;
       }
+
+      const isLastOfSnapshot = i === chunks.length - 1;
 
       const res = await sendBackgroundRequest<ExternalSendResponse>({
         action: 'sendCommand',
@@ -169,13 +139,15 @@ async function sendChunked(
         urls: chunk,
         customDirectory,
         siteDirectory,
+        batchId,
+        final: isLastOfSnapshot,
       });
 
       if (res.success) {
         batches++;
         anySucceeded = true;
         remaining = remaining.slice(chunk.length);
-        results.push(...expandChunkResults(chunk, res.data?.results ?? []));
+        results.push(...expandJobResults(chunk, res.data?.results ?? []));
         continue;
       }
 
@@ -226,6 +198,8 @@ export async function sendUrls(
 
   const limit = clamp(settings.maxBatchUrls || 200, 1, 10000);
 
+  const batchId = crypto.randomUUID();
+
   if (urls.length <= limit) {
     const result = await sendBackgroundRequest<ExternalSendResponse>({
       action: 'sendCommand',
@@ -234,6 +208,8 @@ export async function sendUrls(
       urls,
       customDirectory,
       siteDirectory,
+      batchId,
+      final: true,
     });
 
     if (result.success) {
@@ -247,10 +223,10 @@ export async function sendUrls(
 
     const newLimit = clamp(relearnedLimit, 1, 10000);
     await saveSettings({ maxBatchUrls: newLimit });
-    return sendChunked(urls, newLimit, settings, customDirectory, siteDirectory, true);
+    return sendChunked(urls, newLimit, settings, customDirectory, siteDirectory, true, batchId);
   }
 
-  return sendChunked(urls, limit, settings, customDirectory, siteDirectory, false);
+  return sendChunked(urls, limit, settings, customDirectory, siteDirectory, false, batchId);
 }
 
 export async function fetchProfileBackup(

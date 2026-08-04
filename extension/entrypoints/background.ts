@@ -34,6 +34,13 @@ import {
   type ProxyApiResult,
 } from '#src/background/apiProxy';
 import { captureCookiesForDomain } from '#src/background/cookieCapture';
+import {
+  recordPendingBatch,
+  handleJobsAlarm,
+  handleNotificationClick,
+  ensureAlarmIfPending,
+  ALARM_NAME as JOBS_ALARM_NAME,
+} from '#src/background/jobTracker';
 
 const MAX_BATCH_URLS_KEY = 'gdluxx_max_batch_urls';
 
@@ -68,6 +75,8 @@ interface SendCommandMessage {
   urls: string[];
   customDirectory?: string;
   siteDirectory?: string;
+  batchId?: string;
+  final?: boolean;
 }
 
 interface GetProfilesMessage {
@@ -204,11 +213,20 @@ export default defineBackground((): void => {
 
   browser.runtime.onInstalled.addListener(async () => {
     await syncOverlayRegistrationFromPermissions();
+    await ensureAlarmIfPending();
   });
 
   browser.permissions.onAdded.addListener(async (perms) => {
     if (!perms.origins?.length) return;
     await syncOverlayRegistrationFromPermissions();
+  });
+
+  browser.alarms.onAlarm.addListener((alarm) => {
+    if (alarm.name === JOBS_ALARM_NAME) void handleJobsAlarm();
+  });
+
+  browser.notifications.onClicked.addListener((id) => {
+    void handleNotificationClick(id);
   });
 
   browser.contextMenus.create({
@@ -256,6 +274,17 @@ export default defineBackground((): void => {
         (async (): Promise<void> => {
           const result = await proxyCommand(message.apiUrl, message.apiKey, [message.tabUrl]);
           if (result.success) {
+            try {
+              await recordPendingBatch(
+                result.data?.results ?? [],
+                message.tabUrl,
+                undefined,
+                [message.tabUrl],
+                true,
+              );
+            } catch (error) {
+              console.error('gdluxx: failed to record pending batch', error);
+            }
             sendResponse({
               success: true,
               message: result.message ?? 'URL sent successfully!',
@@ -318,15 +347,27 @@ export default defineBackground((): void => {
         case 'sendCommand':
           (async () => {
             const urls = Array.isArray(message.urls) ? message.urls : [];
-            sendResponse(
-              await proxyCommand(
-                message.serverUrl,
-                message.apiKey,
-                urls,
-                message.customDirectory,
-                message.siteDirectory,
-              ),
+            const result = await proxyCommand(
+              message.serverUrl,
+              message.apiKey,
+              urls,
+              message.customDirectory,
+              message.siteDirectory,
             );
+            if (result.success && result.data?.results?.length) {
+              try {
+                await recordPendingBatch(
+                  result.data.results,
+                  sender.tab?.url,
+                  message.batchId,
+                  urls,
+                  message.final,
+                );
+              } catch (error) {
+                console.error('gdluxx: failed to record pending batch', error);
+              }
+            }
+            sendResponse(result);
           })();
           return true;
         case 'getProfiles':
@@ -477,6 +518,17 @@ export default defineBackground((): void => {
       const sendResult = await proxyCommand(serverUrl, apiKey, [cleanedUrl]);
 
       if (sendResult.success) {
+        try {
+          await recordPendingBatch(
+            sendResult.data?.results ?? [],
+            url,
+            undefined,
+            [cleanedUrl],
+            true,
+          );
+        } catch (error) {
+          console.error('gdluxx: failed to record pending batch', error);
+        }
         browser.notifications.create({
           type: 'basic',
           iconUrl: 'icon/48.png',
