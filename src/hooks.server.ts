@@ -24,6 +24,7 @@ const extensionApiRoutes = [
   '/api/extension/subs',
   '/api/extension/ping',
   '/api/extension/cookies',
+  '/api/extension/jobs',
 ];
 
 function isExtensionApiRoute(pathname: string): boolean {

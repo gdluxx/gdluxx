@@ -45,3 +45,20 @@ export const jobsDeleteSchema = z
   });
 
 export type JobsDeletePayload = z.infer<typeof jobsDeleteSchema>;
+
+const MAX_EXTENSION_JOB_IDS = 100;
+
+export const extensionJobsQuerySchema = z.object({
+  ids: z
+    .string()
+    .min(1)
+    .transform((value) =>
+      value
+        .split(',')
+        .map((part) => part.trim())
+        .filter(Boolean),
+    )
+    .pipe(z.array(z.string().min(1).max(64)).min(1).max(MAX_EXTENSION_JOB_IDS)),
+});
+
+export type ExtensionJobsQuery = z.infer<typeof extensionJobsQuerySchema>;

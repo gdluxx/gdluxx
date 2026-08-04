@@ -220,6 +220,23 @@ export function readJobById(id: string): JobListItem | undefined {
   }
 }
 
+export function readJobsByIds(ids: string[]): JobListItem[] {
+  if (ids.length === 0) {
+    return [];
+  }
+  try {
+    const rows = db
+      .prepare(
+        `SELECT ${JOB_LIST_COLUMNS} FROM jobs WHERE id IN (${ids.map(() => '?').join(', ')})`,
+      )
+      .all(...ids) as JobListRow[];
+    return rows.map(mapListRow);
+  } catch (error) {
+    serverLogger.error('Error reading jobs by ids from database:', error);
+    return [];
+  }
+}
+
 export function readJobOutputs(id: string): JobOutput[] {
   try {
     const rows = db
