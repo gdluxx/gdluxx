@@ -49,10 +49,11 @@ export default defineContentScript({
   matches: [],
   runAt: 'document_idle',
   registration: 'runtime',
-  main: async () => {
+  main: async (ctx) => {
     let overlayInstance: ReturnType<typeof mount> | null = null;
     let galleryInstance: ReturnType<typeof mount> | null = null;
     let galleryToggle: (() => void) | null = null;
+    let galleryReinit: ((url: string) => void) | null = null;
     let hotkeyListenerAttached = false;
 
     const mountGallery = (): void => {
@@ -64,6 +65,9 @@ export default defineContentScript({
         props: {
           onRegisterToggle: (toggle: () => void) => {
             galleryToggle = toggle;
+          },
+          onRegisterReinit: (reinit: (url: string) => void) => {
+            galleryReinit = reinit;
           },
         },
       });
@@ -199,5 +203,9 @@ export default defineContentScript({
     await attachHotkeyListener();
 
     mountGallery();
+
+    ctx.addEventListener(window, 'wxt:locationchange', (ev) => {
+      galleryReinit?.(ev.newUrl.href);
+    });
   },
 });

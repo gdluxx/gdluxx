@@ -19,9 +19,10 @@
 
   interface Props {
     onRegisterToggle?: (toggle: () => void) => void;
+    onRegisterReinit?: (reinit: (url: string) => void) => void;
   }
 
-  const { onRegisterToggle }: Props = $props();
+  const { onRegisterToggle, onRegisterReinit }: Props = $props();
 
   const extractionProfiles = createExtractionProfileStore();
   const store = createGallerizedStore(
@@ -115,6 +116,10 @@
 
   onMount(async () => {
     onRegisterToggle?.(() => store.toggleGallery());
+    onRegisterReinit?.((url) => {
+      store.closeGallery();
+      void extractionProfiles.initialize(url);
+    });
 
     if (typeof window !== 'undefined') {
       await extractionProfiles.initialize(window.location.href);

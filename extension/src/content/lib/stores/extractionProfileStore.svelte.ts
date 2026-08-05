@@ -1113,7 +1113,18 @@ export function createExtractionProfileStore() {
     }
   }
 
-  async function initialize(url: string): Promise<void> {
+  let initChain: Promise<void> = Promise.resolve();
+
+  function initialize(url: string): Promise<void> {
+    const run = initChain.then(() => initializeInternal(url));
+    initChain = run.catch(() => {
+      // Swallow here only to keep the chain alive, callers still observe
+      // the rejection via the returned `run` promise
+    });
+    return run;
+  }
+
+  async function initializeInternal(url: string): Promise<void> {
     const urlChanged = currentUrl !== url;
     if (initialized && !urlChanged) return;
 
