@@ -61,6 +61,19 @@ export interface ExtractionSubRule {
   order: number;
 }
 
+export interface DirectoryTransform {
+  pattern: string;
+  replacement: string;
+  flags?: string;
+}
+
+export interface DirectorySource {
+  via: 'selector';
+  selector: string;
+  attr?: string;
+  transform?: DirectoryTransform;
+}
+
 export interface SavedExtractionProfile {
   id: string;
   name?: string;
@@ -73,6 +86,8 @@ export interface SavedExtractionProfile {
   applyToPreview: boolean;
   autoApply: boolean;
   gallery?: GalleryDisplayConfig;
+  directorySource?: DirectorySource;
+  accumulate?: boolean;
   createdAt: number;
   updatedAt: number;
   lastUsed?: number;

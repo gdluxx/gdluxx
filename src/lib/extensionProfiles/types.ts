@@ -130,6 +130,7 @@ export interface ExtractionProfile {
   autoApply: boolean;
   gallery?: GalleryDisplayConfig;
   directorySource?: DirectorySource;
+  accumulate?: boolean;
   createdAt: number;
   updatedAt: number;
   lastUsed?: number;

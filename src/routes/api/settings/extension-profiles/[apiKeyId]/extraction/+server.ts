@@ -135,6 +135,8 @@ export const POST: RequestHandler = async ({ request, params, locals }) => {
       applyToPreview: input.applyToPreview,
       autoApply: input.autoApply,
       gallery: input.gallery,
+      directorySource: input.directorySource,
+      accumulate: input.accumulate,
       createdAt: now,
       updatedAt: now,
     };

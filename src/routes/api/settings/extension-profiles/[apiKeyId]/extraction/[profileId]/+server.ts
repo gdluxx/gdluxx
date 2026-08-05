@@ -49,9 +49,9 @@ export const PUT: RequestHandler = async ({ request, params, locals }) => {
       rules: normaliseRuleInputs(input.rules),
       applyToPreview: input.applyToPreview,
       autoApply: input.autoApply,
-      // Assigned explicitly so omitting gallery in the request clears the
-      // stored override (undefined is dropped on JSON serialization).
       gallery: input.gallery,
+      directorySource: input.directorySource,
+      accumulate: input.accumulate,
       updatedAt: Date.now(),
     };
 

@@ -326,6 +326,7 @@ const extractionProfileBaseSchema = z.object({
   autoApply: z.boolean(),
   gallery: galleryDisplayConfigSchema.optional(),
   directorySource: directorySourceSchema.optional(),
+  accumulate: z.boolean().optional(),
   createdAt: z.number().int(),
   updatedAt: z.number().int(),
   lastUsed: z.number().int().optional(),
@@ -377,6 +378,7 @@ export const extractionProfileCreateSchema = z.object({
   autoApply: z.boolean().default(true),
   gallery: galleryDisplayConfigSchema.optional(),
   directorySource: directorySourceSchema.optional(),
+  accumulate: z.boolean().optional(),
 });
 
 export type ExtractionProfileCreateInput = z.infer<typeof extractionProfileCreateSchema>;
@@ -389,6 +391,7 @@ export const extractionProfileUpdateSchema = z.object({
   autoApply: z.boolean(),
   gallery: galleryDisplayConfigSchema.optional(),
   directorySource: directorySourceSchema.optional(),
+  accumulate: z.boolean().optional(),
 });
 
 export type ExtractionProfileUpdateInput = z.infer<typeof extractionProfileUpdateSchema>;
