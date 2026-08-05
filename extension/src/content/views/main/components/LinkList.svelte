@@ -11,6 +11,7 @@
 <script lang="ts">
   import { Badge, Info } from '#components/ui';
   import type { SubResult } from '#utils/substitution';
+  import type { SentStatus } from '#utils/storageSentHistory';
 
   const {
     links = [],
@@ -20,6 +21,7 @@
     onToggle,
     modifiedUrls = new Set<string>(),
     urlModifications = new Map<string, SubResult>(),
+    sentStatuses = new Map<string, SentStatus>(),
   }: {
     links?: string[];
     counts?: Record<string, number>;
@@ -28,7 +30,24 @@
     onToggle: (url: string) => void;
     modifiedUrls?: ReadonlySet<string>;
     urlModifications?: ReadonlyMap<string, SubResult>;
+    sentStatuses?: ReadonlyMap<string, SentStatus>;
   } = $props();
+
+  const SENT_STATUS_LABEL: Record<SentStatus, string> = {
+    sent: 'Sent',
+    success: 'OK',
+    no_action: 'Skip',
+    error: 'Failed',
+  };
+  const SENT_STATUS_VARIANT: Record<
+    SentStatus,
+    'outline-success' | 'success' | 'warning' | 'danger'
+  > = {
+    sent: 'outline-success',
+    success: 'success',
+    no_action: 'warning',
+    error: 'danger',
+  };
 </script>
 
 <div class="mt-2">
@@ -86,6 +105,14 @@
                         title={`Original: ${urlModifications.get(url)?.initialUrl ?? ''}`}
                       />
                     {/if}
+                  {/if}
+                  {#if sentStatuses.has(url)}
+                    <Badge
+                      label={SENT_STATUS_LABEL[sentStatuses.get(url) as SentStatus]}
+                      dismissible={false}
+                      variant={SENT_STATUS_VARIANT[sentStatuses.get(url) as SentStatus]}
+                      size={compact ? 'xs' : 'sm'}
+                    />
                   {/if}
                 </div>
               </td>

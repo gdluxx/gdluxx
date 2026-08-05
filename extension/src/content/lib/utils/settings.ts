@@ -22,6 +22,7 @@ export interface Settings {
   showImagePreviews: boolean;
   showImageHoverPreview: 'off' | 'small' | 'medium' | 'large';
   maxBatchUrls: number;
+  showSentMarks: boolean;
 }
 
 const DEFAULTS: Settings = {
@@ -36,6 +37,7 @@ const DEFAULTS: Settings = {
   showImagePreviews: false,
   showImageHoverPreview: 'off',
   maxBatchUrls: 200,
+  showSentMarks: true,
 };
 
 const KEY_PREFIX = 'gdluxx_';
@@ -51,7 +53,10 @@ const KEYS = {
   showImagePreviews: `${KEY_PREFIX}show_image_previews`,
   showImageHoverPreview: `${KEY_PREFIX}show_image_hover_preview`,
   maxBatchUrls: `${KEY_PREFIX}max_batch_urls`,
+  showSentMarks: `${KEY_PREFIX}show_sent_marks`,
 };
+
+export const SHOW_SENT_MARKS_KEY = KEYS.showSentMarks;
 
 export async function loadSettings(): Promise<Settings> {
   const [
@@ -66,6 +71,7 @@ export async function loadSettings(): Promise<Settings> {
     showImagePreviews,
     showImageHoverPreview,
     maxBatchUrls,
+    showSentMarks,
   ] = await Promise.all([
     getValue(KEYS.serverUrl, DEFAULTS.serverUrl),
     getValue(KEYS.apiKey, DEFAULTS.apiKey),
@@ -78,6 +84,7 @@ export async function loadSettings(): Promise<Settings> {
     getValue(KEYS.showImagePreviews, DEFAULTS.showImagePreviews),
     getValue(KEYS.showImageHoverPreview, DEFAULTS.showImageHoverPreview),
     getValue(KEYS.maxBatchUrls, DEFAULTS.maxBatchUrls),
+    getValue(KEYS.showSentMarks, DEFAULTS.showSentMarks),
   ]);
 
   return {
@@ -92,6 +99,7 @@ export async function loadSettings(): Promise<Settings> {
     showImagePreviews,
     showImageHoverPreview,
     maxBatchUrls,
+    showSentMarks,
   };
 }
 
@@ -114,6 +122,8 @@ export async function saveSettings(settings: Partial<Settings>): Promise<void> {
   if (settings.showImageHoverPreview !== undefined)
     await setValue(KEYS.showImageHoverPreview, settings.showImageHoverPreview);
   if (settings.maxBatchUrls !== undefined) await setValue(KEYS.maxBatchUrls, settings.maxBatchUrls);
+  if (settings.showSentMarks !== undefined)
+    await setValue(KEYS.showSentMarks, settings.showSentMarks);
 }
 
 export function validateServerUrl(url: string): { valid: boolean; error?: string } {

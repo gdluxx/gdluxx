@@ -12,6 +12,7 @@
   import { onMount } from 'svelte';
   import { createGallerizedStore } from '#stores/gallerizedStore.svelte';
   import { createExtractionProfileStore } from '#stores/extractionProfileStore.svelte';
+  import { createSentHistoryStore } from '#stores/sentHistoryStore.svelte';
   import { readGalleryThumbSize } from '#utils/persistence';
   import GalleryButton from './GalleryButton.svelte';
   import GalleryModal from './GalleryModal.svelte';
@@ -25,6 +26,7 @@
   const { onRegisterToggle, onRegisterReinit }: Props = $props();
 
   const extractionProfiles = createExtractionProfileStore();
+  const sentHistory = createSentHistoryStore();
   const store = createGallerizedStore(
     () => extractionProfiles.extraction,
     () => extractionProfiles.rules,
@@ -120,15 +122,21 @@
     onRegisterReinit?.((url) => {
       store.closeGallery();
       void extractionProfiles.initialize(url);
+      void sentHistory.initialize(new URL(url).hostname);
     });
 
     if (typeof window !== 'undefined') {
       await extractionProfiles.initialize(window.location.href);
+      await sentHistory.initialize(window.location.hostname);
 
       const sizes = displayConfig.thumbSizes;
       const persisted = await readGalleryThumbSize(sizes[1]);
       store.hydrateThumbSize(sizes.includes(persisted) ? persisted : sizes[1]);
     }
+  });
+
+  $effect(() => {
+    return () => sentHistory.dispose();
   });
 </script>
 
@@ -140,5 +148,6 @@
   <GalleryModal
     {store}
     {displayConfig}
+    {sentHistory}
   />
 {/if}

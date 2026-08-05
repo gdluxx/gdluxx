@@ -15,16 +15,22 @@
     isFullscreen: boolean;
     showImagePreviews: boolean;
     showImageHoverPreview: HoverPreviewMode;
+    showSentMarks: boolean;
     onToggleDisplayMode: () => void | Promise<void>;
     onToggleImagePreviews: (event: Event) => void | Promise<void>;
     onToggleImageHoverPreview: (event: Event) => void | Promise<void>;
+    onToggleSentMarks: (event: Event) => void | Promise<void>;
+    onClearSentHistory: (scope: 'host' | 'all') => void | Promise<void>;
   }
 
   const {
     showImagePreviews,
     showImageHoverPreview,
+    showSentMarks,
     onToggleImagePreviews,
     onToggleImageHoverPreview,
+    onToggleSentMarks,
+    onClearSentHistory,
   }: PreviewTabProps = $props();
 </script>
 
@@ -97,6 +103,38 @@
             <span class="text-sm">large</span>
           </label>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card bg-base-200 mb-4 shadow-xl">
+    <div class="card-body">
+      <div class="card-title">Sent History</div>
+      <p>Mark URLs already sent to gdluxx with a badge (overlay) or a dot (gallery).</p>
+      <div class="card-actions justify-end">
+        <input
+          id="show-sent-marks"
+          type="checkbox"
+          class="toggle toggle-accent toggle-md"
+          checked={showSentMarks}
+          onchange={onToggleSentMarks}
+        />
+      </div>
+      <div class="card-actions justify-end gap-2">
+        <button
+          type="button"
+          class="btn btn-sm btn-outline"
+          onclick={() => onClearSentHistory('host')}
+        >
+          Clear for this site
+        </button>
+        <button
+          type="button"
+          class="btn btn-sm btn-outline btn-error"
+          onclick={() => onClearSentHistory('all')}
+        >
+          Clear all
+        </button>
       </div>
     </div>
   </div>

@@ -21,10 +21,12 @@ import type {
 import { loadSettings, saveSettings, validateServerUrl, type Settings } from '#utils/persistence';
 import type { ExtractionBundle } from '#src/content/types';
 import { expandJobResults } from '#src/shared/jobResults';
+import { recordSentUrls } from '#utils/storageSentHistory';
 
 type ProfilesBundle = { version: number; profiles: Record<string, unknown> };
 type SubsBundle = { version: number; profiles: Record<string, unknown> };
 
+export type { BatchUrlResult, ExternalSendResponse } from '#src/background/apiProxy';
 export type ApiResult<T = unknown> = ProxyApiResult<T>;
 export type ProfileBackupPayload = ProfileBackupData;
 export type SubBackupPayload = SubBackupData;
@@ -182,6 +184,17 @@ async function sendChunked(
   };
 }
 
+function recordAcceptedSends(result: ApiResult<ExternalSendResponse>): void {
+  if (!result.success || !result.data?.results) return;
+  const accepted = result.data.results
+    .filter((entry) => entry.success)
+    .map(({ url, jobId }) => ({ url, jobId }));
+  if (!accepted.length) return;
+  void recordSentUrls(location.hostname.toLowerCase(), accepted).catch((error) => {
+    console.error('Failed to record sent URL history', error);
+  });
+}
+
 export async function sendUrls(
   urls: string[],
   customDirectory?: string,
@@ -213,7 +226,15 @@ export async function sendUrls(
     });
 
     if (result.success) {
-      return result;
+      const expanded: ApiResult<ExternalSendResponse> = {
+        ...result,
+        data: {
+          overallSuccess: result.data?.overallSuccess ?? false,
+          results: expandJobResults(urls, result.data?.results ?? []),
+        },
+      };
+      recordAcceptedSends(expanded);
+      return expanded;
     }
 
     const relearnedLimit = parseStaleLimitError(result.error);
@@ -223,10 +244,30 @@ export async function sendUrls(
 
     const newLimit = clamp(relearnedLimit, 1, 10000);
     await saveSettings({ maxBatchUrls: newLimit });
-    return sendChunked(urls, newLimit, settings, customDirectory, siteDirectory, true, batchId);
+    const chunkedResult = await sendChunked(
+      urls,
+      newLimit,
+      settings,
+      customDirectory,
+      siteDirectory,
+      true,
+      batchId,
+    );
+    recordAcceptedSends(chunkedResult);
+    return chunkedResult;
   }
 
-  return sendChunked(urls, limit, settings, customDirectory, siteDirectory, false, batchId);
+  const chunkedResult = await sendChunked(
+    urls,
+    limit,
+    settings,
+    customDirectory,
+    siteDirectory,
+    false,
+    batchId,
+  );
+  recordAcceptedSends(chunkedResult);
+  return chunkedResult;
 }
 
 export async function fetchProfileBackup(

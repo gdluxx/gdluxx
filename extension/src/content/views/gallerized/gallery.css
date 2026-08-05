@@ -238,6 +238,28 @@
   background: #55cc88;
   color: #fff;
 }
+.gz-sent-dot {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  pointer-events: none;
+  outline: 1px solid rgba(0, 0, 0, 0.6);
+}
+.gz-sent-sent {
+  background: #5588ee;
+}
+.gz-sent-success {
+  background: #55cc88;
+}
+.gz-sent-no_action {
+  background: #ffaa33;
+}
+.gz-sent-error {
+  background: #ee5555;
+}
 
 /* LIGHTBOX */
 #gz-lightbox {

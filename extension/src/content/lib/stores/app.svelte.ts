@@ -34,6 +34,7 @@ const DEFAULT_SETTINGS: Settings = {
   showImagePreviews: false,
   showImageHoverPreview: 'off',
   maxBatchUrls: 200,
+  showSentMarks: true,
 };
 
 export function createAppStore() {

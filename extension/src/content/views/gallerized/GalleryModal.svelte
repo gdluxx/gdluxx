@@ -11,10 +11,18 @@
 <script lang="ts">
   import Lightbox from './Lightbox.svelte';
   import type { GallerizedStore } from '#stores/gallerizedStore.svelte';
+  import type { SentHistoryStore } from '#stores/sentHistoryStore.svelte';
   import type { GalleryDisplayConfig } from '#src/content/types';
 
-  const { store, displayConfig }: { store: GallerizedStore; displayConfig: GalleryDisplayConfig } =
-    $props();
+  const {
+    store,
+    displayConfig,
+    sentHistory,
+  }: {
+    store: GallerizedStore;
+    displayConfig: GalleryDisplayConfig;
+    sentHistory: SentHistoryStore;
+  } = $props();
 
   const urlCount = $derived(store.urls?.length ?? 0);
   const title = $derived(
@@ -134,6 +142,9 @@
           >
             ✓
           </span>
+        {/if}
+        {#if sentHistory.enabled && sentHistory.statuses.has(url)}
+          <span class="gz-sent-dot gz-sent-{sentHistory.statuses.get(url)}"></span>
         {/if}
         <span class="gz-idx">{i + 1}</span>
       </div>

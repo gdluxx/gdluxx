@@ -41,8 +41,10 @@
   import { createHoverPreviewStore } from '#stores/hoverPreviewStore.svelte';
   import { createExtractionProfileStore } from '#stores/extractionProfileStore.svelte';
   import { createSettingsViewModel } from '#stores/settingsViewModel.svelte';
+  import { createSentHistoryStore } from '#stores/sentHistoryStore.svelte';
   import { createExtractionController } from '../lib/controllers/extractionController.svelte';
   import { readDirAutoFillOptOuts, resolveDirectoryFromSource } from '#utils/directorySource';
+  import { toastStore } from '#stores/toast';
   import type { AppTab, DirectorySource, SettingsTab } from '#src/content/types';
 
   const { onclose, shadowContainer } = $props();
@@ -54,6 +56,7 @@
   const hoverPreview = createHoverPreviewStore();
   const extractionProfiles = createExtractionProfileStore();
   const settingsVM = createSettingsViewModel(appStore, appStore.settings);
+  const sentHistory = createSentHistoryStore();
 
   let activeSettingsTab: SettingsTab = $state('preview');
   const settings = appStore.settings;
@@ -161,12 +164,21 @@
         const shadowRoot = shadowContainer.getRootNode() as ShadowRoot;
         applyThemeToShadowRoot(shadowRoot, currentTheme);
       }
+      // sentHistory only touches local storage - initialize it before the
+      // network bound initializeExtraction() so badges aren't blocked on it
+      if (typeof window !== 'undefined') {
+        await sentHistory.initialize(window.location.hostname);
+      }
       await initializeExtraction();
     } finally {
       populate({ applyAutoSubstitutions: true });
     }
   }
   init();
+
+  $effect(() => {
+    return () => sentHistory.dispose();
+  });
 
   async function initializeExtraction() {
     if (typeof window === 'undefined') return;
@@ -228,6 +240,18 @@
     if (!select) return;
     const next = select.value as 'off' | 'small' | 'medium' | 'large';
     await settingsVM.setHoverPreview(next, select);
+  }
+
+  async function onToggleSentMarks(event: Event) {
+    const input = event.target as HTMLInputElement;
+    await settingsVM.setShowSentMarks(input.checked, input);
+  }
+
+  async function onClearSentHistory(scope: 'host' | 'all') {
+    const label = scope === 'host' ? 'this site' : 'all sites';
+    if (!confirm(`Clear sent-URL history for ${label}?`)) return;
+    await sentHistory.clear(scope);
+    toastStore.success(`Cleared sent-URL history for ${label}.`);
   }
 
   async function onToggleHotkey(event: Event): Promise<void> {
@@ -539,6 +563,7 @@
         onToggle={(url) => selection.toggle(url)}
         modifiedUrls={extractionProfiles.modifiedUrls}
         urlModifications={extractionProfiles.urlModifications}
+        sentStatuses={sentHistory.enabled ? sentHistory.statuses : new Map()}
       />
     {:else if active === 'images'}
       <ImageList
@@ -554,6 +579,7 @@
         modifiedUrls={extractionProfiles.modifiedUrls}
         urlModifications={extractionProfiles.urlModifications}
         applyToPreview={extractionProfiles.applyToPreview}
+        sentStatuses={sentHistory.enabled ? sentHistory.statuses : new Map()}
       />
     {:else}
       <div class="max-w-full py-4">
@@ -593,9 +619,12 @@
             {isFullscreen}
             showImagePreviews={settings.showImagePreviews}
             showImageHoverPreview={settings.showImageHoverPreview}
+            showSentMarks={settings.showSentMarks}
             {onToggleDisplayMode}
             {onToggleImagePreviews}
             {onToggleImageHoverPreview}
+            {onToggleSentMarks}
+            {onClearSentHistory}
           />
         {/if}
         {#if activeSettingsTab === 'keyboard'}

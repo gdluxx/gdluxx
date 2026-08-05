@@ -153,6 +153,19 @@ export function createSettingsViewModel(appStore: AppStore, settings: Settings) 
     }
   }
 
+  async function setShowSentMarks(next: boolean, target?: HTMLInputElement) {
+    const previous = settings.showSentMarks;
+    settings.showSentMarks = next;
+    try {
+      await saveSettings({ showSentMarks: next });
+    } catch (error) {
+      console.error('Failed to update sent-marks display preference', error);
+      settings.showSentMarks = previous;
+      if (target) target.checked = previous;
+      toastStore.error('Could not update sent-marks display preference.');
+    }
+  }
+
   async function toggleHotkey(next: boolean, target?: HTMLInputElement) {
     const previous = settings.hotkeyEnabled;
     settings.hotkeyEnabled = next;
@@ -258,6 +271,7 @@ export function createSettingsViewModel(appStore: AppStore, settings: Settings) 
     toggleDisplayMode,
     setImagePreviews,
     setHoverPreview,
+    setShowSentMarks,
     toggleHotkey,
     setHotkey,
     toggleSendTabHotkey,

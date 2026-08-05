@@ -11,6 +11,7 @@
 <script lang="ts">
   import { Badge, Info } from '#components/ui';
   import type { SubResult } from '#utils/substitution';
+  import type { SentStatus } from '#utils/storageSentHistory';
 
   const {
     images = [],
@@ -25,6 +26,7 @@
     modifiedUrls = new Set<string>(),
     urlModifications = new Map<string, SubResult>(),
     applyToPreview = false,
+    sentStatuses = new Map<string, SentStatus>(),
   }: {
     images?: string[];
     counts?: Record<string, number>;
@@ -38,6 +40,7 @@
     modifiedUrls?: ReadonlySet<string>;
     urlModifications?: ReadonlyMap<string, SubResult>;
     applyToPreview?: boolean;
+    sentStatuses?: ReadonlyMap<string, SentStatus>;
   } = $props();
 
   let imageErrors = $state<Set<string>>(new Set());
@@ -52,6 +55,22 @@
     if (!modification) return url;
     return applyToPreview ? modification.modifiedUrl : modification.initialUrl;
   }
+
+  const SENT_STATUS_LABEL: Record<SentStatus, string> = {
+    sent: 'Sent',
+    success: 'OK',
+    no_action: 'Skip',
+    error: 'Failed',
+  };
+  const SENT_STATUS_VARIANT: Record<
+    SentStatus,
+    'outline-success' | 'success' | 'warning' | 'danger'
+  > = {
+    sent: 'outline-success',
+    success: 'success',
+    no_action: 'warning',
+    error: 'danger',
+  };
 </script>
 
 <div class="mt-2">
@@ -111,6 +130,14 @@
                         title={`Original: ${urlModifications.get(url)?.initialUrl ?? ''}`}
                       />
                     {/if}
+                  {/if}
+                  {#if sentStatuses.has(url)}
+                    <Badge
+                      label={SENT_STATUS_LABEL[sentStatuses.get(url) as SentStatus]}
+                      dismissible={false}
+                      variant={SENT_STATUS_VARIANT[sentStatuses.get(url) as SentStatus]}
+                      size={compact ? 'xs' : 'sm'}
+                    />
                   {/if}
                 </div>
               </td>

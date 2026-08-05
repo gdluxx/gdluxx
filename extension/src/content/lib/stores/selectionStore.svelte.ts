@@ -214,10 +214,16 @@ export function createSelectionStore() {
     try {
       const res = await sendUrls(urls, customDir, siteDir);
       if (res.success) {
-        toastStore.success(
-          res.message ||
-            `Successfully sent ${urls.length} URL${urls.length === 1 ? '' : 's'} to gdluxx!`,
-        );
+        const results = res.data?.results;
+        const failed = results ? results.filter((r) => !r.success).length : 0;
+        if (results && failed > 0) {
+          toastStore.warning(`Sent ${results.length - failed}, ${failed} rejected`);
+        } else {
+          toastStore.success(
+            res.message ||
+              `Successfully sent ${urls.length} URL${urls.length === 1 ? '' : 's'} to gdluxx!`,
+          );
+        }
       } else {
         toastStore.error(`Failed to send: ${res.error}`);
       }
