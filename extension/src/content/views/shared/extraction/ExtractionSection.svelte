@@ -45,9 +45,11 @@
     selectedItems?: ReadonlySet<string>;
     previewCount?: number;
     directorySource?: DirectorySource;
+    accumulate?: boolean;
 
     onmodechange?: (mode: 'range' | 'targeted') => void;
     ondirectorysourcechange?: (source: DirectorySource | undefined) => void;
+    onaccumulatechange?: (value: boolean) => void;
     onstartselectorchange?: (value: string) => void;
     onendselectorchange?: (value: string) => void;
     oncontainersourcechange?: (source: ContainerSource) => void;
@@ -88,9 +90,11 @@
     selectedItems = new Set<string>(),
     previewCount = 0,
     directorySource = undefined,
+    accumulate = false,
 
     onmodechange,
     ondirectorysourcechange,
+    onaccumulatechange,
     onstartselectorchange,
     onendselectorchange,
     oncontainersourcechange,
@@ -150,6 +154,24 @@
       {onreset}
       {onshowselectorhelp}
     />
+
+    {#if extraction.mode === 'targeted'}
+      <div class="space-y-1">
+        <label class="flex items-center gap-2">
+          <input
+            type="checkbox"
+            class="checkbox checkbox-xs checkbox-secondary rounded-sm"
+            checked={accumulate}
+            onchange={(e) => onaccumulatechange?.((e.target as HTMLInputElement).checked)}
+            aria-label="Accumulate images while scrolling"
+          />
+          <span class="text-base-content/70 text-sm">Accumulate images while scrolling</span>
+        </label>
+        <p class="text-base-content/50 text-xs">
+          Keeps collecting matching images as the page loads more. Saved with the profile.
+        </p>
+      </div>
+    {/if}
 
     <div class="pt-2">
       <RuleList

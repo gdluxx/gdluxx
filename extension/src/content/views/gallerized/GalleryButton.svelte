@@ -72,5 +72,13 @@
     {#if store.urls !== null}
       <span class="gz-badge">{store.urls.length}</span>
     {/if}
+    {#if store.accumulating}
+      <span
+        class="gz-badge gz-badge-acc"
+        title="Accumulating while you scroll"
+      >
+        {store.accumulatedCount}
+      </span>
+    {/if}
   </button>
 </div>

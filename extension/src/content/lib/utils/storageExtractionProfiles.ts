@@ -41,6 +41,7 @@ export interface SaveExtractionProfileInput {
   name?: string;
   gallery?: GalleryDisplayConfig;
   directorySource?: DirectorySource;
+  accumulate?: boolean;
 }
 
 export interface ExtractionProfileLookupResult {
@@ -215,6 +216,7 @@ function cloneExtractionProfile(profile: ExtractionProfile): ExtractionProfile {
     name: profile.name?.trim() || undefined,
     gallery: cloneGalleryConfig(profile.gallery),
     directorySource: cloneDirectorySource(profile.directorySource),
+    accumulate: profile.accumulate === true ? true : undefined,
     createdAt: typeof profile.createdAt === 'number' ? profile.createdAt : Date.now(),
     updatedAt: typeof profile.updatedAt === 'number' ? profile.updatedAt : Date.now(),
     lastUsed: typeof profile.lastUsed === 'number' ? profile.lastUsed : undefined,
@@ -235,6 +237,7 @@ function cloneActiveConfig(config: ActiveExtractionConfig): ActiveExtractionConf
     rules: cloneRules(config.rules),
     applyToPreview: config.applyToPreview === true,
     directorySource: cloneDirectorySource(config.directorySource),
+    accumulate: config.accumulate === true ? true : undefined,
   };
 }
 
@@ -416,6 +419,7 @@ export async function saveExtractionProfile(
     name: input.name ?? existing?.name,
     gallery: cloneGalleryConfig(input.gallery ?? existing?.gallery),
     directorySource: cloneDirectorySource(input.directorySource),
+    accumulate: input.accumulate === true ? true : undefined,
     createdAt: existing?.createdAt ?? now,
     updatedAt: now,
     lastUsed: now,
@@ -531,6 +535,7 @@ function normaliseIncomingProfile(profile: ExtractionProfile): ExtractionProfile
     name: profile.name?.trim() || undefined,
     gallery: cloneGalleryConfig(profile.gallery),
     directorySource: cloneDirectorySource(profile.directorySource),
+    accumulate: profile.accumulate,
     createdAt: profile.createdAt ?? Date.now(),
     updatedAt: profile.updatedAt ?? Date.now(),
     lastUsed: profile.lastUsed,

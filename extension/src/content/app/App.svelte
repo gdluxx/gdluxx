@@ -44,6 +44,7 @@
   import { createSentHistoryStore } from '#stores/sentHistoryStore.svelte';
   import { createExtractionController } from '../lib/controllers/extractionController.svelte';
   import { readDirAutoFillOptOuts, resolveDirectoryFromSource } from '#utils/directorySource';
+  import { isActive as accumulatorIsActive, onChange, snapshot } from '#utils/scrollAccumulator';
   import { toastStore } from '#stores/toast';
   import type { AppTab, DirectorySource, SettingsTab } from '#src/content/types';
 
@@ -154,6 +155,10 @@
     selection.replace(result.newSelection);
   }
 
+  function shouldMergeAccumulated(): boolean {
+    return accumulatorIsActive() && extractionProfiles.extraction.mode === 'targeted';
+  }
+
   async function init() {
     try {
       await appStore.hydrate();
@@ -172,12 +177,21 @@
       await initializeExtraction();
     } finally {
       populate({ applyAutoSubstitutions: true });
+      if (shouldMergeAccumulated()) extraction.mergeImages(snapshot());
     }
   }
   init();
 
   $effect(() => {
     return () => sentHistory.dispose();
+  });
+
+  $effect(() => {
+    const unsubscribe = onChange(() => {
+      if (!shouldMergeAccumulated()) return;
+      extraction.mergeImages(snapshot());
+    });
+    return unsubscribe;
   });
 
   async function initializeExtraction() {
@@ -489,8 +503,10 @@
             selectedItems={selection.selected}
             previewCount={extractionProfiles.previewCount}
             directorySource={extractionProfiles.directorySource}
+            accumulate={extractionProfiles.accumulate}
             onmodechange={(mode) => extractionProfiles.setExtractionMode(mode)}
             ondirectorysourcechange={(src) => extractionProfiles.setDirectorySource(src)}
+            onaccumulatechange={(v) => extractionProfiles.setAccumulate(v)}
             onstartselectorchange={(val) => extractionProfiles.setStartSelector(val)}
             onendselectorchange={(val) => extractionProfiles.setEndSelector(val)}
             oncontainersourcechange={(src) => extractionProfiles.setContainerSource(src)}

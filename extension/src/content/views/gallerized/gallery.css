@@ -33,6 +33,9 @@
   border-radius: 10px;
   font-size: 11px;
 }
+.gz-badge-acc {
+  background: #2a7a4a;
+}
 
 /* SPEED DIAL */
 #gz-sd {

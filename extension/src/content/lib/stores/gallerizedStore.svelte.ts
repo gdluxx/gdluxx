@@ -12,6 +12,8 @@ import { SvelteSet } from 'svelte/reactivity';
 import { discoverImages } from '#utils/gallerizedUtils';
 import { loadSiteDirectory, persistGalleryThumbSize } from '#utils/persistence';
 import { sendUrls } from '#utils/gdluxxApi';
+import { snapshot } from '#utils/scrollAccumulator';
+import { dedupeAppend } from '#utils/dedupeAppend';
 import { DEFAULT_GALLERY_CONFIG } from '#utils/storageExtractionProfiles';
 import { applySubRules } from '#utils/substitution';
 import type { ExtractionConfig } from '#src/content/types';
@@ -31,6 +33,8 @@ export function createGallerizedStore(
   let selectMode = $state(false);
   const selected = new SvelteSet<string>();
   let sending = $state(false);
+  let accumulating = $state(false);
+  let accumulatedCount = $state(0);
 
   // Plain reference no rune: only read imperatively by the wheel handler
   let gridEl: HTMLDivElement | null = null;
@@ -72,6 +76,12 @@ export function createGallerizedStore(
     get sending() {
       return sending;
     },
+    get accumulating() {
+      return accumulating;
+    },
+    get accumulatedCount() {
+      return accumulatedCount;
+    },
     get gridEl() {
       return gridEl;
     },
@@ -81,7 +91,7 @@ export function createGallerizedStore(
 
     toggleGallery(): void {
       if (urls === null) {
-        const discovered = discoverImages(getExtraction());
+        const discovered = [...discoverImages(getExtraction()), ...snapshot()];
         const rules = getRules();
         const mapped =
           rules.length > 0
@@ -94,6 +104,25 @@ export function createGallerizedStore(
       }
       open = !open;
       if (!open) lightboxOpen = false;
+    },
+
+    addUrls(newUrls: string[]): void {
+      if (urls === null || newUrls.length === 0) return;
+      const rules = getRules();
+      const mapped =
+        rules.length > 0
+          ? newUrls.map((raw) => {
+              const result = applySubRules(raw, rules);
+              return result.modified ? result.modifiedUrl : raw;
+            })
+          : newUrls;
+      const { merged, additions } = dedupeAppend(urls, mapped);
+      if (additions.length > 0) urls = merged;
+    },
+
+    setAccumulatorState(active: boolean, count: number): void {
+      accumulating = active;
+      accumulatedCount = count;
     },
 
     closeGallery(): void {

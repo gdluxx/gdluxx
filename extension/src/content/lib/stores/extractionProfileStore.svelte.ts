@@ -62,6 +62,11 @@ import {
   saveExtractionBackup,
   type ExtractionBackupPayload,
 } from '#utils/messaging';
+import {
+  createSyncId,
+  publishExtractionConfigChange,
+  subscribeExtractionConfigChange,
+} from '#utils/extractionProfileSync';
 import type { RemoteBackupMeta } from '#src/content/types';
 
 export interface ApplyResult {
@@ -86,12 +91,16 @@ interface ApplySubstitutionOptions {
 }
 
 export function createExtractionProfileStore() {
+  const syncId = createSyncId();
+  let lastPersistedJson: string | null = null;
+
   // Active config state
   let extraction = $state<ExtractionConfig>({ ...DEFAULT_EXTRACTION_CONFIG });
   let rules = $state<SubRule[]>([]);
   let applyToPreview = $state(false);
   let scope = $state<ProfileScope>('host');
   let directorySource = $state<DirectorySource | undefined>(undefined);
+  let accumulate = $state(false);
 
   // Profile management
   let activeProfileId = $state<string | null>(null);
@@ -160,6 +169,7 @@ export function createExtractionProfileStore() {
     ) {
       return true;
     }
+    if ((activeProfile.accumulate === true) !== accumulate) return true;
     return rulesDiffer(activeProfile.rules, rules);
   });
 
@@ -264,6 +274,7 @@ export function createExtractionProfileStore() {
         rules,
         applyToPreview,
         directorySource,
+        accumulate,
       };
     }
     const resolved = resolveScopeParts(currentUrl);
@@ -276,6 +287,7 @@ export function createExtractionProfileStore() {
       rules,
       applyToPreview,
       directorySource,
+      accumulate,
     };
   }
 
@@ -329,6 +341,10 @@ export function createExtractionProfileStore() {
 
   function setApplyToPreview(value: boolean) {
     applyToPreview = value;
+  }
+
+  function setAccumulate(value: boolean) {
+    accumulate = value;
   }
 
   function setDirectorySource(source: DirectorySource | undefined) {
@@ -389,6 +405,7 @@ export function createExtractionProfileStore() {
       applyToPreview,
       autoApply: true,
       directorySource,
+      accumulate: accumulate ? true : undefined,
       createdAt: now,
       updatedAt: now,
     };
@@ -491,6 +508,7 @@ export function createExtractionProfileStore() {
     rules = profile.rules.slice().sort((a, b) => a.order - b.order);
     applyToPreview = profile.applyToPreview;
     directorySource = profile.directorySource;
+    accumulate = profile.accumulate === true;
     activeProfileId = profile.id;
     activeProfile = profile;
     scope = profile.scope;
@@ -1076,11 +1094,13 @@ export function createExtractionProfileStore() {
         rules = draft.rules.slice().sort((a, b) => a.order - b.order);
         applyToPreview = draft.applyToPreview;
         directorySource = draft.directorySource;
+        accumulate = draft.accumulate === true;
       } else {
         extraction = { ...DEFAULT_EXTRACTION_CONFIG };
         rules = [createSubRule('', '', 'g', 0)];
         applyToPreview = false;
         directorySource = undefined;
+        accumulate = false;
       }
     } catch (error) {
       console.error('Failed to load extraction draft for host', error);
@@ -1088,6 +1108,7 @@ export function createExtractionProfileStore() {
       rules = [createSubRule('', '', 'g', 0)];
       applyToPreview = false;
       directorySource = undefined;
+      accumulate = false;
     }
   }
 
@@ -1102,6 +1123,7 @@ export function createExtractionProfileStore() {
         rules = match.profile.rules.slice().sort((a, b) => a.order - b.order);
         applyToPreview = match.profile.applyToPreview;
         directorySource = match.profile.directorySource;
+        accumulate = match.profile.accumulate === true;
         activeProfileId = match.id;
         activeProfile = match.profile;
         scope = match.profile.scope;
@@ -1191,15 +1213,29 @@ export function createExtractionProfileStore() {
 
   $effect(() => {
     if (!configLoaded || !draftHost) return;
-    persistDraftConfig(draftHost, { extraction, rules, applyToPreview, directorySource }).catch(
-      (error) => {
+    const payload = { extraction, rules, applyToPreview, directorySource, accumulate };
+    const json = JSON.stringify(payload);
+    if (json === lastPersistedJson) return;
+    const host = draftHost;
+    lastPersistedJson = json;
+    persistDraftConfig(host, payload)
+      .then(() => publishExtractionConfigChange(syncId, host))
+      .catch((error) => {
         console.error('Failed to persist extraction draft', error);
-      },
-    );
+      });
   });
 
   $effect(() => {
     autoApplyMatchingProfile();
+  });
+
+  $effect(() => {
+    const unsubscribe = subscribeExtractionConfigChange((host, sourceId) => {
+      if (sourceId === syncId) return;
+      if (host !== draftHost) return;
+      void loadDraftForHost(host);
+    });
+    return unsubscribe;
   });
 
   return {
@@ -1221,6 +1257,9 @@ export function createExtractionProfileStore() {
     },
     get directorySource() {
       return directorySource;
+    },
+    get accumulate() {
+      return accumulate;
     },
 
     // Profile state
@@ -1339,6 +1378,7 @@ export function createExtractionProfileStore() {
     setScope,
     setApplyToPreview,
     setDirectorySource,
+    setAccumulate,
 
     // Rule management
     addRule,

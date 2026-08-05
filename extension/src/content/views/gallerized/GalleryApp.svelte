@@ -14,6 +14,7 @@
   import { createExtractionProfileStore } from '#stores/extractionProfileStore.svelte';
   import { createSentHistoryStore } from '#stores/sentHistoryStore.svelte';
   import { readGalleryThumbSize } from '#utils/persistence';
+  import { configure, count, isActive, onChange, reset, snapshot } from '#utils/scrollAccumulator';
   import GalleryButton from './GalleryButton.svelte';
   import GalleryModal from './GalleryModal.svelte';
   import type { GalleryDisplayConfig } from '#src/content/types';
@@ -42,6 +43,21 @@
     void extractionProfiles.extraction;
     void extractionProfiles.rules;
     store.clearUrls();
+  });
+
+  $effect(() => {
+    const on = extractionProfiles.accumulate;
+    const ex = extractionProfiles.extraction;
+    configure(on && ex.mode === 'targeted' ? ex : null);
+    store.setAccumulatorState(isActive(), count());
+  });
+
+  $effect(() => {
+    const unsubscribe = onChange(() => {
+      store.setAccumulatorState(isActive(), count());
+      if (store.open) store.addUrls(snapshot());
+    });
+    return unsubscribe;
   });
 
   function handleKeydown(e: KeyboardEvent): void {
@@ -121,6 +137,7 @@
     onRegisterToggle?.(() => store.toggleGallery());
     onRegisterReinit?.((url) => {
       store.closeGallery();
+      reset();
       void extractionProfiles.initialize(url);
       void sentHistory.initialize(new URL(url).hostname);
     });

@@ -12,6 +12,7 @@ import type { AppTab, ExtractionConfig } from '#src/content/types';
 import type { SelectionStore } from '#stores/selectionStore.svelte';
 import { extractAll } from '#utils/extract';
 import { discoverImages } from '#utils/gallerizedUtils';
+import { dedupeAppend } from '#utils/dedupeAppend';
 
 export function createExtractionController(
   selection: SelectionStore,
@@ -127,6 +128,14 @@ export function createExtractionController(
       images = next.images;
       linkCounts = next.linkCounts;
       imageCounts = next.imageCounts;
+    },
+    mergeImages(newUrls: string[]) {
+      const { merged, additions } = dedupeAppend(images, newUrls);
+      if (additions.length === 0) return;
+      const nextCounts = { ...imageCounts };
+      for (const url of additions) nextCounts[url] ??= 1;
+      images = merged;
+      imageCounts = nextCounts;
     },
   } as const;
 }
