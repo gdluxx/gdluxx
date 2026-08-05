@@ -126,6 +126,7 @@
   border-radius: 4px;
   width: 26px;
   height: 26px;
+  margin-left: 6px;
   cursor: pointer;
   font-size: 14px;
   line-height: 1;
@@ -136,6 +137,40 @@
 .gz-header-close:hover {
   background: #333;
   color: #fff;
+}
+
+.gz-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+.gz-header-btn {
+  background: none;
+  border: 1px solid #555;
+  color: #aaa;
+  border-radius: 4px;
+  width: auto;
+  height: 26px;
+  padding: 0 10px;
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.gz-header-btn:hover {
+  background: #333;
+  color: #fff;
+}
+.gz-header-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.gz-header-btn:disabled:hover {
+  background: none;
+  color: #aaa;
 }
 
 /* IMAGE GRID */
@@ -181,6 +216,27 @@
   font: 10px/1 monospace;
   color: rgba(255, 255, 255, 0.5);
   pointer-events: none;
+}
+.gz-cell-selected {
+  outline: 2px solid #55cc88;
+  outline-offset: -2px;
+}
+.gz-check {
+  position: absolute;
+  top: 4px;
+  left: 6px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(30, 30, 60, 0.8);
+  color: transparent;
+  font: 12px/18px sans-serif;
+  text-align: center;
+  pointer-events: none;
+}
+.gz-check-on {
+  background: #55cc88;
+  color: #fff;
 }
 
 /* LIGHTBOX */
@@ -246,6 +302,34 @@
 .gz-lb-close:hover {
   background: rgba(160, 40, 40, 0.9);
   color: #fff;
+}
+.gz-lb-send {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: rgba(30, 30, 60, 0.8);
+  border: 1px solid #555;
+  color: #ddd;
+  border-radius: 4px;
+  width: 32px;
+  height: 32px;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.gz-lb-send:hover {
+  background: rgba(80, 80, 160, 0.9);
+  color: #fff;
+}
+.gz-lb-send:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.gz-lb-send:disabled:hover {
+  background: rgba(30, 30, 60, 0.8);
+  color: #ddd;
 }
 .gz-lb-counter {
   position: absolute;

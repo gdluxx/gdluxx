@@ -17,7 +17,10 @@
     $props();
 
   const urlCount = $derived(store.urls?.length ?? 0);
-  const title = $derived(`Gallerized — ${urlCount} image${urlCount !== 1 ? 's' : ''}`);
+  const title = $derived(
+    `Gallerized — ${urlCount} image${urlCount !== 1 ? 's' : ''}` +
+      (store.selectMode ? ` — ${store.selected.size} selected` : ''),
+  );
   const thumbPx = $derived(`${store.activeThumbSize}px`);
   const gapPx = $derived(`${displayConfig.gap}px`);
   const borderPx = $derived(`${displayConfig.border}px`);
@@ -50,6 +53,42 @@
 >
   <div id="gz-header">
     <span class="gz-title">{title}</span>
+    <div class="gz-header-actions">
+      {#if !store.selectMode}
+        <button
+          class="gz-header-btn"
+          onclick={() => store.enterSelectMode()}
+        >
+          Select
+        </button>
+      {:else}
+        <button
+          class="gz-header-btn"
+          onclick={() => store.selectAllVisible()}
+        >
+          All
+        </button>
+        <button
+          class="gz-header-btn"
+          onclick={() => store.selectNoneVisible()}
+        >
+          None
+        </button>
+        <button
+          class="gz-header-btn"
+          disabled={store.selected.size === 0 || store.sending}
+          onclick={() => void store.sendSelected()}
+        >
+          Send {store.selected.size}
+        </button>
+        <button
+          class="gz-header-btn"
+          onclick={() => store.exitSelectMode()}
+        >
+          Done
+        </button>
+      {/if}
+    </div>
     <button
       class="gz-header-close"
       title="Close gallery"
@@ -66,10 +105,14 @@
     {#each store.urls ?? [] as url, i (url)}
       <div
         class="gz-cell"
+        class:gz-cell-selected={store.selected.has(url)}
         role="button"
         tabindex="0"
-        onclick={() => store.openLightbox(i)}
-        onkeydown={(e) => e.key === 'Enter' && store.openLightbox(i)}
+        aria-pressed={store.selectMode ? store.selected.has(url) : undefined}
+        onclick={() => (store.selectMode ? store.toggleSelected(url) : store.openLightbox(i))}
+        onkeydown={(e) =>
+          e.key === 'Enter' &&
+          (store.selectMode ? store.toggleSelected(url) : store.openLightbox(i))}
       >
         <img
           class="gz-loading"
@@ -83,6 +126,15 @@
             onCellError(img, c);
           }}
         />
+        {#if store.selectMode}
+          <span
+            class="gz-check"
+            class:gz-check-on={store.selected.has(url)}
+            aria-hidden="true"
+          >
+            ✓
+          </span>
+        {/if}
         <span class="gz-idx">{i + 1}</span>
       </div>
     {/each}

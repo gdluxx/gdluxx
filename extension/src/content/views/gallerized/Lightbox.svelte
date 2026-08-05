@@ -18,6 +18,7 @@
 
   function handleKeydown(event: KeyboardEvent) {
     if (event.key === 'Escape') {
+      event.stopPropagation();
       store.closeLightbox();
     }
   }
@@ -39,6 +40,18 @@
     alt=""
     onclick={(e) => e.stopPropagation()}
   />
+
+  <button
+    class="gz-lb-send"
+    title="Send to gdluxx"
+    disabled={store.sending}
+    onclick={(e) => {
+      e.stopPropagation();
+      void store.sendOne(currentUrl);
+    }}
+  >
+    ↑
+  </button>
 
   <button
     class="gz-lb-nav gz-lb-prev"

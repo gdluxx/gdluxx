@@ -46,6 +46,7 @@
     if (!store.open) return;
     if (e.key === 'Escape') {
       if (store.lightboxOpen) store.closeLightbox();
+      else if (store.selectMode) store.exitSelectMode();
       else store.closeGallery();
       return;
     }
