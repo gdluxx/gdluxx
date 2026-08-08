@@ -10,6 +10,7 @@
 
 <script lang="ts">
   import { onMount } from 'svelte';
+  import browser from 'webextension-polyfill';
   import { Button, Info } from '#components/ui';
   import type { Settings } from '#utils/settings';
   import { formatTimestamp } from '#utils/formatters';
@@ -23,6 +24,13 @@
     type CookiePermissionPayload,
   } from '#utils/messaging';
   import { formatOriginPattern } from '#src/shared/originPattern';
+  import {
+    cookieSyncBlockedMessage,
+    getServerCompat,
+    isBlocked,
+    SERVER_COMPAT_STORAGE_KEY,
+    type ServerCompat,
+  } from '#src/shared/serverCompat';
 
   interface Props {
     settings: Settings;
@@ -37,14 +45,15 @@
   let domainDeleteBusyDomain = $state<string | null>(null);
   let clearAllBusy = $state(false);
   let permission = $state<CookiePermissionPayload | null>(null);
+  let serverCompat = $state<ServerCompat | null>(null);
 
   const currentDomain = $derived(typeof window !== 'undefined' ? window.location.hostname : '');
-  // Must be a match pattern (`https://example.com/*`); a bare origin makes the
-  // permissions API throw rather than report a missing grant.
   const currentOriginPattern = $derived(
     typeof window !== 'undefined' ? formatOriginPattern(window.location.href) : null,
   );
   const permissionBlocked = $derived(permission !== null && !permission.granted);
+  const capabilityBlocked = $derived(isBlocked(serverCompat, 'cookies.sync'));
+  const capabilityBlockedMessage = $derived(cookieSyncBlockedMessage(serverCompat));
   const domains = $derived(backupMeta?.domains ?? []);
   const currentDomainSynced = $derived(
     domains.find((entry) => entry.domain === currentDomain) ?? null,
@@ -53,9 +62,6 @@
   function pluralize(count: number, word: string): string {
     return `${count} ${word}${count === 1 ? '' : 's'}`;
   }
-
-  // earliestExpiry is epoch seconds (browser cookie API / Netscape
-  // convention), unlike the millisecond timestamps formatTimestamp expects.
   function formatExpiry(value: number | null): string {
     if (value === null) return 'No upcoming expiry';
     return new Date(value * 1000).toLocaleString();
@@ -89,11 +95,22 @@
     const res = await checkCookiePermission(currentOriginPattern);
     permission = res.success && res.data ? res.data : null;
   }
+  async function refreshServerCompat(): Promise<void> {
+    try {
+      serverCompat = await getServerCompat();
+    } catch (error) {
+      console.error('Failed to load server compatibility record', error);
+    }
+  }
 
   async function handleSync(): Promise<void> {
     if (syncing) return;
     if (!isConfigured) {
       toastStore.error('Configure your gdluxx server URL and API key first.');
+      return;
+    }
+    if (capabilityBlocked) {
+      toastStore.error(capabilityBlockedMessage);
       return;
     }
     if (!currentDomain || !currentOriginPattern) {
@@ -166,9 +183,26 @@
 
   onMount(() => {
     refreshPermission();
+    void refreshServerCompat();
     if (isConfigured) {
       refreshBackupMeta();
     }
+
+    const handleStorageChange: Parameters<typeof browser.storage.onChanged.addListener>[0] = (
+      changes,
+      area,
+    ) => {
+      if (area !== 'local') return;
+      if (SERVER_COMPAT_STORAGE_KEY in changes) {
+        void refreshServerCompat();
+      }
+    };
+
+    browser.storage.onChanged.addListener(handleStorageChange);
+
+    return () => {
+      browser.storage.onChanged.removeListener(handleStorageChange);
+    };
   });
 </script>
 
@@ -187,7 +221,11 @@
         <Button
           variant="primary"
           onclick={handleSync}
-          disabled={!isConfigured || syncing || !currentDomain || permissionBlocked}
+          disabled={!isConfigured ||
+            syncing ||
+            !currentDomain ||
+            permissionBlocked ||
+            capabilityBlocked}
         >
           {#if syncing}
             <span class="loading loading-sm loading-spinner"></span>
@@ -213,6 +251,8 @@
       <div class="mt-3">
         {#if !isConfigured}
           <Info soft>Configure your gdluxx connection to enable cookie syncing.</Info>
+        {:else if capabilityBlocked}
+          <Info soft>{capabilityBlockedMessage}</Info>
         {:else if permissionBlocked}
           <Info soft>
             {#if permission?.reason === 'cookies'}

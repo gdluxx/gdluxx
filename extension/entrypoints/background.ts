@@ -17,7 +17,6 @@ import { formatOriginPattern } from '#src/shared/originPattern';
 import type { ProfilesBundle, SubsBundle } from '#src/background/apiProxy';
 import type { ExtractionBundle } from '#src/content/types';
 import {
-  proxyPing,
   proxyCommand,
   proxyProfilesGet,
   proxyProfilesPut,
@@ -31,6 +30,8 @@ import {
   proxyCookiesGet,
   proxyCookiesPut,
   proxyCookiesDelete,
+  isEndpointAbsent,
+  type ExtractionBackupData,
   type ProxyApiResult,
 } from '#src/background/apiProxy';
 import { captureCookiesForDomain } from '#src/background/cookieCapture';
@@ -41,8 +42,25 @@ import {
   ensureAlarmIfPending,
   ALARM_NAME as JOBS_ALARM_NAME,
 } from '#src/background/jobTracker';
+import {
+  pingAndRecordCompat,
+  refreshCompatOnLaunch,
+  ensureFreshCompat,
+  invalidateAndRepingCompat,
+  ensureCompatAlarm,
+  corroborateAndMarkAbsent,
+  markCapabilitiesAbsentFromEvidence,
+  COMPAT_ALARM_NAME,
+} from '#src/background/serverCompatSync';
+import { cookieSyncBlockedMessage, getServerCompat, isBlocked } from '#src/shared/serverCompat';
+import {
+  diffStrippedOptionalFields,
+  OPTIONAL_PROFILE_FIELD_CAPABILITIES,
+} from '#src/shared/extractionProfileFields';
 
 const MAX_BATCH_URLS_KEY = 'gdluxx_max_batch_urls';
+const SERVER_URL_KEY = 'gdluxx_server_url';
+const API_KEY_KEY = 'gdluxx_api_key';
 
 interface SendUrlMessage {
   action: 'sendUrl';
@@ -198,6 +216,56 @@ type MessageType =
 
 type BackgroundResponse = ApiResponse | ProxyApiResult<unknown>;
 
+async function withCookieCapabilityGate<T>(
+  serverUrl: string,
+  apiKey: string,
+  call: () => Promise<ProxyApiResult<T>>,
+): Promise<ProxyApiResult<T>> {
+  const compat = await getServerCompat();
+  if (isBlocked(compat, 'cookies.sync')) {
+    return { success: false, error: cookieSyncBlockedMessage(compat) };
+  }
+
+  const result = await call();
+  if (result.success || !isEndpointAbsent(result)) {
+    return result;
+  }
+
+  const outcome = await corroborateAndMarkAbsent('cookies.sync', serverUrl, apiKey);
+  if (outcome === 'confirmed-absent') {
+    return { success: false, error: cookieSyncBlockedMessage(await getServerCompat()) };
+  }
+  return result; // transient - pass the original error through unchanged
+}
+
+async function withExtractionEchoCompare(
+  serverUrl: string,
+  apiKey: string,
+  bundle: ExtractionBundle,
+  call: () => Promise<ProxyApiResult<ExtractionBackupData>>,
+): Promise<ProxyApiResult<ExtractionBackupData>> {
+  const result = await call();
+  if (!result.success || !result.data?.bundle) {
+    return result;
+  }
+
+  const { fields, profileIds } = diffStrippedOptionalFields(bundle, result.data.bundle);
+  if (fields.length === 0) {
+    return result;
+  }
+
+  console.warn(
+    `gdluxx: server dropped profile field(s) ${fields.join(', ')} on ${profileIds.length} profile(s) during backup`,
+  );
+  await markCapabilitiesAbsentFromEvidence(
+    fields.map((field) => OPTIONAL_PROFILE_FIELD_CAPABILITIES[field]),
+    serverUrl,
+    apiKey,
+  );
+
+  return { ...result, strippedFields: fields };
+}
+
 export default defineBackground((): void => {
   async function toggleOverlayInTab(tabId: number): Promise<void> {
     try {
@@ -214,6 +282,13 @@ export default defineBackground((): void => {
   browser.runtime.onInstalled.addListener(async () => {
     await syncOverlayRegistrationFromPermissions();
     await ensureAlarmIfPending();
+    await ensureCompatAlarm();
+    await refreshCompatOnLaunch();
+  });
+
+  browser.runtime.onStartup.addListener(async () => {
+    await ensureCompatAlarm();
+    await refreshCompatOnLaunch();
   });
 
   browser.permissions.onAdded.addListener(async (perms) => {
@@ -221,8 +296,21 @@ export default defineBackground((): void => {
     await syncOverlayRegistrationFromPermissions();
   });
 
+  browser.storage.onChanged.addListener((changes, area) => {
+    if (area !== 'local') return;
+    if (!(SERVER_URL_KEY in changes) && !(API_KEY_KEY in changes)) return;
+
+    void (async () => {
+      const stored = await browser.storage.local.get([SERVER_URL_KEY, API_KEY_KEY]);
+      const serverUrl = typeof stored[SERVER_URL_KEY] === 'string' ? stored[SERVER_URL_KEY] : '';
+      const apiKey = typeof stored[API_KEY_KEY] === 'string' ? stored[API_KEY_KEY] : '';
+      await invalidateAndRepingCompat(serverUrl, apiKey);
+    })();
+  });
+
   browser.alarms.onAlarm.addListener((alarm) => {
     if (alarm.name === JOBS_ALARM_NAME) void handleJobsAlarm();
+    if (alarm.name === COMPAT_ALARM_NAME) void ensureFreshCompat();
   });
 
   browser.notifications.onClicked.addListener((id) => {
@@ -336,7 +424,7 @@ export default defineBackground((): void => {
       switch (message.action) {
         case 'ping':
           (async () => {
-            const result = await proxyPing(message.serverUrl, message.apiKey);
+            const result = await pingAndRecordCompat(message.serverUrl, message.apiKey);
             if (result.success && typeof result.data?.maxBatchUrls === 'number') {
               const clamped = Math.floor(Math.min(10000, Math.max(1, result.data.maxBatchUrls)));
               await browser.storage.local.set({ [MAX_BATCH_URLS_KEY]: clamped });
@@ -421,12 +509,10 @@ export default defineBackground((): void => {
           return true;
         case 'saveExtraction':
           (async () => {
+            const { serverUrl, apiKey, bundle, syncedBy } = message;
             sendResponse(
-              await proxyExtractionPut(
-                message.serverUrl,
-                message.apiKey,
-                message.bundle,
-                message.syncedBy,
+              await withExtractionEchoCompare(serverUrl, apiKey, bundle, () =>
+                proxyExtractionPut(serverUrl, apiKey, bundle, syncedBy),
               ),
             );
           })();
@@ -449,6 +535,12 @@ export default defineBackground((): void => {
           return true;
         case 'syncCookies':
           (async () => {
+            const compat = await getServerCompat();
+            if (isBlocked(compat, 'cookies.sync')) {
+              sendResponse({ success: false, error: cookieSyncBlockedMessage(compat) });
+              return;
+            }
+
             // Firefox-only on Tabs.Tab while undefined elsewhere leaves getAll on
             // its default store, which is correct for Chrome
             const storeId = (sender.tab as { cookieStoreId?: string } | undefined)?.cookieStoreId;
@@ -464,26 +556,35 @@ export default defineBackground((): void => {
               });
               return;
             }
+            const cookies = capture.cookies;
             sendResponse(
-              await proxyCookiesPut(
-                message.serverUrl,
-                message.apiKey,
-                message.domain,
-                capture.cookies,
-                message.syncedBy,
+              await withCookieCapabilityGate(message.serverUrl, message.apiKey, () =>
+                proxyCookiesPut(
+                  message.serverUrl,
+                  message.apiKey,
+                  message.domain,
+                  cookies,
+                  message.syncedBy,
+                ),
               ),
             );
           })();
           return true;
         case 'getCookies':
           (async () => {
-            sendResponse(await proxyCookiesGet(message.serverUrl, message.apiKey));
+            sendResponse(
+              await withCookieCapabilityGate(message.serverUrl, message.apiKey, () =>
+                proxyCookiesGet(message.serverUrl, message.apiKey),
+              ),
+            );
           })();
           return true;
         case 'deleteCookies':
           (async () => {
             sendResponse(
-              await proxyCookiesDelete(message.serverUrl, message.apiKey, message.domain),
+              await withCookieCapabilityGate(message.serverUrl, message.apiKey, () =>
+                proxyCookiesDelete(message.serverUrl, message.apiKey, message.domain),
+              ),
             );
           })();
           return true;

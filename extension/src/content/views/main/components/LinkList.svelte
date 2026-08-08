@@ -38,15 +38,17 @@
     success: 'OK',
     no_action: 'Skip',
     error: 'Failed',
+    untracked: 'Untracked',
   };
   const SENT_STATUS_VARIANT: Record<
     SentStatus,
-    'outline-success' | 'success' | 'warning' | 'danger'
+    'outline-success' | 'success' | 'warning' | 'danger' | 'neutral'
   > = {
     sent: 'outline-success',
     success: 'success',
     no_action: 'warning',
     error: 'danger',
+    untracked: 'neutral',
   };
 </script>
 

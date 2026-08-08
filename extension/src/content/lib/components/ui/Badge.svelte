@@ -17,6 +17,7 @@
     | 'primary'
     | 'secondary'
     | 'accent'
+    | 'neutral'
     | 'success'
     | 'warning'
     | 'danger'
@@ -125,6 +126,7 @@
     primary: ['badge-primary'],
     secondary: ['badge-secondary'],
     accent: ['badge-accent'],
+    neutral: ['badge-neutral'],
     success: ['badge-success'],
     warning: ['badge-warning'],
     danger: ['badge-error'],

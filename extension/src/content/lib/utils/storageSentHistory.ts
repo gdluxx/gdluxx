@@ -16,7 +16,7 @@ export const JOB_RESULTS_KEY = 'gdluxx_job_results';
 const MAX_SENT_HOSTS = 20;
 const MAX_SENT_URLS_PER_HOST = 500;
 
-export type SentStatus = 'sent' | 'success' | 'no_action' | 'error';
+export type SentStatus = 'sent' | 'success' | 'no_action' | 'error' | 'untracked';
 
 export interface SentEntry {
   sentAt: number;
@@ -35,7 +35,7 @@ type SentUrlsMap = Record<string, SentHostRecord>;
 export interface JobResultEntry {
   jobId: string;
   url: string;
-  status: 'success' | 'no_action' | 'error' | 'unknown';
+  status: 'success' | 'no_action' | 'error' | 'unknown' | 'untracked';
   downloadCount: number;
   skipCount: number;
   endTime?: number;
@@ -61,7 +61,13 @@ function enqueueMutation<T>(operation: () => Promise<T>): Promise<T> {
 }
 
 function isSentStatus(value: unknown): value is SentStatus {
-  return value === 'sent' || value === 'success' || value === 'no_action' || value === 'error';
+  return (
+    value === 'sent' ||
+    value === 'success' ||
+    value === 'no_action' ||
+    value === 'error' ||
+    value === 'untracked'
+  );
 }
 
 function cloneSentEntry(entry: unknown): SentEntry | null {

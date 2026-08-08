@@ -11,10 +11,13 @@
 import {
   proxyJobsGet,
   ensureHttpScheme,
+  isEndpointAbsent,
   type BatchUrlResult,
   type JobStatusItem,
 } from '#src/background/apiProxy';
 import { expandJobResults } from '#src/shared/jobResults';
+import { corroborateAndMarkAbsent } from '#src/background/serverCompatSync';
+import { getServerCompat, isBlocked, mayAttempt } from '#src/shared/serverCompat';
 
 export const ALARM_NAME = 'gdluxx-jobs-poll';
 const PENDING_KEY = 'gdluxx_pending_jobs';
@@ -27,6 +30,7 @@ const BATCH_TTL_MS = 24 * 60 * 60 * 1000;
 const GRACE_MS = 5 * 60_000;
 const IDS_PER_REQUEST = 100;
 const NOTIFICATION_PREFIX = 'gdluxx-batch-';
+const UNSUPPORTED_NOTIFICATION_ID = 'gdluxx-jobs-unsupported';
 
 interface PendingBatch {
   batchId: string;
@@ -40,7 +44,7 @@ interface PendingBatch {
 interface CompletedJobResult {
   jobId: string;
   url: string;
-  status: 'success' | 'no_action' | 'error' | 'unknown';
+  status: 'success' | 'no_action' | 'error' | 'unknown' | 'untracked';
   downloadCount: number;
   skipCount: number;
   endTime?: number;
@@ -90,6 +94,25 @@ function resultKey(entry: Pick<CompletedJobResult, 'batchId' | 'jobId' | 'url'>)
   return JSON.stringify([entry.batchId, entry.jobId, entry.url]);
 }
 
+function mergeCompletedResults(
+  existing: CompletedJobResult[],
+  newEntries: CompletedJobResult[],
+): CompletedJobResult[] {
+  const existingKeys = new Set(existing.map(resultKey));
+  const deduped = newEntries.filter((entry) => !existingKeys.has(resultKey(entry)));
+  return deduped.length > 0 ? [...deduped, ...existing].slice(0, MAX_RESULTS) : existing;
+}
+
+function jobsFromResults(
+  results: BatchUrlResult[],
+  inputUrls?: string[],
+): Array<{ jobId: string; url: string }> {
+  const expanded = inputUrls?.length ? expandJobResults(inputUrls, results) : results;
+  return expanded
+    .filter((result) => Boolean(result.jobId))
+    .map((result) => ({ jobId: result.jobId as string, url: result.url }));
+}
+
 export async function recordPendingBatch(
   results: BatchUrlResult[],
   tabUrl?: string,
@@ -97,12 +120,33 @@ export async function recordPendingBatch(
   inputUrls?: string[],
   final?: boolean,
 ): Promise<void> {
-  return enqueueMutation(async () => {
-    const expanded = inputUrls?.length ? expandJobResults(inputUrls, results) : results;
+  if (!mayAttempt(await getServerCompat(), 'jobs.polling')) {
+    const jobs = jobsFromResults(results, inputUrls);
+    if (jobs.length === 0) {
+      return;
+    }
+    const now = Date.now();
+    const resolvedBatchId = batchId ?? crypto.randomUUID();
+    const untracked: CompletedJobResult[] = jobs.map((job) => ({
+      jobId: job.jobId,
+      url: job.url,
+      status: 'untracked' as const,
+      downloadCount: 0,
+      skipCount: 0,
+      endTime: now,
+      batchId: resolvedBatchId,
+    }));
+    return enqueueMutation(async () => {
+      const existingResults = await readCompletedResults();
+      const merged = mergeCompletedResults(existingResults, untracked);
+      if (merged !== existingResults) {
+        await writeCompletedResults(merged);
+      }
+    });
+  }
 
-    const jobs = expanded
-      .filter((result) => Boolean(result.jobId))
-      .map((result) => ({ jobId: result.jobId as string, url: result.url }));
+  return enqueueMutation(async () => {
+    const jobs = jobsFromResults(results, inputUrls);
 
     if (jobs.length === 0) {
       return;
@@ -140,6 +184,9 @@ export async function recordPendingBatch(
 }
 
 export async function ensureAlarmIfPending(): Promise<void> {
+  if (!mayAttempt(await getServerCompat(), 'jobs.polling')) {
+    return;
+  }
   const pending = await readPendingBatches();
   if (pending.length > 0) {
     await browser.alarms.create(ALARM_NAME, { periodInMinutes: 1 });
@@ -168,7 +215,7 @@ function buildNotification(
 
 interface JobResolution {
   terminal: boolean;
-  status: CompletedJobResult['status'] | null;
+  status: 'success' | 'no_action' | 'error' | 'unknown' | null;
   info?: JobStatusItem;
 }
 
@@ -190,8 +237,55 @@ function resolveJobStatus(
   return { terminal: true, status: info.status, info };
 }
 
+async function bailOutJobsPolling(): Promise<void> {
+  await enqueueMutation(async () => {
+    const pending = await readPendingBatches();
+    const now = Date.now();
+
+    const untracked: CompletedJobResult[] = pending.flatMap((batch) =>
+      batch.jobs.map((job) => ({
+        jobId: job.jobId,
+        url: job.url,
+        status: 'untracked' as const,
+        downloadCount: 0,
+        skipCount: 0,
+        endTime: now,
+        batchId: batch.batchId,
+      })),
+    );
+
+    if (untracked.length > 0) {
+      const existingResults = await readCompletedResults();
+      const merged = mergeCompletedResults(existingResults, untracked);
+      if (merged !== existingResults) {
+        await writeCompletedResults(merged);
+      }
+    }
+
+    await writePendingBatches([]);
+    await browser.alarms.clear(ALARM_NAME);
+  });
+
+  try {
+    await browser.notifications.create(UNSUPPORTED_NOTIFICATION_ID, {
+      type: 'basic',
+      iconUrl: 'icon/48.png',
+      title: 'gdluxx Extension',
+      message: "gdluxx server does not support job tracking — job status won't be reported",
+    });
+  } catch (error) {
+    console.error('gdluxx: failed to show job-tracking-unsupported notification', error);
+  }
+}
+
 export async function handleJobsAlarm(): Promise<void> {
   try {
+    const compat = await getServerCompat();
+    if (isBlocked(compat, 'jobs.polling')) {
+      await bailOutJobsPolling();
+      return;
+    }
+
     const snapshot = await readPendingBatches();
     const allJobIds = Array.from(
       new Set(snapshot.flatMap((batch) => batch.jobs.map((j) => j.jobId))),
@@ -199,6 +293,7 @@ export async function handleJobsAlarm(): Promise<void> {
 
     const statusMap = new Map<string, JobStatusItem>();
     const fetchedIds = new Set<string>();
+    let jobsPollingConfirmedAbsent = false;
 
     if (allJobIds.length > 0) {
       const stored = await browser.storage.local.get([SERVER_URL_KEY, API_KEY_KEY]);
@@ -206,11 +301,19 @@ export async function handleJobsAlarm(): Promise<void> {
       const apiKey = typeof stored[API_KEY_KEY] === 'string' ? stored[API_KEY_KEY] : '';
 
       if (serverUrl && apiKey) {
+        let corroborationAttempted = false;
+
         for (const ids of chunkIds(allJobIds, IDS_PER_REQUEST)) {
           const res = await proxyJobsGet(serverUrl, apiKey, ids);
           if (!res.success) {
-            // Leave these ids out of fetchedIds so their jobs are treated as
-            // still running this tick and retried on the next one.
+            if (isEndpointAbsent(res) && !corroborationAttempted) {
+              corroborationAttempted = true;
+              const outcome = await corroborateAndMarkAbsent('jobs.polling', serverUrl, apiKey);
+              if (outcome === 'confirmed-absent') {
+                jobsPollingConfirmedAbsent = true;
+                break;
+              }
+            }
             console.warn('gdluxx: job status fetch failed, retrying next tick', res.error);
             continue;
           }
@@ -221,6 +324,11 @@ export async function handleJobsAlarm(): Promise<void> {
         }
       }
       // No credentials: nothing gets fetched, batches simply wait for the next tick / TTL prune.
+    }
+
+    if (jobsPollingConfirmedAbsent) {
+      await bailOutJobsPolling();
+      return;
     }
 
     const notificationsToFire = await enqueueMutation(async () => {
@@ -294,10 +402,8 @@ export async function handleJobsAlarm(): Promise<void> {
 
       if (newlyCompleted.length > 0) {
         const existingResults = await readCompletedResults();
-        const existingKeys = new Set(existingResults.map(resultKey));
-        const deduped = newlyCompleted.filter((entry) => !existingKeys.has(resultKey(entry)));
-        if (deduped.length > 0) {
-          const merged = [...deduped, ...existingResults].slice(0, MAX_RESULTS);
+        const merged = mergeCompletedResults(existingResults, newlyCompleted);
+        if (merged !== existingResults) {
           await writeCompletedResults(merged);
         }
       }
@@ -329,7 +435,10 @@ export async function handleJobsAlarm(): Promise<void> {
 }
 
 export async function handleNotificationClick(notificationId: string): Promise<void> {
-  if (!notificationId.startsWith(NOTIFICATION_PREFIX)) {
+  if (
+    !notificationId.startsWith(NOTIFICATION_PREFIX) &&
+    notificationId !== UNSUPPORTED_NOTIFICATION_ID
+  ) {
     return;
   }
 

@@ -9,8 +9,16 @@
   -->
 
 <script lang="ts">
-  import { Button } from '#components/ui';
+  import { onMount } from 'svelte';
+  import browser from 'webextension-polyfill';
+  import { Button, Info } from '#components/ui';
   import type { Settings } from '#utils/settings';
+  import {
+    EXTENSION_KNOWN_PROTOCOL_VERSION,
+    getServerCompat,
+    SERVER_COMPAT_STORAGE_KEY,
+    type ServerCompat,
+  } from '#src/shared/serverCompat';
 
   interface GdluxxTabProps {
     settings: Settings;
@@ -37,9 +45,54 @@
     onSave,
     onReset,
   }: GdluxxTabProps = $props();
+  let serverCompat = $state<ServerCompat | null>(null);
+
+  const showProtocolUpdateBanner = $derived(
+    typeof serverCompat?.protocolVersion === 'number' &&
+      serverCompat.protocolVersion > EXTENSION_KNOWN_PROTOCOL_VERSION,
+  );
+
+  async function refreshServerCompat(): Promise<void> {
+    try {
+      serverCompat = await getServerCompat();
+    } catch (error) {
+      console.error('Failed to load server compatibility record', error);
+    }
+  }
+
+  onMount(() => {
+    void refreshServerCompat();
+
+    const handleStorageChange: Parameters<typeof browser.storage.onChanged.addListener>[0] = (
+      changes,
+      area,
+    ) => {
+      if (area !== 'local') return;
+      if (SERVER_COMPAT_STORAGE_KEY in changes) {
+        void refreshServerCompat();
+      }
+    };
+
+    browser.storage.onChanged.addListener(handleStorageChange);
+
+    return () => {
+      browser.storage.onChanged.removeListener(handleStorageChange);
+    };
+  });
 </script>
 
 <div class="mx-2 my-4 max-w-[640px]">
+  {#if showProtocolUpdateBanner}
+    <Info
+      variant="warning"
+      soft
+      class="mb-4"
+    >
+      The gdluxx server is running a newer protocol (v{serverCompat?.protocolVersion}) than this
+      extension supports (v{EXTENSION_KNOWN_PROTOCOL_VERSION}). Update the gdluxx browser extension
+      to get the latest features.
+    </Info>
+  {/if}
   <div class="card bg-base-200 mb-4 shadow-xl">
     <div class="card-body">
       <div class="card-title">Integration Settings</div>
