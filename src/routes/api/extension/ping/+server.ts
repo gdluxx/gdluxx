@@ -13,6 +13,13 @@ import { serverLogger as logger } from '$lib/server/logger';
 import { validateApiKey } from '$lib/server/auth/apiAuth';
 import { createApiError, createApiResponse } from '$lib/server/api-utils';
 import { userSettingsManager } from '$lib/server/userSettingsManager';
+import { APP_VERSION } from '$lib/server/appVersion';
+import {
+  EXTENSION_CAPABILITIES,
+  EXTENSION_PROTOCOL_VERSION,
+} from '$lib/server/extension/capabilities';
+import { parseJsonOptional } from '$lib/server/validation/zod';
+import { pingBodySchema } from '$lib/server/validation/extensionPing';
 
 export const POST: RequestHandler = async ({ request }) => {
   const authHeader = request.headers.get('authorization');
@@ -33,9 +40,18 @@ export const POST: RequestHandler = async ({ request }) => {
     return createApiError(authResult.error ?? 'Invalid API key.', 401);
   }
 
+  const parseResult = await parseJsonOptional(request, pingBodySchema);
+  if ('errorResponse' in parseResult) {
+    return parseResult.errorResponse;
+  }
+
   logger.info(
     `Extension ping succeeded for API key ${authResult.keyInfo?.name} (ID: ${authResult.keyInfo?.id}).`,
   );
+
+  if (parseResult.data.extensionVersion) {
+    logger.info(`Extension ping reported extensionVersion: ${parseResult.data.extensionVersion}`);
+  }
 
   const userId = authResult.keyInfo?.userId;
   const maxBatchUrls = userId ? userSettingsManager.getUserSettings(userId).maxBatchUrls : 200;
@@ -45,5 +61,8 @@ export const POST: RequestHandler = async ({ request }) => {
     keyId: authResult.keyInfo?.id,
     keyName: authResult.keyInfo?.name,
     maxBatchUrls,
+    serverVersion: APP_VERSION,
+    protocolVersion: EXTENSION_PROTOCOL_VERSION,
+    capabilities: [...EXTENSION_CAPABILITIES],
   });
 };

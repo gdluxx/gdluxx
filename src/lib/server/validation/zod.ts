@@ -54,3 +54,36 @@ export async function parseJson<T>(
 
   return { data: result.data };
 }
+
+export async function parseJsonOptional<T>(
+  request: Request,
+  schema: z.ZodType<T>,
+): Promise<ParseResult<T>> {
+  let payload: unknown = {};
+
+  let rawBody: string;
+  try {
+    rawBody = await request.text();
+  } catch (error) {
+    logger.warn('Failed to read request body:', error);
+    return { errorResponse: createApiError('Invalid JSON payload.', 400) };
+  }
+
+  if (rawBody.trim().length > 0) {
+    try {
+      payload = JSON.parse(rawBody);
+    } catch (error) {
+      logger.warn('Failed to parse JSON payload for request:', error);
+      return { errorResponse: createApiError('Invalid JSON payload.', 400) };
+    }
+  }
+
+  const result = schema.safeParse(payload);
+  if (!result.success) {
+    const message = formatIssues(result.error);
+    logger.warn(`Validation failed for request: ${message}`);
+    return { errorResponse: createApiError(message, 400) };
+  }
+
+  return { data: result.data };
+}
