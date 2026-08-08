@@ -312,7 +312,7 @@
     return extractionProfiles.applyToPreview ? modification.modifiedUrl : modification.initialUrl;
   }
 
-  function applyDirectorySourceAutoFill(source: DirectorySource | undefined) {
+  function applyDirectorySourceAutoFill(source: DirectorySource | null | undefined) {
     // An empty selector is "no source" everywhere else (storage strips it), so
     // it must not surface as a resolution failure here either.
     if (!source?.selector.trim()) {

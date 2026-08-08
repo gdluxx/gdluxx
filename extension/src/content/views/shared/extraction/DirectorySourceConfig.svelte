@@ -15,8 +15,8 @@
   import { resolveDirectoryFromSource } from '#utils/directorySource';
 
   interface DirectorySourceConfigProps {
-    directorySource?: DirectorySource;
-    ondirectorysourcechange?: (source: DirectorySource | undefined) => void;
+    directorySource?: DirectorySource | null;
+    ondirectorysourcechange?: (source: DirectorySource | null | undefined) => void;
   }
 
   let { directorySource, ondirectorysourcechange }: DirectorySourceConfigProps = $props();
@@ -61,7 +61,7 @@
     selectorError = '';
     transformError = '';
     if (next === 'off') {
-      ondirectorysourcechange?.(undefined);
+      ondirectorysourcechange?.(null);
       return;
     }
     emit({ selector: '', attr: '' });

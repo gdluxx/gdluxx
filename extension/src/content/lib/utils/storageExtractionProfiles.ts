@@ -21,6 +21,10 @@ import type {
   TargetedExtractionConfig,
 } from '#src/content/types';
 import type { SubRule } from './substitution';
+import {
+  OPTIONAL_PROFILE_FIELDS,
+  type OptionalProfileField,
+} from '#src/shared/extractionProfileFields';
 
 export type ProfileScope = 'host' | 'origin' | 'path';
 
@@ -40,8 +44,8 @@ export interface SaveExtractionProfileInput {
   autoApply?: boolean;
   name?: string;
   gallery?: GalleryDisplayConfig;
-  directorySource?: DirectorySource;
-  accumulate?: boolean;
+  directorySource?: DirectorySource | null;
+  accumulate?: boolean | null;
 }
 
 export interface ExtractionProfileLookupResult {
@@ -180,9 +184,14 @@ function cloneGalleryConfig(
   };
 }
 
+type OptionalProfileFieldValues = Pick<ExtractionProfile, OptionalProfileField>;
+
 // An empty selector means "no source", the UI can toggle the section on
 // before anything is typed, and that should never round trip to storage
-function cloneDirectorySource(source: DirectorySource | undefined): DirectorySource | undefined {
+function cloneDirectorySource(
+  source: DirectorySource | null | undefined,
+): DirectorySource | null | undefined {
+  if (source === null) return null;
   if (!source) return undefined;
   const selector = normaliseString(source.selector).trim();
   if (!selector) return undefined;
@@ -202,8 +211,105 @@ function cloneDirectorySource(source: DirectorySource | undefined): DirectorySou
   };
 }
 
+function cloneAccumulate(value: boolean | null | undefined): boolean | null | undefined {
+  if (value === null) return null;
+  return typeof value === 'boolean' ? value : undefined;
+}
+
+const OPTIONAL_FIELD_NORMALISERS: {
+  [K in OptionalProfileField]: (value: ExtractionProfile[K]) => ExtractionProfile[K];
+} = {
+  directorySource: cloneDirectorySource,
+  accumulate: cloneAccumulate,
+};
+
+function normaliseOptionalFields(
+  source: Partial<OptionalProfileFieldValues>,
+): OptionalProfileFieldValues {
+  const result: Record<string, unknown> = {};
+  for (const field of OPTIONAL_PROFILE_FIELDS) {
+    const normalise = OPTIONAL_FIELD_NORMALISERS[field] as (value: unknown) => unknown;
+    result[field] = normalise(source[field]);
+  }
+  return result as OptionalProfileFieldValues;
+}
+
+export interface OptionalFieldMergeResult {
+  profile: ExtractionProfile;
+  mergedFields: OptionalProfileField[];
+}
+
+export function mergeOptionalProfileFields(
+  incoming: ExtractionProfile,
+  local: ExtractionProfile | undefined,
+): OptionalFieldMergeResult {
+  if (!local) return { profile: incoming, mergedFields: [] };
+
+  const mergedFields: OptionalProfileField[] = [];
+  const merged: ExtractionProfile = { ...incoming };
+  for (const field of OPTIONAL_PROFILE_FIELDS) {
+    if (incoming[field] !== undefined) continue; // a value, or an explicit null, wins
+    if (local[field] === undefined) continue; // nothing local worth keeping
+    (merged as unknown as Record<string, unknown>)[field] = local[field];
+    mergedFields.push(field);
+  }
+
+  return mergedFields.length > 0
+    ? { profile: merged, mergedFields }
+    : { profile: incoming, mergedFields };
+}
+
+const KNOWN_PROFILE_KEYS: ReadonlySet<string> = new Set<string>([
+  'id',
+  'scope',
+  'host',
+  'origin',
+  'path',
+  'extraction',
+  'rules',
+  'applyToPreview',
+  'autoApply',
+  'name',
+  'gallery',
+  ...OPTIONAL_PROFILE_FIELDS,
+  'createdAt',
+  'updatedAt',
+  'lastUsed',
+]);
+
+const KNOWN_BUNDLE_KEYS: ReadonlySet<string> = new Set<string>(['version', 'profiles']);
+
+function cloneUnknownValue(value: unknown): unknown {
+  if (value === null || typeof value !== 'object') return value;
+  try {
+    return structuredClone(value);
+  } catch {
+    try {
+      return JSON.parse(JSON.stringify(value)) as unknown;
+    } catch {
+      return undefined;
+    }
+  }
+}
+
+function preservedUnknownKeys(
+  source: unknown,
+  known: ReadonlySet<string>,
+): Record<string, unknown> {
+  if (!source || typeof source !== 'object') return {};
+  const preserved: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(source)) {
+    if (known.has(key)) continue;
+    if (key === '__proto__') continue;
+    const cloned = cloneUnknownValue(value);
+    if (cloned !== undefined) preserved[key] = cloned;
+  }
+  return preserved;
+}
+
 function cloneExtractionProfile(profile: ExtractionProfile): ExtractionProfile {
   return {
+    ...preservedUnknownKeys(profile, KNOWN_PROFILE_KEYS),
     id: normaliseString(profile.id),
     scope: profile.scope,
     host: normaliseHost(profile.host),
@@ -215,8 +321,7 @@ function cloneExtractionProfile(profile: ExtractionProfile): ExtractionProfile {
     autoApply: profile.autoApply !== false,
     name: profile.name?.trim() || undefined,
     gallery: cloneGalleryConfig(profile.gallery),
-    directorySource: cloneDirectorySource(profile.directorySource),
-    accumulate: profile.accumulate === true ? true : undefined,
+    ...normaliseOptionalFields(profile),
     createdAt: typeof profile.createdAt === 'number' ? profile.createdAt : Date.now(),
     updatedAt: typeof profile.updatedAt === 'number' ? profile.updatedAt : Date.now(),
     lastUsed: typeof profile.lastUsed === 'number' ? profile.lastUsed : undefined,
@@ -226,9 +331,14 @@ function cloneExtractionProfile(profile: ExtractionProfile): ExtractionProfile {
 function cloneExtractionBundle(bundle: ExtractionBundle): ExtractionBundle {
   const profiles: Record<string, ExtractionProfile> = {};
   for (const [id, profile] of Object.entries(bundle.profiles ?? {})) {
+    if (id === '__proto__') continue;
     profiles[id] = cloneExtractionProfile(profile);
   }
-  return { version: BUNDLE_VERSION, profiles };
+  return {
+    ...preservedUnknownKeys(bundle, KNOWN_BUNDLE_KEYS),
+    version: BUNDLE_VERSION,
+    profiles,
+  };
 }
 
 function cloneActiveConfig(config: ActiveExtractionConfig): ActiveExtractionConfig {
@@ -236,8 +346,7 @@ function cloneActiveConfig(config: ActiveExtractionConfig): ActiveExtractionConf
     extraction: cloneExtractionConfig(config.extraction),
     rules: cloneRules(config.rules),
     applyToPreview: config.applyToPreview === true,
-    directorySource: cloneDirectorySource(config.directorySource),
-    accumulate: config.accumulate === true ? true : undefined,
+    ...normaliseOptionalFields(config),
   };
 }
 
@@ -407,6 +516,7 @@ export async function saveExtractionProfile(
   const existing = bundle.profiles[id];
 
   const profile: ExtractionProfile = {
+    ...preservedUnknownKeys(existing, KNOWN_PROFILE_KEYS),
     id,
     scope: input.scope,
     host,
@@ -418,8 +528,7 @@ export async function saveExtractionProfile(
     autoApply: input.autoApply ?? existing?.autoApply ?? true,
     name: input.name ?? existing?.name,
     gallery: cloneGalleryConfig(input.gallery ?? existing?.gallery),
-    directorySource: cloneDirectorySource(input.directorySource),
-    accumulate: input.accumulate === true ? true : undefined,
+    ...normaliseOptionalFields(input),
     createdAt: existing?.createdAt ?? now,
     updatedAt: now,
     lastUsed: now,
@@ -523,6 +632,7 @@ function normaliseIncomingProfile(profile: ExtractionProfile): ExtractionProfile
 
   // Normalise image attr default
   return cloneExtractionProfile({
+    ...profile,
     id,
     scope,
     host,
@@ -534,12 +644,36 @@ function normaliseIncomingProfile(profile: ExtractionProfile): ExtractionProfile
     autoApply: profile.autoApply ?? true,
     name: profile.name?.trim() || undefined,
     gallery: cloneGalleryConfig(profile.gallery),
-    directorySource: cloneDirectorySource(profile.directorySource),
-    accumulate: profile.accumulate,
     createdAt: profile.createdAt ?? Date.now(),
     updatedAt: profile.updatedAt ?? Date.now(),
     lastUsed: profile.lastUsed,
   });
+}
+
+export const BUNDLE_TOO_NEW_MESSAGE =
+  'This backup was created by a newer version of the extension — update the extension to restore it.';
+
+export class BundleVersionTooNewError extends Error {
+  readonly bundleVersion: number;
+
+  constructor(bundleVersion: number) {
+    super(BUNDLE_TOO_NEW_MESSAGE);
+    this.name = 'BundleVersionTooNewError';
+    this.bundleVersion = bundleVersion;
+  }
+}
+
+function readBundleVersion(bundle: unknown): number {
+  if (!bundle || typeof bundle !== 'object') return BUNDLE_VERSION;
+  const raw = (bundle as { version?: unknown }).version;
+  return typeof raw === 'number' && Number.isFinite(raw) ? raw : BUNDLE_VERSION;
+}
+
+export function assertBundleReadable(bundle: unknown): void {
+  const version = readBundleVersion(bundle);
+  if (version > BUNDLE_VERSION) {
+    throw new BundleVersionTooNewError(version);
+  }
 }
 
 export interface ExtractionImportPlan {
@@ -547,7 +681,14 @@ export interface ExtractionImportPlan {
   toOverwrite: ExtractionProfile[];
   skippedOlder: number;
   skippedInvalid: number;
+  mergedFields: number;
+  mergedProfiles: number;
   newerWins: boolean;
+}
+
+export interface ExtractionImportApplyResult {
+  mergedFields: number;
+  mergedProfiles: number;
 }
 
 export async function planExtractionImport(
@@ -558,6 +699,8 @@ export async function planExtractionImport(
     throw new Error('Invalid extraction profile import payload');
   }
 
+  assertBundleReadable(bundle);
+
   const newerWins = options?.newerWins === true;
   const current = await loadBundle();
   const plan: ExtractionImportPlan = {
@@ -565,6 +708,8 @@ export async function planExtractionImport(
     toOverwrite: [],
     skippedOlder: 0,
     skippedInvalid: 0,
+    mergedFields: 0,
+    mergedProfiles: 0,
     newerWins,
   };
 
@@ -584,18 +729,28 @@ export async function planExtractionImport(
       plan.skippedOlder += 1;
       continue;
     }
+    const { mergedFields } = mergeOptionalProfileFields(normalised, local);
+    if (mergedFields.length > 0) {
+      plan.mergedFields += mergedFields.length;
+      plan.mergedProfiles += 1;
+    }
     plan.toOverwrite.push(normalised);
   }
 
   return plan;
 }
 
-export async function applyExtractionImportPlan(plan: ExtractionImportPlan): Promise<void> {
+export async function applyExtractionImportPlan(
+  plan: ExtractionImportPlan,
+): Promise<ExtractionImportApplyResult> {
   const current = await loadBundle();
   const merged: ExtractionBundle = {
+    ...current,
     version: BUNDLE_VERSION,
     profiles: { ...current.profiles },
   };
+
+  const applied: ExtractionImportApplyResult = { mergedFields: 0, mergedProfiles: 0 };
 
   for (const profile of plan.toAdd) {
     merged.profiles[profile.id] = cloneExtractionProfile(profile);
@@ -605,17 +760,25 @@ export async function applyExtractionImportPlan(plan: ExtractionImportPlan): Pro
     // a confirmation dialog was open.
     const local = merged.profiles[profile.id];
     if (plan.newerWins && local && local.updatedAt > profile.updatedAt) continue;
-    merged.profiles[profile.id] = cloneExtractionProfile(profile);
+    const { profile: mergedProfile, mergedFields } = mergeOptionalProfileFields(profile, local);
+    if (mergedFields.length > 0) {
+      applied.mergedFields += mergedFields.length;
+      applied.mergedProfiles += 1;
+    }
+    merged.profiles[profile.id] = cloneExtractionProfile(mergedProfile);
   }
 
   bundleCache = merged;
   pruneByLimits(bundleCache);
   await persistBundle();
+  return applied;
 }
 
-export async function importExtractionProfiles(bundle: ExtractionBundle): Promise<void> {
+export async function importExtractionProfiles(
+  bundle: ExtractionBundle,
+): Promise<ExtractionImportApplyResult> {
   const plan = await planExtractionImport(bundle);
-  await applyExtractionImportPlan(plan);
+  return applyExtractionImportPlan(plan);
 }
 
 export async function clearExtractionProfiles(): Promise<void> {

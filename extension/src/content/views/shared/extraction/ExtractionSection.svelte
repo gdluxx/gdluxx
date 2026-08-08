@@ -44,11 +44,11 @@
     modifiedUrls?: ReadonlySet<string>;
     selectedItems?: ReadonlySet<string>;
     previewCount?: number;
-    directorySource?: DirectorySource;
+    directorySource?: DirectorySource | null;
     accumulate?: boolean;
 
     onmodechange?: (mode: 'range' | 'targeted') => void;
-    ondirectorysourcechange?: (source: DirectorySource | undefined) => void;
+    ondirectorysourcechange?: (source: DirectorySource | null | undefined) => void;
     onaccumulatechange?: (value: boolean) => void;
     onstartselectorchange?: (value: string) => void;
     onendselectorchange?: (value: string) => void;

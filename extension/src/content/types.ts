@@ -109,15 +109,15 @@ export interface ExtractionProfile {
   applyToPreview: boolean;
   autoApply: boolean;
   gallery?: GalleryDisplayConfig;
-  directorySource?: DirectorySource;
-  accumulate?: boolean;
+  directorySource?: DirectorySource | null;
+  accumulate?: boolean | null;
   createdAt: number;
   updatedAt: number;
   lastUsed?: number;
 }
 
 export interface ExtractionBundle {
-  version: 1;
+  version: number;
   profiles: Record<string, ExtractionProfile>;
 }
 
@@ -125,6 +125,6 @@ export interface ActiveExtractionConfig {
   extraction: ExtractionConfig;
   rules: SubRule[];
   applyToPreview: boolean;
-  directorySource?: DirectorySource;
-  accumulate?: boolean;
+  directorySource?: DirectorySource | null;
+  accumulate?: boolean | null;
 }

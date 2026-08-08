@@ -161,6 +161,20 @@
         </Button>
       </div>
 
+      <!-- Server field-support warning either the capability pre-check
+           or the post-PUT echo-compare, the buttons above stay enabled. -->
+      {#if extractionStore.fieldSupportWarning}
+        <div class="mb-3">
+          <Info
+            variant="warning"
+            soft
+            title="Some profile fields may not sync"
+          >
+            {extractionStore.fieldSupportWarning}
+          </Info>
+        </div>
+      {/if}
+
       <!-- Remote backup status -->
       <div class="mb-3">
         {#if extractionStore.remoteBackupMeta && extractionStore.remoteBackupMeta.hasBackup}
@@ -443,6 +457,27 @@
             : 's'} will be ignored.
         {/if}
       </p>
+
+      {#if restorePlan.mergedFields > 0}
+        <p class="text-base-content/70">
+          {restorePlan.mergedFields} field value{restorePlan.mergedFields === 1 ? '' : 's'} will be kept
+          from your local copies across {restorePlan.mergedProfiles} profile{restorePlan.mergedProfiles ===
+          1
+            ? ''
+            : 's'} (the remote copy doesn't include {restorePlan.mergedFields === 1
+            ? 'it'
+            : 'them'}).
+        </p>
+      {/if}
+      {#if extractionStore.fieldSupportWarning}
+        <Info
+          variant="warning"
+          soft
+          size="sm"
+        >
+          {extractionStore.fieldSupportWarning}
+        </Info>
+      {/if}
       {#if restoreAffected.length > 0}
         <ul class="list-inside list-disc text-base-content/70">
           {#each restoreAffected.slice(0, RESTORE_PREVIEW_LIMIT) as profile (profile.id)}

@@ -21,6 +21,7 @@ import type {
 } from '#src/content/types';
 import {
   applyExtractionImportPlan,
+  BundleVersionTooNewError,
   buildProfileId,
   clearDraftConfig,
   clearExtractionProfiles,
@@ -68,6 +69,14 @@ import {
   subscribeExtractionConfigChange,
 } from '#utils/extractionProfileSync';
 import type { RemoteBackupMeta } from '#src/content/types';
+import { getServerCompat, isBlocked } from '#src/shared/serverCompat';
+import {
+  fieldsStrippedMessage,
+  fieldsUnsupportedMessage,
+  OPTIONAL_PROFILE_FIELDS,
+  OPTIONAL_PROFILE_FIELD_CAPABILITIES,
+  type OptionalProfileField,
+} from '#src/shared/extractionProfileFields';
 
 export interface ApplyResult {
   links: string[];
@@ -99,7 +108,7 @@ export function createExtractionProfileStore() {
   let rules = $state<SubRule[]>([]);
   let applyToPreview = $state(false);
   let scope = $state<ProfileScope>('host');
-  let directorySource = $state<DirectorySource | undefined>(undefined);
+  let directorySource = $state<DirectorySource | null | undefined>(undefined);
   let accumulate = $state(false);
 
   // Profile management
@@ -120,6 +129,7 @@ export function createExtractionProfileStore() {
   let backupLoading = $state(false);
   let backupStatusMessage = $state('');
   let pendingRestore = $state<{ plan: ExtractionImportPlan } | null>(null);
+  let fieldSupportWarning = $state<string | null>(null);
 
   // UI state
   let profileSearch = $state('');
@@ -249,6 +259,32 @@ export function createExtractionProfileStore() {
     return true;
   }
 
+  async function refreshFieldSupportWarning(): Promise<void> {
+    try {
+      const compat = await getServerCompat();
+      const blocked = OPTIONAL_PROFILE_FIELDS.filter((field) =>
+        isBlocked(compat, OPTIONAL_PROFILE_FIELD_CAPABILITIES[field]),
+      );
+      fieldSupportWarning = blocked.length > 0 ? fieldsUnsupportedMessage(blocked) : null;
+    } catch {
+      fieldSupportWarning = null;
+    }
+  }
+
+  function noteStrippedFields(fields: OptionalProfileField[] | undefined): void {
+    if (!fields || fields.length === 0) return;
+    fieldSupportWarning = fieldsStrippedMessage(fields);
+    toastStore.warning(fieldSupportWarning);
+  }
+
+  function noteSkippedProfiles(skipped: ExtractionBackupPayload['skipped']): void {
+    if (!skipped || skipped.count === 0) return;
+    const ids = skipped.profiles.map((profile) => profile.id).join(', ') || 'unknown';
+    const message = `${skipped.count} profile(s) could not be stored by the server and are missing from this backup: ${ids}`;
+    fieldSupportWarning = message;
+    toastStore.warning(message);
+  }
+
   function setRemoteMeta(payload: ExtractionBackupPayload | null) {
     if (!payload) {
       remoteBackupMeta = null;
@@ -347,7 +383,7 @@ export function createExtractionProfileStore() {
     accumulate = value;
   }
 
-  function setDirectorySource(source: DirectorySource | undefined) {
+  function setDirectorySource(source: DirectorySource | null | undefined) {
     directorySource = source;
   }
 
@@ -405,7 +441,7 @@ export function createExtractionProfileStore() {
       applyToPreview,
       autoApply: true,
       directorySource,
-      accumulate: accumulate ? true : undefined,
+      accumulate,
       createdAt: now,
       updatedAt: now,
     };
@@ -599,7 +635,11 @@ export function createExtractionProfileStore() {
       console.error('Failed to import extraction profiles', error);
       importError =
         error instanceof Error ? error.message : 'Unknown error while importing profiles';
-      toastStore.error('Failed to import extraction profiles.');
+      toastStore.error(
+        error instanceof BundleVersionTooNewError
+          ? error.message
+          : 'Failed to import extraction profiles.',
+      );
     } finally {
       isImporting = false;
     }
@@ -915,6 +955,7 @@ export function createExtractionProfileStore() {
     backupLoading = true;
     backupStatusMessage = '';
     try {
+      await refreshFieldSupportWarning();
       const res = await fetchExtractionBackup(serverUrl, apiKey);
       if (res.success && res.data) {
         setRemoteMeta(res.data);
@@ -941,11 +982,14 @@ export function createExtractionProfileStore() {
     backupLoading = true;
     backupStatusMessage = '';
     try {
+      await refreshFieldSupportWarning();
       const bundle = await exportExtractionProfiles();
       const res = await saveExtractionBackup(serverUrl, apiKey, bundle);
       if (res.success && res.data) {
         setRemoteMeta(res.data);
         toastStore.success(res.message ?? 'Backed up extraction profiles to gdluxx.');
+        noteStrippedFields(res.strippedFields);
+        noteSkippedProfiles(res.data.skipped);
       } else {
         toastStore.error(res.error ?? 'Failed to backup extraction profiles to gdluxx.');
       }
@@ -966,6 +1010,7 @@ export function createExtractionProfileStore() {
     backupLoading = true;
     backupStatusMessage = '';
     try {
+      await refreshFieldSupportWarning();
       const res = await fetchExtractionBackup(serverUrl, apiKey);
       if (!res.success || !res.data) {
         toastStore.error(res.error ?? 'Failed to load extraction backup.');
@@ -988,7 +1033,11 @@ export function createExtractionProfileStore() {
       pendingRestore = { plan };
     } catch (error) {
       console.error('Failed to restore extraction profiles from gdluxx', error);
-      toastStore.error('Failed to restore extraction profiles from gdluxx.');
+      toastStore.error(
+        error instanceof BundleVersionTooNewError
+          ? error.message
+          : 'Failed to restore extraction profiles from gdluxx.',
+      );
     } finally {
       backupLoading = false;
     }
@@ -999,10 +1048,14 @@ export function createExtractionProfileStore() {
     const { plan } = pendingRestore;
     backupLoading = true;
     try {
-      await applyExtractionImportPlan(plan);
+      const { mergedFields } = await applyExtractionImportPlan(plan);
       const skipped = plan.skippedOlder + plan.skippedInvalid;
+      const mergedNote =
+        mergedFields > 0
+          ? `, ${mergedFields} local field value${mergedFields === 1 ? '' : 's'} kept`
+          : '';
       toastStore.success(
-        `Restored from gdluxx: ${plan.toAdd.length} added, ${plan.toOverwrite.length} updated, ${skipped} skipped.`,
+        `Restored from gdluxx: ${plan.toAdd.length} added, ${plan.toOverwrite.length} updated, ${skipped} skipped${mergedNote}.`,
       );
       await refreshHostProfiles(currentUrl);
       await loadAllProfilesInternal();
@@ -1302,6 +1355,9 @@ export function createExtractionProfileStore() {
     },
     get pendingRestore() {
       return pendingRestore;
+    },
+    get fieldSupportWarning() {
+      return fieldSupportWarning;
     },
     get backupStatusMessage() {
       return backupStatusMessage;
