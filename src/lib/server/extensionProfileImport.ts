@@ -25,6 +25,7 @@ import {
 } from '$lib/server/extensionExtractionBackupManager';
 import { withTransaction } from '$lib/server/dbTransaction';
 import {
+  collectBundleCapViolations,
   extractionBundleSchema,
   selectorBundleSchema,
   subBundleSchema,
@@ -80,22 +81,9 @@ export function importExtensionProfileBundles(
     profiles: {},
   };
 
-  const mergedSelectors: SelectorProfileBundle = {
-    version: existingSelectorBundle.version,
-    profiles: { ...existingSelectorBundle.profiles, ...imported.selectors.profiles },
-  };
-  const mergedSubs: SubProfileBundle = {
-    version: existingSubBundle.version,
-    profiles: { ...existingSubBundle.profiles, ...imported.subs.profiles },
-  };
-  const mergedExtraction: ExtractionBundle = {
-    version: existingExtractionBundle.version,
-    profiles: { ...existingExtractionBundle.profiles, ...imported.extraction.profiles },
-  };
-
-  const selValidation = selectorBundleSchema.safeParse(mergedSelectors);
-  const subValidation = subBundleSchema.safeParse(mergedSubs);
-  const extValidation = extractionBundleSchema.safeParse(mergedExtraction);
+  const selValidation = selectorBundleSchema.safeParse(imported.selectors);
+  const subValidation = subBundleSchema.safeParse(imported.subs);
+  const extValidation = extractionBundleSchema.safeParse(imported.extraction);
   if (!selValidation.success || !subValidation.success || !extValidation.success) {
     const issues = [
       ...(selValidation.success ? [] : selValidation.error.issues),
@@ -103,6 +91,29 @@ export function importExtensionProfileBundles(
       ...(extValidation.success ? [] : extValidation.error.issues),
     ];
     const message = issues.map((i) => `${i.path.join('.') || 'payload'}: ${i.message}`).join('\n');
+    return { ok: false, reason: 'validation', message };
+  }
+
+  const mergedSelectors: SelectorProfileBundle = {
+    version: existingSelectorBundle.version,
+    profiles: { ...existingSelectorBundle.profiles, ...selValidation.data.profiles },
+  };
+  const mergedSubs: SubProfileBundle = {
+    version: existingSubBundle.version,
+    profiles: { ...existingSubBundle.profiles, ...subValidation.data.profiles },
+  };
+  const mergedExtraction: ExtractionBundle = {
+    version: existingExtractionBundle.version,
+    profiles: { ...existingExtractionBundle.profiles, ...extValidation.data.profiles },
+  };
+
+  const capViolations = [
+    ...collectBundleCapViolations(mergedSelectors),
+    ...collectBundleCapViolations(mergedSubs),
+    ...collectBundleCapViolations(mergedExtraction),
+  ];
+  if (capViolations.length > 0) {
+    const message = capViolations.map((v) => v.message).join('\n');
     return { ok: false, reason: 'validation', message };
   }
 
@@ -131,13 +142,13 @@ export function importExtensionProfileBundles(
 
   try {
     withTransaction(() => {
-      if (!saveProfileBackup(apiKeyId, selValidation.data, syncedBy)) {
+      if (!saveProfileBackup(apiKeyId, mergedSelectors, syncedBy)) {
         throw new ImportSaveError('selectors');
       }
-      if (!saveSubBackup(apiKeyId, subValidation.data, syncedBy)) {
+      if (!saveSubBackup(apiKeyId, mergedSubs, syncedBy)) {
         throw new ImportSaveError('subs');
       }
-      if (!saveExtractionBackup(apiKeyId, extValidation.data as ExtractionBundle, syncedBy)) {
+      if (!saveExtractionBackup(apiKeyId, mergedExtraction, syncedBy)) {
         throw new ImportSaveError('extraction');
       }
     });

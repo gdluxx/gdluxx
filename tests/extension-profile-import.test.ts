@@ -125,6 +125,20 @@ function extractionProfile(id: string, host = 'example.com') {
   };
 }
 
+function futureExtractionProfile(id: string, host = 'example.com') {
+  return {
+    id,
+    scope: 'host' as const,
+    host,
+    extraction: { mode: 'auto', somethingNewFromAFutureExtension: true },
+    rules: [],
+    applyToPreview: false,
+    autoApply: true,
+    createdAt: 1,
+    updatedAt: 1,
+  };
+}
+
 function toProfileMap<T extends { id: string }>(profiles: T[]): Record<string, T> {
   return Object.fromEntries(profiles.map((profile) => [profile.id, profile]));
 }
@@ -394,5 +408,37 @@ describe('extension profile import (transactional)', () => {
     expect(snapshot('extension_profile_backups', 'key-1')).toEqual(before.selectors);
     expect(snapshot('extension_sub_backups', 'key-1')).toEqual(before.subs);
     expect(snapshot('extension_extraction_backups', 'key-1')).toEqual(before.extraction);
+  });
+
+  test('a stored future-shaped ("tolerated") profile survives an otherwise-valid import', async () => {
+    db.prepare('INSERT INTO apiKey (id) VALUES (?)').run('key-1');
+    const futureProfile = futureExtractionProfile('future-1');
+    seedRow(
+      'extension_extraction_backups',
+      'key-1',
+      toProfileMap([futureProfile, extractionProfile('ext-1')]),
+    );
+
+    const { importExtensionProfileBundles } = await loadCoordinator();
+
+    const outcome = importExtensionProfileBundles(
+      'key-1',
+      combined({
+        extraction: [extractionProfile('ext-1'), extractionProfile('ext-2')],
+      }),
+      'tester@example.test',
+    );
+
+    expect(outcome).toEqual({
+      ok: true,
+      selectors: { added: 0, updated: 0, total: 0 },
+      subs: { added: 0, updated: 0, total: 0 },
+      extraction: { added: 1, updated: 1, total: 3 },
+    });
+
+    const extractionRow = readRow('extension_extraction_backups', 'key-1')!;
+    const savedProfiles = JSON.parse(extractionRow.bundle_json).profiles;
+    expect(Object.keys(savedProfiles).sort()).toEqual(['ext-1', 'ext-2', 'future-1']);
+    expect(savedProfiles['future-1']).toEqual(futureProfile);
   });
 });

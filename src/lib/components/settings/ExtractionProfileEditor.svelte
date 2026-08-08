@@ -269,7 +269,8 @@
       // Directory only profiles, source set in the extension, are otherwise
       // content-free from this editor's point of view — it never edits
       // directorySource, so an existing one always counts as content
-      (isEdit && profile?.directorySource !== undefined);
+      // `!= null`: an explicit null means the extension cleared it
+      (isEdit && profile?.directorySource != null);
     if (!hasContent) {
       return 'Add selectors, a targeted config, a rule, or a gallery override.';
     }

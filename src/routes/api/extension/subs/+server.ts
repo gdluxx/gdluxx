@@ -18,10 +18,9 @@ import {
   saveSubBackup,
   type SubProfileBundle,
 } from '$lib/server/extensionSubBackupManager';
-import { parseJson } from '$lib/server/validation/zod';
 import {
-  subBundleUpsertSchema,
-  type SubBundleUpsertPayload,
+  parseTolerantBundleUpsert,
+  subProfileSchema,
 } from '$lib/server/validation/extensionProfiles';
 
 interface AuthContext {
@@ -90,17 +89,26 @@ export const PUT: RequestHandler = async ({ request }) => {
     return auth.errorResponse;
   }
 
-  const parseResult = await parseJson(request, subBundleUpsertSchema);
-  if ('errorResponse' in parseResult) {
-    return parseResult.errorResponse;
+  let rawPayload: unknown;
+  try {
+    rawPayload = await request.json();
+  } catch (error) {
+    logger.warn('Failed to parse JSON payload for substitution backup upsert:', error);
+    return createApiError('Invalid JSON payload.', 400);
   }
 
-  const payload: SubBundleUpsertPayload = parseResult.data;
+  const parsed = parseTolerantBundleUpsert(rawPayload, subProfileSchema);
+  if (!parsed.ok) {
+    logger.warn(`Substitution backup validation failed: ${parsed.message}`);
+    return createApiError(parsed.message, 400);
+  }
+
+  const { bundle, syncedBy, report } = parsed.value;
 
   const saved = saveSubBackup(
     auth.apiKeyId,
-    payload.bundle,
-    payload.syncedBy ?? auth.apiKeyName ?? null,
+    bundle as unknown as SubProfileBundle,
+    syncedBy ?? auth.apiKeyName ?? null,
   );
 
   if (!saved) {
@@ -110,6 +118,11 @@ export const PUT: RequestHandler = async ({ request }) => {
   logger.info(
     `Saved ${saved.profileCount} substitution profile(s) backup for extension via API key ${auth.apiKeyId}.`,
   );
+  if (report.skipped.count > 0 || report.tolerated.count > 0) {
+    logger.warn(
+      `Substitution backup for API key ${auth.apiKeyId}: skipped ${report.skipped.count} profile(s), stored ${report.tolerated.count} unrecognized profile shape(s).`,
+    );
+  }
 
   return createApiResponse({
     hasBackup: true,
@@ -117,6 +130,8 @@ export const PUT: RequestHandler = async ({ request }) => {
     profileCount: saved.profileCount,
     syncedBy: saved.syncedBy,
     updatedAt: saved.updatedAt,
+    skipped: report.skipped,
+    tolerated: report.tolerated,
   });
 };
 

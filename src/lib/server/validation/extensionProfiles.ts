@@ -23,6 +23,8 @@ export const MAX_TOTAL_PROFILES = 10_000;
 export const MAX_PROFILES_PER_HOST = 50;
 export const MAX_RULES_PER_PROFILE = 20;
 
+export const MAX_BUNDLE_JSON_BYTES = 5 * 1024 * 1024;
+
 const ALLOWED_FLAG_CHARS = new Set(['d', 'g', 'i', 'm', 's', 'u', 'v', 'y']);
 
 const profileScopeSchema = z.enum(['host', 'origin', 'path']);
@@ -33,14 +35,43 @@ const syncedBySchema = z
   .pipe(z.string().min(1).max(200))
   .optional();
 
-function checkBundleCaps<T extends { host: string }>(
-  profiles: Record<string, T>,
-  ctx: z.RefinementCtx,
-): void {
+export interface CapViolation {
+  message: string;
+  path: PropertyKey[];
+}
+
+function readProfileHost(profile: unknown): string {
+  if (profile !== null && typeof profile === 'object') {
+    const host = (profile as { host?: unknown }).host;
+    if (typeof host === 'string') {
+      return host;
+    }
+  }
+  return '';
+}
+
+function bundleSizeViolation(bundle: unknown): CapViolation | null {
+  let serializedLength: number;
+  try {
+    serializedLength = JSON.stringify(bundle)?.length ?? 0;
+  } catch {
+    return { message: 'Bundle payload could not be serialized.', path: [] };
+  }
+
+  if (serializedLength > MAX_BUNDLE_JSON_BYTES) {
+    return {
+      message: `Bundle payload is ${serializedLength} bytes; max allowed is ${MAX_BUNDLE_JSON_BYTES} bytes.`,
+      path: [],
+    };
+  }
+  return null;
+}
+
+function profileCountViolations(profiles: Record<string, unknown>): CapViolation[] {
+  const violations: CapViolation[] = [];
   const entries = Object.values(profiles);
   if (entries.length > MAX_TOTAL_PROFILES) {
-    ctx.addIssue({
-      code: 'custom',
+    violations.push({
       message: `Bundle exceeds maximum of ${MAX_TOTAL_PROFILES} profiles (${entries.length}).`,
       path: ['profiles'],
     });
@@ -48,23 +79,44 @@ function checkBundleCaps<T extends { host: string }>(
 
   const perHost = new Map<string, number>();
   for (const profile of entries) {
-    const next = (perHost.get(profile.host) ?? 0) + 1;
-    perHost.set(profile.host, next);
+    const host = readProfileHost(profile);
+    perHost.set(host, (perHost.get(host) ?? 0) + 1);
   }
   for (const [host, count] of perHost.entries()) {
     if (count > MAX_PROFILES_PER_HOST) {
-      ctx.addIssue({
-        code: 'custom',
+      violations.push({
         message: `Host "${host}" has ${count} profiles; max allowed is ${MAX_PROFILES_PER_HOST}.`,
         path: ['profiles'],
       });
     }
   }
+  return violations;
+}
+
+export function collectBundleCapViolations(bundle: {
+  profiles: Record<string, unknown>;
+}): CapViolation[] {
+  const size = bundleSizeViolation(bundle);
+  const counts = profileCountViolations(bundle.profiles);
+  return size ? [size, ...counts] : counts;
+}
+
+function checkBundleCaps(
+  bundle: { profiles: Record<string, unknown> },
+  ctx: z.RefinementCtx,
+): void {
+  for (const violation of collectBundleCapViolations(bundle)) {
+    ctx.addIssue({
+      code: 'custom',
+      message: violation.message,
+      path: violation.path,
+    });
+  }
 }
 
 /* ----- Selector profiles ----- */
 
-const selectorProfileBaseSchema = z.object({
+const selectorProfileBaseSchema = z.looseObject({
   id: z.string().min(1, 'Profile id is required'),
   scope: profileScopeSchema,
   host: z.string().min(1, 'Host is required'),
@@ -109,19 +161,12 @@ export const selectorBundleSchema: z.ZodType<SelectorProfileBundle> = z
     profiles: z.record(z.string(), selectorProfileSchema),
   })
   .superRefine((bundle, ctx) => {
-    checkBundleCaps(bundle.profiles, ctx);
+    checkBundleCaps(bundle, ctx);
   });
-
-export const selectorBundleUpsertSchema = z.object({
-  bundle: selectorBundleSchema,
-  syncedBy: syncedBySchema,
-});
-
-export type SelectorBundleUpsertPayload = z.infer<typeof selectorBundleUpsertSchema>;
 
 /* ----- Substitution profiles ----- */
 
-const subRuleBaseSchema = z.object({
+const subRuleBaseSchema = z.looseObject({
   id: z.string().min(1, 'Rule id is required'),
   pattern: z.string(),
   replacement: z.string(),
@@ -189,7 +234,8 @@ export const subRuleSchema: z.ZodType<SavedSubRule> = subRuleBaseSchema.superRef
   }
 });
 
-const subProfileBaseSchema = z.object({
+// `looseObject` for the same reason as `selectorProfileBaseSchema`
+const subProfileBaseSchema = z.looseObject({
   id: z.string().min(1, 'Profile id is required'),
   scope: profileScopeSchema,
   host: z.string().min(1, 'Host is required'),
@@ -236,15 +282,8 @@ export const subBundleSchema: z.ZodType<SubProfileBundle> = z
     profiles: z.record(z.string(), subProfileSchema),
   })
   .superRefine((bundle, ctx) => {
-    checkBundleCaps(bundle.profiles, ctx);
+    checkBundleCaps(bundle, ctx);
   });
-
-export const subBundleUpsertSchema = z.object({
-  bundle: subBundleSchema,
-  syncedBy: syncedBySchema,
-});
-
-export type SubBundleUpsertPayload = z.infer<typeof subBundleUpsertSchema>;
 
 /* ----- Extraction profiles ----- */
 
@@ -313,7 +352,7 @@ export const extractionConfigSchema = z.discriminatedUnion('mode', [
   }),
 ]);
 
-const extractionProfileBaseSchema = z.object({
+const extractionProfileBaseSchema = z.looseObject({
   id: z.string().min(1, 'Profile id is required'),
   name: z.string().max(200).optional(),
   scope: profileScopeSchema,
@@ -325,8 +364,8 @@ const extractionProfileBaseSchema = z.object({
   applyToPreview: z.boolean(),
   autoApply: z.boolean(),
   gallery: galleryDisplayConfigSchema.optional(),
-  directorySource: directorySourceSchema.optional(),
-  accumulate: z.boolean().optional(),
+  directorySource: directorySourceSchema.optional().nullable(),
+  accumulate: z.boolean().optional().nullable(),
   createdAt: z.number().int(),
   updatedAt: z.number().int(),
   lastUsed: z.number().int().optional(),
@@ -340,7 +379,7 @@ export const extractionProfileSchema = extractionProfileBaseSchema.superRefine((
     profile.extraction.mode === 'targeted' ||
     profile.rules.some((r) => r.pattern.trim().length > 0) ||
     profile.gallery !== undefined ||
-    profile.directorySource !== undefined;
+    profile.directorySource != null;
 
   if (!hasContent) {
     ctx.addIssue({
@@ -402,15 +441,8 @@ export const extractionBundleSchema = z
     profiles: z.record(z.string(), extractionProfileSchema),
   })
   .superRefine((bundle, ctx) => {
-    checkBundleCaps(bundle.profiles, ctx);
+    checkBundleCaps(bundle, ctx);
   });
-
-export const extractionBundleUpsertSchema = z.object({
-  bundle: extractionBundleSchema,
-  syncedBy: syncedBySchema,
-});
-
-export type ExtractionBundleUpsertPayload = z.infer<typeof extractionBundleUpsertSchema>;
 
 export const COMBINED_BUNDLE_KIND = 'gdluxx.extension-profiles.bundle';
 export const COMBINED_BUNDLE_VERSION = 1;
@@ -443,3 +475,138 @@ export const combinedBundleSchema = z
   });
 
 export type CombinedBundle = z.infer<typeof combinedBundleSchema>;
+
+/* Tolerant backup validation, extension sync PUTs */
+
+const profileSpineSchema = z
+  .looseObject({
+    id: z.string().min(1, 'Profile id is required'),
+    scope: profileScopeSchema,
+    host: z.string().min(1, 'Host is required'),
+    path: z.string().optional(),
+    origin: z.string().optional(),
+  })
+  .superRefine((profile, ctx) => {
+    if (profile.scope === 'path' && !profile.path) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Path is required when scope is "path".',
+        path: ['path'],
+      });
+    }
+    if (profile.scope === 'origin' && !profile.origin) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Origin is required when scope is "origin".',
+        path: ['origin'],
+      });
+    }
+  });
+
+const bundleUpsertEnvelopeSchema = z.looseObject({
+  bundle: z.looseObject({
+    version: z.number().int().nonnegative(),
+    profiles: z.record(z.string(), z.unknown()),
+  }),
+  syncedBy: syncedBySchema,
+});
+
+/** Cap on how many per profile notes are echoed back, always exact counts */
+const MAX_REPORTED_PROFILES = 20;
+
+export interface ProfileValidationNote {
+  id: string;
+  reason: string;
+}
+
+export interface BundleToleranceReport {
+  skipped: { count: number; profiles: ProfileValidationNote[] };
+  tolerated: { count: number; profiles: ProfileValidationNote[] };
+}
+
+export interface TolerantBundleUpsert {
+  bundle: Record<string, unknown> & { version: number; profiles: Record<string, unknown> };
+  syncedBy: string | null;
+  report: BundleToleranceReport;
+}
+
+export type TolerantBundleUpsertResult =
+  | { ok: true; value: TolerantBundleUpsert }
+  | { ok: false; message: string };
+
+function describeIssues(error: z.ZodError, limit: number): string {
+  const shown = error.issues
+    .slice(0, limit)
+    .map((issue) => `${issue.path.join('.') || 'payload'}: ${issue.message}`);
+  const remaining = error.issues.length - shown.length;
+  return remaining > 0 ? `${shown.join('; ')} (+${remaining} more)` : shown.join('; ');
+}
+
+export function parseTolerantBundleUpsert(
+  payload: unknown,
+  fullProfileSchema: z.ZodType,
+): TolerantBundleUpsertResult {
+  const envelope = bundleUpsertEnvelopeSchema.safeParse(payload);
+  if (!envelope.success) {
+    return { ok: false, message: describeIssues(envelope.error, 5) };
+  }
+
+  const rawBundle = (payload as { bundle: Record<string, unknown> }).bundle;
+  const rawProfiles = rawBundle.profiles as Record<string, unknown>;
+
+  const sizeViolation = bundleSizeViolation(rawBundle);
+  if (sizeViolation) {
+    return { ok: false, message: sizeViolation.message };
+  }
+
+  const profiles: Record<string, unknown> = {};
+  const report: BundleToleranceReport = {
+    skipped: { count: 0, profiles: [] },
+    tolerated: { count: 0, profiles: [] },
+  };
+
+  const note = (
+    bucket: { count: number; profiles: ProfileValidationNote[] },
+    id: string,
+    reason: string,
+  ) => {
+    bucket.count += 1;
+    if (bucket.profiles.length < MAX_REPORTED_PROFILES) {
+      bucket.profiles.push({ id, reason });
+    }
+  };
+
+  for (const [key, value] of Object.entries(rawProfiles)) {
+    if (key === '__proto__') {
+      note(report.skipped, key, 'Unsupported profile key.');
+      continue;
+    }
+
+    const spine = profileSpineSchema.safeParse(value);
+    if (!spine.success) {
+      note(report.skipped, key, describeIssues(spine.error, 3));
+      continue;
+    }
+
+    const full = fullProfileSchema.safeParse(value);
+    if (!full.success) {
+      note(report.tolerated, key, describeIssues(full.error, 3));
+    }
+
+    profiles[key] = value;
+  }
+
+  const countViolations = profileCountViolations(profiles);
+  if (countViolations.length > 0) {
+    return { ok: false, message: countViolations.map((v) => v.message).join('\n') };
+  }
+
+  return {
+    ok: true,
+    value: {
+      bundle: { ...rawBundle, version: envelope.data.bundle.version, profiles },
+      syncedBy: envelope.data.syncedBy ?? null,
+      report,
+    },
+  };
+}

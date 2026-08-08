@@ -18,10 +18,9 @@ import {
   saveExtractionBackup,
   type ExtractionBundle,
 } from '$lib/server/extensionExtractionBackupManager';
-import { parseJson } from '$lib/server/validation/zod';
 import {
-  extractionBundleUpsertSchema,
-  type ExtractionBundleUpsertPayload,
+  extractionProfileSchema,
+  parseTolerantBundleUpsert,
 } from '$lib/server/validation/extensionProfiles';
 
 interface AuthContext {
@@ -91,18 +90,26 @@ export const PUT: RequestHandler = async ({ request }) => {
   if ('errorResponse' in auth) {
     return auth.errorResponse;
   }
-
-  const parseResult = await parseJson(request, extractionBundleUpsertSchema);
-  if ('errorResponse' in parseResult) {
-    return parseResult.errorResponse;
+  let rawPayload: unknown;
+  try {
+    rawPayload = await request.json();
+  } catch (error) {
+    logger.warn('Failed to parse JSON payload for extraction backup upsert:', error);
+    return createApiError('Invalid JSON payload.', 400);
   }
 
-  const payload: ExtractionBundleUpsertPayload = parseResult.data;
+  const parsed = parseTolerantBundleUpsert(rawPayload, extractionProfileSchema);
+  if (!parsed.ok) {
+    logger.warn(`Extraction backup validation failed: ${parsed.message}`);
+    return createApiError(parsed.message, 400);
+  }
+
+  const { bundle, syncedBy, report } = parsed.value;
 
   const saved = saveExtractionBackup(
     auth.apiKeyId,
-    payload.bundle as ExtractionBundle,
-    payload.syncedBy ?? auth.apiKeyName ?? null,
+    bundle as unknown as ExtractionBundle,
+    syncedBy ?? auth.apiKeyName ?? null,
   );
 
   if (!saved) {
@@ -112,6 +119,11 @@ export const PUT: RequestHandler = async ({ request }) => {
   logger.info(
     `Saved ${saved.profileCount} extraction profile(s) backup for extension via API key ${auth.apiKeyId}.`,
   );
+  if (report.skipped.count > 0 || report.tolerated.count > 0) {
+    logger.warn(
+      `Extraction backup for API key ${auth.apiKeyId}: skipped ${report.skipped.count} profile(s), stored ${report.tolerated.count} unrecognized profile shape(s).`,
+    );
+  }
 
   return createApiResponse({
     hasBackup: true,
@@ -119,6 +131,8 @@ export const PUT: RequestHandler = async ({ request }) => {
     profileCount: saved.profileCount,
     syncedBy: saved.syncedBy,
     updatedAt: saved.updatedAt,
+    skipped: report.skipped,
+    tolerated: report.tolerated,
   });
 };
 

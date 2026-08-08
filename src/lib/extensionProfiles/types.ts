@@ -129,8 +129,8 @@ export interface ExtractionProfile {
   applyToPreview: boolean;
   autoApply: boolean;
   gallery?: GalleryDisplayConfig;
-  directorySource?: DirectorySource;
-  accumulate?: boolean;
+  directorySource?: DirectorySource | null;
+  accumulate?: boolean | null;
   createdAt: number;
   updatedAt: number;
   lastUsed?: number;
