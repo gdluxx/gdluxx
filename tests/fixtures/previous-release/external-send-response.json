@@ -1,0 +1,21 @@
+{
+  "success": true,
+  "data": {
+    "overallSuccess": true,
+    "results": [
+      {
+        "jobId": "job_fixture_0001",
+        "url": "https://example.com/gallery/123",
+        "success": true,
+        "message": "Job started successfully"
+      },
+      {
+        "jobId": "job_fixture_0002",
+        "url": "https://example.com/image/456.jpg",
+        "success": true,
+        "message": "Job started successfully"
+      }
+    ]
+  },
+  "timestamp": "2026-07-16T00:31:25.000Z"
+}

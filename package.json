@@ -30,7 +30,8 @@
     "fix-all": "pnpm format; pnpm lint:fix",
     "validate-themes": "node scripts/validate-themes.js",
     "test:themes": "vitest run tests/theme-system.test.js",
-    "theme-check": "pnpm validate-themes && pnpm test:themes"
+    "theme-check": "pnpm validate-themes && pnpm test:themes",
+    "fixtures:refresh": "node scripts/refresh-fixtures.js"
   },
   "devDependencies": {
     "@eslint/compat": "^2.1.0",

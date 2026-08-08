@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "profiles": {
+    "host::example.com": {
+      "id": "host::example.com",
+      "scope": "host",
+      "host": "example.com",
+      "extraction": {
+        "mode": "range",
+        "startSelector": "#gallery-start",
+        "endSelector": "#gallery-end"
+      },
+      "rules": [],
+      "applyToPreview": false,
+      "autoApply": true,
+      "createdAt": 1752624000000,
+      "updatedAt": 1752624000000
+    },
+    "host::foo.example": {
+      "id": "host::foo.example",
+      "scope": "host",
+      "host": "foo.example",
+      "extraction": {
+        "mode": "targeted",
+        "container": { "via": "selector", "selector": ".gallery" },
+        "images": { "via": "selector", "selector": "img", "attr": "src" }
+      },
+      "rules": [
+        {
+          "id": "rule_1",
+          "pattern": "thumb",
+          "replacement": "full",
+          "flags": "g",
+          "enabled": true,
+          "order": 0
+        }
+      ],
+      "applyToPreview": false,
+      "autoApply": true,
+      "createdAt": 1752624000000,
+      "updatedAt": 1752624000000
+    }
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "tag": "v0.11.0",
+  "baselineRoutes": ["external", "extraction", "ping", "profiles", "subs"],
+  "capturedAt": "2026-08-08",
+  "notes": "Contracts captured from git tag v0.11.0 - the last shipped server release before the version-compatibility work (capability registry, serverVersion/protocolVersion on ping, tolerant backup validation, jobs/cookies routes). See VersionCompatibilityPlan.md Phase 5.1 and scripts/refresh-fixtures.js. `baselineRoutes` is the set of /api/extension/* route directories that existed at this tag; anything beyond it (jobs, cookies) is a post-v0.11.0 addition and must carry a capability flag."
+}

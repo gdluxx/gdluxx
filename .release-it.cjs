@@ -23,5 +23,7 @@ module.exports = {
       },
     },
   },
-  hooks: {},
+  hooks: {
+    'before:release': ['pnpm run fixtures:refresh'],
+  },
 };

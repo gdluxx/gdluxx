@@ -1,0 +1,9 @@
+{
+  "success": true,
+  "data": {
+    "message": "Connection successful!",
+    "keyId": "fixture-api-key-id",
+    "keyName": "Fixture API Key"
+  },
+  "timestamp": "2026-07-16T00:31:25.000Z"
+}
