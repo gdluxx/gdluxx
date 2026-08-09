@@ -16,6 +16,8 @@
   import { ALL_URLS, formatOriginPattern } from '#src/shared/originPattern';
 
   const UNSUPPORTED_PAGE_MESSAGE = 'Overlay not supported on this page';
+  const REVOKE_ALL_REMOVES_INDIVIDUAL_GRANTS = !import.meta.env.FIREFOX;
+  const MANIFEST_ORIGINS = new Set(browser.runtime.getManifest().host_permissions ?? []);
 
   type StatusKind = 'success' | 'error' | 'info';
 
@@ -26,13 +28,12 @@
   let statusKind = $state<StatusKind>('info');
   let statusVisible = $state(false);
 
-  let confirmVisible = $state(false);
-  let confirmMessage = $state('');
-
   let allowCurrentVisible = $state(true);
   let allowAllVisible = $state(true);
   let revokeCurrentVisible = $state(false);
   let revokeAllVisible = $state(false);
+  let revokeAllConfirmVisible = $state(false);
+  let individualOriginCount = $state(0);
   let managePermissionsVisible = $state(false);
   let cookiesGranted = $state(false);
 
@@ -54,9 +55,17 @@
 
   const isConfigured = $derived(serverUrl.trim() !== '' && apiKey.trim() !== '');
 
-  let statusTimeout: number | null = null;
-  let pendingConfirm: (() => Promise<void> | void) | null = null;
+  const revokeAllIsLossy = $derived(
+    REVOKE_ALL_REMOVES_INDIVIDUAL_GRANTS && individualOriginCount > 0,
+  );
 
+  const revokeAllConfirmMessage = $derived(
+    individualOriginCount === 1
+      ? "This also removes the one site you enabled individually. You'll need to re-add it."
+      : `This also removes the ${individualOriginCount} sites you enabled individually. You'll need to re-add them one at a time.`,
+  );
+
+  let statusTimeout: number | null = null;
   function showStatus(message: string, kind: StatusKind): void {
     statusMessage = message;
     statusKind = kind;
@@ -77,36 +86,6 @@
       clearTimeout(statusTimeout);
       statusTimeout = null;
     }
-  }
-
-  function showConfirmPrompt(message: string, onConfirm: () => Promise<void> | void): void {
-    confirmMessage = message;
-    confirmVisible = true;
-    pendingConfirm = onConfirm;
-  }
-
-  function hideConfirmPrompt(): void {
-    confirmVisible = false;
-    pendingConfirm = null;
-  }
-
-  async function handleConfirmYes(): Promise<void> {
-    const action = pendingConfirm;
-    hideConfirmPrompt();
-    if (!action) return;
-
-    try {
-      await action();
-    } catch (error) {
-      console.error('Permission confirmation action failed', error);
-      const message = error instanceof Error ? error.message : String(error);
-      showStatus(`Error: ${message}`, 'error');
-    }
-  }
-
-  function handleConfirmNo(): void {
-    hideConfirmPrompt();
-    showStatus('Permission request cancelled', 'info');
   }
 
   async function getActiveTab(): Promise<Tabs.Tab | undefined> {
@@ -137,6 +116,14 @@
     }
 
     const hasAllUrls = grantedOrigins.has(ALL_URLS);
+
+    let individualCount = 0;
+    for (const origin of grantedOrigins) {
+      if (origin !== ALL_URLS && !MANIFEST_ORIGINS.has(origin)) {
+        individualCount += 1;
+      }
+    }
+
     let hasCurrentSite = false;
     let message = 'Overlay not permitted on this site yet.';
 
@@ -164,50 +151,23 @@
     allowAllVisible = !hasAllUrls;
     revokeCurrentVisible = hasCurrentSite && !hasAllUrls;
     revokeAllVisible = hasAllUrls;
+
+    if (!revokeAllVisible) {
+      revokeAllConfirmVisible = false;
+    }
+    individualOriginCount = individualCount;
     managePermissionsVisible = grantedOrigins.size > 0;
   }
 
-  async function ensurePermission(origins: string[]): Promise<boolean> {
+  async function openPermissionPage(params: Record<string, string>): Promise<void> {
     try {
-      const hasAccess = await browser.permissions.contains({ origins });
-      if (hasAccess) {
-        return true;
-      }
-
-      const granted = await browser.permissions.request({ origins });
-      if (!granted) {
-        const isFirefox = navigator.userAgent.toLowerCase().includes('firefox');
-        showStatus(
-          isFirefox
-            ? 'Permission denied. Check about:addons to manage permissions'
-            : 'Permission denied. If you revoked permissions via chrome://extensions, re-enable them there first.',
-          'error',
-        );
-      }
-      return granted;
+      const query = new URLSearchParams(params);
+      const url = browser.runtime.getURL(`/grant-permission.html?${query.toString()}`);
+      await browser.tabs.create({ url });
+      window.close();
     } catch (error) {
-      console.error('Permission request failed', error);
-      const isFirefox = navigator.userAgent.toLowerCase().includes('firefox');
-      const errorMsg = error instanceof Error ? error.message : String(error);
-      showStatus(
-        isFirefox
-          ? `Permission request failed: ${errorMsg}`
-          : 'Permission request failed. Check chrome://extensions if permissions were revoked there.',
-        'error',
-      );
-      return false;
-    }
-  }
-
-  async function injectOverlay(tabId: number): Promise<void> {
-    try {
-      await browser.scripting.executeScript({
-        target: { tabId },
-        files: ['content-scripts/overlay.js'],
-      });
-      await browser.tabs.sendMessage(tabId, { action: 'toggleOverlay' });
-    } catch (error) {
-      console.warn('Overlay injection failed', error);
+      console.error('Failed to open permission page', error);
+      showStatus('Failed to open the permission request page', 'error');
     }
   }
 
@@ -224,16 +184,24 @@
       return;
     }
 
-    const hasPermission = await ensurePermission([pattern]);
-    if (!hasPermission) return;
-
-    await syncOverlayRegistration();
-    try {
-      await browser.tabs.sendMessage(tab.id, { action: 'toggleOverlay' });
-    } catch {
-      await injectOverlay(tab.id);
+    const hasPermission = await browser.permissions.contains({ origins: [pattern] });
+    if (!hasPermission) {
+      await openPermissionPage({
+        kind: 'site',
+        origin: pattern,
+        label: new URL(tab.url).hostname,
+        tabId: String(tab.id),
+      });
+      return;
     }
-    showStatus('Overlay command sent', 'success');
+
+    try {
+      await browser.runtime.sendMessage({ action: 'openOverlay', tabId: tab.id });
+      window.close();
+    } catch (error) {
+      console.error('Failed to open overlay', error);
+      showStatus('Failed to open the overlay in this tab', 'error');
+    }
   }
 
   async function handleSendCurrentTab(): Promise<void> {
@@ -308,29 +276,16 @@
       return;
     }
 
-    const hostname = new URL(tab.url).hostname;
-    showConfirmPrompt(
-      `Grant permission to access ${hostname}? This allows the overlay to work on this site.`,
-      async () => {
-        try {
-          const granted = await browser.permissions.request({ origins: [pattern] });
-          if (granted) {
-            showStatus('Overlay enabled for the current site', 'success');
-            await syncOverlayRegistration();
-            if (tab.id) {
-              await injectOverlay(tab.id);
-            }
-            await updatePermissionStatus();
-          } else {
-            showStatus('Permission denied', 'error');
-          }
-        } catch (error) {
-          console.error('Permission request error', error);
-          const errorMsg = error instanceof Error ? error.message : String(error);
-          showStatus(`Error: ${errorMsg}`, 'error');
-        }
-      },
-    );
+    const params: Record<string, string> = {
+      kind: 'site',
+      origin: pattern,
+      label: new URL(tab.url).hostname,
+    };
+
+    if (tab.id !== undefined) {
+      params.tabId = String(tab.id);
+    }
+    await openPermissionPage(params);
   }
 
   async function handleAllowAll(): Promise<void> {
@@ -341,32 +296,14 @@
       return;
     }
 
-    showConfirmPrompt(
-      'Grant permission to access ALL websites? This allows the overlay to work on any site you visit.',
-      async () => {
-        try {
-          const granted = await browser.permissions.request({ origins: [ALL_URLS] });
-          if (granted) {
-            showStatus('Overlay enabled for all sites', 'success');
-            await syncOverlayRegistration();
-            await updatePermissionStatus();
-          } else {
-            showStatus('Permission denied', 'error');
-          }
-        } catch (error) {
-          console.error('Permission request error', error);
-          const errorMsg = error instanceof Error ? error.message : String(error);
-          showStatus(`Error: ${errorMsg}`, 'error');
-        }
-      },
-    );
+    const tab = await getActiveTab();
+    const params: Record<string, string> = { kind: 'all' };
+    if (tab?.id !== undefined) {
+      params.tabId = String(tab.id);
+    }
+    await openPermissionPage(params);
   }
 
-  // The cookies permission is requested here rather than from the overlay
-  // because permissions.request() only works inside a user input handler, and
-  // the overlay reaches the background through runtime.onMessage, which is not
-  // one. Requested on its own, pairing it with an origin would trigger a
-  // needless host-access prompt, host access stays governed by the buttons above.
   async function handleAllowCookies(): Promise<void> {
     const hasAccess = await browser.permissions.contains({ permissions: ['cookies'] });
     if (hasAccess) {
@@ -375,24 +312,7 @@
       return;
     }
 
-    showConfirmPrompt(
-      'Allow gdluxx to read cookies? This lets the overlay capture your logged-in session for a site and sync it to your gdluxx server, so gallery-dl can download private content. Cookies are only read for sites you have enabled.',
-      async () => {
-        try {
-          const granted = await browser.permissions.request({ permissions: ['cookies'] });
-          if (granted) {
-            showStatus('Cookie sync enabled', 'success');
-            await updatePermissionStatus();
-          } else {
-            showStatus('Permission denied', 'error');
-          }
-        } catch (error) {
-          console.error('Cookie permission request error', error);
-          const errorMsg = error instanceof Error ? error.message : String(error);
-          showStatus(`Error: ${errorMsg}`, 'error');
-        }
-      },
-    );
+    await openPermissionPage({ kind: 'cookies' });
   }
 
   async function handleRevokeCookies(): Promise<void> {
@@ -438,18 +358,42 @@
     }
   }
 
-  async function handleRevokeAll(): Promise<void> {
-    const confirmed = window.confirm(
-      'Remove overlay access from all sites? You will need to re-enable it manually.',
-    );
-    if (!confirmed) {
+  function handleRevokeAllClick(): void {
+    if (revokeAllIsLossy) {
+      revokeAllConfirmVisible = true;
       return;
     }
+    void performRevokeAll();
+  }
+
+  function cancelRevokeAll(): void {
+    revokeAllConfirmVisible = false;
+  }
+
+  function revokeAllSuccessMessage(individualCount: number): string {
+    if (individualCount === 0) {
+      return 'Overlay disabled on all sites';
+    }
+
+    if (REVOKE_ALL_REMOVES_INDIVIDUAL_GRANTS) {
+      return individualCount === 1
+        ? 'Overlay disabled on all sites, plus the one site you enabled individually'
+        : `Overlay disabled on all sites, plus ${individualCount} sites you enabled individually`;
+    }
+
+    return individualCount === 1
+      ? 'Overlay disabled on all sites — the one site you enabled individually stays enabled'
+      : `Overlay disabled on all sites — ${individualCount} individually enabled sites stay enabled`;
+  }
+
+  async function performRevokeAll(): Promise<void> {
+    const individualCount = individualOriginCount;
+    revokeAllConfirmVisible = false;
 
     try {
       const removed = await browser.permissions.remove({ origins: [ALL_URLS] });
       if (removed) {
-        showStatus('Overlay disabled on all sites', 'success');
+        showStatus(revokeAllSuccessMessage(individualCount), 'success');
         await syncOverlayRegistration();
         await updatePermissionStatus();
       } else {
@@ -462,8 +406,9 @@
   }
 
   function handleManagePermissions(): void {
-    const isFirefox = navigator.userAgent.toLowerCase().includes('firefox');
-    const url = isFirefox ? 'about:addons' : `chrome://extensions/?id=${browser.runtime.id}`;
+    const url = import.meta.env.FIREFOX
+      ? 'about:addons'
+      : `chrome://extensions/?id=${browser.runtime.id}`;
 
     browser.tabs.create({ url }).catch(() => {
       showStatus('Open about:addons manually to manage permissions', 'info');
@@ -526,118 +471,121 @@
   </header>
 
   <section class="space-y-3">
-    {#if !confirmVisible}
-      <div class="space-y-3">
-        <button
-          class="btn btn-primary w-full"
-          type="button"
-          onclick={() => void handleOpenOverlay()}
-        >
-          Open overlay in this tab
-        </button>
+    <div class="space-y-3">
+      <button
+        class="btn btn-primary w-full"
+        type="button"
+        onclick={() => void handleOpenOverlay()}
+      >
+        Open overlay in this tab
+      </button>
 
-        <button
-          class="btn btn-secondary w-full"
-          type="button"
-          disabled={isSending || !isConfigured}
-          onclick={() => void handleSendCurrentTab()}
-        >
-          {isSending ? 'Sending...' : 'Send current tab to gdluxx'}
-        </button>
+      <button
+        class="btn btn-secondary w-full"
+        type="button"
+        disabled={isSending || !isConfigured}
+        onclick={() => void handleSendCurrentTab()}
+      >
+        {isSending ? 'Sending...' : 'Send current tab to gdluxx'}
+      </button>
 
-        {#if !isConfigured}
-          <div class="text-secondary-600 bg-secondary-100 rounded-lg p-2 text-xs">
-            Configure gdluxx server URL and API key in the overlay settings to use this feature.
+      {#if !isConfigured}
+        <div class="text-secondary-600 bg-secondary-100 rounded-lg p-2 text-xs">
+          Configure gdluxx server URL and API key in the overlay settings to use this feature.
+        </div>
+      {/if}
+
+      {#if allowCurrentVisible}
+        <button
+          class="btn btn-neutral w-full"
+          type="button"
+          onclick={() => void handleAllowCurrent()}
+        >
+          Enable on current site
+        </button>
+      {/if}
+
+      {#if allowAllVisible}
+        <button
+          class="btn btn-neutral w-full"
+          type="button"
+          onclick={() => void handleAllowAll()}
+        >
+          Enable on all sites
+        </button>
+      {/if}
+
+      {#if revokeCurrentVisible}
+        <button
+          class="btn btn-outline btn-error w-full"
+          type="button"
+          onclick={() => void handleRevokeCurrent()}
+        >
+          Disable on current site
+        </button>
+      {/if}
+
+      {#if revokeAllVisible}
+        {#if revokeAllConfirmVisible}
+          <div class="card bg-base-200 border-base-300 space-y-3 border p-4">
+            <p class="text-base-content text-sm font-medium">Disable the overlay everywhere?</p>
+            <p class="text-base-content/70 text-xs">{revokeAllConfirmMessage}</p>
+            <div class="flex gap-2">
+              <button
+                class="btn btn-sm btn-error flex-1"
+                type="button"
+                onclick={() => void performRevokeAll()}
+              >
+                Disable everywhere
+              </button>
+              <button
+                class="btn btn-sm btn-ghost flex-1"
+                type="button"
+                onclick={() => cancelRevokeAll()}
+              >
+                Cancel
+              </button>
+            </div>
           </div>
-        {/if}
-
-        {#if allowCurrentVisible}
-          <button
-            class="btn btn-neutral w-full"
-            type="button"
-            onclick={() => void handleAllowCurrent()}
-          >
-            Enable on current site
-          </button>
-        {/if}
-
-        {#if allowAllVisible}
-          <button
-            class="btn btn-neutral w-full"
-            type="button"
-            onclick={() => void handleAllowAll()}
-          >
-            Enable on all sites
-          </button>
-        {/if}
-
-        {#if revokeCurrentVisible}
-          <button
-            class="btn btn-outline btn-error w-full"
-            type="button"
-            onclick={() => void handleRevokeCurrent()}
-          >
-            Disable on current site
-          </button>
-        {/if}
-
-        {#if revokeAllVisible}
-          <button
-            class="btn btn-outline btn-error w-full"
-            type="button"
-            onclick={() => void handleRevokeAll()}
-          >
-            Disable on all sites
-          </button>
-        {/if}
-
-        {#if !cookiesGranted}
-          <button
-            class="btn btn-neutral w-full"
-            type="button"
-            onclick={() => void handleAllowCookies()}
-          >
-            Enable cookie sync
-          </button>
         {:else}
           <button
             class="btn btn-outline btn-error w-full"
             type="button"
-            onclick={() => void handleRevokeCookies()}
+            onclick={() => handleRevokeAllClick()}
           >
-            Disable cookie sync
+            Disable on all sites
           </button>
         {/if}
+      {/if}
 
-        {#if managePermissionsVisible}
-          <button
-            class="btn btn-ghost btn-sm w-full"
-            type="button"
-            onclick={() => handleManagePermissions()}
-          >
-            Manage all permissions
-          </button>
-        {/if}
-      </div>
-    {:else}
-      <div class="card bg-base-200 border-base-300 space-y-3 border p-4">
-        <p class="text-base-content text-sm">{confirmMessage}</p>
-        <div class="flex gap-2">
-          <button
-            class="btn btn-sm btn-primary flex-1"
-            onclick={() => void handleConfirmYes()}
-          >
-            Grant Permission
-          </button>
-          <button
-            class="btn btn-sm btn-ghost flex-1"
-            onclick={() => handleConfirmNo()}
-          >
-            Cancel
-          </button>
-        </div>
-      </div>
-    {/if}
+      {#if !cookiesGranted}
+        <button
+          class="btn btn-neutral w-full"
+          type="button"
+          onclick={() => void handleAllowCookies()}
+        >
+          Enable cookie sync
+        </button>
+      {:else}
+        <button
+          class="btn btn-outline btn-error w-full"
+          type="button"
+          onclick={() => void handleRevokeCookies()}
+        >
+          Disable cookie sync
+        </button>
+      {/if}
+
+      {#if managePermissionsVisible}
+        <button
+          class="btn btn-ghost btn-sm w-full"
+          type="button"
+          onclick={() => handleManagePermissions()}
+        >
+          Manage all permissions
+        </button>
+      {/if}
+    </div>
   </section>
 
   <section class="text-base-content/70 space-y-2 text-xs">

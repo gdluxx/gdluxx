@@ -41,6 +41,7 @@
     "tests/**/*",
     "wxt.config.ts",
     "vitest.config.ts",
-    ".wxt/types/imports.d.ts"
+    ".wxt/types/imports.d.ts",
+    ".wxt/types/globals.d.ts"
   ]
 }

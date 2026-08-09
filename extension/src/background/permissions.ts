@@ -23,8 +23,7 @@ export async function ensureOrigins(origins: string[]): Promise<boolean> {
 }
 
 export type CookieAccessCheck =
-  | { ok: true }
-  | { ok: false; reason: 'cookies' | 'origin' | 'error'; detail?: string };
+  { ok: true } | { ok: false; reason: 'cookies' | 'origin' | 'error'; detail?: string };
 
 /**
  * Report whether cookie capture is currently permitted for an origin
@@ -57,12 +56,13 @@ export async function checkCookieAccess(originPattern: string): Promise<CookieAc
 }
 
 export async function registerOverlayForOrigins(origins: string[]): Promise<void> {
-  if (!origins.length) return;
-
   try {
     await browser.scripting
       .unregisterContentScripts({ ids: [OVERLAY_SCRIPT_ID] })
       .catch(() => undefined);
+
+    if (!origins.length) return;
+
     await browser.scripting.registerContentScripts([
       {
         id: OVERLAY_SCRIPT_ID,
@@ -88,17 +88,5 @@ export async function syncOverlayRegistrationFromPermissions(): Promise<void> {
 browser.permissions.onRemoved.addListener(async (perms) => {
   if (!perms.origins?.length) return;
 
-  try {
-    const remaining = await browser.permissions.getAll();
-    const origins = remaining.origins ?? [];
-    if (!origins.length) {
-      await browser.scripting
-        .unregisterContentScripts({ ids: [OVERLAY_SCRIPT_ID] })
-        .catch(() => undefined);
-    } else {
-      await registerOverlayForOrigins(origins);
-    }
-  } catch (error) {
-    console.error('Failed to update overlay registration after permissions removal', error);
-  }
+  await syncOverlayRegistrationFromPermissions();
 });

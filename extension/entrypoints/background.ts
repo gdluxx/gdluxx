@@ -80,6 +80,11 @@ interface SyncOverlayRegistrationMessage {
   action: 'syncOverlayRegistration';
 }
 
+interface OpenOverlayMessage {
+  action: 'openOverlay';
+  tabId: number;
+}
+
 interface PingMessage {
   action: 'ping';
   serverUrl: string;
@@ -211,6 +216,7 @@ type MessageType =
   | SendUrlMessage
   | ShowNotificationMessage
   | SyncOverlayRegistrationMessage
+  | OpenOverlayMessage
   | CheckCookiePermissionMessage
   | ProxyMessage;
 
@@ -416,6 +422,36 @@ export default defineBackground((): void => {
         (async () => {
           await syncOverlayRegistrationFromPermissions();
           sendResponse({ success: true, message: 'Overlay registration synced' });
+        })();
+
+        return true;
+      }
+
+      if (message.action === 'openOverlay') {
+        const { tabId } = message;
+        if (typeof tabId !== 'number') {
+          sendResponse({ success: false, message: 'Invalid tab id' });
+          return true;
+        }
+
+        sendResponse({ success: true, message: 'Opening overlay' });
+        void (async () => {
+          try {
+            await syncOverlayRegistrationFromPermissions();
+            await toggleOverlayInTab(tabId);
+          } catch (error) {
+            console.error('Failed to open overlay', error);
+            browser.notifications
+              .create({
+                type: 'basic',
+                iconUrl: 'icon/48.png',
+                title: 'gdluxx Extension',
+                message: 'Failed to open the overlay in that tab.',
+              })
+              .catch((notifyError) => {
+                console.error('Failed to show overlay-open failure notification', notifyError);
+              });
+          }
         })();
 
         return true;
