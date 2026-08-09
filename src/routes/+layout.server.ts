@@ -9,9 +9,11 @@
  */
 
 import type { LayoutServerLoad } from './$types';
+import { APP_VERSION } from '$lib/server/appVersion';
 
 export const load: LayoutServerLoad = async ({ locals }) => {
   return {
     user: locals.user, // from hooks.server.ts
+    appVersion: APP_VERSION,
   };
 };

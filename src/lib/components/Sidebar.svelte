@@ -29,6 +29,7 @@
     onNavigate?: (item: NavItem) => void;
     isMobile?: boolean;
     user?: { id: string; name: string; email: string };
+    appVersion?: string;
   }
 
   const {
@@ -39,6 +40,7 @@
     },
     isMobile = false,
     user,
+    appVersion,
   }: Props = $props();
 
   let collapsed = $derived(isMobile ? false : defaultCollapsed);
@@ -261,7 +263,7 @@
       {#if !collapsed || isMobile}
         <div class="flex flex-row items-center">
           <div
-            class="flex w-full cursor-default items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-colors hover:bg-surface-hover"
+            class="flex w-full cursor-default items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground"
           >
             <!-- Avatar -->
             <div
@@ -282,7 +284,7 @@
               onclick={() => {
                 handleLogout();
               }}
-              class="ml-2 cursor-pointer rounded-sm p-1.5 text-muted-foreground hover:bg-surface-hover focus:ring-2 focus:ring-primary/20 focus:outline-hidden"
+              class="cursor-pointer rounded-sm p-1.5 text-muted-foreground hover:bg-surface-hover focus:ring-2 focus:ring-primary/20 focus:outline-hidden"
               title="Sign out"
               aria-label="Sign out"
             >
@@ -304,7 +306,7 @@
             onclick={() => {
               handleLogout();
             }}
-            class="ml-2 cursor-pointer rounded-sm p-1.5 text-muted-foreground hover:bg-surface-hover focus:ring-2 focus:ring-primary/20 focus:outline-hidden"
+            class="cursor-pointer rounded-sm p-2 text-muted-foreground hover:bg-surface-hover focus:ring-2 focus:ring-primary/20 focus:outline-hidden"
             title="Sign out"
             aria-label="Sign out"
           >
@@ -315,6 +317,15 @@
           </button>
         </div>
       {/if}
+    </div>
+  {/if}
+
+  {#if appVersion}
+    <div
+      class="cursor-default px-2 py-2 text-center text-xs text-muted-foreground border-t-strong"
+      title={collapsed && !isMobile ? `gdluxx v${appVersion}` : undefined}
+    >
+      {collapsed && !isMobile ? `v${appVersion}` : `gdluxx v${appVersion}`}
     </div>
   {/if}
 </nav>

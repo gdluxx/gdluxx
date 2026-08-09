@@ -33,6 +33,7 @@
 
   const isAuthRoute = $derived(page.route.id?.startsWith('/auth'));
   const user = $derived(data.user);
+  const appVersion = $derived(data.appVersion);
 
   let isMobile = $state(false);
   let sidebarOpen = $state(false);
@@ -176,6 +177,7 @@
           onNavigate={handleNavigate}
           {isMobile}
           {user}
+          {appVersion}
         />
       {/if}
 
