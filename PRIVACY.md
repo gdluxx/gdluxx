@@ -22,9 +22,16 @@
 
 ### Network Activity
 
-- **The Software makes zero network requests on its own**.
-- **You control all network activity**: The only requests are when you
-  explicitly initiate them (checking for updates, downloading content).
+- **Nothing is ever sent to us**. Every request goes either to your own
+  self-hosted gdluxx instance or to a site you asked gallery-dl to download
+  from.
+- **You control what leaves your browser**: URLs, cookies, and downloads are
+  transmitted only when you initiate them.
+- **One automatic request**: once a server URL and API key are configured, the
+  extension periodically asks _your own_ gdluxx instance which features its
+  version supports. It runs at browser startup and roughly every six hours,
+  sends nothing but your API key, and does not run at all while the extension is
+  unconfigured.
 - **Update checks**: When checking for updates, only version information is
   requested from GitHub's public API.
 - **Content downloads**: gallery-dl communicates directly with target websites.

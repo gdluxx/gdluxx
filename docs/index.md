@@ -31,7 +31,7 @@ file, and monitor jobs without touching the command line.
   - Yes, I understand you don't need gdluxx for this.
 - **Version Management**: Update the gallery-dl binary from the app.
 - **Self-Contained**: No external dependencies for fonts, styles, or icons.
-  There are no external calls to the internet except when you explicitly request
+  There are no calls to third-party services except when you explicitly request
   it.
 
 ### Why?
