@@ -14,7 +14,7 @@ import { createApiError, createApiResponse } from '$lib/server/api-utils';
 import { listApiKeys } from '$lib/server/apikey';
 import { importExtensionProfileBundles } from '$lib/server/extensionProfileImport';
 import { parseJson } from '$lib/server/validation/zod';
-import { combinedBundleSchema } from '$lib/server/validation/extensionProfiles';
+import { importableCombinedBundleSchema } from '$lib/server/validation/extensionProfiles';
 
 export const POST: RequestHandler = async ({ request, params, locals }) => {
   try {
@@ -28,7 +28,7 @@ export const POST: RequestHandler = async ({ request, params, locals }) => {
       return createApiError('API key not found', 400);
     }
 
-    const parseResult = await parseJson(request, combinedBundleSchema);
+    const parseResult = await parseJson(request, importableCombinedBundleSchema);
     if ('errorResponse' in parseResult) {
       return parseResult.errorResponse;
     }

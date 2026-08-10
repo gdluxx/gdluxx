@@ -1,0 +1,63 @@
+{
+  "kind": "gdluxx.extension-profiles.bundle",
+  "version": 1,
+  "exportedAt": 1786304707770,
+  "apiKeyName": "compare-exports",
+  "selectors": {
+    "version": 1,
+    "profiles": {
+      "host::example.com": {
+        "id": "host::example.com",
+        "scope": "host",
+        "host": "example.com",
+        "startSelector": "#content-start",
+        "endSelector": "#content-end",
+        "createdAt": 1700000000000,
+        "updatedAt": 1700000000000
+      }
+    }
+  },
+  "subs": {
+    "version": 1,
+    "profiles": {
+      "host::example.com": {
+        "id": "host::example.com",
+        "scope": "host",
+        "host": "example.com",
+        "rules": [
+          {
+            "id": "rule-1",
+            "pattern": "thumb",
+            "replacement": "full",
+            "flags": "g",
+            "enabled": true,
+            "order": 0
+          }
+        ],
+        "applyToPreview": false,
+        "createdAt": 1700000000000,
+        "updatedAt": 1700000000000
+      }
+    }
+  },
+  "extraction": {
+    "version": 1,
+    "profiles": {
+      "host::wallhaven.cc": {
+        "id": "host::wallhaven.cc",
+        "scope": "host",
+        "host": "wallhaven.cc",
+        "extraction": {
+          "mode": "range",
+          "startSelector": "#thumbs",
+          "endSelector": "#footer"
+        },
+        "rules": [],
+        "applyToPreview": false,
+        "autoApply": true,
+        "createdAt": 1700000000000,
+        "updatedAt": 1700000000000
+      }
+    }
+  }
+}

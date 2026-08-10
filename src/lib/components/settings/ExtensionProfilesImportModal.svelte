@@ -11,6 +11,7 @@
 <script lang="ts">
   import { Modal, Button, FileDropzone, Info } from '$lib/components/ui';
   import { toastStore } from '$lib/stores/toast';
+  import { describeImportFailure } from './extension-profiles-import';
 
   interface Props {
     apiKeyId: string;
@@ -76,7 +77,7 @@
       const payload = await response.json().catch(() => null);
 
       if (!response.ok || !payload?.success) {
-        errorMessage = payload?.error ?? `Server error: ${response.status}`;
+        errorMessage = describeImportFailure(response.status, payload);
         return;
       }
 

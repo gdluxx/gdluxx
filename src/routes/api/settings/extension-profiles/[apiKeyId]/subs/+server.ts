@@ -20,7 +20,7 @@ import {
 } from '$lib/server/extensionSubBackupManager';
 import { parseJson } from '$lib/server/validation/zod';
 import {
-  MAX_RULES_PER_PROFILE,
+  MAX_RULES_PER_SUB_PROFILE,
   normaliseRuleInputs,
   subProfileSchema,
   subRuleInputSchema,
@@ -41,7 +41,7 @@ const createSchema = z.object({
   origin: z.string().optional(),
   applyToPreview: z.boolean().default(false),
   name: z.string().max(200).optional(),
-  rules: z.array(subRuleInputSchema).max(MAX_RULES_PER_PROFILE),
+  rules: z.array(subRuleInputSchema).max(MAX_RULES_PER_SUB_PROFILE),
 });
 
 function emptyBundle(): SubProfileBundle {

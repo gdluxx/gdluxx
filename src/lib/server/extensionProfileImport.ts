@@ -29,6 +29,7 @@ import {
   extractionBundleSchema,
   selectorBundleSchema,
   subBundleSchema,
+  SUPPORTED_BUNDLE_VERSION,
   type CombinedBundle,
 } from '$lib/server/validation/extensionProfiles';
 
@@ -50,6 +51,14 @@ class ImportSaveError extends Error {
     super(`Failed to save ${stage} backup`);
     this.name = 'ImportSaveError';
   }
+}
+
+function futureVersionViolation(source: string, bundle: { version?: unknown }): string | null {
+  const version = bundle.version;
+  if (typeof version === 'number' && version > SUPPORTED_BUNDLE_VERSION) {
+    return `${source} bundle is version ${version}; this server supports up to version ${SUPPORTED_BUNDLE_VERSION}.`;
+  }
+  return null;
 }
 
 /**
@@ -81,6 +90,18 @@ export function importExtensionProfileBundles(
     profiles: {},
   };
 
+  const versionViolations = [
+    futureVersionViolation('Imported selector', imported.selectors),
+    futureVersionViolation('Imported substitution', imported.subs),
+    futureVersionViolation('Imported extraction', imported.extraction),
+    futureVersionViolation('Stored selector', existingSelectorBundle),
+    futureVersionViolation('Stored substitution', existingSubBundle),
+    futureVersionViolation('Stored extraction', existingExtractionBundle),
+  ].filter((message): message is string => message !== null);
+  if (versionViolations.length > 0) {
+    return { ok: false, reason: 'validation', message: versionViolations.join('\n') };
+  }
+
   const selValidation = selectorBundleSchema.safeParse(imported.selectors);
   const subValidation = subBundleSchema.safeParse(imported.subs);
   const extValidation = extractionBundleSchema.safeParse(imported.extraction);
@@ -95,15 +116,15 @@ export function importExtensionProfileBundles(
   }
 
   const mergedSelectors: SelectorProfileBundle = {
-    version: existingSelectorBundle.version,
+    version: SUPPORTED_BUNDLE_VERSION,
     profiles: { ...existingSelectorBundle.profiles, ...selValidation.data.profiles },
   };
   const mergedSubs: SubProfileBundle = {
-    version: existingSubBundle.version,
+    version: SUPPORTED_BUNDLE_VERSION,
     profiles: { ...existingSubBundle.profiles, ...subValidation.data.profiles },
   };
   const mergedExtraction: ExtractionBundle = {
-    version: existingExtractionBundle.version,
+    version: SUPPORTED_BUNDLE_VERSION,
     profiles: { ...existingExtractionBundle.profiles, ...extValidation.data.profiles },
   };
 

@@ -1,0 +1,25 @@
+{
+  "kind": "gdluxx.extension-profiles.bundle",
+  "version": 1,
+  "exportedAt": 1786304707770,
+  "extraction": {
+    "version": 1,
+    "profiles": {
+      "host::wallhaven.cc": {
+        "id": "host::wallhaven.cc",
+        "scope": "host",
+        "host": "wallhaven.cc",
+        "extraction": {
+          "mode": "range",
+          "startSelector": "#thumbs",
+          "endSelector": "#footer"
+        },
+        "rules": [],
+        "applyToPreview": false,
+        "autoApply": true,
+        "createdAt": 1700000000000,
+        "updatedAt": 1700000000000
+      }
+    }
+  }
+}

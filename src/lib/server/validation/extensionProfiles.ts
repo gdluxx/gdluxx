@@ -21,8 +21,9 @@ import type {
 
 export const MAX_TOTAL_PROFILES = 10_000;
 export const MAX_PROFILES_PER_HOST = 50;
-export const MAX_RULES_PER_PROFILE = 20;
-
+export const MAX_RULES_PER_EXTRACTION_PROFILE = 500;
+export const MAX_RULES_PER_SUB_PROFILE = 50;
+export const SUPPORTED_BUNDLE_VERSION = 1;
 export const MAX_BUNDLE_JSON_BYTES = 5 * 1024 * 1024;
 
 const ALLOWED_FLAG_CHARS = new Set(['d', 'g', 'i', 'm', 's', 'u', 'v', 'y']);
@@ -241,7 +242,7 @@ const subProfileBaseSchema = z.looseObject({
   host: z.string().min(1, 'Host is required'),
   path: z.string().optional(),
   origin: z.string().optional(),
-  rules: z.array(subRuleSchema).max(MAX_RULES_PER_PROFILE),
+  rules: z.array(subRuleSchema).max(MAX_RULES_PER_SUB_PROFILE),
   name: z.string().max(200).optional(),
   applyToPreview: z.boolean(),
   createdAt: z.number().int(),
@@ -360,7 +361,7 @@ const extractionProfileBaseSchema = z.looseObject({
   origin: z.string().optional(),
   path: z.string().optional(),
   extraction: extractionConfigSchema,
-  rules: z.array(subRuleSchema).max(MAX_RULES_PER_PROFILE),
+  rules: z.array(subRuleSchema).max(MAX_RULES_PER_EXTRACTION_PROFILE),
   applyToPreview: z.boolean(),
   autoApply: z.boolean(),
   gallery: galleryDisplayConfigSchema.optional(),
@@ -412,7 +413,7 @@ export const extractionProfileCreateSchema = z.object({
   path: z.string().optional(),
   name: z.string().max(200).optional(),
   extraction: extractionConfigSchema,
-  rules: z.array(subRuleInputSchema).max(MAX_RULES_PER_PROFILE),
+  rules: z.array(subRuleInputSchema).max(MAX_RULES_PER_EXTRACTION_PROFILE),
   applyToPreview: z.boolean().default(false),
   autoApply: z.boolean().default(true),
   gallery: galleryDisplayConfigSchema.optional(),
@@ -425,7 +426,7 @@ export type ExtractionProfileCreateInput = z.infer<typeof extractionProfileCreat
 export const extractionProfileUpdateSchema = z.object({
   name: z.string().max(200).optional(),
   extraction: extractionConfigSchema,
-  rules: z.array(subRuleInputSchema).max(MAX_RULES_PER_PROFILE),
+  rules: z.array(subRuleInputSchema).max(MAX_RULES_PER_EXTRACTION_PROFILE),
   applyToPreview: z.boolean(),
   autoApply: z.boolean(),
   gallery: galleryDisplayConfigSchema.optional(),
@@ -447,9 +448,12 @@ export const extractionBundleSchema = z
 export const COMBINED_BUNDLE_KIND = 'gdluxx.extension-profiles.bundle';
 export const COMBINED_BUNDLE_VERSION = 1;
 
+export const PARTIAL_CONVERSION_MESSAGE =
+  'This file looks like a partially converted extension export. Profiles must be nested under "extraction".';
+
 export const combinedBundleSchema = z
-  .object({
-    kind: z.string(),
+  .looseObject({
+    kind: z.string({ error: 'File is not a gdluxx extension profile bundle.' }),
     version: z.number(),
     exportedAt: z.number().int().optional(),
     apiKeyName: z.string().max(200).optional(),
@@ -472,9 +476,46 @@ export const combinedBundleSchema = z
         path: ['version'],
       });
     }
+
+    if ('profiles' in val) {
+      ctx.addIssue({
+        code: 'custom',
+        message: PARTIAL_CONVERSION_MESSAGE,
+        path: ['profiles'],
+      });
+    }
   });
 
 export type CombinedBundle = z.infer<typeof combinedBundleSchema>;
+
+export function normaliseCombinedBundle(raw: unknown): unknown {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+    return raw;
+  }
+  const obj = raw as Record<string, unknown>;
+  if ('kind' in obj) {
+    return obj;
+  }
+
+  if (obj.profiles && typeof obj.profiles === 'object' && !Array.isArray(obj.profiles)) {
+    const { profiles, version, ...rest } = obj;
+    const subVersion =
+      typeof version === 'number' && Number.isInteger(version) && version >= 0 ? version : 1;
+    return {
+      ...rest,
+      kind: COMBINED_BUNDLE_KIND,
+      version: COMBINED_BUNDLE_VERSION,
+      extraction: { version: subVersion, profiles },
+    };
+  }
+
+  return raw;
+}
+
+export const importableCombinedBundleSchema: z.ZodType<CombinedBundle> = z.preprocess(
+  normaliseCombinedBundle,
+  combinedBundleSchema,
+);
 
 /* Tolerant backup validation, extension sync PUTs */
 

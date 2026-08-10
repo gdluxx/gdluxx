@@ -20,16 +20,6 @@ import {
   COMBINED_BUNDLE_VERSION,
 } from '$lib/server/validation/extensionProfiles';
 
-function sanitizeFilename(name: string): string {
-  return (
-    name
-      .toLowerCase()
-      .replace(/[^a-z0-9._-]/g, '-')
-      .replace(/-+/g, '-')
-      .replace(/^-|-$/g, '') || 'unnamed'
-  );
-}
-
 export const GET: RequestHandler = async ({ params }) => {
   try {
     const { apiKeyId } = params;
@@ -62,9 +52,10 @@ export const GET: RequestHandler = async ({ params }) => {
       extraction,
     };
 
+    // Paired with the extension's `gdluxx-profiles-extension-<date>.json`, so
+    // the two exports differ by the side they came from
     const date = new Date().toISOString().slice(0, 10);
-    const safeName = sanitizeFilename(apiKey.name);
-    const filename = `gdluxx-extension-profiles-${safeName}-${date}.json`;
+    const filename = `gdluxx-profiles-server-${date}.json`;
 
     return new Response(JSON.stringify(envelope, null, 2), {
       headers: {

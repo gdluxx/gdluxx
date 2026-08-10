@@ -19,7 +19,7 @@ import {
 } from '$lib/server/extensionSubBackupManager';
 import { parseJson } from '$lib/server/validation/zod';
 import {
-  MAX_RULES_PER_PROFILE,
+  MAX_RULES_PER_SUB_PROFILE,
   normaliseRuleInputs,
   subProfileSchema,
   subRuleInputSchema,
@@ -28,7 +28,7 @@ import {
 const updateSchema = z.object({
   applyToPreview: z.boolean(),
   name: z.string().max(200).optional(),
-  rules: z.array(subRuleInputSchema).max(MAX_RULES_PER_PROFILE),
+  rules: z.array(subRuleInputSchema).max(MAX_RULES_PER_SUB_PROFILE),
 });
 
 export const PUT: RequestHandler = async ({ request, params, locals }) => {
