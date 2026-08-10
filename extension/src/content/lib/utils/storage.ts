@@ -39,9 +39,32 @@ export async function setValue<T>(key: string, value: T): Promise<void> {
   }
 }
 
+export async function readValues(keys: string[]): Promise<Record<string, unknown>> {
+  if (!storage) {
+    // Behaves like empty storage if the browser API is not available - dev modal
+    return {};
+  }
+
+  return await storage.get(keys);
+}
+
+export async function setValues(items: Record<string, unknown>): Promise<void> {
+  if (!storage) {
+    // No-op - dev modal
+    return;
+  }
+
+  try {
+    await storage.set(items);
+  } catch (error) {
+    console.error('Failed to write to storage', error);
+    throw error;
+  }
+}
+
 export async function removeValue(key: string): Promise<void> {
   if (!storage) {
-    // No-op if browser API is not available (for dev modal purposes)
+    // No-op - dev modal
     return;
   }
 

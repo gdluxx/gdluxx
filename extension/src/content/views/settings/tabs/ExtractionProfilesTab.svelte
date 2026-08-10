@@ -232,7 +232,7 @@
           <p class="text-error mx-2 mt-1 text-xs">{extractionStore.importError}</p>
         {:else}
           <small class="text-base-content/50 mx-2 mt-1 block text-xs">
-            Profiles merge with existing entries. Rules limited to 20 per profile.
+            Profiles merge with existing entries. Rules limited to 500 per profile.
           </small>
         {/if}
       </div>

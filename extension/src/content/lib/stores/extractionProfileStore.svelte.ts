@@ -14,7 +14,6 @@ import type {
   DirectorySource,
   ExtractionConfig,
   ExtractionProfile,
-  ExtractionBundle,
   GalleryDisplayConfig,
   RangeExtractionConfig,
   TargetedExtractionConfig,
@@ -25,6 +24,8 @@ import {
   buildProfileId,
   clearDraftConfig,
   clearExtractionProfiles,
+  COMBINED_BUNDLE_KIND,
+  COMBINED_ENVELOPE_VERSION,
   DEFAULT_EXTRACTION_CONFIG,
   DEFAULT_GALLERY_CONFIG,
   deleteExtractionProfile,
@@ -36,7 +37,12 @@ import {
   hasExtractionContent,
   importExtractionProfiles,
   isTargetedConfigValid,
+  normaliseExtractionConfig,
+  normaliseImportPayload,
   planExtractionImport,
+  ProfileCapacityError,
+  ProfileRuleLimitError,
+  type ExtractionImportApplyResult,
   type ExtractionImportPlan,
   loadDraftConfig,
   loadExtractionProfiles,
@@ -239,6 +245,31 @@ export function createExtractionProfileStore() {
     return profile.host;
   }
 
+  function plural(count: number, word: string): string {
+    return `${count} ${word}${count === 1 ? '' : 's'}`;
+  }
+
+  function describeImportSkips(result: ExtractionImportApplyResult): string {
+    const parts: string[] = [];
+    if (result.skippedInvalid > 0) {
+      parts.push(`${plural(result.skippedInvalid, 'profile')} could not be read`);
+    }
+    if (result.skippedOlder > 0) {
+      parts.push(`${plural(result.skippedOlder, 'profile')} already up to date`);
+    }
+    return parts.length > 0 ? `${parts.join(', ')}.` : 'The file contained no usable profiles.';
+  }
+
+  function summariseImport(result: ExtractionImportApplyResult): string {
+    const parts = [`${result.added} added`, `${result.overwritten} updated`];
+    if (result.skippedInvalid > 0) parts.push(`${result.skippedInvalid} skipped as invalid`);
+    if (result.skippedOlder > 0) parts.push(`${result.skippedOlder} already up to date`);
+    if (result.mergedFields > 0) {
+      parts.push(`${plural(result.mergedFields, 'local field value')} kept`);
+    }
+    return `Imported extraction profiles: ${parts.join(', ')}.`;
+  }
+
   function setIgnored(next: ReadonlySet<string>) {
     ignoredProfileIds.clear();
     for (const value of next) {
@@ -421,7 +452,15 @@ export function createExtractionProfileStore() {
   // Profile CRUD
 
   async function saveProfile(scopeOverride?: ProfileScope): Promise<void> {
-    // Build a candidate to check hasExtractionContent before hitting storage
+    extraction = normaliseExtractionConfig(extraction);
+
+    if (rules.length > MAX_RULES_PER_PROFILE) {
+      toastStore.warning(
+        `A profile can hold at most ${MAX_RULES_PER_PROFILE} rules; remove some before saving.`,
+      );
+      return;
+    }
+
     const scopeToUse = scopeOverride ?? scope;
     const resolved = resolveScopeParts(currentUrl);
     const host = resolved?.host ?? '';
@@ -437,7 +476,7 @@ export function createExtractionProfileStore() {
       origin: scopeToUse === 'host' ? undefined : origin,
       path: scopeToUse === 'path' ? (path ?? '/') : undefined,
       extraction,
-      rules: rules.slice(0, MAX_RULES_PER_PROFILE),
+      rules,
       applyToPreview,
       autoApply: true,
       directorySource,
@@ -478,7 +517,11 @@ export function createExtractionProfileStore() {
       toastStore.success('Saved extraction profile for this site.');
     } catch (error) {
       console.error('Failed to save extraction profile', error);
-      toastStore.error('Failed to save extraction profile.');
+      toastStore.error(
+        error instanceof ProfileRuleLimitError
+          ? error.message
+          : 'Failed to save extraction profile.',
+      );
     } finally {
       isSaving = false;
     }
@@ -596,13 +639,19 @@ export function createExtractionProfileStore() {
     isExporting = true;
     try {
       const bundle = await exportExtractionProfiles();
-      const json = JSON.stringify(bundle, null, 2);
+      const envelope = {
+        kind: COMBINED_BUNDLE_KIND,
+        version: COMBINED_ENVELOPE_VERSION,
+        exportedAt: Date.now(),
+        extraction: bundle,
+      };
+      const json = JSON.stringify(envelope, null, 2);
       const blob = new Blob([json], { type: 'application/json;charset=utf-8' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      const stamp = new SvelteDate().toISOString().replace(/[:]/g, '-');
-      a.download = `gdluxx-extraction-profiles-${stamp}.json`;
+      const stamp = new SvelteDate().toISOString().slice(0, 10);
+      a.download = `gdluxx-profiles-extension-${stamp}.json`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -625,10 +674,16 @@ export function createExtractionProfileStore() {
     isImporting = true;
     importError = null;
     try {
-      const payload = JSON.parse(importText) as ExtractionBundle;
-      await importExtractionProfiles(payload);
-      toastStore.success('Imported extraction profiles.');
-      importText = '';
+      const payload = normaliseImportPayload(JSON.parse(importText));
+      const result = await importExtractionProfiles(payload);
+
+      if (result.added + result.overwritten === 0) {
+        toastStore.warning(`No profiles imported. ${describeImportSkips(result)}`);
+      } else {
+        toastStore.success(summariseImport(result));
+        importText = '';
+      }
+
       await refreshHostProfiles(currentUrl);
       await loadAllProfilesInternal();
     } catch (error) {
@@ -636,7 +691,7 @@ export function createExtractionProfileStore() {
       importError =
         error instanceof Error ? error.message : 'Unknown error while importing profiles';
       toastStore.error(
-        error instanceof BundleVersionTooNewError
+        error instanceof BundleVersionTooNewError || error instanceof ProfileCapacityError
           ? error.message
           : 'Failed to import extraction profiles.',
       );
@@ -1048,20 +1103,24 @@ export function createExtractionProfileStore() {
     const { plan } = pendingRestore;
     backupLoading = true;
     try {
-      const { mergedFields } = await applyExtractionImportPlan(plan);
-      const skipped = plan.skippedOlder + plan.skippedInvalid;
+      const applied = await applyExtractionImportPlan(plan);
+      const skipped = applied.skippedOlder + applied.skippedInvalid;
       const mergedNote =
-        mergedFields > 0
-          ? `, ${mergedFields} local field value${mergedFields === 1 ? '' : 's'} kept`
+        applied.mergedFields > 0
+          ? `, ${applied.mergedFields} local field value${applied.mergedFields === 1 ? '' : 's'} kept`
           : '';
       toastStore.success(
-        `Restored from gdluxx: ${plan.toAdd.length} added, ${plan.toOverwrite.length} updated, ${skipped} skipped${mergedNote}.`,
+        `Restored from gdluxx: ${applied.added} added, ${applied.overwritten} updated, ${skipped} skipped${mergedNote}.`,
       );
       await refreshHostProfiles(currentUrl);
       await loadAllProfilesInternal();
     } catch (error) {
       console.error('Failed to restore extraction profiles from gdluxx', error);
-      toastStore.error('Failed to restore extraction profiles from gdluxx.');
+      toastStore.error(
+        error instanceof ProfileCapacityError
+          ? error.message
+          : 'Failed to restore extraction profiles from gdluxx.',
+      );
     } finally {
       pendingRestore = null;
       backupLoading = false;

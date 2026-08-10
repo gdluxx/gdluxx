@@ -8,7 +8,7 @@
  * as published by the Free Software Foundation.
  */
 
-import { getValue, removeValue, setValue } from './storage';
+import { getValue, readValues, removeValue, setValue, setValues } from './storage';
 import type {
   ActiveExtractionConfig,
   ContainerSource,
@@ -72,11 +72,19 @@ const MAX_TOTAL_PROFILES = 1000;
 const MAX_PROFILES_PER_HOST = 50;
 const MAX_DRAFT_HOSTS = 50;
 export const MAX_RULES_PER_PROFILE = 500;
+export const COMBINED_BUNDLE_KIND = 'gdluxx.extension-profiles.bundle';
+export const COMBINED_ENVELOPE_VERSION = 1;
 
 export const DEFAULT_EXTRACTION_CONFIG: ExtractionConfig = {
   mode: 'range',
   startSelector: '',
   endSelector: '',
+};
+
+export const DEFAULT_IMAGE_SOURCE: ImageSource = {
+  via: 'selector',
+  selector: 'img',
+  attr: 'src',
 };
 
 export const DEFAULT_GALLERY_CONFIG: GalleryDisplayConfig = {
@@ -168,7 +176,7 @@ function cloneRule(rule: SubRule, order: number): SubRule {
 
 function cloneRules(rules: SubRule[] | undefined): SubRule[] {
   if (!Array.isArray(rules)) return [];
-  return rules.slice(0, MAX_RULES_PER_PROFILE).map((rule, index) => cloneRule(rule, index));
+  return rules.map((rule, index) => cloneRule(rule, index));
 }
 
 function cloneGalleryConfig(
@@ -380,14 +388,33 @@ export function resolveScopeParts(urlString: string): ResolveScopeResult | null 
   }
 }
 
+function isContainerSourceValid(source: ContainerSource): boolean {
+  if (source.via === 'selector') return normaliseString(source.selector).trim().length > 0;
+  if (source.via === 'string') return !!source.begin && !!source.end;
+  return true; // `body` needs nothing
+}
+
+function isImageSourceValid(source: ImageSource): boolean {
+  if (source.via === 'string') return !!source.begin && !!source.end;
+  return normaliseString(source.selector).trim().length > 0;
+}
+
 export function isTargetedConfigValid(config: TargetedExtractionConfig): boolean {
-  const c = config.container;
-  if (c.via === 'selector' && !c.selector.trim()) return false;
-  if (c.via === 'string' && (!c.begin || !c.end)) return false;
-  const i = config.images;
-  if (i.via === 'selector' && !i.selector.trim()) return false;
-  if (i.via === 'string' && (!i.begin || !i.end)) return false;
-  return true;
+  return isContainerSourceValid(config.container) && isImageSourceValid(config.images);
+}
+
+export function normaliseExtractionConfig(config: ExtractionConfig): ExtractionConfig {
+  if (config.mode !== 'targeted') return config;
+
+  const container: ContainerSource = isContainerSourceValid(config.container)
+    ? config.container
+    : { via: 'body' };
+  const images: ImageSource = isImageSourceValid(config.images)
+    ? config.images
+    : { ...DEFAULT_IMAGE_SOURCE };
+
+  if (container === config.container && images === config.images) return config;
+  return { mode: 'targeted', container, images };
 }
 
 export function hasExtractionContent(profile: ExtractionProfile): boolean {
@@ -440,40 +467,108 @@ function pruneByLimits(bundle: ExtractionBundle): void {
   }
 }
 
+export const UNREADABLE_BUNDLE_MESSAGE =
+  'Saved extraction profiles are stored in a shape this version of the extension does not recognize. They have been left untouched — saving a profile will replace them.';
+
+function storageErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : 'Unknown storage error';
+}
+
+function readStoredVersion(value: unknown): number | null {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
+// Collapses any targeted config an older build persisted in an unusable shape
+// `updatedAt` is left alone intentionally
+function repairStoredProfiles(bundle: ExtractionBundle): boolean {
+  let changed = false;
+  for (const [id, profile] of Object.entries(bundle.profiles)) {
+    const repaired = normaliseExtractionConfig(profile.extraction);
+    if (repaired !== profile.extraction) {
+      bundle.profiles[id] = { ...profile, extraction: repaired };
+      changed = true;
+    }
+  }
+  return changed;
+}
+
 async function loadBundle(): Promise<ExtractionBundle> {
   if (bundleCache) return bundleCache;
+
+  let entries: Record<string, unknown>;
   try {
-    const stored = await getValue<ExtractionBundle | null>(STORAGE_KEY, null);
-    if (!stored || typeof stored !== 'object' || typeof stored.profiles !== 'object') {
-      bundleCache = emptyBundle();
-      await persistBundle();
-      return bundleCache;
-    }
-    bundleCache = cloneExtractionBundle(stored);
-    storageStatus = { degraded: false };
-    return bundleCache;
+    entries = await readValues([STORAGE_KEY, VERSION_KEY]);
   } catch (error) {
-    storageStatus = {
-      degraded: true,
-      error: error instanceof Error ? error.message : 'Unknown storage error',
-    };
+    storageStatus = { degraded: true, error: storageErrorMessage(error) };
     bundleCache = emptyBundle();
     return bundleCache;
   }
+
+  const stored = entries[STORAGE_KEY] ?? null;
+  const writerVersion = entries[VERSION_KEY] ?? null;
+
+  if (stored === null || stored === undefined) {
+    bundleCache = emptyBundle();
+    storageStatus = { degraded: false };
+    try {
+      return await persistBundle(bundleCache);
+    } catch {
+      return bundleCache;
+    }
+  }
+
+  // VERSION_KEY holds the version of the build that last wrote
+  const declaredVersions = [
+    readStoredVersion(writerVersion),
+    readStoredVersion((stored as { version?: unknown }).version),
+  ].filter((version): version is number => version !== null);
+  const newest = Math.max(BUNDLE_VERSION, ...declaredVersions);
+  if (newest > BUNDLE_VERSION) {
+    storageStatus = { degraded: true, error: BUNDLE_TOO_NEW_MESSAGE };
+    throw new BundleVersionTooNewError(newest);
+  }
+
+  // Present but unrecognized: data exists in a shape this build cannot read
+  const profiles = (stored as { profiles?: unknown }).profiles;
+  if (
+    typeof stored !== 'object' ||
+    Array.isArray(stored) ||
+    !profiles ||
+    typeof profiles !== 'object' ||
+    Array.isArray(profiles)
+  ) {
+    storageStatus = { degraded: true, error: UNREADABLE_BUNDLE_MESSAGE };
+    bundleCache = emptyBundle();
+    return bundleCache;
+  }
+
+  const loaded = cloneExtractionBundle(stored as ExtractionBundle);
+  storageStatus = { degraded: false };
+
+  if (repairStoredProfiles(loaded)) {
+    try {
+      return await persistBundle(loaded);
+    } catch {
+      bundleCache = loaded;
+      return bundleCache;
+    }
+  }
+
+  bundleCache = loaded;
+  return bundleCache;
 }
 
-async function persistBundle(): Promise<void> {
-  if (!bundleCache) return;
+async function persistBundle(candidate: ExtractionBundle): Promise<ExtractionBundle> {
+  const snapshot = cloneExtractionBundle(candidate);
   try {
-    await setValue(STORAGE_KEY, cloneExtractionBundle(bundleCache));
-    await setValue(VERSION_KEY, BUNDLE_VERSION);
-    storageStatus = { degraded: false };
+    await setValues({ [STORAGE_KEY]: snapshot, [VERSION_KEY]: BUNDLE_VERSION });
   } catch (error) {
-    storageStatus = {
-      degraded: true,
-      error: error instanceof Error ? error.message : 'Unknown storage error',
-    };
+    storageStatus = { degraded: true, error: storageErrorMessage(error) };
+    throw error;
   }
+  bundleCache = snapshot;
+  storageStatus = { degraded: false };
+  return snapshot;
 }
 
 function matchByScope(url: URL, profile: ExtractionProfile): boolean {
@@ -503,9 +598,30 @@ export async function exportExtractionProfiles(): Promise<ExtractionBundle> {
   return cloneExtractionBundle(bundle);
 }
 
+export class ProfileRuleLimitError extends Error {
+  readonly ruleCount: number;
+
+  constructor(ruleCount: number) {
+    super(`A profile can hold at most ${MAX_RULES_PER_PROFILE} rules; this one has ${ruleCount}.`);
+    this.name = 'ProfileRuleLimitError';
+    this.ruleCount = ruleCount;
+  }
+}
+
+export class ProfileCapacityError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ProfileCapacityError';
+  }
+}
+
 export async function saveExtractionProfile(
   input: SaveExtractionProfileInput,
 ): Promise<ExtractionProfileLookupResult> {
+  if (Array.isArray(input.rules) && input.rules.length > MAX_RULES_PER_PROFILE) {
+    throw new ProfileRuleLimitError(input.rules.length);
+  }
+
   const now = Date.now();
   const host = normaliseHost(input.host);
   const origin = input.scope === 'host' ? undefined : normaliseOrigin(input.origin);
@@ -522,7 +638,7 @@ export async function saveExtractionProfile(
     host,
     origin,
     path,
-    extraction: cloneExtractionConfig(input.extraction),
+    extraction: normaliseExtractionConfig(cloneExtractionConfig(input.extraction)),
     rules: cloneRules(input.rules),
     applyToPreview: input.applyToPreview,
     autoApply: input.autoApply ?? existing?.autoApply ?? true,
@@ -540,28 +656,30 @@ export async function saveExtractionProfile(
     );
   }
 
-  bundle.profiles[id] = profile;
-  pruneByLimits(bundle);
-  await persistBundle();
+  const next: ExtractionBundle = { ...bundle, profiles: { ...bundle.profiles, [id]: profile } };
+  pruneByLimits(next);
+  await persistBundle(next);
   return { id, profile: cloneExtractionProfile(profile) };
 }
 
 export async function deleteExtractionProfile(id: string): Promise<void> {
   const bundle = await loadBundle();
-  if (bundle.profiles[id]) {
-    delete bundle.profiles[id];
-    await persistBundle();
-  }
+  if (!bundle.profiles[id]) return;
+  const next: ExtractionBundle = { ...bundle, profiles: { ...bundle.profiles } };
+  delete next.profiles[id];
+  await persistBundle(next);
 }
 
 export async function renameExtractionProfile(id: string, name: string): Promise<void> {
   const bundle = await loadBundle();
   const profile = bundle.profiles[id];
   if (!profile) return;
-  profile.name = name.trim() || undefined;
-  profile.updatedAt = Date.now();
-  bundle.profiles[id] = profile;
-  await persistBundle();
+  const renamed: ExtractionProfile = {
+    ...profile,
+    name: name.trim() || undefined,
+    updatedAt: Date.now(),
+  };
+  await persistBundle({ ...bundle, profiles: { ...bundle.profiles, [id]: renamed } });
 }
 
 export async function getProfilesForHost(host: string): Promise<ExtractionProfile[]> {
@@ -602,10 +720,13 @@ export async function getProfileForUrl(
 
   for (const [id, profile] of matches) {
     if (matchByScope(url, profile)) {
-      profile.lastUsed = Date.now();
-      bundle.profiles[id] = profile;
-      await persistBundle();
-      return { id, profile: cloneExtractionProfile(profile) };
+      const touched: ExtractionProfile = { ...profile, lastUsed: Date.now() };
+      try {
+        await persistBundle({ ...bundle, profiles: { ...bundle.profiles, [id]: touched } });
+      } catch {
+        // Don't let a failed `lastUsed` stop the profile from applying
+      }
+      return { id, profile: cloneExtractionProfile(touched) };
     }
   }
   return null;
@@ -613,6 +734,8 @@ export async function getProfileForUrl(
 
 function normaliseIncomingProfile(profile: ExtractionProfile): ExtractionProfile | null {
   if (!profile || typeof profile !== 'object') return null;
+
+  if (Array.isArray(profile.rules) && profile.rules.length > MAX_RULES_PER_PROFILE) return null;
 
   // Structural validity check
   if (profile.extraction?.mode === 'targeted') {
@@ -676,6 +799,57 @@ export function assertBundleReadable(bundle: unknown): void {
   }
 }
 
+export const INVALID_IMPORT_MESSAGE = 'Invalid extraction profile import payload';
+export const PARTIAL_CONVERSION_MESSAGE =
+  'This file looks like a partially converted extension export. Profiles must be nested under "extraction".';
+
+export function normaliseImportPayload(raw: unknown): ExtractionBundle {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+    throw new Error(INVALID_IMPORT_MESSAGE);
+  }
+  const obj = raw as Record<string, unknown>;
+
+  if ('kind' in obj) {
+    if (obj.kind !== COMBINED_BUNDLE_KIND) {
+      throw new Error('File is not a gdluxx extension profile bundle.');
+    }
+
+    if (obj.profiles !== undefined) {
+      throw new Error(PARTIAL_CONVERSION_MESSAGE);
+    }
+
+    const version = obj.version;
+    if (typeof version !== 'number' || !Number.isInteger(version)) {
+      throw new Error(INVALID_IMPORT_MESSAGE);
+    }
+    if (version > COMBINED_ENVELOPE_VERSION) {
+      throw new BundleVersionTooNewError(version);
+    }
+
+    if (version !== COMBINED_ENVELOPE_VERSION) {
+      throw new Error(INVALID_IMPORT_MESSAGE);
+    }
+
+    const extraction = obj.extraction;
+
+    if (extraction === undefined) return { version: BUNDLE_VERSION, profiles: {} };
+    if (!extraction || typeof extraction !== 'object' || Array.isArray(extraction)) {
+      throw new Error(INVALID_IMPORT_MESSAGE);
+    }
+    return extraction as ExtractionBundle;
+  }
+
+  const profiles = obj.profiles;
+  if (profiles && typeof profiles === 'object' && !Array.isArray(profiles)) {
+    const raw = obj.version;
+    const version =
+      typeof raw === 'number' && Number.isInteger(raw) && raw >= 0 ? raw : BUNDLE_VERSION;
+    return { ...(obj as object), version, profiles } as ExtractionBundle;
+  }
+
+  throw new Error(INVALID_IMPORT_MESSAGE);
+}
+
 export interface ExtractionImportPlan {
   toAdd: ExtractionProfile[];
   toOverwrite: ExtractionProfile[];
@@ -687,6 +861,10 @@ export interface ExtractionImportPlan {
 }
 
 export interface ExtractionImportApplyResult {
+  added: number;
+  overwritten: number;
+  skippedOlder: number;
+  skippedInvalid: number;
   mergedFields: number;
   mergedProfiles: number;
 }
@@ -695,8 +873,15 @@ export async function planExtractionImport(
   bundle: ExtractionBundle,
   options?: { newerWins?: boolean },
 ): Promise<ExtractionImportPlan> {
-  if (!bundle || typeof bundle !== 'object' || typeof bundle.profiles !== 'object') {
-    throw new Error('Invalid extraction profile import payload');
+  if (
+    !bundle ||
+    typeof bundle !== 'object' ||
+    Array.isArray(bundle) ||
+    !bundle.profiles ||
+    typeof bundle.profiles !== 'object' ||
+    Array.isArray(bundle.profiles)
+  ) {
+    throw new Error(INVALID_IMPORT_MESSAGE);
   }
 
   assertBundleReadable(bundle);
@@ -740,6 +925,31 @@ export async function planExtractionImport(
   return plan;
 }
 
+function collectImportCapViolations(profiles: Record<string, ExtractionProfile>): string[] {
+  const violations: string[] = [];
+  const entries = Object.values(profiles);
+
+  if (entries.length > MAX_TOTAL_PROFILES) {
+    violations.push(
+      `Importing would leave ${entries.length} profiles; the extension holds at most ${MAX_TOTAL_PROFILES}.`,
+    );
+  }
+
+  const perHost = new Map<string, number>();
+  for (const profile of entries) {
+    perHost.set(profile.host, (perHost.get(profile.host) ?? 0) + 1);
+  }
+  for (const [host, count] of perHost) {
+    if (count > MAX_PROFILES_PER_HOST) {
+      violations.push(
+        `Host "${host}" would have ${count} profiles; max allowed is ${MAX_PROFILES_PER_HOST}.`,
+      );
+    }
+  }
+
+  return violations;
+}
+
 export async function applyExtractionImportPlan(
   plan: ExtractionImportPlan,
 ): Promise<ExtractionImportApplyResult> {
@@ -750,27 +960,44 @@ export async function applyExtractionImportPlan(
     profiles: { ...current.profiles },
   };
 
-  const applied: ExtractionImportApplyResult = { mergedFields: 0, mergedProfiles: 0 };
+  const applied: ExtractionImportApplyResult = {
+    added: 0,
+    overwritten: 0,
+    skippedOlder: plan.skippedOlder,
+    skippedInvalid: plan.skippedInvalid,
+    mergedFields: 0,
+    mergedProfiles: 0,
+  };
 
   for (const profile of plan.toAdd) {
+    const isNew = !(profile.id in merged.profiles);
     merged.profiles[profile.id] = cloneExtractionProfile(profile);
+    if (isNew) applied.added += 1;
+    else applied.overwritten += 1;
   }
   for (const profile of plan.toOverwrite) {
     // Re-check recency at apply time in case the local profile changed while
     // a confirmation dialog was open.
     const local = merged.profiles[profile.id];
-    if (plan.newerWins && local && local.updatedAt > profile.updatedAt) continue;
+    if (plan.newerWins && local && local.updatedAt > profile.updatedAt) {
+      applied.skippedOlder += 1;
+      continue;
+    }
     const { profile: mergedProfile, mergedFields } = mergeOptionalProfileFields(profile, local);
     if (mergedFields.length > 0) {
       applied.mergedFields += mergedFields.length;
       applied.mergedProfiles += 1;
     }
     merged.profiles[profile.id] = cloneExtractionProfile(mergedProfile);
+    applied.overwritten += 1;
   }
 
-  bundleCache = merged;
-  pruneByLimits(bundleCache);
-  await persistBundle();
+  const violations = collectImportCapViolations(merged.profiles);
+  if (violations.length > 0) {
+    throw new ProfileCapacityError(violations.join('\n'));
+  }
+
+  await persistBundle(merged);
   return applied;
 }
 
@@ -782,12 +1009,15 @@ export async function importExtractionProfiles(
 }
 
 export async function clearExtractionProfiles(): Promise<void> {
-  bundleCache = emptyBundle();
-  await persistBundle();
+  await persistBundle(emptyBundle());
 }
 
 export async function getExtractionStorageStatus(): Promise<StorageStatus> {
-  await loadBundle();
+  try {
+    await loadBundle();
+  } catch {
+    // loadBundle sets storageStatus before refusing unreadable storage
+  }
   return storageStatus;
 }
 
