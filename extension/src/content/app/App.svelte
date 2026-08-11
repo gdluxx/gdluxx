@@ -74,6 +74,7 @@
   const images = $derived(extraction.images);
   const linkCounts = $derived(extraction.linkCounts);
   const imageCounts = $derived(extraction.imageCounts);
+  const allExtractedUrls = $derived(extraction.allUrls);
 
   let currentTheme = $state(appStore.theme);
   let isFullscreen = $state(appStore.isFullscreen);
@@ -371,10 +372,6 @@
   );
 
   $effect(() => {
-    extractionProfiles.calculatePreviewCount(Array.from(selection.selected));
-  });
-
-  $effect(() => {
     const nextTheme = appStore.theme;
     if (currentTheme !== nextTheme) currentTheme = nextTheme;
   });
@@ -501,7 +498,7 @@
             storageWarning={extractionProfiles.storageWarning}
             modifiedUrls={extractionProfiles.modifiedUrls}
             selectedItems={selection.selected}
-            previewCount={extractionProfiles.previewCount}
+            {allExtractedUrls}
             directorySource={extractionProfiles.directorySource}
             accumulate={extractionProfiles.accumulate}
             onmodechange={(mode) => extractionProfiles.setExtractionMode(mode)}

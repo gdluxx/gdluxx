@@ -92,6 +92,8 @@ export function createExtractionController(
     return active === 'links' ? filteredLinks() : active === 'images' ? filteredImages() : [];
   });
 
+  const allUrls = $derived(() => dedupeAppend(links, images).merged);
+
   return {
     get links() {
       return links;
@@ -116,6 +118,9 @@ export function createExtractionController(
     },
     get visible() {
       return visible();
+    },
+    get allUrls() {
+      return allUrls();
     },
     populate,
     setData(next: {

@@ -24,7 +24,7 @@
     ImageSource,
   } from '#src/content/types';
   import type { ProfileScope } from '#utils/storageExtractionProfiles';
-  import { previewSubs, type SubPreviewItem, type SubRule } from '#utils/substitution';
+  import { PREVIEW_SAMPLE_LIMIT, summarisePreview, type SubRule } from '#utils/substitution';
 
   interface ExtractionSectionProps {
     expanded?: boolean;
@@ -43,7 +43,7 @@
     storageWarning?: string | null;
     modifiedUrls?: ReadonlySet<string>;
     selectedItems?: ReadonlySet<string>;
-    previewCount?: number;
+    allExtractedUrls?: readonly string[];
     directorySource?: DirectorySource | null;
     accumulate?: boolean;
 
@@ -88,7 +88,7 @@
     storageWarning = null,
     modifiedUrls = new Set<string>(),
     selectedItems = new Set<string>(),
-    previewCount = 0,
+    allExtractedUrls = [],
     directorySource = undefined,
     accumulate = false,
 
@@ -118,16 +118,15 @@
 
   const selectedCount = $derived(selectedItems.size);
   const modifiedCount = $derived(modifiedUrls.size);
-
-  let previewItems = $state<SubPreviewItem[]>([]);
-
-  $effect(() => {
-    if (!selectedItems.size) {
-      previewItems = [];
-      return;
-    }
-    previewItems = previewSubs(Array.from(selectedItems), rules, 5);
-  });
+  const isPreviewSample = $derived(selectedCount === 0 && allExtractedUrls.length > 0);
+  const previewSourceUrls = $derived(
+    isPreviewSample ? allExtractedUrls.slice(0, PREVIEW_SAMPLE_LIMIT) : Array.from(selectedItems),
+  );
+  const previewSummary = $derived(summarisePreview(previewSourceUrls, rules, 5));
+  const previewItems = $derived(previewSummary.items);
+  const previewCount = $derived(previewSummary.changedCount);
+  const previewSourceCount = $derived(previewSourceUrls.length);
+  const previewSampleTotal = $derived(isPreviewSample ? allExtractedUrls.length : 0);
 </script>
 
 <AdvancedSection
@@ -176,6 +175,8 @@
     <div class="pt-2">
       <RuleList
         bind:rules
+        {selectedCount}
+        {modifiedCount}
         onapply={onapplysubstitutions}
         {onreset}
         {onshowregexhelp}
@@ -217,7 +218,9 @@
 
     <SubPreview
       {previewCount}
-      {selectedCount}
+      sourceCount={previewSourceCount}
+      isSample={isPreviewSample}
+      sampleTotal={previewSampleTotal}
       items={previewItems}
     />
 

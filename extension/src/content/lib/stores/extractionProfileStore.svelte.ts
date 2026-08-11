@@ -128,7 +128,6 @@ export function createExtractionProfileStore() {
   // URL modification tracking (from substitution pattern)
   const urlModifications = new SvelteMap<string, SubResult>();
   const modifiedUrls = new SvelteSet<string>();
-  let previewCount = $state(0);
 
   // Remote backup
   let remoteBackupMeta = $state<RemoteBackupMeta | null>(null);
@@ -954,24 +953,6 @@ export function createExtractionProfileStore() {
   function clearModifications() {
     urlModifications.clear();
     modifiedUrls.clear();
-    previewCount = 0;
-  }
-
-  function calculatePreviewCount(selectedUrls: string[]): number {
-    if (!hasActiveRules()) {
-      previewCount = 0;
-      return previewCount;
-    }
-    if (!selectedUrls.length) {
-      previewCount = 0;
-      return previewCount;
-    }
-    let count = 0;
-    for (const url of selectedUrls) {
-      if (applySubRules(url, rules).modified) count += 1;
-    }
-    previewCount = count;
-    return previewCount;
   }
 
   // Gallery defaults
@@ -1401,9 +1382,6 @@ export function createExtractionProfileStore() {
     get modifiedUrls() {
       return modifiedUrls;
     },
-    get previewCount() {
-      return previewCount;
-    },
 
     // Remote backup
     get remoteBackupMeta() {
@@ -1514,7 +1492,6 @@ export function createExtractionProfileStore() {
     applyToAll,
     resetModifications,
     clearModifications,
-    calculatePreviewCount,
 
     // Import/export
     exportProfiles,

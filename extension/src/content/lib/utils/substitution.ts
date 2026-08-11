@@ -32,6 +32,14 @@ export interface SubPreviewItem {
   rulesApplied: string[];
 }
 
+export interface SubPreviewSummary {
+  items: SubPreviewItem[];
+  changedCount: number;
+  scanned: number;
+}
+
+export const PREVIEW_SAMPLE_LIMIT = 500;
+
 const DEFAULT_FLAGS = 'g';
 
 function normaliseFlags(flags: string): string {
@@ -109,24 +117,30 @@ export function applySubRules(url: string, rules: SubRule[]): SubResult {
   };
 }
 
-export function previewSubs(urls: string[], rules: SubRule[], limit = 5): SubPreviewItem[] {
+export function summarisePreview(
+  urls: readonly string[],
+  rules: SubRule[],
+  limit = 5,
+): SubPreviewSummary {
+  const items: SubPreviewItem[] = [];
   if (!rules.length || !urls.length) {
-    return [];
+    return { items, changedCount: 0, scanned: 0 };
   }
 
-  const results: SubPreviewItem[] = [];
-
+  let changedCount = 0;
   for (const url of urls) {
     const result = applySubRules(url, rules);
     if (!result.modified) continue;
-    results.push({
-      original: url,
-      modified: result.modifiedUrl,
-      changed: result.modified,
-      rulesApplied: result.rulesApplied,
-    });
-    if (results.length >= limit) break;
+    changedCount += 1;
+    if (items.length < limit) {
+      items.push({
+        original: url,
+        modified: result.modifiedUrl,
+        changed: true,
+        rulesApplied: result.rulesApplied,
+      });
+    }
   }
 
-  return results;
+  return { items, changedCount, scanned: urls.length };
 }

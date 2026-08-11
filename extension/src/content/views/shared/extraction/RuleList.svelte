@@ -17,6 +17,8 @@
 
   interface RuleListProps {
     rules?: SubRule[];
+    selectedCount?: number;
+    modifiedCount?: number;
     onapply?: () => void;
     onreset?: () => void;
     onshowregexhelp?: () => void;
@@ -24,6 +26,8 @@
 
   let {
     rules = $bindable<SubRule[]>([]),
+    selectedCount = 0,
+    modifiedCount = 0,
     onapply,
     onreset,
     onshowregexhelp,
@@ -32,6 +36,34 @@
   let validationErrors = $state<Record<string, string>>({});
   const touchedRules = new SvelteSet<string>();
   const canAddMoreRules = $derived(rules.length < MAX_RULES_PER_PROFILE);
+
+  const hasUsableRule = $derived(rules.some((r) => r.enabled && r.pattern.trim().length > 0));
+  const hasAnyPattern = $derived(rules.some((r) => r.pattern.trim().length > 0));
+  const canApply = $derived(selectedCount > 0 && hasUsableRule);
+  const canReset = $derived(modifiedCount > 0);
+
+  const applyLabel = $derived(
+    selectedCount > 0 ? `Apply to ${selectedCount} selected` : 'Apply to selected',
+  );
+
+  const applyHint = $derived.by(() => {
+    if (!hasUsableRule && selectedCount === 0) {
+      return hasAnyPattern
+        ? 'Enable a substitution rule and select URLs or images to apply.'
+        : 'Enter a regex pattern and select URLs or images to apply.';
+    }
+    if (!hasUsableRule) {
+      return hasAnyPattern
+        ? 'Enable at least one substitution rule to apply.'
+        : 'Enter a regex pattern in at least one rule to apply.';
+    }
+    if (selectedCount === 0) return 'Select URLs or images in the list to apply.';
+    return '';
+  });
+
+  const resetHint = $derived(canReset ? '' : 'No URL modifications to reset.');
+
+  const applyHintId = 'sub-apply-hint';
 
   function ensureBaselineRules() {
     if (!rules.length) {
@@ -80,6 +112,10 @@
     return false;
   }
 
+  function isBlankRule(rule: SubRule): boolean {
+    return !rule.pattern.trim() && !rule.replacement.trim();
+  }
+
   function handleUpdate(id: string, updates: Partial<SubRule>) {
     const idx = rules.findIndex((r) => r.id === id);
     if (idx === -1) return;
@@ -89,8 +125,16 @@
       r.order = i;
     });
     rules = next;
-    if (updates.pattern !== undefined || updates.flags !== undefined) {
-      validateRule(next[idx]);
+    if (
+      updates.pattern !== undefined ||
+      updates.flags !== undefined ||
+      updates.replacement !== undefined
+    ) {
+      if (isBlankRule(next[idx])) {
+        validationErrors = { ...validationErrors, [next[idx].id]: '' };
+      } else {
+        validateRule(next[idx]);
+      }
     }
   }
 
@@ -134,6 +178,10 @@
   function handleApply() {
     let valid = true;
     for (const rule of rules) {
+      if (isBlankRule(rule)) {
+        validationErrors = { ...validationErrors, [rule.id]: '' };
+        continue;
+      }
       touchedRules.add(rule.id);
       if (!validateRule(rule)) valid = false;
     }
@@ -181,17 +229,26 @@
   <div class="flex flex-wrap items-center justify-between gap-2">
     <div class="flex flex-wrap items-center gap-2">
       <Button
-        variant="primary-outline"
+        variant={canApply ? 'primary-outline' : 'neutral'}
         size="sm"
         onclick={handleApply}
+        disabled={!canApply}
+        title={canApply
+          ? `Apply substitution rules to ${selectedCount} selected URL${selectedCount === 1 ? '' : 's'}`
+          : applyHint}
+        aria-describedby={canApply ? undefined : applyHintId}
         class="whitespace-nowrap"
       >
-        Apply substitutions
+        {applyLabel}
       </Button>
       <Button
-        variant="secondary-outline"
+        variant={canReset ? 'secondary-outline' : 'neutral'}
         size="sm"
         onclick={onreset}
+        disabled={!canReset}
+        title={canReset
+          ? `Restore the original values of ${modifiedCount} modified URL${modifiedCount === 1 ? '' : 's'}`
+          : resetHint}
         class="whitespace-nowrap"
       >
         Reset URLs
@@ -211,6 +268,14 @@
       <span class="text-base-content/50 text-xs">
         Maximum of {MAX_RULES_PER_PROFILE} rules per profile.
       </span>
+    {/if}
+    {#if applyHint}
+      <p
+        id={applyHintId}
+        class="text-base-content/60 basis-full text-xs"
+      >
+        {applyHint}
+      </p>
     {/if}
   </div>
 </div>

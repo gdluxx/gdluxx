@@ -14,34 +14,68 @@
 
   interface SubPreviewProps {
     previewCount?: number;
-    selectedCount?: number;
+    sourceCount?: number;
+    isSample?: boolean;
+    sampleTotal?: number;
     items?: SubPreviewItem[];
   }
 
-  let { previewCount = 0, selectedCount = 0, items = [] }: SubPreviewProps = $props();
+  let {
+    previewCount = 0,
+    sourceCount = 0,
+    isSample = false,
+    sampleTotal = 0,
+    items = [],
+  }: SubPreviewProps = $props();
 
-  const hasItems = $derived(items.length > 0);
+  const hasSource = $derived(sourceCount > 0);
+  const isTruncatedSample = $derived(isSample && sampleTotal > sourceCount);
 </script>
 
-{#if selectedCount}
-  <div class="space-y-3">
+<div class="space-y-3">
+  {#if !hasSource}
+    <Info>
+      <span class="text-lg">
+        Nothing to preview yet - extract URLs or images, or select some, to see substitution
+        results.
+      </span>
+    </Info>
+  {:else}
     <div class="flex items-center justify-between">
-      <h3 class="text-base-content ml-4 font-semibold">Preview</h3>
+      <div class="flex items-center gap-2">
+        <h3 class="text-base-content ml-4 font-semibold">Preview</h3>
+        {#if isSample}
+          <Badge
+            label="Sample"
+            variant="outline-info"
+            size="sm"
+          />
+        {/if}
+      </div>
       <span class="text-sm">
         Modifying
         <Badge
-          label="{previewCount}/{selectedCount}"
+          label="{previewCount}/{sourceCount}"
           size="sm"
         />
-        {selectedCount === 1 ? 'item' : 'items'}
+        {#if isTruncatedSample}
+          of {sampleTotal} extracted URLs
+        {:else if isSample}
+          extracted {sourceCount === 1 ? 'URL' : 'URLs'}
+        {:else}
+          selected {sourceCount === 1 ? 'item' : 'items'}
+        {/if}
       </span>
     </div>
 
-    {#if !selectedCount}
-      <Info>
-        <span class="text-lg">Select one or more URLs to see substitution preview</span>
-      </Info>
-    {:else if !previewCount}
+    {#if isSample}
+      <p class="text-base-content/60 ml-4 text-xs">
+        Nothing is selected, so this previews all extracted URLs. Select URLs or images in the list
+        to apply these rules.
+      </p>
+    {/if}
+
+    {#if !previewCount}
       <Info
         variant="warning"
         size="sm"
@@ -49,9 +83,9 @@
       >
         <span class="text-lg">No matches detected with the current rules</span>
       </Info>
-    {:else if hasItems}
+    {:else}
       <div class="space-y-3">
-        {#each items as item (item.original)}
+        {#each items as item, i (`${i}:${item.original}`)}
           <div class="rounded-box border-base-300 bg-base-200 border p-3">
             <div class="grid grid-cols-[auto_1fr] items-baseline gap-x-2 gap-y-2">
               <span class="text-base-content/70 text-xs font-semibold uppercase">Before:</span>
@@ -70,5 +104,5 @@
         {/if}
       </div>
     {/if}
-  </div>
-{/if}
+  {/if}
+</div>
