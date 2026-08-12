@@ -1,5 +1,33 @@
 # Changelog
 
+# [0.12.0](https://github.com/gdluxx/gdluxx/compare/v0.11.0...v0.12.0) (2026-08-12)
+
+
+### Bug Fixes
+
+* **server:** accept every shape the extension exports ([053881d](https://github.com/gdluxx/gdluxx/commit/053881d31356308cdf17fd26011843c374543f2a))
+* **ui:** polish settings buttons, save hints, and select chevron ([ee019da](https://github.com/gdluxx/gdluxx/commit/ee019da7526b60c26f37ca7df018797c551aa589))
+
+
+### Features
+
+* **api:** add bearer cookie sync endpoint and api key cleanup ([3c02fd7](https://github.com/gdluxx/gdluxx/commit/3c02fd7713922dd9d98a88c3b449ff131c70a1b1))
+* **api:** add bearer jobs status endpoint for extension polling ([ca1e006](https://github.com/gdluxx/gdluxx/commit/ca1e006a84ad325a19d73dc9668ffb45a4091af8))
+* **dev:** add component library showcase ([6abb43e](https://github.com/gdluxx/gdluxx/commit/6abb43e78a80d02f8c4151ec32cadd1471031794))
+* **logging:** add log tail viewer and clarify rotation fields ([0ba5248](https://github.com/gdluxx/gdluxx/commit/0ba524898a5a5782023a590d1bf3990e2963d82b))
+* **server:** add cookie storage, netscape materialization, and job injection ([5f8580e](https://github.com/gdluxx/gdluxx/commit/5f8580eb1874241ed5c335e56f25381a9aae312c))
+* **server:** advertise app version and capabilities in extension ping ([896ca01](https://github.com/gdluxx/gdluxx/commit/896ca013ae0c51c0416f76e9a021cab45c3378b4))
+* **server:** preserve unknown fields in extension backup validation ([577b5cf](https://github.com/gdluxx/gdluxx/commit/577b5cf27fdcbee2189c09050e180cd3a7a8e0e0))
+* **settings:** accept accumulate flag in extension profile schemas ([a1649b4](https://github.com/gdluxx/gdluxx/commit/a1649b48f8c275cffa50e76495c5aff94ba41afd))
+* **settings:** accept extension directory source in profile schemas ([01aea4a](https://github.com/gdluxx/gdluxx/commit/01aea4a3fa85be7779167d20a222d2e3871f0b99))
+* **ui:** add cookie management settings page ([b7e6d9c](https://github.com/gdluxx/gdluxx/commit/b7e6d9cf14931fbc19d8725603d20a761d3c4f6a))
+* **ui:** add Field form component ([186501b](https://github.com/gdluxx/gdluxx/commit/186501b0292e8b997ac0a90ee5a44fbc43541d2c))
+* **ui:** add gdluxx version to sidebar ([efce198](https://github.com/gdluxx/gdluxx/commit/efce198e41b1597718b1a1463b35f5fbc7c1117b))
+* **ui:** improve modal behavior and consistency ([875731a](https://github.com/gdluxx/gdluxx/commit/875731a8a2f42133bf7c7fe2dd7224622d57e3a3))
+* **ui:** replace user manager with account management page ([bf797c6](https://github.com/gdluxx/gdluxx/commit/bf797c6b316b7e77b21504bb3fe5be699ebcdc2b))
+* **ui:** rework api key manager with last-used and default expiry ([8b59ebc](https://github.com/gdluxx/gdluxx/commit/8b59ebc0cfe2b652a9ef71451402382105b77855))
+* **ui:** unify modal chrome, footer buttons, and toggle states ([aac08f8](https://github.com/gdluxx/gdluxx/commit/aac08f871142c7f6c9c75dba84ebaf0adfaeb566))
+
 # [0.11.0](https://github.com/gdluxx/gdluxx/compare/v0.10.0...v0.11.0) (2026-07-16)
 
 
