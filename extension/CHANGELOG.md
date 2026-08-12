@@ -1,5 +1,32 @@
 # Changelog
 
+# [1.7.0](https://github.com/gdluxx/gdluxx/compare/extension-v1.6.0...extension-v1.7.0) (2026-08-12)
+
+
+### Bug Fixes
+
+* **extension:** keep profile writes whole on save and import ([6702788](https://github.com/gdluxx/gdluxx/commit/6702788567465b11cf6f71c4f784e7f5e2ccd975))
+* **extension:** stop hosting browser dialogs in the toolbar popup ([c0853f4](https://github.com/gdluxx/gdluxx/commit/c0853f4da6aec6748d063a3e2202ff2065f479be))
+
+
+### Features
+
+* **extension:** accumulate images while scrolling with per profile opt in ([524923d](https://github.com/gdluxx/gdluxx/commit/524923d109afdac3f955da4eda70984c5165a744))
+* **extension:** add Cookies settings tab ([5413d1c](https://github.com/gdluxx/gdluxx/commit/5413d1cacc62587ad6b84c2c220dc2a73dc18cb6))
+* **extension:** add gallery select mode and lightbox send ([7ae8a90](https://github.com/gdluxx/gdluxx/commit/7ae8a9008b5803ae8f1760be084fc34392b45591))
+* **extension:** add gallery wheel navigation and improve scrolling ([19dbf1e](https://github.com/gdluxx/gdluxx/commit/19dbf1ea0b5b37c509197ec500d7a1dff2415949))
+* **extension:** add hotkey for Gallery and hotkey conflict detection ([e921bc5](https://github.com/gdluxx/gdluxx/commit/e921bc511225e5c4bd9e289f8cea8b888a00db39))
+* **extension:** add persistent sent URL history with status badges ([5d378c1](https://github.com/gdluxx/gdluxx/commit/5d378c1ccd956d11309833d48aaca79e9d6519b1))
+* **extension:** autofill custom directory from profile directory source ([a288a85](https://github.com/gdluxx/gdluxx/commit/a288a85013e4b487475da42c0739036395ba0494))
+* **extension:** capture and sync cookies to server ([2d6706d](https://github.com/gdluxx/gdluxx/commit/2d6706dd7bbeb12174609755528012c546414328))
+* **extension:** degrade gracefully against older gdluxx servers ([ee6c6e9](https://github.com/gdluxx/gdluxx/commit/ee6c6e9f97a0c2e100fcc897037795db2cb88bda))
+* **extension:** notify job completion via background polling ([5b4c99c](https://github.com/gdluxx/gdluxx/commit/5b4c99c8577362885567db0ec2adfdde529207a7))
+* **extension:** preview substitutions before anything is selected ([315e50b](https://github.com/gdluxx/gdluxx/commit/315e50bc9b90eda84db59b1fec881dc2472ecc0d))
+* **extension:** protect profile data across version skew ([035389a](https://github.com/gdluxx/gdluxx/commit/035389a96feff1feb19ee5da23745c211450b9cf))
+* **extension:** remember Gallery thumbnail size ([d8f5584](https://github.com/gdluxx/gdluxx/commit/d8f5584adf9e6ce6bcf2e73fbd58508f2c49ad30))
+* **extension:** rerun profile matching on SPA navigation ([1009d71](https://github.com/gdluxx/gdluxx/commit/1009d71f1dd274140cd052412c5dbea0d3d0c5b8))
+* **extension:** sync batch limit from server and chunk oversized sends ([d59a542](https://github.com/gdluxx/gdluxx/commit/d59a54297dd3d5afca23e78ab75fff5e42702b67))
+
 # [1.6.0](https://github.com/gdluxx/gdluxx/compare/extension-v1.5.1...extension-v1.6.0) (2026-07-16)
 
 
