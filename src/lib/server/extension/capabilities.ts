@@ -15,4 +15,5 @@ export const EXTENSION_CAPABILITIES = [
   'jobs.polling', // /api/extension/jobs exists
   'extraction.directorySource', // backup schema preserves this field
   'extraction.accumulate', // backup schema preserves this field
+  'external.fallbackUrls', // /api/extension/external accepts fallbackUrls
 ] as const;

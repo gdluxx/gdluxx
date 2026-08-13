@@ -54,7 +54,29 @@ export const externalApiSchema: ValidationSchema = {
     maxLength: 253,
     pattern: /^[a-zA-Z0-9][a-zA-Z0-9.-]*[a-zA-Z0-9]$|^[a-zA-Z0-9]$/,
   },
+  // optional advisory list of DOM extracted directlink URLs, used as a
+  // fallback batch when gallery-dl has no extractor for the primary URL
+  fallbackUrls: {
+    required: false,
+    custom: (value: unknown) =>
+      Array.isArray(value) && validateConfigArray(value, API_LIMITS.MAX_BATCH_URLS),
+  },
 };
+
+export function normaliseFallbackUrls(value: unknown, cap: number): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  const trimmed = value
+    .filter((item): item is string => typeof item === 'string')
+    .map((item) => item.trim())
+    .filter((item) => URL_PATTERN.test(item));
+
+  const deduped = [...new Set(trimmed)];
+
+  return deduped.slice(0, Math.max(0, cap));
+}
 
 export const jobIdSchema: ValidationSchema = {
   jobId: { required: true, minLength: 1 },

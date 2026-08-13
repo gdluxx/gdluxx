@@ -15,11 +15,17 @@ import { serverLogger as logger } from '$lib/server/logger';
 import { PATHS, TERMINAL } from '$lib/server/constants';
 import { redactSensitiveArgs } from '$lib/server/validation/option-validation';
 import { getCookieFileForUrl } from '$lib/server/cookieFileManager';
+import { isUnsupportedUrlExit } from './galleryDlExit';
 
 export interface CommandExecutionResult {
   success: boolean;
   jobId?: string;
   error?: string;
+}
+
+export interface GalleryDlCommandOptions {
+  fallbackUrls?: string[];
+  fallbackCliArgs?: string[];
 }
 
 async function withCookieArgs(url: string, cliArgs: string[]): Promise<string[]> {
@@ -34,6 +40,7 @@ async function withCookieArgs(url: string, cliArgs: string[]): Promise<string[]>
 export async function executeGalleryDlCommand(
   url: string,
   cliArgs: string[],
+  options?: GalleryDlCommandOptions,
 ): Promise<CommandExecutionResult> {
   try {
     // Create job
@@ -76,6 +83,30 @@ export async function executeGalleryDlCommand(
         signal?: number | undefined;
       }): Promise<void> => {
         logger.info(`Process for job ${jobId} exited with code ${exitCode}, signal ${signal}`);
+
+        if (isUnsupportedUrlExit(exitCode) && options?.fallbackUrls?.length) {
+          try {
+            const fb = await executeGalleryDlBatchCommand(
+              options.fallbackUrls,
+              options.fallbackCliArgs ?? [],
+            );
+            if (fb.success && fb.jobId) {
+              await jobManager.addOutput(
+                fb.jobId,
+                'info',
+                `Started as a direct-link fallback for unsupported URL ${url} (job ${jobId})`,
+              );
+              await jobManager.addOutput(
+                jobId,
+                'info',
+                `Unsupported URL — started direct-link fallback job ${fb.jobId} for ${options.fallbackUrls.length} extracted URL(s)`,
+              );
+            }
+          } catch (error) {
+            logger.error(`Fallback batch failed for job ${jobId}:`, error);
+          }
+        }
+
         await jobManager.completeJob(jobId, exitCode || 0);
       },
     );

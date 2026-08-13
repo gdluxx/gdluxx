@@ -14,12 +14,16 @@ import { type AuthResult, validateApiKey } from '$lib/server/auth/apiAuth';
 import type { BatchJobStartResult, BatchUrlResult } from '$lib/stores/jobs.svelte';
 import { createApiResponse, createApiError } from '$lib/server/api-utils';
 import { validateInput } from '$lib/server/validation/validation-utils';
-import { externalApiSchema } from '$lib/server/validation/command-validation';
+import {
+  externalApiSchema,
+  normaliseFallbackUrls,
+} from '$lib/server/validation/command-validation';
 import { siteConfigManager } from '$lib/server/siteConfigManager';
 import { validateAndBuildCliArgs } from '$lib/server/validation/option-validation';
 import {
   executeGalleryDlCommand,
   executeGalleryDlBatchCommand,
+  type GalleryDlCommandOptions,
 } from '$lib/server/jobs/commandExecutor';
 import { userSettingsManager } from '$lib/server/userSettingsManager';
 
@@ -28,6 +32,7 @@ interface ExternalApiRequestBody {
   urls?: unknown;
   customDirectory?: unknown;
   siteDirectory?: unknown;
+  fallbackUrls?: unknown;
 }
 
 function buildDirectoryArgs(siteDir?: string, customDir?: string): string[] {
@@ -101,6 +106,7 @@ export const POST: RequestHandler = async ({ request }: RequestEvent): Promise<R
         urls: body.urls,
         customDirectory: body.customDirectory,
         siteDirectory: body.siteDirectory,
+        fallbackUrls: body.fallbackUrls,
       },
       externalApiSchema,
     );
@@ -127,6 +133,14 @@ export const POST: RequestHandler = async ({ request }: RequestEvent): Promise<R
     return createApiError(`Too many URLs. Max allowed is ${maxUrls}.`, 400);
   }
 
+  const rawFallbackUrls = normaliseFallbackUrls(body.fallbackUrls, maxUrls);
+  const fallbackUrls = urls.length === 1 ? rawFallbackUrls : [];
+  if (rawFallbackUrls.length > 0 && urls.length !== 1) {
+    logger.warn(
+      `Discarding ${rawFallbackUrls.length} fallbackUrls: request carried ${urls.length} primary URL(s), fallback only applies to single-URL requests.`,
+    );
+  }
+
   // Extracting custom directory
   const customDirectory =
     typeof body.customDirectory === 'string' && body.customDirectory.trim()
@@ -138,6 +152,10 @@ export const POST: RequestHandler = async ({ request }: RequestEvent): Promise<R
     typeof body.siteDirectory === 'string' && body.siteDirectory.trim()
       ? body.siteDirectory.trim()
       : undefined;
+
+  const fallbackOptions: GalleryDlCommandOptions | undefined = fallbackUrls.length
+    ? { fallbackUrls, fallbackCliArgs: buildDirectoryArgs(siteDirectory, customDirectory) }
+    : undefined;
 
   logger.info(
     `API key validated for: ${authResult.keyInfo?.name} (ID: ${authResult.keyInfo?.id}). Processing ${urls.length} URL(s)${customDirectory ? ` with custom directory: ${customDirectory}` : ''}`,
@@ -202,7 +220,7 @@ export const POST: RequestHandler = async ({ request }: RequestEvent): Promise<R
 
       cliArgs.push(...buildDirectoryArgs(siteDirectory, customDirectory));
 
-      const result = await executeGalleryDlCommand(url, cliArgs);
+      const result = await executeGalleryDlCommand(url, cliArgs, fallbackOptions);
 
       if (result.success && result.jobId) {
         results.push({
@@ -242,7 +260,7 @@ export const POST: RequestHandler = async ({ request }: RequestEvent): Promise<R
 
       cliArgs.push(...buildDirectoryArgs(siteDirectory, customDirectory));
 
-      const result = await executeGalleryDlCommand(url, cliArgs);
+      const result = await executeGalleryDlCommand(url, cliArgs, fallbackOptions);
 
       if (result.success && result.jobId) {
         results.push({
