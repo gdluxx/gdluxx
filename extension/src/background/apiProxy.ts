@@ -276,14 +276,23 @@ export async function proxyCommand(
   urls: string[],
   customDirectory?: string,
   siteDirectory?: string,
+  fallbackUrls?: string[],
 ): Promise<ProxyApiResult<ExternalSendResponse>> {
   try {
-    const body: { urls: string[]; customDirectory?: string; siteDirectory?: string } = { urls };
+    const body: {
+      urls: string[];
+      customDirectory?: string;
+      siteDirectory?: string;
+      fallbackUrls?: string[];
+    } = { urls };
     if (customDirectory) {
       body.customDirectory = customDirectory;
     }
     if (siteDirectory) {
       body.siteDirectory = siteDirectory;
+    }
+    if (fallbackUrls?.length) {
+      body.fallbackUrls = fallbackUrls;
     }
 
     const response = await fetch(buildUrl(serverUrl, COMMAND_ENDPOINT), {

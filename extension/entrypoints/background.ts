@@ -52,11 +52,17 @@ import {
   markCapabilitiesAbsentFromEvidence,
   COMPAT_ALARM_NAME,
 } from '#src/background/serverCompatSync';
-import { cookieSyncBlockedMessage, getServerCompat, isBlocked } from '#src/shared/serverCompat';
+import {
+  cookieSyncBlockedMessage,
+  getServerCompat,
+  hasCapability,
+  isBlocked,
+} from '#src/shared/serverCompat';
 import {
   diffStrippedOptionalFields,
   OPTIONAL_PROFILE_FIELD_CAPABILITIES,
 } from '#src/shared/extractionProfileFields';
+import { FALLBACK_URLS_CAPABILITY } from '#src/shared/extractionFallback';
 
 const MAX_BATCH_URLS_KEY = 'gdluxx_max_batch_urls';
 const SERVER_URL_KEY = 'gdluxx_server_url';
@@ -68,6 +74,7 @@ interface SendUrlMessage {
   apiKey: string;
   tabUrl: string;
   tabTitle?: string;
+  fallbackUrls?: string[];
 }
 
 interface ShowNotificationMessage {
@@ -366,7 +373,14 @@ export default defineBackground((): void => {
     ): true | undefined => {
       if (isSendUrlMessage(message)) {
         (async (): Promise<void> => {
-          const result = await proxyCommand(message.apiUrl, message.apiKey, [message.tabUrl]);
+          const result = await proxyCommand(
+            message.apiUrl,
+            message.apiKey,
+            [message.tabUrl],
+            undefined,
+            undefined,
+            message.fallbackUrls,
+          );
           if (result.success) {
             try {
               await recordPendingBatch(
@@ -379,9 +393,19 @@ export default defineBackground((): void => {
             } catch (error) {
               console.error('gdluxx: failed to record pending batch', error);
             }
+            let successMessage = result.message ?? 'URL sent successfully!';
+            if (message.fallbackUrls?.length) {
+              const compat = await getServerCompat();
+              if (hasCapability(compat, FALLBACK_URLS_CAPABILITY) === 'yes') {
+                const count = message.fallbackUrls.length;
+                successMessage += ` (direct-link fallback ready for ${count} extracted URL${
+                  count === 1 ? '' : 's'
+                } if unsupported)`;
+              }
+            }
             sendResponse({
               success: true,
-              message: result.message ?? 'URL sent successfully!',
+              message: successMessage,
               data: (result.data ?? undefined) as Record<string, unknown> | undefined,
             });
           } else {

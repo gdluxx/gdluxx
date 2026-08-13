@@ -14,6 +14,8 @@ import GalleryApp from '#views/gallerized/GalleryApp.svelte';
 import { ensureShadowHost, injectCssIntoShadow, removeShadowHost } from '#src/content/overlayHost';
 import { matchesHotkey, shouldIgnoreForTyping } from '#utils/hotkeys';
 import { getSettings, warmSettings, attachSettingsListener } from '#src/shared/settings';
+import { collectFallbackUrls } from '#utils/fallbackExtraction';
+import { MAX_FALLBACK_URLS } from '#src/shared/extractionFallback';
 import tailwindCss from '#src/app.css?inline';
 import galleryCss from '#views/gallerized/gallery.css?inline';
 import browser from 'webextension-polyfill';
@@ -115,6 +117,11 @@ export default defineContentScript({
       const tabUrl = window.location.href;
       const tabTitle = document.title;
 
+      const fallbackUrls = await collectFallbackUrls(
+        tabUrl,
+        Math.min(settings.maxBatchUrls || 200, MAX_FALLBACK_URLS),
+      );
+
       try {
         const response = (await browser.runtime.sendMessage({
           action: 'sendUrl',
@@ -122,6 +129,7 @@ export default defineContentScript({
           apiKey: settings.apiKey,
           tabUrl: tabUrl,
           tabTitle: tabTitle,
+          ...(fallbackUrls.length ? { fallbackUrls } : {}),
         })) as { success: boolean; message: string };
 
         if (response && response.success) {
