@@ -75,6 +75,8 @@ interface SendUrlMessage {
   tabUrl: string;
   tabTitle?: string;
   fallbackUrls?: string[];
+  customDirectory?: string;
+  siteDirectory?: string;
 }
 
 interface ShowNotificationMessage {
@@ -377,8 +379,8 @@ export default defineBackground((): void => {
             message.apiUrl,
             message.apiKey,
             [message.tabUrl],
-            undefined,
-            undefined,
+            message.customDirectory,
+            message.siteDirectory,
             message.fallbackUrls,
           );
           if (result.success) {
@@ -394,6 +396,12 @@ export default defineBackground((): void => {
               console.error('gdluxx: failed to record pending batch', error);
             }
             let successMessage = result.message ?? 'URL sent successfully!';
+            if (message.siteDirectory || message.customDirectory) {
+              const target = [message.siteDirectory, message.customDirectory]
+                .filter(Boolean)
+                .join('/');
+              successMessage += ` → ${target}`;
+            }
             if (message.fallbackUrls?.length) {
               const compat = await getServerCompat();
               if (hasCapability(compat, FALLBACK_URLS_CAPABILITY) === 'yes') {

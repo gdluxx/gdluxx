@@ -38,6 +38,20 @@ export function isValidDirectoryName(name: string): boolean {
   return !trimmed || DIRECTORY_NAME_PATTERN.test(trimmed);
 }
 
+// Mirrors the server's `siteDirectory` schema in
+// src/lib/server/validation/command-validation.ts.
+// These should be kept in sync
+export const SITE_DIRECTORY_PATTERN = /^[a-zA-Z0-9][a-zA-Z0-9.-]*[a-zA-Z0-9]$|^[a-zA-Z0-9]$/;
+
+const MAX_SITE_DIRECTORY_LENGTH = 253;
+
+export function isValidSiteDirectory(hostname: string): boolean {
+  const trimmed = hostname.trim();
+  if (!trimmed) return false;
+  if (trimmed.length > MAX_SITE_DIRECTORY_LENGTH) return false;
+  return SITE_DIRECTORY_PATTERN.test(trimmed);
+}
+
 // Coerces arbitrary page text into something isValidDirectoryName accepts.
 // Returns '' when nothing usable survives, treats that as a failure
 export function sanitizeDirectoryName(raw: string): string {

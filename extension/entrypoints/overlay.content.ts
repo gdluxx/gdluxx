@@ -14,7 +14,7 @@ import GalleryApp from '#views/gallerized/GalleryApp.svelte';
 import { ensureShadowHost, injectCssIntoShadow, removeShadowHost } from '#src/content/overlayHost';
 import { matchesHotkey, shouldIgnoreForTyping } from '#utils/hotkeys';
 import { getSettings, warmSettings, attachSettingsListener } from '#src/shared/settings';
-import { collectFallbackUrls } from '#utils/fallbackExtraction';
+import { buildCurrentTabSendPayload } from '#utils/sendCurrentTab';
 import { MAX_FALLBACK_URLS } from '#src/shared/extractionFallback';
 import tailwindCss from '#src/app.css?inline';
 import galleryCss from '#views/gallerized/gallery.css?inline';
@@ -117,7 +117,7 @@ export default defineContentScript({
       const tabUrl = window.location.href;
       const tabTitle = document.title;
 
-      const fallbackUrls = await collectFallbackUrls(
+      const payload = await buildCurrentTabSendPayload(
         tabUrl,
         Math.min(settings.maxBatchUrls || 200, MAX_FALLBACK_URLS),
       );
@@ -129,7 +129,9 @@ export default defineContentScript({
           apiKey: settings.apiKey,
           tabUrl: tabUrl,
           tabTitle: tabTitle,
-          ...(fallbackUrls.length ? { fallbackUrls } : {}),
+          ...(payload.fallbackUrls.length ? { fallbackUrls: payload.fallbackUrls } : {}),
+          ...(payload.customDirectory ? { customDirectory: payload.customDirectory } : {}),
+          ...(payload.siteDirectory ? { siteDirectory: payload.siteDirectory } : {}),
         })) as { success: boolean; message: string };
 
         if (response && response.success) {

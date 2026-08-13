@@ -8,24 +8,24 @@
  * as published by the Free Software Foundation.
  */
 
+import type { ExtractionProfile } from '#src/content/types';
 import { getServerCompat, isBlocked } from '#src/shared/serverCompat';
 import { FALLBACK_URLS_CAPABILITY, sanitizeFallbackUrls } from '#src/shared/extractionFallback';
-import { getProfileForUrl } from './storageExtractionProfiles';
 import { discoverImages } from './gallerizedUtils';
 import { applySubRules } from './substitution';
 
-export async function collectFallbackUrls(pageUrl: string, limit: number): Promise<string[]> {
+export async function collectFallbackUrls(
+  profile: ExtractionProfile,
+  limit: number,
+): Promise<string[]> {
   try {
     const compat = await getServerCompat();
     if (isBlocked(compat, FALLBACK_URLS_CAPABILITY)) return [];
 
-    const match = await getProfileForUrl(pageUrl);
-    if (!match) return [];
-
-    const discovered = discoverImages(match.profile.extraction);
+    const discovered = discoverImages(profile.extraction);
     if (discovered.length === 0) return [];
 
-    const rules = match.profile.rules;
+    const rules = profile.rules;
     const mapped =
       rules.length > 0
         ? discovered.map((url) => {

@@ -13,6 +13,8 @@
   import { onDestroy, onMount } from 'svelte';
   import { SvelteSet } from 'svelte/reactivity';
   import { loadSettings } from '#utils/settings';
+  import { loadSiteDirectory } from '#utils/persistence';
+  import { isValidSiteDirectory } from '#utils/validation';
   import { ALL_URLS, formatOriginPattern } from '#src/shared/originPattern';
 
   const UNSUPPORTED_PAGE_MESSAGE = 'Overlay not supported on this page';
@@ -228,12 +230,22 @@
     isSending = true;
 
     try {
+      let siteDirectory: string | undefined;
+      try {
+        const siteDir = await loadSiteDirectory();
+        const hostname = new URL(tab.url).hostname;
+        siteDirectory = siteDir.enabled && isValidSiteDirectory(hostname) ? hostname : undefined;
+      } catch (error) {
+        console.error('Failed to resolve site directory', error);
+      }
+
       const response = (await browser.runtime.sendMessage({
         action: 'sendUrl',
         apiUrl: serverUrl,
         apiKey: apiKey,
         tabUrl: tab.url,
         tabTitle: tab.title,
+        ...(siteDirectory ? { siteDirectory } : {}),
       })) as { success: boolean; message: string };
 
       if (response && response.success) {
