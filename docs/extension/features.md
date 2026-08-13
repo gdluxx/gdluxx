@@ -32,6 +32,27 @@ at all:
 Both require a server URL and API key to already be configured (see
 [gdluxx Connection](#gdluxx-connection)).
 
+### Automatic Direct-Link Fallback (Send-Tab Hotkey)
+
+The **keyboard hotkey** (not the popup button) has one extra trick: if a saved
+[extraction profile](#extraction-profiles) with auto-apply enabled matches the
+page you're sending, it also collects the images that profile would extract and
+ships them alongside the page URL. If gdluxx then finds gallery-dl has no
+extractor for the page, it automatically starts a second job from those
+extracted URLs instead of the send simply failing — so a site gallery-dl can't
+handle falls back automatically instead of dead-ending. When this happens, the
+confirmation notification mentions that a fallback is ready.
+
+This requires both:
+
+- An extraction profile with **auto-apply** enabled that matches the current
+  page.
+- A gdluxx server new enough to advertise the fallback capability (v0.12.0+).
+
+On an older server, or when no profile matches the page, the hotkey behaves
+exactly as it always has: no extra data is sent, and no notification appears
+about the missing capability.
+
 ### Sending Individual Images or Links via Right-Click
 
 Right-click any image or link on a page for a direct shortcut:
@@ -89,7 +110,7 @@ that send go into that subfolder instead of (or in combination with) Site
 Directory:
 
 | Site Directory | Custom Folder  | Result                      |
-|----------------|----------------|-----------------------------|
+| -------------- | -------------- | --------------------------- |
 | `example.com`  | _(not set)_    | `example.com/`              |
 | `example.com`  | `photos`       | `example.com/photos/`       |
 | `example.com`  | `archive-2025` | `example.com/archive-2025/` |
@@ -244,19 +265,19 @@ Covered above under [Extraction Profiles](#extraction-profiles).
 
 - **Sync cookies for current site** — captures cookies for the site you're
   currently on and uploads them to gdluxx (the button label shows the actual
-  domain, e.g. "Sync cookies for example.com"). The first time you use this on
-  a given site, your browser asks for a one-time permission to read that
-  site's cookies — the same on-demand model the extension already uses for
-  host permissions elsewhere.
-- **Synced domains** — lists every domain you've synced from this browser,
-  with cookie counts, expired counts, and last-synced time.
-- **Delete** / **Clear all** — remove a single domain's synced cookies, or
-  wipe everything synced under the connected API key.
+  domain, e.g. "Sync cookies for example.com"). The first time you use this on a
+  given site, your browser asks for a one-time permission to read that site's
+  cookies — the same on-demand model the extension already uses for host
+  permissions elsewhere.
+- **Synced domains** — lists every domain you've synced from this browser, with
+  cookie counts, expired counts, and last-synced time.
+- **Delete** / **Clear all** — remove a single domain's synced cookies, or wipe
+  everything synced under the connected API key.
 
 ::: info  
-Cookie values are never sent back to the extension or shown anywhere in
-gdluxx once synced. To refresh a session or fix expired cookies, sync again —
-there's no separate "restore."  
+Cookie values are never sent back to the extension or shown anywhere in gdluxx
+once synced. To refresh a session or fix expired cookies, sync again — there's
+no separate "restore."  
 :::
 
 Requires a server URL and API key to already be configured (see
@@ -278,8 +299,8 @@ The popup also shows the current tab's URL and whether the overlay is currently
 permitted on it.
 
 Cookie access is a separate, optional permission — granting host access here
-doesn't also grant cookie access. That's requested on its own the first time
-you use Cookie Sync on a site (see [Cookies](#cookies) above).
+doesn't also grant cookie access. That's requested on its own the first time you
+use Cookie Sync on a site (see [Cookies](#cookies) above).
 
 ## Keyboard Navigation
 

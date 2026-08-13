@@ -63,6 +63,46 @@ curl -X POST \
 
 The `jobId` lets you track the job in gdluxx.
 
+## Direct-Link Fallback (`fallbackUrls`)
+
+Alongside a single primary URL, you can include an optional `fallbackUrls` array
+of already-known direct-media URLs for gdluxx to fall back to if gallery-dl
+turns out not to support the primary URL:
+
+```json
+{
+  "urlToProcess": "https://example.com/gallery",
+  "fallbackUrls": [
+    "https://example.com/gallery/image1.jpg",
+    "https://example.com/gallery/image2.jpg"
+  ]
+}
+```
+
+If gallery-dl has no extractor for the primary URL, gdluxx automatically starts
+a second job — a `directlink batch` job for the `fallbackUrls` — right after the
+primary job errors out. See the
+[Jobs page](../user-guide/jobs-page.md#understanding-job-output) guide for what
+this looks like in the job list. If gallery-dl does support the primary URL,
+`fallbackUrls` is never used.
+
+A few rules govern how it's handled:
+
+- Only `http://` and `https://` entries are accepted.
+- **Only honored on single-URL requests.** If the request's primary payload
+  resolves to more than one URL (a multi-entry `urls` array), `fallbackUrls` is
+  silently ignored and the server logs a warning — the request itself is
+  otherwise unaffected.
+- **Truncated, not rejected, when too long.** Entries beyond your Max Batch URLs
+  setting (see [URL Limits](#url-limits) below) are dropped rather than causing
+  a 400.
+- **Individual invalid entries are dropped, not rejected.** This is a deliberate
+  departure from how every other field on this endpoint behaves — a malformed
+  `fallbackUrls` entry (not a string, not `http(s)://`, a duplicate) is silently
+  removed instead of failing the whole request with a 400. `fallbackUrls` is
+  advisory data riding alongside the primary send, and a validation failure here
+  must never be able to take the primary URL send down with it.
+
 ## Batch Processing (Multiple URLs)
 
 Send multiple URLs in a single request:
@@ -184,9 +224,12 @@ Every error response follows the same shape:
 ```
 
 **Schema validation failed** (400) - returned for things like a malformed
-`urlToProcess`/`urls` entry, or a `customDirectory`/`siteDirectory` that fails
-its length or character checks. The response doesn't include the specific
-reason:
+`urlToProcess`/`urls` entry, a `customDirectory`/`siteDirectory` that fails its
+length or character checks, or a `fallbackUrls` value that isn't an array (or
+exceeds the absolute URL cap). Individual bad entries inside an otherwise
+well-shaped `fallbackUrls` array are dropped rather than triggering this error -
+see [Direct-Link Fallback](#direct-link-fallback-fallbackurls). The response
+doesn't include the specific reason:
 
 ```json
 {
@@ -230,6 +273,9 @@ Single URL:
   "urlToProcess": "https://example.com/gallery"
 }
 ```
+
+A single URL can also carry an optional `fallbackUrls` array - see
+[Direct-Link Fallback](#direct-link-fallback-fallbackurls).
 
 Multiple URLs:
 

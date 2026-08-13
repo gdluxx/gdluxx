@@ -122,6 +122,36 @@ gallery-dl: Unsupported URL 'https://www.example.com/unsupported-url'
 
 - this job will show as an error in the job list
 
+If the request that started this job also carried extracted
+[fallback URLs](../advanced/api-usage.md#direct-link-fallback-fallbackurls) -
+the extension's send-tab hotkey supplies these automatically, see
+[Extension Features](../extension/features.md) - a second job appears in the
+list: a `directlink batch` job for those URLs. The two jobs cross-reference each
+other through `info` lines in their output:
+
+```shell
+Process started with PID: 1376969
+gallery-dl: Unsupported URL 'https://www.example.com/unsupported-url'
+Unsupported URL — started direct-link fallback job dQw4w9WgXcQ for 3 extracted URL(s)
+```
+
+- the original job's output gains this last line once the fallback job starts
+
+```shell
+Batch process started with PID: 1981369 for 3 URL(s)
+Started as a direct-link fallback for unsupported URL https://www.example.com/unsupported-url (job pXQ7t3zR9m)
+```
+
+- the fallback job's output opens with a line naming the parent job it's
+  standing in for
+- the fallback job is otherwise an ordinary `directlink batch` job - its own
+  success/skipped/error counts don't depend on the parent
+
+::: info  
+The Jobs page doesn't auto-refresh, so the fallback job won't appear on its
+own - reload the page to see it.  
+:::
+
 ---
 
 ```shell
