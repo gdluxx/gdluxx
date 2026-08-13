@@ -17,7 +17,7 @@ import {
   loadSiteDirectory,
   saveSiteDirectory,
 } from '#utils/persistence';
-import { isValidDirectoryName } from '#utils/validation';
+import { isValidDirectoryName, isValidSiteDirectory } from '#utils/validation';
 import { persistDirAutoFillOptOut } from '#utils/directorySource';
 import {
   toggleSelection,
@@ -207,7 +207,9 @@ export function createSelectionStore() {
       customDirectoryEnabled && trimmed && isValidDirectoryName(trimmed) ? trimmed : undefined;
 
     const siteDir =
-      siteDirEnabled && typeof window !== 'undefined' && window.location.hostname
+      siteDirEnabled &&
+      typeof window !== 'undefined' &&
+      isValidSiteDirectory(window.location.hostname)
         ? window.location.hostname
         : undefined;
 

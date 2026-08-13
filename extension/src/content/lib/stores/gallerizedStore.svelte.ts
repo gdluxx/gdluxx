@@ -11,6 +11,7 @@
 import { SvelteSet } from 'svelte/reactivity';
 import { discoverImages } from '#utils/gallerizedUtils';
 import { loadSiteDirectory, persistGalleryThumbSize } from '#utils/persistence';
+import { isValidSiteDirectory } from '#utils/validation';
 import { sendUrls } from '#utils/gdluxxApi';
 import { snapshot } from '#utils/scrollAccumulator';
 import { dedupeAppend } from '#utils/dedupeAppend';
@@ -209,7 +210,10 @@ export function createGallerizedStore(
       sending = true;
       try {
         const siteDir = await loadSiteDirectory();
-        const siteDirectory = siteDir.enabled ? window.location.hostname : undefined;
+        const siteDirectory =
+          siteDir.enabled && isValidSiteDirectory(window.location.hostname)
+            ? window.location.hostname
+            : undefined;
 
         const result = await sendUrls(targets, undefined, siteDirectory);
         if (result.success) {
@@ -237,7 +241,10 @@ export function createGallerizedStore(
       sending = true;
       try {
         const siteDir = await loadSiteDirectory();
-        const siteDirectory = siteDir.enabled ? window.location.hostname : undefined;
+        const siteDirectory =
+          siteDir.enabled && isValidSiteDirectory(window.location.hostname)
+            ? window.location.hostname
+            : undefined;
 
         const result = await sendUrls([url], undefined, siteDirectory);
         if (result.success) {
