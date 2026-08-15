@@ -122,6 +122,7 @@ describe('extension ping route', () => {
       'jobs.polling',
       'extraction.directorySource',
       'extraction.accumulate',
+      'external.fallbackUrls',
     ]);
   });
 
