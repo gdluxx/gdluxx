@@ -185,8 +185,10 @@ export const POST: RequestHandler = async ({ request }: RequestEvent): Promise<R
   // Process direct media as batch job or individual job
   if (directMediaUrls.length > 0 && shouldBatchDirectMedia) {
     try {
-      const cliArgs = [];
+      const siteCliOptions = await siteConfigManager.getCliOptionsForUrl(directMediaUrls[0]);
+      const optionsMap = new Map(siteCliOptions);
 
+      const cliArgs = validateAndBuildCliArgs(optionsMap);
       cliArgs.push(...buildDirectoryArgs(siteDirectory, customDirectory));
 
       logger.info(`Creating batch job for ${directMediaUrls.length} direct media URL(s)`);
@@ -220,11 +222,17 @@ export const POST: RequestHandler = async ({ request }: RequestEvent): Promise<R
     // Single directlink URL submitted alone will process as an individual job
     const url = directMediaUrls[0];
     try {
-      const cliArgs = [];
+      const siteCliOptions = await siteConfigManager.getCliOptionsForUrl(url);
+      const optionsMap = new Map(siteCliOptions);
 
+      const cliArgs = validateAndBuildCliArgs(optionsMap);
       cliArgs.push(...buildDirectoryArgs(siteDirectory, customDirectory));
 
-      const result = await executeGalleryDlCommand(url, cliArgs, fallbackOptions);
+      const directFallbackOptions: GalleryDlCommandOptions | undefined = fallbackOptions
+        ? { ...fallbackOptions, fallbackCliArgs: [...cliArgs] }
+        : undefined;
+
+      const result = await executeGalleryDlCommand(url, cliArgs, directFallbackOptions);
 
       if (result.success && result.jobId) {
         results.push({
