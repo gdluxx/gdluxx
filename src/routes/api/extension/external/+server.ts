@@ -277,7 +277,11 @@ export const POST: RequestHandler = async ({ request }: RequestEvent): Promise<R
 
       cliArgs.push(...buildDirectoryArgs(siteDirectory, customDirectory));
 
-      const result = await executeGalleryDlCommand(url, cliArgs, fallbackOptions);
+      const urlFallbackOptions: GalleryDlCommandOptions | undefined = fallbackOptions
+        ? { ...fallbackOptions, fallbackCliArgs: [...cliArgs] }
+        : undefined;
+
+      const result = await executeGalleryDlCommand(url, cliArgs, urlFallbackOptions);
 
       if (result.success && result.jobId) {
         results.push({
