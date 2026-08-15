@@ -50,19 +50,28 @@ import {
   ensureCompatAlarm,
   corroborateAndMarkAbsent,
   markCapabilitiesAbsentFromEvidence,
+  refreshCompatOnDemand,
   COMPAT_ALARM_NAME,
+  type CompatRefreshReason,
 } from '#src/background/serverCompatSync';
 import {
+  compatNoticePairKey,
   cookieSyncBlockedMessage,
   getServerCompat,
   hasCapability,
   isBlocked,
+  FALLBACK_NOTICE_KEY,
+  type ServerCompat,
 } from '#src/shared/serverCompat';
 import {
   diffStrippedOptionalFields,
   OPTIONAL_PROFILE_FIELD_CAPABILITIES,
 } from '#src/shared/extractionProfileFields';
-import { FALLBACK_URLS_CAPABILITY } from '#src/shared/extractionFallback';
+import {
+  FALLBACK_URLS_CAPABILITY,
+  fallbackSuppressedLogMessage,
+  fallbackSuppressedNoticeText,
+} from '#src/shared/extractionFallback';
 
 const MAX_BATCH_URLS_KEY = 'gdluxx_max_batch_urls';
 const SERVER_URL_KEY = 'gdluxx_server_url';
@@ -75,6 +84,7 @@ interface SendUrlMessage {
   tabUrl: string;
   tabTitle?: string;
   fallbackUrls?: string[];
+  fallbackSuppressedCount?: number;
   customDirectory?: string;
   siteDirectory?: string;
 }
@@ -186,6 +196,12 @@ interface CheckCookiePermissionMessage {
   originPattern: string;
 }
 
+interface RefreshCompatMessage {
+  action: 'refreshCompat';
+  reason: CompatRefreshReason;
+  flag?: string; // set when reason === 'capability-blocked'
+}
+
 interface GetCookiesMessage {
   action: 'getCookies';
   serverUrl: string;
@@ -227,9 +243,24 @@ type MessageType =
   | SyncOverlayRegistrationMessage
   | OpenOverlayMessage
   | CheckCookiePermissionMessage
+  | RefreshCompatMessage
   | ProxyMessage;
 
 type BackgroundResponse = ApiResponse | ProxyApiResult<unknown>;
+
+async function claimFallbackNotice(compat: ServerCompat | null): Promise<boolean> {
+  if (!compat) return false;
+  try {
+    const key = compatNoticePairKey(compat);
+    const stored = await browser.storage.local.get(FALLBACK_NOTICE_KEY);
+    if (stored[FALLBACK_NOTICE_KEY] === key) return false;
+    await browser.storage.local.set({ [FALLBACK_NOTICE_KEY]: key });
+    return true;
+  } catch (error) {
+    console.error('gdluxx: failed to read/write the fallback notice flag', error);
+    return false; // fail closed, a lost breadcrumb beats a notification loop
+  }
+}
 
 async function withCookieCapabilityGate<T>(
   serverUrl: string,
@@ -410,6 +441,16 @@ export default defineBackground((): void => {
                   count === 1 ? '' : 's'
                 } if unsupported)`;
               }
+            } else if (message.fallbackSuppressedCount) {
+              const compat = await getServerCompat();
+              const version = compat?.serverVersion ?? null;
+              console.warn(fallbackSuppressedLogMessage(version, message.fallbackSuppressedCount));
+              if (await claimFallbackNotice(compat)) {
+                successMessage += fallbackSuppressedNoticeText(
+                  version,
+                  message.fallbackSuppressedCount,
+                );
+              }
             }
             sendResponse({
               success: true,
@@ -498,6 +539,11 @@ export default defineBackground((): void => {
               await browser.storage.local.set({ [MAX_BATCH_URLS_KEY]: clamped });
             }
             sendResponse(result);
+          })();
+          return true;
+        case 'refreshCompat':
+          (async () => {
+            sendResponse(await refreshCompatOnDemand(message.reason, message.flag));
           })();
           return true;
         case 'sendCommand':

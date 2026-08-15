@@ -18,6 +18,7 @@ import type {
   BatchUrlResult,
   ExternalSendResponse,
 } from '#src/background/apiProxy';
+import type { CompatRefreshReason, CompatRefreshResult } from '#src/background/serverCompatSync';
 import { loadSettings, saveSettings, validateServerUrl, type Settings } from '#utils/persistence';
 import type { ExtractionBundle } from '#src/content/types';
 import { expandJobResults } from '#src/shared/jobResults';
@@ -27,6 +28,7 @@ type ProfilesBundle = { version: number; profiles: Record<string, unknown> };
 type SubsBundle = { version: number; profiles: Record<string, unknown> };
 
 export type { BatchUrlResult, ExternalSendResponse } from '#src/background/apiProxy';
+export type { CompatRefreshReason, CompatRefreshResult };
 export type ApiResult<T = unknown> = ProxyApiResult<T>;
 export type ProfileBackupPayload = ProfileBackupData;
 export type SubBackupPayload = SubBackupData;
@@ -79,6 +81,24 @@ export async function testConnection(serverUrl: string, apiKey: string): Promise
     serverUrl,
     apiKey,
   });
+}
+
+const COMPAT_REFRESH_BUDGET_MS = 1500;
+
+export async function requestCompatRefresh(
+  reason: CompatRefreshReason,
+  flag?: string,
+  budgetMs: number = COMPAT_REFRESH_BUDGET_MS,
+): Promise<ApiResult<CompatRefreshResult>> {
+  const request = sendBackgroundRequest<CompatRefreshResult>({
+    action: 'refreshCompat',
+    reason,
+    ...(flag ? { flag } : {}),
+  });
+  const timeout = new Promise<ApiResult<CompatRefreshResult>>((resolve) => {
+    setTimeout(() => resolve({ success: false, error: 'Compat refresh timed out' }), budgetMs);
+  });
+  return Promise.race([request, timeout]);
 }
 
 function clamp(value: number, min: number, max: number): number {

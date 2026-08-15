@@ -10,20 +10,29 @@
 
 import type { ExtractionProfile } from '#src/content/types';
 import { getServerCompat, isBlocked } from '#src/shared/serverCompat';
-import { FALLBACK_URLS_CAPABILITY, sanitizeFallbackUrls } from '#src/shared/extractionFallback';
+import {
+  FALLBACK_URLS_CAPABILITY,
+  fallbackSuppressedLogMessage,
+  sanitizeFallbackUrls,
+} from '#src/shared/extractionFallback';
 import { discoverImages } from './gallerizedUtils';
+import { requestCompatRefresh } from './gdluxxApi';
 import { applySubRules } from './substitution';
+
+export interface FallbackCollection {
+  urls: string[];
+  suppressedCount: number;
+}
+
+const EMPTY: FallbackCollection = { urls: [], suppressedCount: 0 };
 
 export async function collectFallbackUrls(
   profile: ExtractionProfile,
   limit: number,
-): Promise<string[]> {
+): Promise<FallbackCollection> {
   try {
-    const compat = await getServerCompat();
-    if (isBlocked(compat, FALLBACK_URLS_CAPABILITY)) return [];
-
     const discovered = discoverImages(profile.extraction);
-    if (discovered.length === 0) return [];
+    if (discovered.length === 0) return EMPTY;
 
     const rules = profile.rules;
     const mapped =
@@ -34,8 +43,28 @@ export async function collectFallbackUrls(
           })
         : discovered;
 
-    return sanitizeFallbackUrls(mapped, limit);
+    const urls = sanitizeFallbackUrls(mapped, limit);
+    if (urls.length === 0) return EMPTY;
+
+    const compat = await getServerCompat();
+    if (!isBlocked(compat, FALLBACK_URLS_CAPABILITY)) {
+      return { urls, suppressedCount: 0 };
+    }
+
+    console.warn(fallbackSuppressedLogMessage(compat?.serverVersion ?? null, urls.length));
+
+    await requestCompatRefresh('capability-blocked', FALLBACK_URLS_CAPABILITY);
+
+    const rechecked = await getServerCompat();
+    if (!isBlocked(rechecked, FALLBACK_URLS_CAPABILITY)) {
+      console.warn(
+        'gdluxx: server re-ping shows fallback URLs are supported after all — including them',
+      );
+      return { urls, suppressedCount: 0 };
+    }
+
+    return { urls: [], suppressedCount: urls.length };
   } catch {
-    return [];
+    return EMPTY;
   }
 }

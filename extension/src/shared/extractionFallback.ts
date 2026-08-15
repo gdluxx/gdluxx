@@ -17,6 +17,22 @@ export const FALLBACK_URLS_CAPABILITY = 'external.fallbackUrls';
 
 export const MAX_FALLBACK_URLS = 200;
 
+export function fallbackSuppressedLogMessage(serverVersion: string | null, count: number): string {
+  return (
+    `gdluxx: fallback URLs suppressed: server capability ${FALLBACK_URLS_CAPABILITY} ` +
+    `absent (server ${serverVersion ?? 'version unknown'}) — ` +
+    `${count} extracted URL${count === 1 ? '' : 's'} dropped from this send`
+  );
+}
+
+export function fallbackSuppressedNoticeText(serverVersion: string | null, count: number): string {
+  return (
+    ` (direct-link fallback skipped: this gdluxx server (${serverVersion ?? 'version unknown'})` +
+    ` doesn't support it — ${count} extracted URL${count === 1 ? '' : 's'} not sent;` +
+    ` update gdluxx to enable it)`
+  );
+}
+
 export function sanitizeFallbackUrls(raw: readonly string[], limit: number): string[] {
   const out: string[] = [];
   const seen = new Set<string>();

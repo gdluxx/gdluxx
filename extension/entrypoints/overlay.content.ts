@@ -14,6 +14,7 @@ import GalleryApp from '#views/gallerized/GalleryApp.svelte';
 import { ensureShadowHost, injectCssIntoShadow, removeShadowHost } from '#src/content/overlayHost';
 import { matchesHotkey, shouldIgnoreForTyping } from '#utils/hotkeys';
 import { getSettings, warmSettings, attachSettingsListener } from '#src/shared/settings';
+import { requestCompatRefresh } from '#utils/messaging';
 import { buildCurrentTabSendPayload } from '#utils/sendCurrentTab';
 import { MAX_FALLBACK_URLS } from '#src/shared/extractionFallback';
 import tailwindCss from '#src/app.css?inline';
@@ -93,6 +94,8 @@ export default defineContentScript({
           shadowContainer: container,
         },
       });
+
+      void requestCompatRefresh('overlay-open').catch(() => {});
     };
 
     const toggleOverlay = (): void => {
@@ -130,6 +133,9 @@ export default defineContentScript({
           tabUrl: tabUrl,
           tabTitle: tabTitle,
           ...(payload.fallbackUrls.length ? { fallbackUrls: payload.fallbackUrls } : {}),
+          ...(payload.fallbackSuppressedCount
+            ? { fallbackSuppressedCount: payload.fallbackSuppressedCount }
+            : {}),
           ...(payload.customDirectory ? { customDirectory: payload.customDirectory } : {}),
           ...(payload.siteDirectory ? { siteDirectory: payload.siteDirectory } : {}),
         })) as { success: boolean; message: string };

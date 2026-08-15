@@ -16,10 +16,11 @@ import {
 import { getProfileForUrl } from '#utils/storageExtractionProfiles';
 import { readDirAutoFillOptOuts, resolveDirectoryFromSource } from '#utils/directorySource';
 import { isValidDirectoryName, isValidSiteDirectory } from '#utils/validation';
-import { collectFallbackUrls } from './fallbackExtraction';
+import { collectFallbackUrls, type FallbackCollection } from './fallbackExtraction';
 
 export interface CurrentTabSendPayload {
   fallbackUrls: string[];
+  fallbackSuppressedCount: number;
   customDirectory?: string;
   siteDirectory?: string;
 }
@@ -76,7 +77,7 @@ export async function buildCurrentTabSendPayload(
     const activeMatch = match && !ignoredIds.has(match.id) ? match : null;
 
     let resolved: string | null = null;
-    let fallbackUrls: string[] = [];
+    let fallback: FallbackCollection = { urls: [], suppressedCount: 0 };
 
     if (activeMatch) {
       const source = activeMatch.profile.directorySource;
@@ -84,18 +85,19 @@ export async function buildCurrentTabSendPayload(
       if (source && source.selector.trim()) {
         resolved = resolveDirectoryFromSource(source).value;
       }
-      fallbackUrls = await collectFallbackUrls(activeMatch.profile, fallbackLimit);
+      fallback = await collectFallbackUrls(activeMatch.profile, fallbackLimit);
     }
 
     const optedOut =
       typeof window !== 'undefined' && readDirAutoFillOptOuts().has(window.location.href);
 
     return {
-      fallbackUrls,
+      fallbackUrls: fallback.urls,
+      fallbackSuppressedCount: fallback.suppressedCount,
       customDirectory: pickCustomDirectory(manual, resolved, optedOut),
       siteDirectory,
     };
   } catch {
-    return { fallbackUrls: [] };
+    return { fallbackUrls: [], fallbackSuppressedCount: 0 };
   }
 }

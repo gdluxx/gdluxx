@@ -12,6 +12,7 @@ import { proxyPing, type PingData, type ProxyApiResult } from '#src/background/a
 import {
   computeFingerprint,
   getServerCompat,
+  hasCapability,
   invalidateServerCompat,
   isBlocked,
   markCapabilityAbsent,
@@ -22,10 +23,27 @@ import {
 const SERVER_URL_KEY = 'gdluxx_server_url';
 const API_KEY_KEY = 'gdluxx_api_key';
 
-const STALE_COMPAT_TTL_MS = 12 * 60 * 60 * 1000; // 12h
+const STALE_COMPAT_TTL_MS = 5 * 60 * 60 * 1000; // 5h
 
 export const COMPAT_ALARM_NAME = 'gdluxx-compat-refresh';
 const COMPAT_ALARM_PERIOD_MINUTES = 6 * 60; // 6h
+
+const DEMAND_REPING_KEY = 'gdluxx_compat_reping';
+const DEMAND_REPING_COOLDOWN_MS = 15 * 60 * 1000; // 15m per fingerprint
+
+export type CompatRefreshReason = 'capability-blocked' | 'overlay-open';
+
+interface DemandRepingMarker {
+  fingerprint: string;
+  attemptedAt: number;
+}
+
+export interface CompatRefreshResult {
+  pinged: boolean;
+  throttled: boolean;
+}
+
+let inFlightDemandPing: Promise<void> | null = null;
 
 async function readCredentials(): Promise<{ serverUrl: string; apiKey: string }> {
   const stored = await browser.storage.local.get([SERVER_URL_KEY, API_KEY_KEY]);
@@ -74,6 +92,81 @@ export async function ensureFreshCompat(): Promise<void> {
     return; // fresh enough
   }
   await pingIfConfigured();
+}
+
+async function readDemandMarker(): Promise<DemandRepingMarker | null> {
+  try {
+    const stored = await browser.storage.local.get(DEMAND_REPING_KEY);
+    const value = stored[DEMAND_REPING_KEY];
+    if (typeof value !== 'object' || value === null) return null;
+    const record = value as Partial<DemandRepingMarker>;
+    return typeof record.fingerprint === 'string' && typeof record.attemptedAt === 'number'
+      ? { fingerprint: record.fingerprint, attemptedAt: record.attemptedAt }
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function refreshCompatOnDemand(
+  reason: CompatRefreshReason,
+  flag?: string,
+): Promise<ProxyApiResult<CompatRefreshResult>> {
+  const { serverUrl, apiKey } = await readCredentials();
+  if (!serverUrl || !apiKey) {
+    return { success: true, data: { pinged: false, throttled: false } };
+  }
+
+  if (flag && hasCapability(await getServerCompat(), flag) === 'yes') {
+    return { success: true, data: { pinged: false, throttled: false } };
+  }
+
+  const fingerprint = computeFingerprint(serverUrl, apiKey);
+  const now = Date.now();
+  const marker = await readDemandMarker();
+  if (
+    marker &&
+    marker.fingerprint === fingerprint &&
+    now - marker.attemptedAt < DEMAND_REPING_COOLDOWN_MS
+  ) {
+    return { success: true, data: { pinged: false, throttled: true } };
+  }
+
+  if (inFlightDemandPing) {
+    await inFlightDemandPing;
+    return { success: true, data: { pinged: false, throttled: true } };
+  }
+
+  try {
+    await browser.storage.local.set({
+      [DEMAND_REPING_KEY]: { fingerprint, attemptedAt: now } satisfies DemandRepingMarker,
+    });
+  } catch (error) {
+    console.error('gdluxx: failed to persist the compat re-ping marker', error);
+  }
+
+  console.warn(
+    `gdluxx: re-pinging server compatibility on demand (reason: ${reason}${
+      flag ? `, flag: ${flag}` : ''
+    })`,
+  );
+
+  const ping = (async () => {
+    try {
+      await pingAndRecordCompat(serverUrl, apiKey);
+    } catch (error) {
+      console.error('gdluxx: on-demand compat re-ping failed', error);
+    }
+  })();
+  inFlightDemandPing = ping;
+
+  try {
+    await ping;
+  } finally {
+    if (inFlightDemandPing === ping) inFlightDemandPing = null;
+  }
+
+  return { success: true, data: { pinged: true, throttled: false } };
 }
 
 export async function invalidateAndRepingCompat(serverUrl: string, apiKey: string): Promise<void> {

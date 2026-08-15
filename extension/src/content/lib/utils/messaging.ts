@@ -29,6 +29,9 @@ export {
   checkCookiePermission,
   type CookieBackupPayload,
   type CookiePermissionPayload,
+  requestCompatRefresh,
+  type CompatRefreshReason,
+  type CompatRefreshResult,
   type ApiResult,
 } from './gdluxxApi';
 

@@ -11,6 +11,8 @@
 import { describe, expect, test } from 'vitest';
 import {
   FALLBACK_URLS_CAPABILITY,
+  fallbackSuppressedLogMessage,
+  fallbackSuppressedNoticeText,
   MAX_FALLBACK_URLS,
   sanitizeFallbackUrls,
 } from '#src/shared/extractionFallback';
@@ -91,6 +93,51 @@ describe('sanitizeFallbackUrls', () => {
 
   test('a limit of 0 returns an empty array', () => {
     expect(sanitizeFallbackUrls(['https://example.com/a.jpg'], 0)).toEqual([]);
+  });
+});
+
+describe('suppressed messages', () => {
+  test('the log message names the capability, the server version and the count', () => {
+    const message = fallbackSuppressedLogMessage('0.11.0', 42);
+    expect(message).toContain(FALLBACK_URLS_CAPABILITY);
+    expect(message).toContain('0.11.0');
+    expect(message).toContain('42 extracted URLs dropped');
+  });
+
+  test('the log message falls back to "version unknown" for a null version', () => {
+    const message = fallbackSuppressedLogMessage(null, 3);
+    expect(message).toContain('version unknown');
+    expect(message).not.toContain('null');
+  });
+
+  test('the log message is singular for a count of one', () => {
+    const message = fallbackSuppressedLogMessage('0.11.0', 1);
+    expect(message).toContain('1 extracted URL dropped');
+    expect(message).not.toContain('1 extracted URLs');
+  });
+
+  test('the notice text names the server version and the count, and can be appended', () => {
+    const notice = fallbackSuppressedNoticeText('0.11.0', 42);
+    expect(notice.startsWith(' ')).toBe(true);
+    expect(notice).toContain('0.11.0');
+    expect(notice).toContain('42 extracted URLs not sent');
+    expect(notice).toContain('update gdluxx to enable it');
+  });
+
+  test('the notice text falls back to "version unknown" for a null version', () => {
+    const notice = fallbackSuppressedNoticeText(null, 2);
+    expect(notice).toContain('version unknown');
+    expect(notice).not.toContain('null');
+  });
+
+  test('the notice text is singular for a count of one', () => {
+    const notice = fallbackSuppressedNoticeText('0.11.0', 1);
+    expect(notice).toContain('1 extracted URL not sent');
+    expect(notice).not.toContain('1 extracted URLs');
+  });
+
+  test('neither builder leaks the raw capability flag into user-facing copy', () => {
+    expect(fallbackSuppressedNoticeText('0.11.0', 1)).not.toContain(FALLBACK_URLS_CAPABILITY);
   });
 });
 
