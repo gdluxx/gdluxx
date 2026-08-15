@@ -18,6 +18,7 @@ import {
   externalApiSchema,
   normaliseFallbackUrls,
   describeFallbackNormalization,
+  buildDirectoryArgs,
 } from '$lib/server/validation/command-validation';
 import { siteConfigManager } from '$lib/server/siteConfigManager';
 import { validateAndBuildCliArgs } from '$lib/server/validation/option-validation';
@@ -34,20 +35,6 @@ interface ExternalApiRequestBody {
   customDirectory?: unknown;
   siteDirectory?: unknown;
   fallbackUrls?: unknown;
-}
-
-function buildDirectoryArgs(siteDir?: string, customDir?: string): string[] {
-  const parts: string[] = [];
-  if (siteDir) {
-    parts.push(`"${siteDir.replace(/"/g, '\\"')}"`);
-  }
-  if (customDir) {
-    parts.push(`"${customDir.replace(/"/g, '\\"')}"`);
-  }
-  if (parts.length === 0) {
-    return [];
-  }
-  return ['-o', `directory=[${parts.join(',')}]`];
 }
 
 function isDirectMediaUrl(url: string): boolean {

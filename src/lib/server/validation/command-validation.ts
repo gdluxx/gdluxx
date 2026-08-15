@@ -63,6 +63,20 @@ export const externalApiSchema: ValidationSchema = {
   },
 };
 
+export function buildDirectoryArgs(siteDir?: string, customDir?: string): string[] {
+  const parts: string[] = [];
+  if (siteDir) {
+    parts.push(`"${siteDir.replace(/"/g, '\\"')}"`);
+  }
+  if (customDir) {
+    parts.push(`"${customDir.replace(/"/g, '\\"')}"`);
+  }
+  if (parts.length === 0) {
+    return [];
+  }
+  return ['-o', `directory=[${parts.join(',')}]`];
+}
+
 export function normaliseFallbackUrls(value: unknown, cap: number): string[] {
   if (!Array.isArray(value)) {
     return [];

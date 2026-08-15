@@ -47,7 +47,7 @@ This requires both:
 
 - An extraction profile with **auto-apply** enabled that matches the current
   page.
-- A gdluxx server new enough to advertise the fallback capability (v0.12.0+).
+- A gdluxx server new enough to advertise the fallback capability (v0.13.0+).
 
 On an older server, or when no profile matches the page, the hotkey behaves
 exactly as it always has: no extra data is sent, and no notification appears
@@ -56,16 +56,15 @@ about the missing capability.
 The hotkey send also honors your directory settings, same precedence as a
 regular send from the action bar:
 
-- If **Site Directory** is toggled on, the current page's hostname is sent as
-  a subdirectory.
+- If **Site Directory** is toggled on, the current page's hostname is sent as a
+  subdirectory.
 - If the matching profile has a folder-from-page source configured (extracted
-  from an element on the page), its resolved value is used as the custom
-  folder.
+  from an element on the page), its resolved value is used as the custom folder.
 - A manually typed **Custom Folder** value always takes precedence over the
   profile's folder-from-page.
 - Dismissing an auto-filled folder in the overlay for the current page also
-  suppresses it here for the rest of the session; it doesn't affect a
-  manually typed value.
+  suppresses it here for the rest of the session; it doesn't affect a manually
+  typed value.
 
 ### Sending Individual Images or Links via Right-Click
 
