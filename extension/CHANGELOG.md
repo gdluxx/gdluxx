@@ -1,5 +1,18 @@
 # Changelog
 
+# [1.8.0](https://github.com/gdluxx/gdluxx/compare/extension-v1.7.0...extension-v1.8.0) (2026-08-15)
+
+
+### Bug Fixes
+
+* **extension:** drop invalid hostnames instead of failing the send ([fa645f4](https://github.com/gdluxx/gdluxx/commit/fa645f4cf688a0ec49d22c34d6639f0cd9a9112d))
+
+
+### Features
+
+* **extension:** apply folder settings to hotkey and popup sends ([4570344](https://github.com/gdluxx/gdluxx/commit/4570344b20929be0780cb3dc1dcdc35ba2dc9b1c))
+* **extension:** send extracted images alongside the hotkey URL ([126bad2](https://github.com/gdluxx/gdluxx/commit/126bad275fb13b429656021e0f6ef634889551e8))
+
 # [1.7.0](https://github.com/gdluxx/gdluxx/compare/extension-v1.6.0...extension-v1.7.0) (2026-08-12)
 
 
