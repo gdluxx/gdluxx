@@ -29,13 +29,26 @@ export interface GalleryDlCommandOptions {
   fallbackDiagnostic?: string;
 }
 
-async function withCookieArgs(url: string, cliArgs: string[]): Promise<string[]> {
+export interface GalleryDlBatchCommandOptions {
+  cookieUrl?: string;
+}
+
+async function withCookieArgs(candidateUrls: string[], cliArgs: string[]): Promise<string[]> {
   if (cliArgs.includes('--cookies')) {
     return cliArgs;
   }
 
-  const cookieFile = await getCookieFileForUrl(url);
-  return cookieFile ? [...cliArgs, '--cookies', cookieFile] : cliArgs;
+  for (const url of candidateUrls) {
+    if (!url) {
+      continue;
+    }
+    const cookieFile = await getCookieFileForUrl(url);
+    if (cookieFile) {
+      return [...cliArgs, '--cookies', cookieFile];
+    }
+  }
+
+  return cliArgs;
 }
 
 export async function executeGalleryDlCommand(
@@ -48,7 +61,7 @@ export async function executeGalleryDlCommand(
     const jobId = await jobManager.createJob(url);
 
     // Build process arguments: [cliOptions..., --config, configPath, url]
-    const argsWithCookies = await withCookieArgs(url, cliArgs);
+    const argsWithCookies = await withCookieArgs([url], cliArgs);
     const processArgs = [...argsWithCookies, '--config', PATHS.CONFIG_FILE, url];
 
     logger.info(
@@ -91,6 +104,7 @@ export async function executeGalleryDlCommand(
               const fb = await executeGalleryDlBatchCommand(
                 options.fallbackUrls,
                 options.fallbackCliArgs ?? [],
+                { cookieUrl: url },
               );
               if (fb.success && fb.jobId) {
                 await jobManager.addOutput(
@@ -138,10 +152,14 @@ export async function executeGalleryDlCommand(
 export async function executeGalleryDlBatchCommand(
   urls: string[],
   cliArgs: string[],
+  options?: GalleryDlBatchCommandOptions,
 ): Promise<CommandExecutionResult> {
   try {
     const jobId = await jobManager.createBatchJob(urls);
-    const argsWithCookies = urls[0] ? await withCookieArgs(urls[0], cliArgs) : cliArgs;
+    const cookieCandidates = [...new Set([options?.cookieUrl, urls[0]])].filter((u): u is string =>
+      Boolean(u),
+    );
+    const argsWithCookies = await withCookieArgs(cookieCandidates, cliArgs);
     const processArgs = [...argsWithCookies, '--config', PATHS.CONFIG_FILE, ...urls];
 
     logger.info(`Starting gallery-dl batch process for job ${jobId} with ${urls.length} URL(s)`);
