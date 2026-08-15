@@ -1,5 +1,12 @@
 # Changelog
 
+# [0.13.0](https://github.com/gdluxx/gdluxx/compare/v0.12.0...v0.13.0) (2026-08-15)
+
+
+### Features
+
+* **server:** start a directlink batch for gallery-dl unsupported URLs ([7a8cc36](https://github.com/gdluxx/gdluxx/commit/7a8cc36573478d0acb9bbd8e021b5f71bf8f684e))
+
 # [0.12.0](https://github.com/gdluxx/gdluxx/compare/v0.11.0...v0.12.0) (2026-08-12)
 
 
