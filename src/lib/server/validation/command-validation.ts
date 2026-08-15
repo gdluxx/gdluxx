@@ -78,6 +78,53 @@ export function normaliseFallbackUrls(value: unknown, cap: number): string[] {
   return deduped.slice(0, Math.max(0, cap));
 }
 
+export interface FallbackNormalizationResult {
+  description: string;
+  lostEntries: boolean;
+  allLost: boolean;
+}
+
+export function describeFallbackNormalization(
+  rawValue: unknown,
+  normalizedCount: number,
+): FallbackNormalizationResult {
+  if (!Array.isArray(rawValue)) {
+    return {
+      description: 'extension did not send a fallbackUrls field',
+      lostEntries: false,
+      allLost: false,
+    };
+  }
+  if (rawValue.length === 0) {
+    return {
+      description: 'extension sent an empty fallbackUrls array (no direct-link candidates found)',
+      lostEntries: false,
+      allLost: false,
+    };
+  }
+  if (normalizedCount === 0) {
+    return {
+      description: `extension sent ${rawValue.length} fallbackUrls entr${
+        rawValue.length === 1 ? 'y' : 'ies'
+      }, all were removed by normalization (invalid URL shape or non-string values)`,
+      lostEntries: true,
+      allLost: true,
+    };
+  }
+  if (normalizedCount < rawValue.length) {
+    return {
+      description: `extension sent ${rawValue.length} fallbackUrls, only ${normalizedCount} survived normalization (invalid entries, duplicates, or the per-request cap)`,
+      lostEntries: true,
+      allLost: false,
+    };
+  }
+  return {
+    description: `${normalizedCount} fallbackUrls provided`,
+    lostEntries: false,
+    allLost: false,
+  };
+}
+
 export const jobIdSchema: ValidationSchema = {
   jobId: { required: true, minLength: 1 },
 };

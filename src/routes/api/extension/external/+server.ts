@@ -17,6 +17,7 @@ import { validateInput } from '$lib/server/validation/validation-utils';
 import {
   externalApiSchema,
   normaliseFallbackUrls,
+  describeFallbackNormalization,
 } from '$lib/server/validation/command-validation';
 import { siteConfigManager } from '$lib/server/siteConfigManager';
 import { validateAndBuildCliArgs } from '$lib/server/validation/option-validation';
@@ -134,6 +135,17 @@ export const POST: RequestHandler = async ({ request }: RequestEvent): Promise<R
   }
 
   const rawFallbackUrls = normaliseFallbackUrls(body.fallbackUrls, maxUrls);
+  const fallbackNormalization = describeFallbackNormalization(
+    body.fallbackUrls,
+    rawFallbackUrls.length,
+  );
+
+  if (fallbackNormalization.allLost) {
+    logger.warn(`fallbackUrls normalization: ${fallbackNormalization.description}`);
+  } else if (fallbackNormalization.lostEntries) {
+    logger.info(`fallbackUrls normalization: ${fallbackNormalization.description}`);
+  }
+
   const fallbackUrls = urls.length === 1 ? rawFallbackUrls : [];
   if (rawFallbackUrls.length > 0 && urls.length !== 1) {
     logger.warn(
@@ -153,9 +165,14 @@ export const POST: RequestHandler = async ({ request }: RequestEvent): Promise<R
       ? body.siteDirectory.trim()
       : undefined;
 
-  const fallbackOptions: GalleryDlCommandOptions | undefined = fallbackUrls.length
-    ? { fallbackUrls, fallbackCliArgs: buildDirectoryArgs(siteDirectory, customDirectory) }
-    : undefined;
+  const fallbackOptions: GalleryDlCommandOptions | undefined =
+    urls.length === 1
+      ? {
+          fallbackUrls,
+          fallbackCliArgs: buildDirectoryArgs(siteDirectory, customDirectory),
+          fallbackDiagnostic: fallbackNormalization.description,
+        }
+      : undefined;
 
   logger.info(
     `API key validated for: ${authResult.keyInfo?.name} (ID: ${authResult.keyInfo?.id}). Processing ${urls.length} URL(s)${customDirectory ? ` with custom directory: ${customDirectory}` : ''}`,

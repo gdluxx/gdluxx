@@ -26,6 +26,7 @@ export interface CommandExecutionResult {
 export interface GalleryDlCommandOptions {
   fallbackUrls?: string[];
   fallbackCliArgs?: string[];
+  fallbackDiagnostic?: string;
 }
 
 async function withCookieArgs(url: string, cliArgs: string[]): Promise<string[]> {
@@ -84,27 +85,35 @@ export async function executeGalleryDlCommand(
       }): Promise<void> => {
         logger.info(`Process for job ${jobId} exited with code ${exitCode}, signal ${signal}`);
 
-        if (isUnsupportedUrlExit(exitCode) && options?.fallbackUrls?.length) {
-          try {
-            const fb = await executeGalleryDlBatchCommand(
-              options.fallbackUrls,
-              options.fallbackCliArgs ?? [],
-            );
-            if (fb.success && fb.jobId) {
-              await jobManager.addOutput(
-                fb.jobId,
-                'info',
-                `Started as a direct-link fallback for unsupported URL ${url} (job ${jobId})`,
+        if (isUnsupportedUrlExit(exitCode)) {
+          if (options?.fallbackUrls?.length) {
+            try {
+              const fb = await executeGalleryDlBatchCommand(
+                options.fallbackUrls,
+                options.fallbackCliArgs ?? [],
               );
-              await jobManager.addOutput(
-                jobId,
-                'info',
-                `Unsupported URL — started direct-link fallback job ${fb.jobId} for ${options.fallbackUrls.length} extracted URL(s)`,
-              );
+              if (fb.success && fb.jobId) {
+                await jobManager.addOutput(
+                  fb.jobId,
+                  'info',
+                  `Started as a direct-link fallback for unsupported URL ${url} (job ${jobId})`,
+                );
+                await jobManager.addOutput(
+                  jobId,
+                  'info',
+                  `Unsupported URL — started direct-link fallback job ${fb.jobId} for ${options.fallbackUrls.length} extracted URL(s)`,
+                );
+              }
+            } catch (error) {
+              logger.error(`Fallback batch failed for job ${jobId}:`, error);
             }
-          } catch (error) {
-            logger.error(`Fallback batch failed for job ${jobId}:`, error);
+          } else if (options?.fallbackDiagnostic) {
+            logger.warn(
+              `Job ${jobId} exited unsupported (code ${exitCode}) with no fallback batch to run: ${options.fallbackDiagnostic}. url=${url}`,
+            );
           }
+          // No `options` at all e.g. /api/command/start, which never passes
+          // a GalleryDlCommandOptions
         }
 
         await jobManager.completeJob(jobId, exitCode || 0);
