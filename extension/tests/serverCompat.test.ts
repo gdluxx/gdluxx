@@ -195,4 +195,16 @@ describe('recordPingFailure', () => {
     expect(compat?.pingedAt).toBeNull();
     expect(hasCapability(compat, 'jobs.polling')).toBe('unknown');
   });
+
+  test('fingerprint CAS discards a stale-fingerprint write', async () => {
+    const { recordPingFailure, getServerCompat, computeFingerprint } = await loadServerCompat();
+
+    await setCredentials('https://old.example', 'old-key');
+    const staleFingerprint = computeFingerprint('https://old.example', 'old-key');
+
+    await setCredentials('https://new.example', 'new-key');
+    await recordPingFailure(staleFingerprint);
+
+    expect(await getServerCompat()).toBeNull();
+  });
 });

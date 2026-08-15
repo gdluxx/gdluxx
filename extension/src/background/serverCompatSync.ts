@@ -88,8 +88,9 @@ export async function refreshCompatOnLaunch(): Promise<void> {
 export async function ensureFreshCompat(): Promise<void> {
   const compat = await getServerCompat();
   const now = Date.now();
-  if (compat && now - compat.checkedAt < STALE_COMPAT_TTL_MS) {
-    return; // fresh enough
+  const lastSuccess = typeof compat?.pingedAt === 'number' ? compat.pingedAt : null;
+  if (lastSuccess !== null && now - lastSuccess < STALE_COMPAT_TTL_MS) {
+    return; // confirmed within the TTL
   }
   await pingIfConfigured();
 }
