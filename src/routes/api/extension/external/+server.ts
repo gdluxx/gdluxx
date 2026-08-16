@@ -270,10 +270,11 @@ export const POST: RequestHandler = async ({ request }: RequestEvent): Promise<R
       // Build CLI argument
       const cliArgs = validateAndBuildCliArgs(optionsMap);
 
-      cliArgs.push(...buildDirectoryArgs(siteDirectory, customDirectory));
-
       const urlFallbackOptions: GalleryDlCommandOptions | undefined = fallbackOptions
-        ? { ...fallbackOptions, fallbackCliArgs: [...cliArgs] }
+        ? {
+            ...fallbackOptions,
+            fallbackCliArgs: [...cliArgs, ...buildDirectoryArgs(siteDirectory, customDirectory)],
+          }
         : undefined;
 
       const result = await executeGalleryDlCommand(url, cliArgs, urlFallbackOptions);
