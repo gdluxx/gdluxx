@@ -1,5 +1,20 @@
 # Changelog
 
+# [0.14.0](https://github.com/gdluxx/gdluxx/compare/v0.13.0...v0.14.0) (2026-08-16)
+
+
+### Bug Fixes
+
+* **server:** apply site-config CLI options to direct media submissions ([fa79ddd](https://github.com/gdluxx/gdluxx/commit/fa79ddd7a89b1389235cde395ed95162ee8234cc))
+* **server:** carry site-config CLI options onto the fallback batch ([8c46e50](https://github.com/gdluxx/gdluxx/commit/8c46e50e71e281ed0304520f139ff19da536450c))
+* **server:** keep folder settings off the primary gallery run ([fa8e585](https://github.com/gdluxx/gdluxx/commit/fa8e5856bc34cf95099ef8517aaec25718c02eba))
+* **server:** resolve fallback batch cookies from the originating page ([ab9f417](https://github.com/gdluxx/gdluxx/commit/ab9f4178d281748c85ea6cb1cd307233a1fe1636))
+
+
+### Features
+
+* **server:** log why an unsupported exit armed no fallback batch ([4044387](https://github.com/gdluxx/gdluxx/commit/40443874ebf29431e30498fd007e9815c09d82b2))
+
 # [0.13.0](https://github.com/gdluxx/gdluxx/compare/v0.12.0...v0.13.0) (2026-08-15)
 
 
