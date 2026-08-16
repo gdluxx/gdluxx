@@ -204,6 +204,30 @@ describe('extension external route: fallback batch inherits site-config CLI args
     expect(fallbackOptionsFromCall(0)).toBeUndefined();
     expect(fallbackOptionsFromCall(1)).toBeUndefined();
   });
+
+  test('case 7: primary gallery run omits directory args so config.json formats win', async () => {
+    const pageUrl = 'https://example.com/gallery/123';
+    const cdnUrl = 'https://cdn.example.com/img.jpg';
+    getCliOptionsForUrlMock.mockResolvedValue([['retries', 3]]);
+
+    await POST({
+      request: extRequest({
+        urls: [pageUrl],
+        fallbackUrls: [cdnUrl],
+        siteDirectory: 'example.com',
+      }),
+    } as never);
+
+    const primaryCliArgs = executeGalleryDlCommandMock.mock.calls[0][1] as string[];
+    expect(primaryCliArgs).toEqual(['--retries', '3']);
+    const fallback = fallbackOptionsFromCall(0);
+    expect(fallback?.fallbackCliArgs).toEqual([
+      '--retries',
+      '3',
+      '-o',
+      'directory=["example.com"]',
+    ]);
+  });
 });
 
 describe('extension external route: direct-media branches get site-config CLI options', () => {
