@@ -66,6 +66,12 @@ regular send from the action bar:
   suppresses it here for the rest of the session; it doesn't affect a manually
   typed value.
 
+Folder settings shape the download path only where gdluxx's directlink handling
+does the naming: direct image/link sends and the extraction profile fallback.
+When a gallery URL is matched by one of gallery-dl's own extractors (native or
+an external module), the `directory` formats in your gallery-dl config win
+instead and the folder settings are held in reserve for the fallback.
+
 ### Sending Individual Images or Links via Right-Click
 
 Right-click any image or link on a page for a direct shortcut:
@@ -115,6 +121,11 @@ enabled, the extension reads the hostname of the current page (e.g.
 send land inside a folder matching the hostname, under the `base-directory` set
 in your gallery-dl config. The button shows the current hostname while active,
 and the toggle state is remembered between sessions.
+
+This applies to direct image/link sends and to the extraction-profile fallback.
+Gallery URLs that gallery-dl extracts itself keep the per-extractor `directory`
+formats from your gallery-dl config instead — a command-line directory override
+would otherwise outrank them.
 
 ### Custom Folder
 
