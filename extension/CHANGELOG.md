@@ -1,5 +1,17 @@
 # Changelog
 
+# [1.9.0](https://github.com/gdluxx/gdluxx/compare/extension-v1.8.0...extension-v1.9.0) (2026-08-16)
+
+
+### Bug Fixes
+
+* **extension:** gate compat freshness on the last successful ping ([ee54712](https://github.com/gdluxx/gdluxx/commit/ee5471248d634a9c5cb8e7e3cb64b07066300f78))
+
+
+### Features
+
+* **extension:** surface suppressed fallbacks and re-ping stale compat ([25bbed9](https://github.com/gdluxx/gdluxx/commit/25bbed933cb922f28056f825d22908a80717140f))
+
 # [1.8.0](https://github.com/gdluxx/gdluxx/compare/extension-v1.7.0...extension-v1.8.0) (2026-08-15)
 
 
