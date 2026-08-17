@@ -33,7 +33,10 @@
     "theme-check": "pnpm validate-themes && pnpm test:themes",
     "fixtures:refresh": "node scripts/refresh-fixtures.js",
     "catalog:build": "python3 scripts/catalog/build_catalog.py && pnpm catalog:verify",
-    "catalog:verify": "vitest run tests/catalog-artifact.test.ts"
+    "catalog:verify": "vitest run tests/catalog-artifact.test.ts",
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs"
   },
   "devDependencies": {
     "@eslint/compat": "^2.1.0",
