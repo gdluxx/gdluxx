@@ -8,11 +8,11 @@ gdluxx is nothing more than a self-hosted browser based gui for
 <summary><h3>Screenshots</h3></summary>
 
 |                        gdluxx - Main                         |                      gdluxx - Job Output                       |
-|:------------------------------------------------------------:|:--------------------------------------------------------------:|
+| :----------------------------------------------------------: | :------------------------------------------------------------: |
 | ![gdluxx main interface](docs/screenshots/gdluxx/1.home.png) | ![gdluxx job output](docs/screenshots/gdluxx/6.job-output.png) |
 
 |                          Extension - Main                          |                        Extension - Advanced Filtering                        |
-|:------------------------------------------------------------------:|:----------------------------------------------------------------------------:|
+| :----------------------------------------------------------------: | :--------------------------------------------------------------------------: |
 | ![extension main interface](docs/screenshots/extension/1.main.png) | ![extension job output](docs/screenshots/extension/2.advanced-filtering.png) |
 
 ##### Additional screenshots
@@ -29,6 +29,8 @@ gdluxx is nothing more than a self-hosted browser based gui for
 - **Site Rules**: Apply specific gallery-dl options based on URL patterns
 - **Config Editor**: Built-in JSON editor with syntax highlighting, validation,
   and file upload
+- **Options Catalog**: Browse and search every gallery-dl configuration option,
+  with a button click "add-to-config"
 - **Keyword Info**: Test what metadata different sites provide for use in your
   config file
 - **Job Management**: View running, completed, and failed jobs with output and
