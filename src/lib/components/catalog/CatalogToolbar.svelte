@@ -120,7 +120,7 @@
       class="cursor-pointer rounded-full border px-3 py-1 text-xs font-medium tabular-nums transition-colors {activeSection ===
       ''
         ? 'border-primary bg-primary text-on-primary'
-        : 'border-strong bg-surface text-muted-foreground hover:border-primary hover:text-foreground'}"
+        : 'border-strong bg-surface text-foreground/80 hover:border-primary hover:text-foreground'}"
       aria-pressed={activeSection === ''}
       onclick={() => onSectionChange('')}
     >
@@ -132,7 +132,7 @@
         class="cursor-pointer rounded-full border px-3 py-1 text-xs font-medium tabular-nums transition-colors {activeSection ===
         section.id
           ? 'border-primary bg-primary text-on-primary'
-          : 'border-strong bg-surface text-muted-foreground hover:border-primary hover:text-foreground'}"
+          : 'border-strong bg-surface text-foreground/80 hover:border-primary hover:text-foreground'}"
         aria-pressed={activeSection === section.id}
         onclick={() => onSectionChange(section.id)}
       >

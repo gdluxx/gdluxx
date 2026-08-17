@@ -55,16 +55,18 @@
   const detailId = $derived(`catalog-detail-${option.n.replace(/[^a-zA-Z0-9]/g, '-')}`);
 </script>
 
-<div class="border-b border-strong last:border-b-0">
+<div class="mt-5 rounded-sm border border-strong">
   <button
     type="button"
-    class="w-full cursor-pointer rounded-xs px-1 py-3 text-left transition-colors hover:bg-surface-hover"
+    class="w-full cursor-pointer rounded-sm px-3 pt-3 text-left transition-colors hover:bg-surface-hover {open
+      ? 'pb-2'
+      : 'pb-5'}"
     aria-expanded={open}
     aria-controls={detailId}
     onclick={() => (open = !open)}
   >
     <span class="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-      <span class="font-mono text-sm font-semibold break-all">
+      <span class="font-mono text-sm font-semibold text-foreground break-all">
         <span class="font-normal text-muted-foreground">{nameParts.prefix}</span>{nameParts.rest}
       </span>
       {#each option.t.slice(0, 3) as ref (ref.x)}
@@ -86,13 +88,13 @@
         </span>
       {/if}
       {#if defaultPreview}
-        <span class="ml-auto max-w-[34ch] truncate font-mono text-xs text-muted-foreground">
+        <span class="ml-auto max-w-[34ch] truncate font-mono text-xs text-foreground/80">
           = {defaultPreview}
         </span>
       {/if}
     </span>
     {#if option.d && !open}
-      <span class="mt-1 line-clamp-2 block max-w-[70ch] text-sm text-muted-foreground">
+      <span class="mt-3 line-clamp-2 block max-w-[70ch] text-sm text-foreground">
         {option.d}
       </span>
     {/if}
@@ -101,7 +103,7 @@
   {#if open}
     <div
       id={detailId}
-      class="px-1 pb-5"
+      class="px-3 pb-5"
     >
       <CatalogDetail
         {option}

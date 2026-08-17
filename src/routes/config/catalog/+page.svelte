@@ -137,82 +137,84 @@
     />
   {/snippet}
 
-  <div class="mb-1 flex flex-wrap items-baseline gap-x-3 gap-y-1 text-sm text-muted-foreground">
-    <span>{catalog.provenance.optionCount} options · {siteCount} sites documented</span>
-    <span>
-      Generated from gallery-dl
-      <code class="font-mono">v{catalog.provenance.galleryDlVersion}</code>
-    </span>
-    {#if versionMismatch}
-      <span class="text-warning">
-        Running v{runtimeVersion} — catalog may not reflect this version
+  <div class="text-foreground">
+    <div class="mb-1 flex flex-wrap items-baseline gap-x-3 gap-y-1 text-sm text-foreground/80">
+      <span>{catalog.provenance.optionCount} options · {siteCount} sites documented</span>
+      <span>
+        Generated from gallery-dl
+        <code class="font-mono">v{catalog.provenance.galleryDlVersion}</code>
       </span>
-    {/if}
-  </div>
-
-  <KindDistribution
-    options={catalog.options}
-    {selectedKinds}
-    onToggle={toggleKind}
-  />
-
-  <div
-    class="sticky top-0 z-10 -mx-2 mt-4 border-b border-strong bg-background px-2 py-3 sm:mx-0 sm:px-0"
-  >
-    <CatalogToolbar
-      query={rawQuery}
-      onQueryInput={handleQueryInput}
-      sections={catalog.sections}
-      totalCount={catalog.options.length}
-      {activeSection}
-      onSectionChange={handleSectionChange}
-      options={catalog.options}
-      sites={catalog.sites}
-      {activeSite}
-      onSiteChange={handleSiteChange}
-      resultCount={filteredOptions.length}
-      {isFiltered}
-    />
-  </div>
-
-  {#if filteredOptions.length === 0}
-    <EmptyState
-      icon="magnifying-glass"
-      title="No options match"
-      description="Try a different search or filter."
-      class="py-12"
-    >
-      <Button
-        variant="outline-primary"
-        size="sm"
-        onclick={clearFilters}
-        class="mt-4"
-      >
-        Clear filters
-      </Button>
-    </EmptyState>
-  {:else}
-    <div>
-      {#each visibleOptions as option (option.n)}
-        <CatalogRow
-          {option}
-          customTypes={catalog.customTypes}
-          families={catalog.families}
-          {siteByKey}
-        />
-      {/each}
+      {#if versionMismatch}
+        <span class="text-warning">
+          Running v{runtimeVersion} — catalog may not reflect this version
+        </span>
+      {/if}
     </div>
 
-    {#if hasMore}
-      <div class="flex justify-center pt-6">
+    <KindDistribution
+      options={catalog.options}
+      {selectedKinds}
+      onToggle={toggleKind}
+    />
+
+    <div
+      class="rounded-sm sticky top-0 z-10 -mx-2 mt-4 border-b border-strong bg-background px-3 py-3 sm:mx-0"
+    >
+      <CatalogToolbar
+        query={rawQuery}
+        onQueryInput={handleQueryInput}
+        sections={catalog.sections}
+        totalCount={catalog.options.length}
+        {activeSection}
+        onSectionChange={handleSectionChange}
+        options={catalog.options}
+        sites={catalog.sites}
+        {activeSite}
+        onSiteChange={handleSiteChange}
+        resultCount={filteredOptions.length}
+        {isFiltered}
+      />
+    </div>
+
+    {#if filteredOptions.length === 0}
+      <EmptyState
+        icon="magnifying-glass"
+        title="No options match"
+        description="Try a different search or filter."
+        class="py-12"
+      >
         <Button
           variant="outline-primary"
           size="sm"
-          onclick={showMore}
+          onclick={clearFilters}
+          class="mt-4"
         >
-          Show {Math.min(PAGE_SIZE, filteredOptions.length - shown)} more of {filteredOptions.length}
+          Clear filters
         </Button>
+      </EmptyState>
+    {:else}
+      <div class="-mx-2 sm:mx-0">
+        {#each visibleOptions as option (option.n)}
+          <CatalogRow
+            {option}
+            customTypes={catalog.customTypes}
+            families={catalog.families}
+            {siteByKey}
+          />
+        {/each}
       </div>
+
+      {#if hasMore}
+        <div class="flex justify-center pt-6">
+          <Button
+            variant="outline-primary"
+            size="sm"
+            onclick={showMore}
+          >
+            Show {Math.min(PAGE_SIZE, filteredOptions.length - shown)} more of {filteredOptions.length}
+          </Button>
+        </div>
+      {/if}
     {/if}
-  {/if}
+  </div>
 </PageLayout>

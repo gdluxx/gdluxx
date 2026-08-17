@@ -164,7 +164,7 @@
   }
 </script>
 
-<div class="max-w-[70ch] space-y-4 pt-1 text-foreground">
+<div class="max-w-[70ch] space-y-4 pt-1 text-sm text-foreground">
   {#if site}
     <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
       <!-- eslint-disable svelte/no-navigation-without-resolve -->
@@ -189,7 +189,7 @@
   {/if}
 
   {#if option.d}
-    <p class="text-sm">{option.d}</p>
+    <p class="text-sm text-foreground">{option.d}</p>
   {/if}
 
   {#if option.dterms && option.dterms.length > 0}
@@ -198,7 +198,7 @@
         <div>
           <dt class="font-mono text-sm font-medium">{term.t}</dt>
           {#if term.d}
-            <dd class="mt-0.5 text-sm text-muted-foreground">{term.d}</dd>
+            <dd class="mt-0.5 text-sm text-foreground">{term.d}</dd>
           {/if}
         </div>
       {/each}
@@ -266,7 +266,7 @@
                 {term.t}
               </dt>
               {#if term.d}
-                <dd class="text-xs text-muted-foreground">{term.d}</dd>
+                <dd class="text-xs text-foreground">{term.d}</dd>
               {/if}
             </div>
           {/each}
@@ -279,7 +279,7 @@
     <div>
       <h4 class="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">Note</h4>
       {#if option.note}
-        <p class="mt-1 text-sm text-muted-foreground">{option.note}</p>
+        <p class="mt-1 text-sm text-foreground/80">{option.note}</p>
       {/if}
       {#if option.nterms && option.nterms.length > 0}
         <dl class="mt-1 space-y-1.5">
@@ -287,7 +287,7 @@
             <div>
               <dt class="text-sm font-medium">{term.t}</dt>
               {#if term.d}
-                <dd class="text-sm text-muted-foreground">{term.d}</dd>
+                <dd class="text-sm text-foreground">{term.d}</dd>
               {/if}
             </div>
           {/each}
@@ -356,10 +356,10 @@
   onCancel={cancelOverwrite}
 >
   <p class="text-sm text-foreground">
-    <code class="font-mono">{snippet.path.join('.')}</code> is already set in your config.json:
+    <code class="font-mono text-foreground">{snippet.path.join('.')}</code> is already set in your config.json:
   </p>
   <pre
-    class="mt-2 max-h-64 overflow-auto rounded-sm border border-strong bg-surface-elevated p-3 font-mono text-xs">{overwriteCurrentValueDisplay}</pre>
+    class="mt-2 max-h-64 overflow-auto rounded-sm border border-strong bg-surface-elevated p-3 font-mono text-xs text-foreground">{overwriteCurrentValueDisplay}</pre>
   <p class="mt-2 text-sm text-muted-foreground">
     Overwrite it with the value shown in the snippet above?
   </p>
