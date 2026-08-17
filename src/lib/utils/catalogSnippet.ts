@@ -8,17 +8,14 @@
  * as published by the Free Software Foundation.
  */
 
-/**
- * Builds the "Add to config.json" snippet
- * catalog-template.html:469-489
- */
-
 import type { CatalogOption, JsonValue, JsonValueObject } from '$lib/types/catalog';
 import { bucketKind } from './catalogFilter';
 
 export interface CatalogSnippet {
   json: string;
   note: string;
+  path: string[];
+  value: JsonValue;
 }
 
 const GLOBAL_NOTE =
@@ -43,7 +40,7 @@ export function buildSnippet(option: CatalogOption): CatalogSnippet {
     obj = { [segments[i]]: obj } satisfies JsonValueObject;
   }
 
-  return { json: JSON.stringify(obj, null, 2), note };
+  return { json: JSON.stringify(obj, null, 2), note, path: [...segments], value };
 }
 
 function fallbackAwareDefault(option: CatalogOption): JsonValue {

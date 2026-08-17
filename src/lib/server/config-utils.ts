@@ -8,7 +8,7 @@
  * as published by the Free Software Foundation.
  */
 
-import { readFile, writeFile, stat } from 'fs/promises';
+import { readFile, writeFile, rename, unlink, readdir, stat } from 'fs/promises';
 import { join, dirname } from 'path';
 import { serverLogger as logger } from '$lib/server/logger';
 import { ensureDir } from '$lib/utils/fs';
@@ -17,6 +17,8 @@ import { isRunningInDockerCached } from './environment';
 export const DATA_PATH = process.env.FILE_STORAGE_PATH ?? './data';
 export const CONFIG_FILE = 'config.json';
 export const EXAMPLE_CONFIG_FILE = './static/config-example.json';
+export const CONFIG_HISTORY_DIR = 'config-history';
+export const CONFIG_HISTORY_LIMIT = 5;
 
 const DEFAULT_DOWNLOAD_ROOT = '/app/data/downloads';
 
@@ -372,7 +374,39 @@ export async function readConfigFile(): Promise<ConfigReadResult> {
   }
 }
 
-// Write configuration file with path transformation.
+function historySnapshotTimestamp(): string {
+  const iso = new Date().toISOString().replace(/[:.]/g, '-');
+  const nanos = process.hrtime.bigint().toString(36);
+  return `${iso}-${nanos}`;
+}
+
+async function pruneConfigHistory(historyDir: string): Promise<void> {
+  let entries: string[];
+  try {
+    entries = await readdir(historyDir);
+  } catch (error) {
+    logger.warn('Failed to read config history directory for pruning:', error);
+    return;
+  }
+
+  const snapshots = entries
+    .filter((name) => name.startsWith('config-') && name.endsWith('.json'))
+    .sort();
+
+  if (snapshots.length <= CONFIG_HISTORY_LIMIT) {
+    return;
+  }
+
+  const stale = snapshots.slice(0, snapshots.length - CONFIG_HISTORY_LIMIT);
+  await Promise.all(
+    stale.map((name) =>
+      unlink(join(historyDir, name)).catch((error) => {
+        logger.warn(`Failed to prune stale config history file "${name}":`, error);
+      }),
+    ),
+  );
+}
+
 export async function writeConfigFile(content: string): Promise<ConfigWriteResult> {
   if (!content) {
     throw new Error('Content cannot be empty');
@@ -382,13 +416,51 @@ export async function writeConfigFile(content: string): Promise<ConfigWriteResul
   const wasTransformed: boolean = content !== transformedContent;
 
   const fullPath: string = join(DATA_PATH, CONFIG_FILE);
+  const tmpPath = `${fullPath}.tmp`;
 
   await ensureDir(dirname(fullPath));
-  await writeFile(fullPath, transformedContent, 'utf-8');
+
+  let existingContent: string | undefined;
+  try {
+    existingContent = await readFile(fullPath, 'utf-8');
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+      throw new Error(`Failed to read existing configuration file: ${(error as Error).message}`, {
+        cause: error,
+      });
+    }
+  }
+
+  const message = wasTransformed
+    ? 'Saved successfully (paths transformed)!'
+    : 'Saved successfully!';
+
+  if (existingContent !== undefined && existingContent === transformedContent) {
+    // Identical content: writing would change nothing on disk, so skip the
+    // history snapshot and the tmp-write/rename entirely.
+    return {
+      success: true,
+      message,
+      path: CONFIG_FILE,
+      transformed: wasTransformed,
+      content: wasTransformed ? transformedContent : undefined,
+    };
+  }
+
+  if (existingContent !== undefined) {
+    const historyDir = join(DATA_PATH, CONFIG_HISTORY_DIR);
+    await ensureDir(historyDir);
+    const snapshotPath = join(historyDir, `config-${historySnapshotTimestamp()}.json`);
+    await writeFile(snapshotPath, existingContent, 'utf-8');
+    await pruneConfigHistory(historyDir);
+  }
+
+  await writeFile(tmpPath, transformedContent, 'utf-8');
+  await rename(tmpPath, fullPath);
 
   return {
     success: true,
-    message: wasTransformed ? 'Saved successfully (paths transformed)!' : 'Saved successfully!',
+    message,
     path: CONFIG_FILE,
     transformed: wasTransformed,
     content: wasTransformed ? transformedContent : undefined,

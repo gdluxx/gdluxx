@@ -9,11 +9,12 @@
   -->
 
 <script lang="ts">
-  import type { CatalogOption, CatalogSite } from '$lib/types/catalog';
+  import type { CatalogOption, CatalogSite, JsonValue } from '$lib/types/catalog';
   import { buildSnippet } from '$lib/utils/catalogSnippet';
   import { copyToClipboard } from '$lib/utils/clipboard';
-  import { Button } from '$lib/components/ui';
+  import { Button, ConfirmModal } from '$lib/components/ui';
   import { clientLogger as logger } from '$lib/client/logger';
+  import { toastStore } from '$lib/stores/toast';
 
   interface Props {
     option: CatalogOption;
@@ -31,6 +32,7 @@
   );
 
   const hasNoteSection = $derived([option.note, option.nterms?.length].some(Boolean));
+  const isPlaceholderValue = $derived(snippet.value === '…');
 
   let copyLabel = $state('Copy');
   let copyTimer: ReturnType<typeof setTimeout> | undefined;
@@ -48,6 +50,117 @@
         copyLabel = 'Copy';
       }, 1400);
     }
+  }
+
+  interface ConfigMergeData {
+    merged: boolean;
+    exists?: boolean;
+    currentValue?: JsonValue;
+    action?: 'created' | 'replaced';
+  }
+
+  interface ConfigMergeEnvelope {
+    success: boolean;
+    data?: ConfigMergeData;
+    error?: string;
+  }
+
+  let addLabel = $state('Add to config');
+  let addTimer: ReturnType<typeof setTimeout> | undefined;
+  let isAdding = $state(false);
+  let showOverwriteModal = $state(false);
+  let overwriteCurrentValue = $state<JsonValue | undefined>(undefined);
+
+  const overwriteCurrentValueDisplay = $derived.by(() => {
+    if (overwriteCurrentValue === undefined) {
+      return '';
+    }
+    const json = JSON.stringify(overwriteCurrentValue, null, 2);
+    const MAX_CHARS = 1000;
+    return json.length > MAX_CHARS ? `${json.slice(0, MAX_CHARS)}\n… (truncated)` : json;
+  });
+
+  function resetAddLabelAfterDelay() {
+    clearTimeout(addTimer);
+    addTimer = setTimeout(() => {
+      addLabel = 'Add to config';
+    }, 1400);
+  }
+
+  async function postConfigMerge(overwrite: boolean): Promise<ConfigMergeData> {
+    const response = await fetch('/api/config/merge', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path: snippet.path, value: snippet.value, overwrite }),
+    });
+
+    const result: ConfigMergeEnvelope = await response.json();
+    if (!response.ok || !result.success || !result.data) {
+      throw new Error(result.error ?? `HTTP ${response.status}`);
+    }
+
+    return result.data;
+  }
+
+  function announceSuccess(action: ConfigMergeData['action']) {
+    addLabel = 'Added ✓';
+    const placeholderNote = isPlaceholderValue
+      ? ' The merged value is a placeholder ("…") -- edit it in the config editor.'
+      : '';
+    toastStore.success(
+      action === 'replaced' ? 'Config value replaced' : 'Added to config',
+      `Reload the config editor if it's open in another tab.${placeholderNote}`,
+    );
+    resetAddLabelAfterDelay();
+  }
+
+  function announceFailure(error: unknown) {
+    logger.error('Failed to add catalog option to config:', error);
+    addLabel = 'Add failed';
+    toastStore.error(
+      'Add to config failed',
+      error instanceof Error ? error.message : 'Unknown error',
+    );
+    resetAddLabelAfterDelay();
+  }
+
+  async function handleAddToConfig() {
+    if (isAdding) {
+      return;
+    }
+    isAdding = true;
+    try {
+      const data = await postConfigMerge(false);
+      if (data.exists) {
+        overwriteCurrentValue = data.currentValue;
+        showOverwriteModal = true;
+        return;
+      }
+      announceSuccess(data.action);
+    } catch (error) {
+      announceFailure(error);
+    } finally {
+      isAdding = false;
+    }
+  }
+
+  async function confirmOverwrite() {
+    showOverwriteModal = false;
+    isAdding = true;
+    try {
+      const data = await postConfigMerge(true);
+      announceSuccess(data.action);
+    } catch (error) {
+      announceFailure(error);
+    } finally {
+      isAdding = false;
+      overwriteCurrentValue = undefined;
+    }
+  }
+
+  function cancelOverwrite() {
+    showOverwriteModal = false;
+    overwriteCurrentValue = undefined;
   }
 </script>
 
@@ -203,20 +316,51 @@
     </h4>
     <div class="relative mt-1">
       <pre
-        class="overflow-x-auto rounded-sm border border-strong bg-surface-elevated p-3 pr-20 font-mono text-xs">{snippet.json}</pre>
-      <Button
-        type="button"
-        size="sm"
-        variant="outline-primary"
-        class="absolute top-2 right-2"
-        onclick={handleCopy}
-        aria-live="polite"
-      >
-        {copyLabel}
-      </Button>
+        class="overflow-x-auto rounded-sm border border-strong bg-surface-elevated p-3 pr-40 font-mono text-xs">{snippet.json}</pre>
+      <div class="absolute top-2 right-2 flex items-center gap-2">
+        <Button
+          type="button"
+          size="sm"
+          variant="outline-primary"
+          onclick={handleCopy}
+          aria-live="polite"
+        >
+          {copyLabel}
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline-primary"
+          onclick={handleAddToConfig}
+          disabled={isAdding}
+          loading={isAdding}
+          aria-live="polite"
+        >
+          {addLabel}
+        </Button>
+      </div>
     </div>
     {#if snippet.note}
       <p class="mt-2 text-xs text-muted-foreground">{snippet.note}</p>
     {/if}
   </div>
 </div>
+
+<ConfirmModal
+  show={showOverwriteModal}
+  title="Overwrite existing config value?"
+  confirmText="Overwrite"
+  cancelText="Cancel"
+  confirmVariant="warning"
+  onConfirm={confirmOverwrite}
+  onCancel={cancelOverwrite}
+>
+  <p class="text-sm text-foreground">
+    <code class="font-mono">{snippet.path.join('.')}</code> is already set in your config.json:
+  </p>
+  <pre
+    class="mt-2 max-h-64 overflow-auto rounded-sm border border-strong bg-surface-elevated p-3 font-mono text-xs">{overwriteCurrentValueDisplay}</pre>
+  <p class="mt-2 text-sm text-muted-foreground">
+    Overwrite it with the value shown in the snippet above?
+  </p>
+</ConfirmModal>

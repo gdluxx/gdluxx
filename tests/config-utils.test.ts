@@ -9,8 +9,12 @@
  */
 
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import { mkdtemp, readdir, readFile, rm, stat } from 'fs/promises';
+import { tmpdir } from 'os';
+import { join } from 'path';
 
 const ORIGINAL_DOWNLOAD_PATH = process.env.DOWNLOAD_PATH;
+const ORIGINAL_FILE_STORAGE_PATH = process.env.FILE_STORAGE_PATH;
 
 const warnMock = vi.fn();
 
@@ -208,5 +212,100 @@ describe('config-utils download root (Docker)', () => {
     expect(transformBaseDirectory(mod, '~/gallery-dl/')).toBe('~/gallery-dl/');
     expect(transformPartDirectory(mod, '~/gallery-dl/tmp')).toBe('~/gallery-dl/tmp');
     expect(warnMock).not.toHaveBeenCalled();
+  });
+});
+
+describe('writeConfigFile (atomic write + rotating history)', () => {
+  let dataDir: string;
+
+  beforeEach(async () => {
+    dockerMockValue = false;
+    dataDir = await mkdtemp(join(tmpdir(), 'gdluxx-config-utils-'));
+    process.env.FILE_STORAGE_PATH = dataDir;
+  });
+
+  afterEach(async () => {
+    await rm(dataDir, { recursive: true, force: true });
+    if (ORIGINAL_FILE_STORAGE_PATH === undefined) {
+      delete process.env.FILE_STORAGE_PATH;
+    } else {
+      process.env.FILE_STORAGE_PATH = ORIGINAL_FILE_STORAGE_PATH;
+    }
+  });
+
+  test('first write (no existing config.json): writes via tmp+rename, no history snapshot', async () => {
+    const mod = await loadConfigUtils();
+    const content = JSON.stringify({ a: 1 }, null, 2);
+
+    const result = await mod.writeConfigFile(content);
+
+    expect(result.success).toBe(true);
+    expect(result.transformed).toBe(false);
+
+    const written = await readFile(join(dataDir, 'config.json'), 'utf-8');
+    expect(written).toBe(content);
+
+    await expect(readFile(join(dataDir, 'config.json.tmp'), 'utf-8')).rejects.toThrow();
+
+    await expect(readdir(join(dataDir, 'config-history'))).rejects.toThrow();
+  });
+
+  test('changed content: snapshots the previous content to config-history before overwriting', async () => {
+    const mod = await loadConfigUtils();
+    const first = JSON.stringify({ a: 1 }, null, 2);
+    const second = JSON.stringify({ a: 2 }, null, 2);
+
+    await mod.writeConfigFile(first);
+    const result = await mod.writeConfigFile(second);
+
+    expect(result.success).toBe(true);
+    const written = await readFile(join(dataDir, 'config.json'), 'utf-8');
+    expect(written).toBe(second);
+
+    const historyDir = join(dataDir, 'config-history');
+    const snapshots = await readdir(historyDir);
+    expect(snapshots).toHaveLength(1);
+    expect(snapshots[0]).toMatch(/^config-.*\.json$/);
+
+    const snapshotContent = await readFile(join(historyDir, snapshots[0]), 'utf-8');
+    expect(snapshotContent).toBe(first);
+  });
+
+  test('identical content: skips both the history snapshot and the write itself', async () => {
+    const mod = await loadConfigUtils();
+    const content = JSON.stringify({ a: 1 }, null, 2);
+
+    await mod.writeConfigFile(content);
+    const configPath = join(dataDir, 'config.json');
+    const statBefore = await stat(configPath);
+
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    const result = await mod.writeConfigFile(content);
+    const statAfter = await stat(configPath);
+
+    expect(result.success).toBe(true);
+    expect(statAfter.mtimeMs).toBe(statBefore.mtimeMs);
+
+    await expect(readdir(join(dataDir, 'config-history'))).rejects.toThrow();
+  });
+
+  test('prunes config-history to the newest CONFIG_HISTORY_LIMIT snapshots', async () => {
+    const mod = await loadConfigUtils();
+    expect(mod.CONFIG_HISTORY_LIMIT).toBe(5);
+
+    for (let i = 0; i < 7; i++) {
+      await mod.writeConfigFile(JSON.stringify({ n: i }, null, 2));
+    }
+
+    const historyDir = join(dataDir, 'config-history');
+    const snapshots = await readdir(historyDir);
+    expect(snapshots).toHaveLength(mod.CONFIG_HISTORY_LIMIT);
+
+    const contents = await Promise.all(
+      snapshots.map((name) => readFile(join(historyDir, name), 'utf-8')),
+    );
+    const values = contents.map((c) => (JSON.parse(c) as { n: number }).n).sort((a, b) => a - b);
+    expect(values).toEqual([1, 2, 3, 4, 5]);
   });
 });
