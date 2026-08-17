@@ -31,7 +31,9 @@
     "validate-themes": "node scripts/validate-themes.js",
     "test:themes": "vitest run tests/theme-system.test.js",
     "theme-check": "pnpm validate-themes && pnpm test:themes",
-    "fixtures:refresh": "node scripts/refresh-fixtures.js"
+    "fixtures:refresh": "node scripts/refresh-fixtures.js",
+    "catalog:build": "python3 scripts/catalog/build_catalog.py && pnpm catalog:verify",
+    "catalog:verify": "vitest run tests/catalog-artifact.test.ts"
   },
   "devDependencies": {
     "@eslint/compat": "^2.1.0",
