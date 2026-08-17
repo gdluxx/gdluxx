@@ -74,15 +74,14 @@
 
   function handleItemClick(item: NavItem) {
     activeItemId = item.id;
-    if (collapsed) {
-      onNavigate(item);
-    } else {
-      if (item.children) {
-        toggleItem(item.id);
-      } else {
-        onNavigate(item);
-      }
-    }
+    onNavigate(item);
+  }
+
+  // Chevron is a separate control from the row it only toggles the
+  // submenu and shouldn't trigger the row's navigation
+  function handleToggleClick(event: MouseEvent, itemId: string) {
+    event.stopPropagation();
+    toggleItem(itemId);
   }
 
   function isItemExpanded(itemId: string): boolean {
@@ -161,7 +160,7 @@
 
   <!-- Nav items -->
   <div
-    class="flex-1 overflow-x-hidden overflow-y-auto p-2"
+    class="min-h-0 flex-1 overflow-x-hidden overflow-y-auto p-2"
     id="nav-items-container"
     aria-labelledby={collapsed && !isMobile ? undefined : 'nav-heading'}
   >
@@ -172,41 +171,75 @@
     >
       {#each items as item (item.id)}
         <li>
-          <button
-            onclick={() => handleItemClick(item)}
-            onkeydown={(e) => handleKeydown(e, item)}
-            class="flex w-full cursor-pointer items-center gap-3 rounded-sm px-3 py-2 text-foreground transition-colors hover:bg-surface-hover focus:bg-surface-hover focus:ring-2 focus:ring-primary/20 focus:outline-hidden {activeItemId ===
-            item.id
-              ? 'bg-surface-selected text-foreground'
-              : ''}"
-            aria-expanded={item.children ? isItemExpanded(item.id) : undefined}
-            aria-current={activeItemId === item.id ? 'page' : undefined}
-            aria-describedby={collapsed && !isMobile ? `${item.id}-tooltip` : undefined}
-            tabindex="0"
-          >
-            <span
-              class="size-5 flex-shrink-0"
-              aria-hidden="true"
+          {#if item.children && (!collapsed || isMobile)}
+            <div
+              class="flex w-full items-stretch gap-1 rounded-sm text-foreground transition-colors {activeItemId ===
+              item.id
+                ? 'bg-surface-selected text-foreground'
+                : ''}"
             >
-              <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-              {@html item.icon}
-            </span>
-            {#if !collapsed || isMobile}
-              <span class="flex-1 text-left text-sm font-medium">
-                {item.label}
-              </span>
-
-              <!-- Children items -->
-              {#if item.children}
+              <button
+                onclick={() => handleItemClick(item)}
+                onkeydown={(e) => handleKeydown(e, item)}
+                class="flex min-w-0 flex-1 cursor-pointer items-center gap-3 rounded-sm px-3 py-2 text-left transition-colors hover:bg-surface-hover focus:bg-surface-hover focus:ring-2 focus:ring-primary/20 focus:outline-hidden"
+                aria-current={activeItemId === item.id ? 'page' : undefined}
+                tabindex="0"
+              >
+                <span
+                  class="size-5 flex-shrink-0"
+                  aria-hidden="true"
+                >
+                  <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+                  {@html item.icon}
+                </span>
+                <span class="min-w-0 flex-1 truncate text-left text-sm font-medium">
+                  {item.label}
+                </span>
+              </button>
+              <button
+                type="button"
+                onclick={(e) => handleToggleClick(e, item.id)}
+                class="flex flex-shrink-0 cursor-pointer items-center rounded-sm px-2 text-foreground transition-colors hover:bg-surface-hover focus:bg-surface-hover focus:ring-2 focus:ring-primary/20 focus:outline-hidden"
+                aria-expanded={isItemExpanded(item.id)}
+                aria-controls="{item.id}-submenu"
+                aria-label={isItemExpanded(item.id)
+                  ? `Collapse ${item.label} submenu`
+                  : `Expand ${item.label} submenu`}
+              >
                 <Icon
                   iconName="chevron-right"
                   size={16}
                   class="transition-all duration-200 {isItemExpanded(item.id) ? 'rotate-90' : ''}"
-                  ariaLabel="Expand/Collapse"
+                  ariaLabel=""
                 />
+              </button>
+            </div>
+          {:else}
+            <button
+              onclick={() => handleItemClick(item)}
+              onkeydown={(e) => handleKeydown(e, item)}
+              class="flex w-full cursor-pointer items-center gap-3 rounded-sm px-3 py-2 text-foreground transition-colors hover:bg-surface-hover focus:bg-surface-hover focus:ring-2 focus:ring-primary/20 focus:outline-hidden {activeItemId ===
+              item.id
+                ? 'bg-surface-selected text-foreground'
+                : ''}"
+              aria-current={activeItemId === item.id ? 'page' : undefined}
+              aria-describedby={collapsed && !isMobile ? `${item.id}-tooltip` : undefined}
+              tabindex="0"
+            >
+              <span
+                class="size-5 flex-shrink-0"
+                aria-hidden="true"
+              >
+                <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+                {@html item.icon}
+              </span>
+              {#if !collapsed || isMobile}
+                <span class="min-w-0 flex-1 truncate text-left text-sm font-medium">
+                  {item.label}
+                </span>
               {/if}
-            {/if}
-          </button>
+            </button>
+          {/if}
 
           <!-- Tooltip for collapsed state desktop only) -->
           {#if collapsed && !isMobile}
@@ -222,7 +255,8 @@
           <!-- Child items -->
           {#if item.children && isItemExpanded(item.id) && (!collapsed || isMobile)}
             <ul
-              class="mt-1 ml-2 space-y-1"
+              id="{item.id}-submenu"
+              class="border-strong bg-surface-elevated mt-1 ml-2 space-y-1 rounded-md p-1 shadow-sm"
               role="list"
               aria-label="{item.label} submenu"
             >
@@ -239,13 +273,13 @@
                     tabindex="0"
                   >
                     <span
-                      class="size-4"
+                      class="size-4 flex-shrink-0"
                       aria-hidden="true"
                     >
                       <!-- eslint-disable-next-line svelte/no-at-html-tags -->
                       {@html child.icon}
                     </span>
-                    <span class="flex-1 text-left">
+                    <span class="min-w-0 flex-1 truncate text-left">
                       {child.label}
                     </span>
                   </button>
