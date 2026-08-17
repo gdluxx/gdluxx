@@ -73,8 +73,7 @@ export function kindSwatchClasses(kind: BucketedKind): string {
       return 'bg-muted-foreground';
   }
 }
-ncept mock's treatment.
- */
+
 export function kindBadgeClasses(kind: BucketedKind): string {
   switch (kind) {
     case 'boolean':
