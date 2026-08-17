@@ -1,0 +1,186 @@
+{
+  "format": "gdluxx-gallery-dl-catalog",
+  "schemaVersion": 1,
+  "provenance": {
+    "galleryDlVersion": "1.32.9",
+    "sourceRef": "v1.32.9",
+    "sourceUrl": "https://codeberg.org/mikf/gallery-dl/raw/tag/v1.32.9/docs/configuration.rst",
+    "sourceSha256": "0000000000000000000000000000000000000000000000000000000000000",
+    "sitesSha256": null,
+    "generatedAt": "2026-08-17T00:00:00Z",
+    "generatorVersion": 1,
+    "optionCount": 10,
+    "siteCount": 0
+  },
+  "sections": [
+    { "id": "Extractor Options", "label": "Extractor", "count": 7 },
+    { "id": "Extractor-specific Options", "label": "Site-specific", "count": 3 }
+  ],
+  "options": [
+    {
+      "n": "extractor.*.path-extended",
+      "s": "Extractor Options",
+      "ln": 423,
+      "d": "On Windows, use extended-length paths prefixed with \\\\?\\ to work around the 260 characters path length limit.",
+      "t": [{ "k": "boolean", "x": "bool" }],
+      "def": { "p": true, "v": true }
+    },
+    {
+      "n": "extractor.ao3.formats",
+      "s": "Extractor-specific Options",
+      "ln": 1852,
+      "d": "Format(s) to download.",
+      "t": [
+        { "k": "string", "x": "string" },
+        { "k": "array", "x": "list of strings" }
+      ],
+      "def": { "p": true, "v": "pdf" },
+      "ex": ["\"azw3,epub,mobi,pdf,html\"", "[\"azw3\", \"epub\", \"mobi\", \"pdf\", \"html\"]"],
+      "site": "ao3"
+    },
+    {
+      "n": "extractor.[Danbooru].external",
+      "s": "Extractor-specific Options",
+      "ln": 2634,
+      "d": "For unavailable or restricted posts, follow the source and download from there if possible.",
+      "t": [{ "k": "boolean", "x": "bool" }],
+      "def": { "p": true, "v": false },
+      "fam": "Danbooru"
+    },
+    {
+      "n": "extractor.*.path-restrict",
+      "s": "Extractor Options",
+      "ln": 319,
+      "d": "A string of characters to be replaced with the value of path-replace or an object mapping invalid/unwanted characters, character sets, or character ranges to their replacements for generated path segment names.",
+      "t": [
+        { "k": "string", "x": "string" },
+        { "k": "object", "x": "object (`character` → `replacement character(s)`)" }
+      ],
+      "def": { "p": true, "v": "auto" },
+      "vals": {
+        "Special Values": [
+          {
+            "t": "\"auto\"",
+            "d": "Use characters from \"unix\" or \"windows\" depending on the local operating system"
+          },
+          { "t": "\"unix\"", "d": "\"/\"" },
+          {
+            "t": "\"windows\"",
+            "d": "\"\\\\\\\\|/<>:\\\"?*\" (https://learn.microsoft.com/en-us/windows/win32/fileio/naming-a-file)"
+          },
+          {
+            "t": "\"windows+\"",
+            "d": "{\"\\\\\": \"⧹\", \"|\": \"｜\", \"/\": \"⧸\", \"<\": \"＜\", \">\": \"＞\", \":\": \"：\", \"\\\"\": \"＂\", \"?\": \"？\", \"*\": \"＊\"} (replace characters not allowed by Windows with Unicode alternatives)"
+          },
+          {
+            "t": "\"ascii\"",
+            "d": "\"^0-9A-Za-z.\" (only ASCII digits, letters, underscores, and dots)"
+          },
+          {
+            "t": "\"ascii+\"",
+            "d": "\"^0-9@-[\\\\]-{ #-)+-.;=!}~\" (all ASCII characters except the ones not allowed by Windows)"
+          }
+        ]
+      },
+      "ex": [
+        "\"/!? (){}\"",
+        "{\"/\": \"_\", \"+\": \"_+_\", \"({[\": \"(\", \"]})\": \")\", \"a-z\": \"*\"}"
+      ]
+    },
+    {
+      "n": "extractor.*.parent-metadata",
+      "s": "Extractor Options",
+      "ln": 269,
+      "d": "",
+      "dterms": [
+        {
+          "t": "Forward a parent's metadata to its child extractors.",
+          "d": "If this is a string, add a parent's metadata to its children's to a field named after said string. For example with \"parent-metadata\": \"_p_\":"
+        }
+      ],
+      "t": [
+        { "k": "boolean", "x": "bool" },
+        { "k": "string", "x": "string" }
+      ],
+      "def": { "p": false, "x": "true\n    extractor.parent\n\"_parent\"\n    otherwise" }
+    },
+    {
+      "n": "extractor.*.parent",
+      "s": "Extractor Options",
+      "ln": 233,
+      "d": "Mark an extractor as a `parent` and enable * parent-directory * parent-metadata * parent-session * parent-skip for it by default.",
+      "t": [{ "k": "boolean", "x": "bool" }],
+      "def": {
+        "p": false,
+        "x": "true\n    [chevereto]  \n    erome        \n    [imagehost]  |\n    urlgalleries\nfalse\n    otherwise",
+        "m": [
+          {
+            "v": "true",
+            "pv": true,
+            "sites": ["[chevereto]", "erome", "[imagehost]", "urlgalleries"]
+          },
+          { "v": "false", "pv": false, "sites": [] }
+        ]
+      }
+    },
+    {
+      "n": "extractor.*.filename",
+      "s": "Extractor Options",
+      "ln": 99,
+      "d": "A Format String to generate filenames for downloaded files. If this is an object, it must contain Conditions mapping to the Format String to use. These Conditions are evaluated in the specified order until one evaluates to True. When none match, the \"\" entry or the extractor's default filename Format String is used. The available replacement keys depend on the extractor used. A list of keys for a specific one can be acquired by calling gallery-dl with the -K/--list-keywords command-line option. For example:",
+      "t": [
+        { "k": "custom", "x": "Format String" },
+        { "k": "object", "x": "object (Condition → Format String)" }
+      ],
+      "ex": [
+        "\"{manga}_c{chapter}_{page:>03}.{extension}\"",
+        "{\n    \"extension == 'mp4'\": \"{id}_video.{extension}\",\n    \"'nature' in title\" : \"{id}_{title}.{extension}\",\n    \"\"                  : \"{id}_default.{extension}\"\n}"
+      ],
+      "note": "Even if the value of the extension key is missing or None, it will be filled in later when the file download is starting. This key is therefore always available to provide a valid filename extension."
+    },
+    {
+      "n": "extractor.fanbox.fee-min",
+      "s": "Extractor-specific Options",
+      "ln": 3410,
+      "d": "Do not request API data or extract files from posts that require a fee (feeRequired) less than the specified amount.",
+      "t": [{ "k": "integer", "x": "integer" }],
+      "site": "fanbox"
+    },
+    {
+      "n": "extractor.*.directory",
+      "s": "Extractor Options",
+      "ln": 160,
+      "d": "A list of Format String(s) to generate the target directory path. If this is an object, it must contain Conditions mapping to the list of Format Strings to use. Each individual string in such a list represents a single path segment, which will be joined together and appended to the base-directory to form the complete target directory path.",
+      "t": [
+        { "k": "array", "x": "list of Format Strings" },
+        { "k": "object", "x": "object (Condition → Format Strings)" }
+      ],
+      "ex": [
+        "[\"{category}\", \"{manga}\", \"c{chapter} - {title}\"]",
+        "{\n    \"'nature' in content\": [\"Nature Pictures\"],\n    \"retweet_id != 0\"    : [\"{category}\", \"{user[name]}\", \"Retweets\"],\n    \"\"                   : [\"{category}\", \"{user[name]}\"]\n}"
+      ]
+    },
+    {
+      "n": "extractor.*.extension-map",
+      "s": "Extractor Options",
+      "ln": 434,
+      "d": "A JSON object mapping filename extensions to their replacements.",
+      "t": [{ "k": "object", "x": "object (`extension` → `replacement`)" }],
+      "def": {
+        "p": false,
+        "x": ".. code:: json\n\n    {\n        \"jpeg\": \"jpg\",\n        \"jpe\" : \"jpg\",\n        \"jfif\": \"jpg\",\n        \"jif\" : \"jpg\",\n        \"jfi\" : \"jpg\",\n        \"html\": \"htm\"\n    }"
+      }
+    }
+  ],
+  "customTypes": {
+    "Format String": "A Format String allows creating dynamic text by embedding metadata values directly into replacement fields marked by curly braces {...}."
+  },
+  "families": {
+    "Danbooru": {
+      "label": "Danbooru",
+      "members": ["danbooru", "atfbooru", "aibooru", "booruvar"],
+      "optionPrefix": "extractor.[Danbooru]."
+    }
+  },
+  "sites": []
+}
