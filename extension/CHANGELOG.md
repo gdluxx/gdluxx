@@ -1,5 +1,7 @@
 # Changelog
 
+# [1.10.0](https://github.com/gdluxx/gdluxx/compare/extension-v1.9.0...extension-v1.10.0) (2026-08-18)
+
 # [1.9.0](https://github.com/gdluxx/gdluxx/compare/extension-v1.8.0...extension-v1.9.0) (2026-08-16)
 
 
