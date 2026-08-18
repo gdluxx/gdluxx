@@ -27,4 +27,4 @@ static/bin/*
 
 # vitepress
 docs/.vitepress/cache
-vitepress/dist
+docs/.vitepress/dist
