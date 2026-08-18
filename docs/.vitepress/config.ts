@@ -34,6 +34,7 @@ export default defineConfig({
           { text: 'The App Settings', link: '/user-guide/settings-page' },
           { text: 'Site Rules', link: '/user-guide/site-rules' },
           { text: 'Keyword Info', link: '/user-guide/keyword-info' },
+          { text: 'Options Catalog', link: '/user-guide/options-catalog' },
           { text: 'Themes', link: '/user-guide/themes' },
         ],
       },
