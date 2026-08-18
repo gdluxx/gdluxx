@@ -67,6 +67,8 @@ export default defineConfig({
         items: [
           { text: 'App', link: '/screenshots/gdluxx' },
           { text: 'Extension', link: '/screenshots/extension' },
+          { text: 'Extension Round Trip', link: '/screenshots/extension-roundtrip' },
+          { text: 'First Download', link: '/screenshots/first-download' }
         ],
       },
     ],
