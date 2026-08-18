@@ -63,12 +63,13 @@ export default defineConfig({
         ],
       },
       {
-        text: 'Screenshots',
+        text: 'Visual Guides',
         items: [
-          { text: 'App', link: '/screenshots/gdluxx' },
-          { text: 'Extension', link: '/screenshots/extension' },
-          { text: 'Extension Round Trip', link: '/screenshots/extension-roundtrip' },
-          { text: 'First Download', link: '/screenshots/first-download' }
+          { text: 'Web App Tour', link: '/visual-guides/web-app' },
+          { text: 'Browser Extension Tour', link: '/visual-guides/browser-extension' },
+          { text: 'Your First Download', link: '/visual-guides/first-download' },
+          { text: 'Connect the Browser Extension', link: '/visual-guides/connect-extension' },
+          { text: 'Enable Cookie Sync', link: '/visual-guides/cookie-sync' },
         ],
       },
     ],

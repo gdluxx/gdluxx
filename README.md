@@ -7,18 +7,18 @@ gdluxx is nothing more than a self-hosted browser based gui for
 
 <summary><h3>Screenshots</h3></summary>
 
-|                        gdluxx - Main                         |                      gdluxx - Job Output                       |
-| :----------------------------------------------------------: | :------------------------------------------------------------: |
-| ![gdluxx main interface](docs/screenshots/gdluxx/1.home.png) | ![gdluxx job output](docs/screenshots/gdluxx/6.job-output.png) |
+|                          gdluxx - Main                          |                        gdluxx - Job Output                        |
+| :-------------------------------------------------------------: | :---------------------------------------------------------------: |
+| ![gdluxx main interface](docs/visual-guides/web-app/1.home.png) | ![gdluxx job output](docs/visual-guides/web-app/6.job-output.png) |
 
-|                          Extension - Main                          |                        Extension - Advanced Filtering                        |
-| :----------------------------------------------------------------: | :--------------------------------------------------------------------------: |
-| ![extension main interface](docs/screenshots/extension/1.main.png) | ![extension job output](docs/screenshots/extension/2.advanced-filtering.png) |
+|                               Extension - Main                               |                             Extension - Advanced Filtering                             |
+| :--------------------------------------------------------------------------: | :------------------------------------------------------------------------------------: |
+| ![extension main interface](docs/visual-guides/browser-extension/1.main.png) | ![extension job output](docs/visual-guides/browser-extension/2.advanced-filtering.png) |
 
-##### Additional screenshots
+##### Visual guides
 
-- [gdluxx screenshots](https://gdluxx.app/screenshots/gdluxx)
-- [extension screenshots](https://gdluxx.app/screenshots/extension)
+- [Web app tour](https://gdluxx.app/visual-guides/web-app)
+- [Browser extension tour](https://gdluxx.app/visual-guides/browser-extension)
 
 </details>
 
