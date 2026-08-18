@@ -173,7 +173,8 @@ top.
 ::: tip Note  
 Restoring a backup into the extension (rather than editing it here) shows a
 preview of what will change before anything is overwritten. That preview happens
-in the extension's own UI, not on this settings page. :::
+in the extension's own UI, not on this settings page.  
+:::
 
 Older extension versions synced separate "selector" and "substitution" backups
 instead of extraction profiles. If you still have any, they appear in a
