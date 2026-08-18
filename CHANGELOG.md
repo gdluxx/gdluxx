@@ -1,5 +1,22 @@
 # Changelog
 
+# [0.15.0](https://github.com/gdluxx/gdluxx/compare/v0.14.0...v0.15.0) (2026-08-18)
+
+
+### Bug Fixes
+
+* **catalog:** improve text contrast and row layout ([29baa28](https://github.com/gdluxx/gdluxx/commit/29baa2815841f8922377b6e02ba976d57a1a52a0))
+* **nav:** navigate on parent click and size submenus to content ([afec513](https://github.com/gdluxx/gdluxx/commit/afec513528402fab0c893a5c467bdad25c1e963a))
+* remove comment fragment ([6d8117d](https://github.com/gdluxx/gdluxx/commit/6d8117d03663f0391089f91aa7d77f0c16edba1a))
+
+
+### Features
+
+* **catalog:** add gallery-dl options catalog generation pipeline ([c5ab8ab](https://github.com/gdluxx/gdluxx/commit/c5ab8aba14863e6f1cd56402501476d1e822f094))
+* **catalog:** add generated options artifact and schema ([3fc41bf](https://github.com/gdluxx/gdluxx/commit/3fc41bfed77ff1e9fb6acf3855266c749ef2b489))
+* **catalog:** add searchable options catalog page /config/catalog ([f694662](https://github.com/gdluxx/gdluxx/commit/f694662f10b87d6d514cbcf04605cff9d0771503))
+* **config:** add one click catalog merge + config history ([e9ca8fc](https://github.com/gdluxx/gdluxx/commit/e9ca8fc5963f33678facd21b7ee5dbd539fe94c3))
+
 # [0.14.0](https://github.com/gdluxx/gdluxx/compare/v0.13.0...v0.14.0) (2026-08-16)
 
 
