@@ -33,6 +33,7 @@ export default defineConfig({
           { text: 'The Config Editor', link: '/user-guide/config-page' },
           { text: 'The App Settings', link: '/user-guide/settings-page' },
           { text: 'Site Rules', link: '/user-guide/site-rules' },
+          { text: 'Cookie Sync', link: '/user-guide/cookies' },
           { text: 'Keyword Info', link: '/user-guide/keyword-info' },
           { text: 'Options Catalog', link: '/user-guide/options-catalog' },
           { text: 'Themes', link: '/user-guide/themes' },
