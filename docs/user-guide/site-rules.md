@@ -37,8 +37,12 @@ Before creating a rule, you can see what sites gallery-dl supports.
 4. Start typing the site name in the "Site Pattern" box
 
 ::: info  
-gdluxx is nothing without gallery-dl. If gallery-dl doesn't support a site,
-gdluxx won't work on it.  
+gdluxx is nothing without gallery-dl. ~~If gallery-dl doesn't support a site,
+gdluxx won't work on it.~~
+
+EDIT: This isn't completely true any longer if you use the gdluxx extension.
+Check out the
+[Automatic Direct-Link Fallback](/extension/features.md#automatic-direct-link-fallback-send-tab-hotkey)  
 :::
 
 ### What You'll See
@@ -185,9 +189,9 @@ Example:
 
 This lets you fine-tune without recreating rules.
 
-A `--cookies` option in a site rule works the same way: it overrides any
-cookies gdluxx would otherwise auto-inject from a [synced domain](./cookies.md),
-just like a manual `--cookies` option would.
+A `--cookies` option in a site rule works the same way: it overrides any cookies
+gdluxx would otherwise auto-inject from a [synced domain](./cookies.md), just
+like a manual `--cookies` option would.
 
 ### Override Warnings
 
