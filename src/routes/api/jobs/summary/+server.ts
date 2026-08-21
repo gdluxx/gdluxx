@@ -11,11 +11,14 @@
 import { jobManager } from '$lib/server/jobs/jobManager';
 import type { RequestHandler } from './$types';
 import { createApiResponse, handleApiError } from '$lib/server/api-utils';
+import { attachOrigins } from '$lib/server/jobs/jobOrigins';
 
-export const GET: RequestHandler = async (): Promise<Response> => {
+export const GET: RequestHandler = async ({ locals }): Promise<Response> => {
   try {
     const summary = await jobManager.getJobsSummary();
-    const resp = createApiResponse(summary);
+    const recent = attachOrigins(summary.recent, locals.user?.id);
+
+    const resp = createApiResponse({ ...summary, recent });
     resp.headers.set('Cache-Control', 'no-store');
     return resp;
   } catch (error) {

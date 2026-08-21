@@ -12,8 +12,9 @@
   import { fade } from 'svelte/transition';
   import { onMount } from 'svelte';
   import { SvelteSet } from 'svelte/reactivity';
+  import { resolve } from '$app/paths';
   import { jobStore } from '$lib/stores/jobs.svelte';
-  import { Button, Info, ConfirmModal, Toggle, Tooltip } from '$lib/components/ui';
+  import { Button, Chip, Info, ConfirmModal, Toggle, Tooltip } from '$lib/components/ui';
   import { Icon } from '$lib/components/index';
   import type { JobListItem, JobStatus } from '$lib/types/jobs';
   import { getStatusColor, getStatusText } from '$lib/utils/jobStatus';
@@ -72,7 +73,6 @@
   const hasSelection = $derived(selectedCount > 0);
   const allSelected = $derived(selectedCount === jobs.length && jobs.length > 0);
 
-  // header job count label: "N jobs" (or "1 job") when unfiltered, "N of Total" when filtered
   const jobsHeaderLabel = $derived.by(() => {
     const total = jobStore.jobCount;
     const matching = jobStore.listTotal;
@@ -493,6 +493,27 @@
               </span>
             </button>
           </div>
+          {#if job.origin}
+            <div class="flex flex-shrink-0 items-center gap-1.5">
+              <Chip
+                label="Scheduled"
+                variant="outline-info"
+                size="sm"
+              />
+              {#if job.origin.scheduleId !== null}
+                <a
+                  href={resolve('/schedules')}
+                  class="max-w-32 truncate text-xs text-primary hover:underline"
+                >
+                  {job.origin.scheduleName}
+                </a>
+              {:else}
+                <span class="max-w-32 truncate text-xs text-muted-foreground">
+                  {job.origin.scheduleName}
+                </span>
+              {/if}
+            </div>
+          {/if}
           <button
             onclick={(e) => deleteJob(e, job.id)}
             class="ml-4 cursor-pointer rounded-sm p-1 text-error transition-colors hover:bg-error/50 hover:text-foreground focus:outline-none"

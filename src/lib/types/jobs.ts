@@ -10,6 +10,11 @@
 
 export type JobStatus = 'running' | 'success' | 'no_action' | 'error';
 
+export interface JobScheduleOrigin {
+  scheduleId: string | null;
+  scheduleName: string;
+}
+
 export interface JobListItem {
   id: string;
   url: string;
@@ -20,6 +25,7 @@ export interface JobListItem {
   downloadCount: number;
   skipCount: number;
   batchCount?: number;
+  origin?: JobScheduleOrigin;
 }
 
 export interface JobsSummary {
