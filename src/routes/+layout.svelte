@@ -14,18 +14,24 @@
   import { Icon, Sidebar, ThemeToggle } from '$lib/components';
   import { ToastContainer } from '$lib/components/toast';
   import { JobsIndicator, JobOutputModal } from '$lib/components/jobs';
+  import ScheduleNotificationsIndicator from '$lib/components/schedules/ScheduleNotificationsIndicator.svelte';
   import { onMount } from 'svelte';
   import { jobStore } from '$lib/stores/jobs.svelte';
+  import { scheduleNotificationStore } from '$lib/stores/scheduleNotifications.svelte';
   import icon from '$lib/assets/gdl-ico.png';
   import { goto } from '$app/navigation';
   import { navItems } from './navigation';
   import { page } from '$app/state';
+  import { browser } from '$app/environment';
   import { clientLogger as logger } from '$lib/client/logger';
   import {
     initializeThemeStore,
     initializeThemeStoreFallback,
     validateThemeSystem,
   } from '$lib/themes/themeStore';
+
+  // Governs both jobStore and scheduleNotificationStore's summary refresh.
+  const SUMMARY_POLL_INTERVAL_MS = 30_000;
 
   const { children, data } = $props();
 
@@ -79,6 +85,22 @@
       .then(() => jobStore.reconnectToRunningJobs())
       .catch((error) => logger.error('Failed to load jobs summary:', error));
 
+    if (data.user) {
+      void scheduleNotificationStore.loadSummary();
+    }
+
+    // Not on /auth/login: fetches there would 302 and throw on HTML every tick.
+    let summaryPollInterval: ReturnType<typeof setInterval> | undefined;
+    if (browser && data.user) {
+      summaryPollInterval = setInterval(() => {
+        jobStore
+          .loadSummary()
+          .then(() => jobStore.reconnectToRunningJobs())
+          .catch((error) => logger.error('Failed to poll jobs summary:', error));
+        void scheduleNotificationStore.loadSummary();
+      }, SUMMARY_POLL_INTERVAL_MS);
+    }
+
     const validation = validateThemeSystem();
     if (!validation.valid) {
       logger.warn('Theme system validation failed:', validation.errors);
@@ -110,6 +132,9 @@
 
     return () => {
       window.removeEventListener('resize', handleResize);
+      if (summaryPollInterval !== undefined) {
+        clearInterval(summaryPollInterval);
+      }
     };
   });
 
@@ -162,6 +187,9 @@
             <span class="text-xl font-semibold whitespace-nowrap text-foreground"> gdluxx </span>
           </div>
           <JobsIndicator />
+          {#if user}
+            <ScheduleNotificationsIndicator />
+          {/if}
         </div>
         <div class="mr-4 flex items-center">
           <ThemeToggle />
