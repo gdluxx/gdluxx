@@ -154,6 +154,14 @@
     border: none;
   }
 
+  /* The `flex` utility on the dialog overrides the UA's
+     `dialog:not([open]) { display: none }`, leaving closed dialogs in page
+     flow (invisible but space-taking and focusable). Restore the hidden
+     state; allow-discrete below defers the flip until the exit fade ends. */
+  .modal:not([open]) {
+    display: none;
+  }
+
   /* CSS @starting-style + allow-discrete drives both enter and exit through the top layer */
   .modal {
     opacity: 0;
