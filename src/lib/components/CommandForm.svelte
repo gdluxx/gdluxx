@@ -23,8 +23,10 @@
   } from '$lib/utils/commandOptions';
   import { browser } from '$app/environment';
   import { jobStore } from '$lib/stores/jobs.svelte';
+  import { toastStore } from '$lib/stores/toast';
   import { parseUrls } from '$lib/utils/parseUrls';
   import OptionsManager from './OptionsManager.svelte';
+  import ScheduleEditor from './schedules/ScheduleEditor.svelte';
 
   interface FormResult {
     overallSuccess: boolean;
@@ -57,11 +59,19 @@
   let siteRuleHints = $state<SiteConfigData[]>([]);
   let hintRequestId = 0;
 
+  let showScheduleEditor = $state(false);
+  let scheduleSeedUrls = $state<string[]>([]);
+  let scheduleSeedUserOptions = $state<Array<[string, string | number | boolean]>>([]);
+  let scheduleSeedExcludedOptions = $state<string[]>([]);
+
   const emptyValueOptions = $derived(getEmptyValueOptions(selectedOptions));
   const emptyValueOptionIds = $derived(new Set(emptyValueOptions.map((o) => o.id)));
   const mutuallyExclusiveActive = $derived(getActiveMutuallyExclusive(selectedOptions));
   const runDisabled = $derived(
     isLoading || $hasJsonLintErrors || !commandUrlsInput || emptyValueOptions.length > 0,
+  );
+  const scheduleDisabled = $derived(
+    $hasJsonLintErrors || !commandUrlsInput || emptyValueOptions.length > 0,
   );
   const commandPreview = $derived(
     buildCommandPreview(selectedOptions, parseUrls(commandUrlsInput), { maskSensitive: true }),
@@ -86,7 +96,6 @@
       }
     }
 
-    // Fetch user warning setting
     try {
       const response = await fetch('/api/settings/user');
       if (response.ok) {
@@ -95,7 +104,6 @@
       }
     } catch (error) {
       logger.error('Failed to fetch user settings:', error);
-      // Set false if fetch fails
       userWarningSetting = false;
     }
   });
@@ -182,7 +190,6 @@
     selectedOptions.clear();
     conflictWarnings.clear();
 
-    // First add site config options
     for (const config of siteConfigs) {
       const optionsEntries = Object.entries(config.options);
 
@@ -199,7 +206,6 @@
       }
     }
 
-    // Then add user options (overriding site configs)
     for (const [optionId, optionData] of userOptions) {
       if (typeof optionData === 'object' && optionData.source !== 'user') {
         continue;
@@ -303,13 +309,9 @@
     formError = null;
 
     try {
-      // Load site configs for URLs, shared with the typing hint lookup
       const siteConfigs = await lookupSiteConfigs(urls);
-
-      // Store siteConfigData for OptionsManager and the Site Rules panel
       siteConfigData = siteConfigs;
 
-      // Gate submission on user/site rule conflicts when the warning is enabled
       if (userWarningSetting && siteConfigs.length > 0) {
         const conflicts = detectConflicts(selectedOptions, siteConfigs);
         if (conflicts.length > 0) {
@@ -319,7 +321,6 @@
         }
       }
 
-      // Proceed with submission if no conflicts or if warning disabled
       await proceedWithJobSubmission(siteConfigs);
     } catch (error) {
       logger.error('Failed to start jobs:', error);
@@ -335,13 +336,11 @@
     detectedConflicts = [];
 
     try {
-      // Merging site rules with user options
       if (siteConfigs && siteConfigs.length > 0) {
         siteConfigData = siteConfigs;
         mergeSiteConfigsWithUserOptions(siteConfigs);
       }
 
-      // Submitting job
       const result = await jobStore.startJob(
         parseUrls(commandUrlsInput),
         selectedOptions,
@@ -364,6 +363,26 @@
 
   async function handleProceedAnyway() {
     await proceedWithJobSubmission(siteConfigData);
+  }
+
+  function openScheduleEditor() {
+    // Plain snapshots at open time, not live bindings: the editor owns its
+    // own form state from here on.
+    scheduleSeedUrls = parseUrls(commandUrlsInput);
+    scheduleSeedUserOptions = [...selectedOptions]
+      .filter(([, data]) => data.source === 'user')
+      .map(([id, data]): [string, string | number | boolean] => [id, data.value]);
+    scheduleSeedExcludedOptions = Array.from(dismissedSiteRuleOptions);
+    showScheduleEditor = true;
+  }
+
+  function handleScheduleSaved() {
+    showScheduleEditor = false;
+    toastStore.success('Schedule Created', 'Schedule saved successfully!');
+  }
+
+  function handleScheduleCancel() {
+    showScheduleEditor = false;
   }
 </script>
 
@@ -499,7 +518,7 @@
           ></pre>
         {#if siteRuleHints.length > 0 || siteConfigData.length > 0}
           <p class="mt-1 px-2 text-xs text-muted-foreground">
-            Site rules matched — their options will also be applied per URL; your selections take
+            Site rules matched. Their options will also be applied per URL; your selections take
             precedence.
           </p>
         {/if}
@@ -523,7 +542,7 @@
         title="Mutually exclusive flags"
         class="mx-4"
       >
-        {mutuallyExclusiveActive.map((o) => o.command).join(', ')}, generally conflict — gallery-dl
+        {mutuallyExclusiveActive.map((o) => o.command).join(', ')}, generally conflict, gallery-dl
         will honor only one behavior.
       </Info>
     {/if}
@@ -537,6 +556,16 @@
         variant="outline-primary"
       >
         Clear
+      </Button>
+
+      <Button
+        type="button"
+        onclick={openScheduleEditor}
+        disabled={scheduleDisabled}
+        class="mt-2 w-full"
+        variant="outline-primary"
+      >
+        Schedule
       </Button>
 
       <Button
@@ -591,8 +620,15 @@
         showConflictWarning = true;
       }
     }}
-    onSiteRuleSaved={() => {
-      // Handle site rule saved
-    }}
+  />
+
+  <ScheduleEditor
+    show={showScheduleEditor}
+    schedule={null}
+    seedUrls={scheduleSeedUrls}
+    seedUserOptions={scheduleSeedUserOptions}
+    seedExcludedOptions={scheduleSeedExcludedOptions}
+    onSaved={handleScheduleSaved}
+    onCancel={handleScheduleCancel}
   />
 </div>
