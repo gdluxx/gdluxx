@@ -111,6 +111,10 @@ class JobManager {
     }
   }
 
+  whenReady(): Promise<void> {
+    return this.initializationPromise;
+  }
+
   async createJob(url: string): Promise<string> {
     await this.initializationPromise;
     const id = uuidv4();
@@ -231,7 +235,6 @@ class JobManager {
       job.output = job.output.slice(-this.MAX_OUTPUT_LINES);
     }
 
-    // parse output for download and skip counts
     if (type === 'stdout' || type === 'stderr') {
       const previousDownloadCount = job.downloadCount;
       const previousSkipCount = job.skipCount;
@@ -247,7 +250,6 @@ class JobManager {
         logger.warn(`Failed to update job counts in database for job ${id}:`, error);
       }
 
-      // Send count updates to subscribers if counts updated
       if (job.downloadCount !== previousDownloadCount || job.skipCount !== previousSkipCount) {
         const encoder = new TextEncoder();
         const countUpdateData = `event: counts\ndata: ${JSON.stringify({
@@ -291,7 +293,6 @@ class JobManager {
       job.endTime = Date.now();
       job.exitCode = exitCode;
 
-      // Get status based on exit code and download counts
       if (exitCode === 0) {
         if (job.downloadCount > 0) {
           job.status = 'success';

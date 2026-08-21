@@ -8,11 +8,43 @@
  * as published by the Free Software Foundation.
  */
 
-import type { Handle } from '@sveltejs/kit';
+import type { Handle, ServerInit } from '@sveltejs/kit';
 import { json, redirect } from '@sveltejs/kit';
+import { building } from '$app/environment';
 import { auth } from '$lib/server/auth/better-auth';
 import { DATABASE_PATH, openDatabase } from '$lib/server/database';
+// Keep the better-auth import above the coordinator's: better-auth's module
+// side effect execs schema.sql, and the schedule managers in the coordinator's
+// import graph open the shared database handle at module scope.
+import { createScheduler, type Scheduler } from '$lib/server/schedules/coordinator';
+import { launchUrls } from '$lib/server/jobs/commandLauncher';
+import { jobManager } from '$lib/server/jobs/jobManager';
+import { userSettingsManager } from '$lib/server/userSettingsManager';
+import { getCurrentTimestamp } from '$lib/server/settingsManager';
 import { existsSync } from 'node:fs';
+
+export const init: ServerInit = async () => {
+  if (building) {
+    return;
+  }
+  // Survives dev-HMR re-execution of this module: a second init must not arm a
+  // second scan timer against the same database.
+  const g = globalThis as typeof globalThis & { __gdluxxScheduler?: Scheduler };
+  if (g.__gdluxxScheduler) {
+    return;
+  }
+  const scheduler = createScheduler({
+    now: getCurrentTimestamp,
+    whenReady: () => jobManager.whenReady(),
+    launch: launchUrls,
+    getMaxBatchUrls: (userId) => userSettingsManager.getUserSettings(userId).maxBatchUrls,
+  });
+  g.__gdluxxScheduler = scheduler;
+  scheduler.start().catch((error) => {
+    // eslint-disable-next-line no-console
+    console.error('Scheduler failed to start:', error);
+  });
+};
 
 const publicRoutes = ['/auth/login', '/auth/setup', '/api/auth'];
 const deniedAuthRoutes = new Set(['/api/auth/change-email', '/api/auth/list-sessions']);
@@ -68,7 +100,6 @@ export const handle: Handle = async ({ event, resolve }) => {
     return json({ error: 'Not found' }, { status: 404 });
   }
 
-  // Skip auth for browser extension API endpoint
   const isPublicRoute =
     publicRoutes.some((route) => event.url.pathname.startsWith(route)) ||
     isExtensionApiRoute(event.url.pathname);
@@ -103,11 +134,9 @@ export const handle: Handle = async ({ event, resolve }) => {
     }
   }
 
-  // CORS for browser extension endpoint
   if (isExtensionApiRoute(event.url.pathname)) {
     const origin = event.request.headers.get('origin');
 
-    // Determine appropriate Access-Control-Allow-Origin value
     const allowOrigin = origin || '*';
 
     if (event.request.method === 'OPTIONS') {
