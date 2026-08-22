@@ -23,6 +23,7 @@
   import IconExamples from './examples/IconExamples.svelte';
   import InfoExamples from './examples/InfoExamples.svelte';
   import ModalExamples from './examples/ModalExamples.svelte';
+  import OverflowMenuExamples from './examples/OverflowMenuExamples.svelte';
   import PageLayoutExamples from './examples/PageLayoutExamples.svelte';
   import SpinnerExamples from './examples/SpinnerExamples.svelte';
   import ToggleExamples from './examples/ToggleExamples.svelte';
@@ -95,6 +96,8 @@
       <InfoExamples />
     {:else if activeKey === 'modal'}
       <ModalExamples />
+    {:else if activeKey === 'overflow-menu'}
+      <OverflowMenuExamples />
     {:else if activeKey === 'page-layout'}
       <PageLayoutExamples />
     {:else if activeKey === 'spinner'}

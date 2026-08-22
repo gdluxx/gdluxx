@@ -18,6 +18,7 @@ export const componentCatalog = [
   { key: 'icon', label: 'Icon' },
   { key: 'info', label: 'Info' },
   { key: 'modal', label: 'Modal' },
+  { key: 'overflow-menu', label: 'OverflowMenu' },
   { key: 'page-layout', label: 'PageLayout' },
   { key: 'spinner', label: 'Spinner' },
   { key: 'toggle', label: 'Toggle' },
