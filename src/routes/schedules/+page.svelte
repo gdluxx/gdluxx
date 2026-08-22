@@ -15,22 +15,21 @@
     Chip,
     Modal,
     ConfirmModal,
-    Toggle,
     Spinner,
     EmptyState,
     Info,
   } from '$lib/components/ui';
   import { SvelteSet } from 'svelte/reactivity';
   import ScheduleEditor from '$lib/components/schedules/ScheduleEditor.svelte';
+  import ScheduleCard from '$lib/components/schedules/ScheduleCard.svelte';
   import { toastStore } from '$lib/stores/toast';
+  import { OUTCOME_LABELS, outcomeChipVariant } from '$lib/utils/scheduleOutcome';
   import type { PageData } from './$types';
   import type {
     ScheduleSummary,
     ScheduleDetail,
     ScheduleRunItem,
     ScheduleRunResponse,
-    ScheduleStatus,
-    ScheduleRunOutcome,
   } from '$lib/types/schedules';
 
   const { data } = $props<{ data: PageData }>();
@@ -53,45 +52,30 @@
   let historyRuns = $state<ScheduleRunItem[]>([]);
   let historyLoading = $state(false);
 
+  // Pre-mount value is never read: ScheduleCard gates every use of `now` on
+  // `mounted`, so Date.now() only ever runs client-side, inside the effect
+  // below.
+  let now = $state(0);
+  let mounted = $state(false);
+
+  $effect(() => {
+    mounted = true;
+    now = Date.now();
+    const interval = setInterval(() => {
+      now = Date.now();
+    }, 60_000);
+    return () => clearInterval(interval);
+  });
+
   function formatTimestamp(ms: number | null): string {
     return ms === null ? 'Never' : new Date(ms).toLocaleString();
   }
-
-  const OUTCOME_LABELS: Record<ScheduleRunOutcome, string> = {
-    dispatching: 'Dispatching',
-    launched: 'Launched',
-    partial: 'Partial',
-    launch_failed: 'Launch failed',
-    skipped_overlap: 'Skipped (overlap)',
-    skipped_misfire: 'Skipped (misfire)',
-  };
-
-  const OUTCOME_VARIANTS: Record<ScheduleRunOutcome, 'success' | 'warning' | 'danger' | 'info'> = {
-    dispatching: 'info',
-    launched: 'success',
-    partial: 'warning',
-    launch_failed: 'danger',
-    skipped_overlap: 'warning',
-    skipped_misfire: 'warning',
-  };
 
   const TRIGGER_LABELS: Record<ScheduleRunItem['trigger'], string> = {
     scheduled: 'Scheduled',
     catch_up: 'Catch-up',
     manual: 'Manual',
     recovery: 'Recovery',
-  };
-
-  const STATUS_LABELS: Record<ScheduleStatus, string> = {
-    active: 'Active',
-    paused: 'Paused',
-    completed: 'Completed',
-  };
-
-  const STATUS_VARIANTS: Record<ScheduleStatus, 'success' | 'warning' | 'info'> = {
-    active: 'success',
-    paused: 'warning',
-    completed: 'info',
   };
 
   async function refreshList(): Promise<void> {
@@ -179,7 +163,11 @@
               }
             : s,
         );
-        toastStore.success('Success', nextChecked ? 'Schedule resumed' : 'Schedule paused');
+        if (detail.status === 'completed') {
+          toastStore.success('Success', 'No future occurrences — schedule is complete');
+        } else {
+          toastStore.success('Success', nextChecked ? 'Schedule resumed' : 'Schedule paused');
+        }
       } else {
         toastStore.error('Update failed', payload.error ?? 'Failed to update schedule');
       }
@@ -291,76 +279,6 @@
   }
 </script>
 
-{#snippet statusChip(status: ScheduleStatus)}
-  <Chip
-    label={STATUS_LABELS[status]}
-    variant={STATUS_VARIANTS[status]}
-    size="sm"
-  />
-{/snippet}
-
-{#snippet lastRunInfo(schedule: ScheduleSummary)}
-  {#if schedule.latestRun}
-    <div class="flex flex-col gap-1">
-      <Chip
-        label={OUTCOME_LABELS[schedule.latestRun.outcome]}
-        variant={OUTCOME_VARIANTS[schedule.latestRun.outcome]}
-        size="sm"
-      />
-      <span class="text-xs text-muted-foreground">
-        {formatTimestamp(schedule.latestRun.createdAt)}
-      </span>
-    </div>
-  {:else}
-    <span class="text-sm text-muted-foreground">Never run</span>
-  {/if}
-{/snippet}
-
-{#snippet rowActions(schedule: ScheduleSummary)}
-  <div class="flex flex-wrap items-center gap-2">
-    <Toggle
-      checked={schedule.status === 'active'}
-      disabled={schedule.status === 'completed'}
-      onchange={(checked) => handleToggleStatus(schedule, checked)}
-      variant="primary"
-      size="sm"
-      ariaLabel={schedule.status === 'active' ? 'Pause schedule' : 'Resume schedule'}
-    />
-    <Button
-      size="sm"
-      variant="outline-primary"
-      onclick={() => handleRunNow(schedule)}
-      loading={runningIds.has(schedule.id)}
-      disabled={runningIds.has(schedule.id)}
-    >
-      Run now
-    </Button>
-    <Button
-      size="sm"
-      variant="outline-primary"
-      onclick={() => openEditModal(schedule)}
-      loading={editorLoadingId === schedule.id}
-      disabled={editorLoadingId === schedule.id}
-    >
-      Edit
-    </Button>
-    <Button
-      size="sm"
-      variant="outline-primary"
-      onclick={() => openHistory(schedule)}
-    >
-      History
-    </Button>
-    <Button
-      size="sm"
-      variant="outline-danger"
-      onclick={() => openDeleteConfirm(schedule)}
-    >
-      Delete
-    </Button>
-  </div>
-{/snippet}
-
 <PageLayout
   title="Schedules"
   description="Automate recurring gallery-dl downloads."
@@ -384,7 +302,7 @@
     </svg>
   {/snippet}
 
-  <div class="cursor-default">
+  <div class="data-list @container">
     <div class="data-list-header">
       <div class="mb-3 flex items-center justify-between">
         <p class="text-sm font-semibold text-accent-foreground">
@@ -416,55 +334,20 @@
         </Button>
       </EmptyState>
     {:else}
-      <div class="hidden overflow-x-auto md:block">
-        <table class="w-full text-left text-sm">
-          <thead>
-            <tr
-              class="border-b-strong text-xs font-medium tracking-wide text-muted-foreground uppercase"
-            >
-              <th class="px-3 py-2">Name</th>
-              <th class="px-3 py-2">Status</th>
-              <th class="px-3 py-2">Recurrence</th>
-              <th class="px-3 py-2">Next run</th>
-              <th class="px-3 py-2">Last run</th>
-              <th class="px-3 py-2">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {#each schedules as schedule (schedule.id)}
-              <tr class="border-b-strong">
-                <td class="px-3 py-3 font-medium text-primary">{schedule.name}</td>
-                <td class="px-3 py-3">{@render statusChip(schedule.status)}</td>
-                <td class="px-3 py-3 text-foreground">{schedule.recurrenceSummary}</td>
-                <td class="px-3 py-3 text-foreground"
-                  >{formatTimestamp(schedule.nextOccurrenceAt)}</td
-                >
-                <td class="px-3 py-3">{@render lastRunInfo(schedule)}</td>
-                <td class="px-3 py-3">{@render rowActions(schedule)}</td>
-              </tr>
-            {/each}
-          </tbody>
-        </table>
-      </div>
-
-      <div class="md:hidden">
-        {#each schedules as schedule (schedule.id)}
-          <div class="data-list-item">
-            <div class="mb-2 flex items-center justify-between gap-2">
-              <h3 class="text-base font-medium text-primary">{schedule.name}</h3>
-              {@render statusChip(schedule.status)}
-            </div>
-            <p class="mb-1 text-sm text-foreground">{schedule.recurrenceSummary}</p>
-            <p class="mb-1 text-xs text-muted-foreground">
-              Next run: {formatTimestamp(schedule.nextOccurrenceAt)}
-            </p>
-            <div class="mb-3 flex items-center gap-2 text-xs text-muted-foreground">
-              Last run: {@render lastRunInfo(schedule)}
-            </div>
-            {@render rowActions(schedule)}
-          </div>
-        {/each}
-      </div>
+      {#each schedules as schedule (schedule.id)}
+        <ScheduleCard
+          {schedule}
+          {now}
+          {mounted}
+          running={runningIds.has(schedule.id)}
+          editorLoading={editorLoadingId === schedule.id}
+          onToggleStatus={(checked) => handleToggleStatus(schedule, checked)}
+          onRunNow={() => handleRunNow(schedule)}
+          onEdit={() => openEditModal(schedule)}
+          onHistory={() => openHistory(schedule)}
+          onDelete={() => openDeleteConfirm(schedule)}
+        />
+      {/each}
     {/if}
   </div>
 
@@ -521,7 +404,7 @@
               <div class="mb-1 flex items-center justify-between gap-2">
                 <Chip
                   label={OUTCOME_LABELS[run.outcome]}
-                  variant={OUTCOME_VARIANTS[run.outcome]}
+                  variant={outcomeChipVariant(run.outcome)}
                   size="sm"
                 />
                 <span class="text-xs text-muted-foreground"
