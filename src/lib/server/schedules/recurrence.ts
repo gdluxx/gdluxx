@@ -261,25 +261,37 @@ export function listMissedOccurrences(
   return { occurrences, truncated };
 }
 
-export function describeRecurrence(recurrence: Recurrence, timezone: string): string {
+function formatOnceDate(startDate: string): string {
+  return Temporal.PlainDate.from(startDate).toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+}
+
+export function describeRecurrence(recurrence: Recurrence, startDate?: string): string {
   switch (recurrence.kind) {
-    case 'once':
-      return `Once at ${recurrence.time} (${timezone})`;
+    case 'once': {
+      if (startDate === undefined) {
+        throw new Error("describeRecurrence: startDate is required for 'once' recurrences");
+      }
+      return `Once on ${formatOnceDate(startDate)} at ${recurrence.time}`;
+    }
     case 'interval': {
       const unit = recurrence.unit === 'minutes' ? 'minute' : 'hour';
       const plural = recurrence.every === 1 ? unit : `${unit}s`;
       return `Every ${recurrence.every} ${plural}`;
     }
     case 'daily':
-      return `Daily at ${recurrence.time} (${timezone})`;
+      return `Daily at ${recurrence.time}`;
     case 'weekly': {
       const labels = [...recurrence.weekdays]
         .sort((a, b) => a - b)
         .map((day) => WEEKDAY_LABELS[day - 1])
         .join(', ');
-      return `Weekly on ${labels} at ${recurrence.time} (${timezone})`;
+      return `Weekly on ${labels} at ${recurrence.time}`;
     }
     case 'monthly':
-      return `Monthly on day ${recurrence.dayOfMonth} at ${recurrence.time} (${timezone})`;
+      return `Monthly on day ${recurrence.dayOfMonth} at ${recurrence.time}`;
   }
 }

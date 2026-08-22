@@ -41,7 +41,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
     return createApiResponse({
       occurrences,
-      recurrenceSummary: describeRecurrence(input.recurrence, input.timezone),
+      recurrenceSummary: describeRecurrence(input.recurrence, input.startDate),
     });
   } catch (error) {
     return handleApiError(error as Error);

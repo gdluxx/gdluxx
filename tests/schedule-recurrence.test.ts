@@ -327,21 +327,21 @@ describe('exhausted recurrences', () => {
 
 describe('describeRecurrence', () => {
   test('produces a human-readable summary per kind', () => {
-    expect(
-      describeRecurrence({ kind: 'interval', time: '00:00', unit: 'hours', every: 6 }, 'UTC'),
-    ).toBe('Every 6 hours');
-    expect(
-      describeRecurrence({ kind: 'interval', time: '00:00', unit: 'hours', every: 1 }, 'UTC'),
-    ).toBe('Every 1 hour');
-    expect(describeRecurrence({ kind: 'daily', time: '02:30' }, 'America/New_York')).toBe(
-      'Daily at 02:30 (America/New_York)',
+    expect(describeRecurrence({ kind: 'interval', time: '00:00', unit: 'hours', every: 6 })).toBe(
+      'Every 6 hours',
     );
-    expect(describeRecurrence({ kind: 'weekly', time: '08:00', weekdays: [5, 1, 3] }, 'UTC')).toBe(
-      'Weekly on Mon, Wed, Fri at 08:00 (UTC)',
+    expect(describeRecurrence({ kind: 'interval', time: '00:00', unit: 'hours', every: 1 })).toBe(
+      'Every 1 hour',
     );
-    expect(describeRecurrence({ kind: 'monthly', time: '08:00', dayOfMonth: 31 }, 'UTC')).toBe(
-      'Monthly on day 31 at 08:00 (UTC)',
+    expect(describeRecurrence({ kind: 'daily', time: '02:30' })).toBe('Daily at 02:30');
+    expect(describeRecurrence({ kind: 'weekly', time: '08:00', weekdays: [5, 1, 3] })).toBe(
+      'Weekly on Mon, Wed, Fri at 08:00',
     );
-    expect(describeRecurrence({ kind: 'once', time: '08:00' }, 'UTC')).toBe('Once at 08:00 (UTC)');
+    expect(describeRecurrence({ kind: 'monthly', time: '08:00', dayOfMonth: 31 })).toBe(
+      'Monthly on day 31 at 08:00',
+    );
+    expect(describeRecurrence({ kind: 'once', time: '08:00' }, '2026-08-20')).toBe(
+      'Once on Aug 20, 2026 at 08:00',
+    );
   });
 });

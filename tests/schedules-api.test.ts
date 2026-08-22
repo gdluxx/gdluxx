@@ -233,7 +233,7 @@ describe('GET/POST /api/schedules', () => {
     expect(row.name).toBe('mine');
     expect(row).not.toHaveProperty('commandSource');
     expect(row).not.toHaveProperty('recurrence');
-    expect(row.recurrenceSummary).toBe('Daily at 09:00 (UTC)');
+    expect(row.recurrenceSummary).toBe('Daily at 09:00');
     expect(row.latestRun).toBeNull();
   });
 

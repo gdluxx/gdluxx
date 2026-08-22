@@ -39,7 +39,7 @@ export const GET: RequestHandler = async ({ locals }) => {
       id: schedule.id,
       name: schedule.name,
       status: schedule.status,
-      recurrenceSummary: describeRecurrence(schedule.recurrence, schedule.timezone),
+      recurrenceSummary: describeRecurrence(schedule.recurrence, schedule.startDate),
       timezone: schedule.timezone,
       nextOccurrenceAt: schedule.nextOccurrenceAt,
       lastOccurrenceAt: schedule.lastOccurrenceAt,

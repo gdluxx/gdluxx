@@ -671,9 +671,12 @@
     </Field>
 
     <div class="rounded-sm bg-surface p-4 border-strong">
-      <p class="mb-2 text-sm font-medium text-foreground">
+      <p class="mb-1 text-sm font-medium text-foreground">
         {previewSummary || 'Recurrence preview'}
       </p>
+      {#if timezone}
+        <p class="mb-2 text-xs text-muted-foreground">Times shown in {timezone}</p>
+      {/if}
       {#if previewOccurrences.length > 0}
         <ul class="space-y-1 text-sm text-muted-foreground">
           {#each previewOccurrences as occurrence (occurrence)}
