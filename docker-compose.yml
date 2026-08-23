@@ -12,6 +12,7 @@ services:
     environment:
       - AUTH_SECRET=${AUTH_SECRET}
       - ORIGIN=${ORIGIN:-http://localhost:7755}
+      - USE_SECURE_COOKIES=${USE_SECURE_COOKIES:-}
       # - DOWNLOAD_PATH=/app/downloads
     restart: unless-stopped
     deploy:

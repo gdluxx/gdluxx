@@ -9,7 +9,7 @@
  */
 
 import type { Handle } from '@sveltejs/kit';
-import { json, redirect } from '@sveltejs/kit';
+import { isRedirect, json, redirect } from '@sveltejs/kit';
 import { auth } from '$lib/server/auth/better-auth';
 import { DATABASE_PATH, openDatabase } from '$lib/server/database';
 import { existsSync } from 'node:fs';
@@ -93,7 +93,7 @@ export const handle: Handle = async ({ event, resolve }) => {
         event.locals.session = session as any;
         event.locals.user = session.user;
       } catch (error) {
-        if (error instanceof Response && error.status === 302) {
+        if (isRedirect(error)) {
           throw error;
         }
         // eslint-disable-next-line no-console

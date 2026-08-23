@@ -53,7 +53,10 @@ Then update your compose `volumes` to: `- ~/Documents/gdluxx:/app/data`
 5.  Configure your `ORIGIN`.
 
     The `ORIGIN` environment variable is **mandatory**. It tells _gdluxx_ what
-    domain to expect for all requests. This helps prevent CSRF issues.
+    domain to expect for all requests. This helps prevent CSRF issues, and its
+    scheme also decides whether the session cookie is marked `Secure` — an
+    `http://` ORIGIN issues plain cookies, an `https://` ORIGIN issues `Secure`
+    ones.
 
     In your `.env` file, set `ORIGIN` to the URL you will use to access the
     application.
@@ -84,6 +87,9 @@ Then update your compose `volumes` to: `- ~/Documents/gdluxx:/app/data`
         environment:
           - AUTH_SECRET=${AUTH_SECRET}
           - ORIGIN=${ORIGIN:-http://localhost:7755}
+          # Normally leave this unset — the right value is chosen automatically
+          # based on whether ORIGIN starts with http:// or https://
+          - USE_SECURE_COOKIES=${USE_SECURE_COOKIES:-}
         restart: unless-stopped
         deploy:
           restart_policy:

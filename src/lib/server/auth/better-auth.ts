@@ -75,18 +75,20 @@ function isIpAddress(str: string): boolean {
   return ipv4Regex.test(schemeRemoved);
 }
 
-// Build trusted origins with APP_BASE_URL support
-// NOTE: This affects Better-Auth validation only, NOT SvelteKit CSRF
-// SvelteKit CSRF uses the ORIGIN environment variable instead
+function resolveAppBaseURL(): string | undefined {
+  return process.env.APP_BASE_URL || process.env.ORIGIN || undefined;
+}
+
+// NOTE: ORIGIN feeds both this Better-Auth validation and SvelteKit's own
+// CSRF check; the two are enforced independently
 function buildTrustedOrigins(): string[] {
   const host: string | undefined = process.env.HOST;
   const port: string | undefined = process.env.PORT;
-  const baseURL: string | undefined = process.env.APP_BASE_URL;
+  const baseURL: string | undefined = resolveAppBaseURL();
   const trustedOrigins: string[] = [];
 
-  // If APP_BASE_URL is explicitly set
   if (baseURL) {
-    trustedOrigins.push(baseURL);
+    trustedOrigins.push(new URL(baseURL).origin);
   }
 
   // If env variables aren't during build time
@@ -126,39 +128,23 @@ function buildTrustedOrigins(): string[] {
   return uniqueOrigins;
 }
 
-// Env based config
-function getSecurityConfig() {
-  const isDev = process.env.NODE_ENV === 'development';
-  const useSecureCookiesEnv = process.env.USE_SECURE_COOKIES;
-  const trustHost = process.env.AUTH_TRUST_HOST === 'true';
-
-  // Boolean conversion for USE_SECURE_COOKIES
-  let shouldUseSecureCookies: boolean;
-
-  if (useSecureCookiesEnv === 'true') {
-    shouldUseSecureCookies = true;
-  } else if (useSecureCookiesEnv === 'false') {
-    shouldUseSecureCookies = false;
-  } else {
-    // Default behavior insecure in dev, secure in prod
-    shouldUseSecureCookies = !isDev;
+// undefined defers to Better Auth: Secure derives from the baseURL scheme,
+// or from NODE_ENV === 'production' when no baseURL resolves
+function resolveSecureCookies(): boolean | undefined {
+  const value: string | undefined = process.env.USE_SECURE_COOKIES;
+  if (value === 'true') {
+    return true;
   }
-
-  return {
-    useSecureCookies: shouldUseSecureCookies,
-    trustHost: trustHost || isDev,
-    cookieOptions: {
-      secure: shouldUseSecureCookies,
-      sameSite: shouldUseSecureCookies ? ('none' as const) : ('lax' as const),
-      httpOnly: true,
-    },
-  };
+  if (value === 'false') {
+    return false;
+  }
+  return undefined;
 }
 
 export const auth = betterAuth({
   database: db,
   secret: process.env.AUTH_SECRET || 'fallback-secret-please-set-AUTH_SECRET-in-production',
-  baseURL: process.env.APP_BASE_URL,
+  baseURL: resolveAppBaseURL(),
   emailAndPassword: {
     enabled: true,
     autoSignIn: true,
@@ -172,10 +158,7 @@ export const auth = betterAuth({
   session: {
     expiresIn: 60 * 60 * 24 * 7, // 7 days
     updateAge: 60 * 60 * 24, // 1 day
-    cookieOptions: getSecurityConfig().cookieOptions,
   },
-  useSecureCookies: getSecurityConfig().useSecureCookies,
-  trustHost: getSecurityConfig().trustHost,
   // Better-Auth specific trusted origins
   trustedOrigins: buildTrustedOrigins(),
   plugins: [
@@ -190,6 +173,7 @@ export const auth = betterAuth({
     database: {
       generateId: (): string => uuidv4(),
     },
+    useSecureCookies: resolveSecureCookies(),
   },
 });
 
