@@ -35,11 +35,14 @@
 
     siteConfigData, // eslint-disable-line prefer-const
     userWarningSetting, // eslint-disable-line prefer-const
-    commandUrlsInput, // eslint-disable-line prefer-const
-    runDisabled, // eslint-disable-line prefer-const
-    runFormId, // eslint-disable-line prefer-const
-    isRunning, // eslint-disable-line prefer-const
+    commandUrlsInput = '', // eslint-disable-line prefer-const
+    runDisabled = false, // eslint-disable-line prefer-const
+    runFormId = '', // eslint-disable-line prefer-const
+    isRunning = false, // eslint-disable-line prefer-const
     emptyValueOptionIds, // eslint-disable-line prefer-const
+    showSubmit = true, // eslint-disable-line prefer-const
+    showSaveAsSiteRule = true, // eslint-disable-line prefer-const
+    idPrefix = 'inline-option', // eslint-disable-line prefer-const
 
     onConflictDetected, // eslint-disable-line prefer-const
     onSiteRuleSaved, // eslint-disable-line prefer-const
@@ -50,11 +53,14 @@
     dismissedSiteRuleOptions: Set<string>;
     siteConfigData: SiteConfigData[];
     userWarningSetting: boolean;
-    commandUrlsInput: string;
-    runDisabled: boolean;
-    runFormId: string;
-    isRunning: boolean;
+    commandUrlsInput?: string;
+    runDisabled?: boolean;
+    runFormId?: string;
+    isRunning?: boolean;
     emptyValueOptionIds: Set<string>;
+    showSubmit?: boolean;
+    showSaveAsSiteRule?: boolean;
+    idPrefix?: string;
     onConflictDetected?: (conflicts: Conflict[]) => void;
     onSiteRuleSaved?: () => void;
   } = $props();
@@ -64,7 +70,6 @@
   let isAccordionOpen = $state(false);
   let showSaveRuleDialog = $state(false);
 
-  // category accordion states closed by default
   $effect(() => {
     const newAccordionStates = new Map(categoryAccordionStates);
     let hasChanges = false;
@@ -366,7 +371,7 @@
                   class="flex items-start gap-3 rounded bg-surface-elevated p-2 transition-colors border-strong"
                 >
                   <Toggle
-                    id="inline-option-{option.id}"
+                    id="{idPrefix}-{option.id}"
                     checked={selectedOptions.has(option.id)}
                     onchange={() => toggleOption(option)}
                     variant="primary"
@@ -374,7 +379,7 @@
                   />
                   <div class="min-w-0 flex-1">
                     <label
-                      for="inline-option-{option.id}"
+                      for="{idPrefix}-{option.id}"
                       class="cursor-pointer"
                     >
                       <span class="font-medium text-foreground">
@@ -470,7 +475,7 @@
 {#if selectedOptions.size > 0}
   <div class="m-4 rounded-sm bg-surface-elevated p-2 border-strong">
     <!-- Optional to save as Site Rule -->
-    {#if canSaveAsSiteRule()}
+    {#if showSaveAsSiteRule && canSaveAsSiteRule()}
       <div class="save-site-rule mx-4 mt-4 mb-4 rounded-sm bg-surface p-4 border-strong">
         <div class="flex items-center justify-between">
           <div class="flex flex-col">
@@ -527,15 +532,17 @@
           >
             Clear All
           </Button>
-          <Button
-            type="submit"
-            form={runFormId}
-            disabled={runDisabled}
-            variant="primary"
-            size="sm"
-          >
-            {isRunning ? 'Running…' : 'Run'}
-          </Button>
+          {#if showSubmit}
+            <Button
+              type="submit"
+              form={runFormId}
+              disabled={runDisabled}
+              variant="primary"
+              size="sm"
+            >
+              {isRunning ? 'Running…' : 'Run'}
+            </Button>
+          {/if}
         </div>
       </div>
       <div class="cursor-default space-y-4">
@@ -593,7 +600,7 @@
 {/if}
 
 <!-- Save rule modal -->
-{#if showSaveRuleDialog}
+{#if showSaveAsSiteRule && showSaveRuleDialog}
   <SiteRuleModal
     show={showSaveRuleDialog}
     options={getUserSelectedOptions()}

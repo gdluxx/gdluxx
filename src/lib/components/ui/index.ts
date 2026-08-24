@@ -17,6 +17,7 @@ export { default as Field } from './Field.svelte';
 export { default as FileDropzone } from './FileDropzone.svelte';
 export { default as Info } from './Info.svelte';
 export { default as Modal } from './Modal.svelte';
+export { default as OverflowMenu } from './OverflowMenu.svelte';
 export { default as PageLayout } from './PageLayout.svelte';
 export { default as Spinner } from './Spinner.svelte';
 export { default as Toggle } from './Toggle.svelte';

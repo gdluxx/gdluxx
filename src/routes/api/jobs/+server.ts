@@ -13,10 +13,11 @@ import type { RequestHandler } from './$types';
 import { createApiError, createApiResponse, handleApiError } from '$lib/server/api-utils';
 import { parseJson } from '$lib/server/validation/zod';
 import { jobsDeleteSchema, jobsQuerySchema } from '$lib/server/validation/jobs-validation';
+import { attachOrigins } from '$lib/server/jobs/jobOrigins';
 
 const QUERY_KEYS = ['limit', 'offset', 'status', 'sort', 'dir'] as const;
 
-export const GET: RequestHandler = async ({ url }): Promise<Response> => {
+export const GET: RequestHandler = async ({ url, locals }): Promise<Response> => {
   try {
     const raw: Record<string, string> = {};
     for (const key of QUERY_KEYS) {
@@ -41,7 +42,9 @@ export const GET: RequestHandler = async ({ url }): Promise<Response> => {
       dir,
     });
 
-    const resp = createApiResponse({ jobs, total, limit, offset });
+    const enrichedJobs = attachOrigins(jobs, locals.user?.id);
+
+    const resp = createApiResponse({ jobs: enrichedJobs, total, limit, offset });
     resp.headers.set('Cache-Control', 'no-store');
     return resp;
   } catch (error) {

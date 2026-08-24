@@ -56,11 +56,11 @@ export async function executeGalleryDlCommand(
   cliArgs: string[],
   options?: GalleryDlCommandOptions,
 ): Promise<CommandExecutionResult> {
+  let createdJobId: string | undefined;
   try {
-    // Create job
     const jobId = await jobManager.createJob(url);
+    createdJobId = jobId;
 
-    // Build process arguments: [cliOptions..., --config, configPath, url]
     const argsWithCookies = await withCookieArgs([url], cliArgs);
     const processArgs = [...argsWithCookies, '--config', PATHS.CONFIG_FILE, url];
 
@@ -69,7 +69,6 @@ export async function executeGalleryDlCommand(
       redactSensitiveArgs(processArgs),
     );
 
-    // Spawn PTY process
     const ptyProcess: IPty = spawn(PATHS.BIN_FILE, processArgs, {
       name: TERMINAL.NAME,
       cols: TERMINAL.COLS,
@@ -78,16 +77,13 @@ export async function executeGalleryDlCommand(
       env: { ...process.env, NO_COLOR: '0', TERM: TERMINAL.NAME },
     });
 
-    // Set job process
     await jobManager.setJobProcess(jobId, ptyProcess);
     await jobManager.addOutput(jobId, 'info', `Process started with PID: ${ptyProcess.pid}`);
 
-    // Set up data handler
     ptyProcess.onData(async (data: string): Promise<void> => {
       await jobManager.addOutput(jobId, 'stdout', data);
     });
 
-    // Set up exit handler
     ptyProcess.onExit(
       async ({
         exitCode,
@@ -115,7 +111,7 @@ export async function executeGalleryDlCommand(
                 await jobManager.addOutput(
                   jobId,
                   'info',
-                  `Unsupported URL — started direct-link fallback job ${fb.jobId} for ${options.fallbackUrls.length} extracted URL(s)`,
+                  `Unsupported URL, started direct-link fallback job ${fb.jobId} for ${options.fallbackUrls.length} extracted URL(s)`,
                 );
               }
             } catch (error) {
@@ -140,6 +136,9 @@ export async function executeGalleryDlCommand(
     };
   } catch (error) {
     logger.error('Failed to execute gallery-dl command:', error);
+    if (createdJobId) {
+      await jobManager.completeJob(createdJobId, 1);
+    }
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error occurred',
@@ -147,15 +146,15 @@ export async function executeGalleryDlCommand(
   }
 }
 
-// batch jobs
-// added to handle multiple directlinks sent from the extension
 export async function executeGalleryDlBatchCommand(
   urls: string[],
   cliArgs: string[],
   options?: GalleryDlBatchCommandOptions,
 ): Promise<CommandExecutionResult> {
+  let createdJobId: string | undefined;
   try {
     const jobId = await jobManager.createBatchJob(urls);
+    createdJobId = jobId;
     const cookieCandidates = [...new Set([options?.cookieUrl, urls[0]])].filter((u): u is string =>
       Boolean(u),
     );
@@ -204,6 +203,9 @@ export async function executeGalleryDlBatchCommand(
     };
   } catch (error) {
     logger.error('Failed to execute gallery-dl batch command:', error);
+    if (createdJobId) {
+      await jobManager.completeJob(createdJobId, 1);
+    }
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error occurred',

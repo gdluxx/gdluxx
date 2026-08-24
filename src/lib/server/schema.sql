@@ -204,3 +204,82 @@ CREATE INDEX IF NOT EXISTS idx_job_outputs_jobId_timestamp ON job_outputs(jobId,
 CREATE INDEX IF NOT EXISTS idx_site_configs_pattern ON site_configs(site_pattern);
 CREATE INDEX IF NOT EXISTS idx_supported_sites_pattern ON supported_sites(url_pattern);
 CREATE INDEX IF NOT EXISTS idx_supported_sites_category ON supported_sites(category);
+
+/* SCHEDULES */
+CREATE TABLE IF NOT EXISTS schedules (
+    id TEXT PRIMARY KEY,
+    userId TEXT NOT NULL REFERENCES user(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    status TEXT NOT NULL CHECK (status IN ('active', 'paused', 'completed')),
+    timezone TEXT NOT NULL,
+    recurrence TEXT NOT NULL,           -- JSON, shape validated by Zod
+    startDate TEXT NOT NULL,            -- 'YYYY-MM-DD' wall-clock anchor date
+    endDate TEXT,                       -- 'YYYY-MM-DD', inclusive, schedule tz
+    misfirePolicy TEXT NOT NULL CHECK (misfirePolicy IN ('skip', 'catch_up')),
+    commandSource TEXT NOT NULL,        -- JSON { urls, userOptions, excludedOptions }
+    siteOptionsSnapshot TEXT NOT NULL,  -- JSON { [url]: [ [optionId, value], ... ] }
+    nextOccurrenceAt INTEGER,           -- epoch ms; NULL when paused or completed
+    lastOccurrenceAt INTEGER,           -- last claimed slot, any outcome
+    createdAt INTEGER NOT NULL,
+    updatedAt INTEGER NOT NULL,
+    CHECK (status = 'active' OR nextOccurrenceAt IS NULL)
+);
+
+/* SCHEDULE_RUNS one row per claimed occurrence, manual run, or recovery */
+CREATE TABLE IF NOT EXISTS schedule_runs (
+    id TEXT PRIMARY KEY,
+    scheduleId TEXT REFERENCES schedules(id) ON DELETE SET NULL,
+    userId TEXT NOT NULL,               -- denormalized owner; deliberately no FK
+    scheduleName TEXT NOT NULL,         -- denormalized for post-delete history
+    trigger TEXT NOT NULL CHECK (trigger IN ('scheduled', 'catch_up', 'manual', 'recovery')),
+    outcome TEXT NOT NULL CHECK (outcome IN ('dispatching', 'launched', 'partial',
+        'launch_failed', 'skipped_overlap', 'skipped_misfire')),
+    scheduledFor INTEGER NOT NULL,      -- occurrence slot (epoch ms); manual/recovery = now
+    urlCount INTEGER NOT NULL,
+    launchedCount INTEGER NOT NULL DEFAULT 0,
+    missedFrom INTEGER,                 -- misfire window, when applicable
+    missedTo INTEGER,
+    missedCount INTEGER,
+    truncated INTEGER NOT NULL DEFAULT 0,
+    error TEXT,
+    createdAt INTEGER NOT NULL,
+    updatedAt INTEGER NOT NULL
+);
+
+/* SCHEDULE_RUN_JOBS links an occurrence to the jobs it launched */
+CREATE TABLE IF NOT EXISTS schedule_run_jobs (
+    runId TEXT NOT NULL REFERENCES schedule_runs(id) ON DELETE CASCADE,
+    jobId TEXT NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
+    url TEXT NOT NULL,
+    PRIMARY KEY (runId, jobId)
+);
+
+/* SCHEDULE_NOTIFICATIONS */
+CREATE TABLE IF NOT EXISTS schedule_notifications (
+    id TEXT PRIMARY KEY,
+    userId TEXT NOT NULL,               -- denormalized owner; deliberately no FK
+    scheduleId TEXT REFERENCES schedules(id) ON DELETE SET NULL,
+    scheduleName TEXT NOT NULL,
+    runId TEXT,                         -- informational; no FK
+    type TEXT NOT NULL CHECK (type IN ('missed_skipped', 'missed_caught_up',
+        'overlap_skipped', 'launch_failed')),
+    occurrenceCount INTEGER NOT NULL DEFAULT 1,
+    rangeStart INTEGER,
+    rangeEnd INTEGER,
+    acknowledgedAt INTEGER,             -- NULL = unread; set = acknowledged/archived
+    createdAt INTEGER NOT NULL,
+    updatedAt INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_schedules_user ON schedules(userId);
+CREATE INDEX IF NOT EXISTS idx_schedules_due ON schedules(status, nextOccurrenceAt);
+CREATE INDEX IF NOT EXISTS idx_schedule_runs_schedule ON schedule_runs(scheduleId, createdAt);
+CREATE INDEX IF NOT EXISTS idx_schedule_runs_user ON schedule_runs(userId, createdAt);
+CREATE INDEX IF NOT EXISTS idx_schedule_runs_dispatching ON schedule_runs(outcome, createdAt);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_schedule_runs_slot
+    ON schedule_runs(scheduleId, scheduledFor) WHERE trigger IN ('scheduled', 'catch_up');
+CREATE INDEX IF NOT EXISTS idx_schedule_run_jobs_job ON schedule_run_jobs(jobId);
+CREATE INDEX IF NOT EXISTS idx_schedule_notifications_user
+    ON schedule_notifications(userId, acknowledgedAt, createdAt);
+CREATE INDEX IF NOT EXISTS idx_schedule_notifications_coalesce
+    ON schedule_notifications(scheduleId, type, acknowledgedAt);

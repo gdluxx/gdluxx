@@ -12,6 +12,7 @@
   import { onMount } from 'svelte';
   import { resolve } from '$app/paths';
   import { jobStore } from '$lib/stores/jobs.svelte';
+  import { Chip } from '$lib/components/ui';
   import type { JobListItem } from '$lib/types/jobs';
   import { getStatusColor, getStatusText } from '$lib/utils/jobStatus';
   import { formatRelativeTime } from '$lib/utils/relativeTime';
@@ -67,6 +68,28 @@
             <span class="min-w-0 flex-1 truncate text-sm text-foreground">
               {job.url}
             </span>
+            {#if job.origin}
+              <span class="flex flex-shrink-0 items-center gap-1">
+                <Chip
+                  label="Scheduled"
+                  variant="outline-info"
+                  size="sm"
+                />
+                {#if job.origin.scheduleId !== null}
+                  <a
+                    href={resolve('/schedules')}
+                    class="max-w-24 truncate text-xs text-primary hover:underline"
+                    onclick={(e) => e.stopPropagation()}
+                  >
+                    {job.origin.scheduleName}
+                  </a>
+                {:else}
+                  <span class="max-w-24 truncate text-xs text-muted-foreground">
+                    {job.origin.scheduleName}
+                  </span>
+                {/if}
+              </span>
+            {/if}
             <span class="flex-shrink-0 text-xs font-medium text-muted-foreground">
               {getStatusText(job.status)}
             </span>

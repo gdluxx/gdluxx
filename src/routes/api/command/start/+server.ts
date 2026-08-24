@@ -9,13 +9,14 @@
  */
 
 import type { RequestHandler } from './$types';
-import fs from 'node:fs';
 import { serverLogger as logger } from '$lib/server/logger';
-import { PATHS } from '$lib/server/constants';
 import type { BatchUrlResult } from '$lib/stores/jobs.svelte';
 import { siteConfigManager } from '$lib/server/siteConfigManager';
-import { validateAndBuildCliArgs } from '$lib/server/validation/option-validation';
-import { executeGalleryDlCommand } from '$lib/server/jobs/commandExecutor';
+import {
+  launchUrls,
+  BinaryUnavailableError,
+  type LaunchResult,
+} from '$lib/server/jobs/commandLauncher';
 import { createApiError, createApiResponse, handleApiError } from '$lib/server/api-utils';
 
 export const POST: RequestHandler = async ({ request }) => {
@@ -27,7 +28,6 @@ export const POST: RequestHandler = async ({ request }) => {
       return createApiError('URLs are required and cannot be empty', 400);
     }
 
-    // Filter out empty URLs
     const validUrls = urls
       .map((url: unknown) => (typeof url === 'string' ? url.trim() : ''))
       .filter((url: string) => url !== '');
@@ -36,77 +36,49 @@ export const POST: RequestHandler = async ({ request }) => {
       return createApiError('At least one valid URL is required', 400);
     }
 
-    // Parse args
     let receivedArgs: Array<[string, string | number | boolean]> = [];
     if (args && Array.isArray(args)) {
       receivedArgs = args;
     }
 
-    // Parse excluded options, client-dismissed site-rule options
     let excludedOptionIds: string[] = [];
     if (excludedOptions && Array.isArray(excludedOptions)) {
       excludedOptionIds = excludedOptions.filter(
         (x: unknown): x is string => typeof x === 'string',
       );
     }
-    const excluded = new Set(excludedOptionIds);
 
-    // does gallery-dl binary exist
+    let launchResults: LaunchResult[];
     try {
-      fs.accessSync(PATHS.BIN_FILE, fs.constants.X_OK);
-    } catch (_err) {
-      logger.error('gallery-dl.bin not found or not executable');
-      return createApiError('gallery-dl.bin not found or not executable', 500);
+      launchResults = await launchUrls({
+        urls: validUrls,
+        args: receivedArgs,
+        excludedOptions: excludedOptionIds,
+        resolveSiteOptions: (url) => siteConfigManager.getCliOptionsForUrl(url),
+      });
+    } catch (error) {
+      if (error instanceof BinaryUnavailableError) {
+        logger.error('gallery-dl.bin not found or not executable');
+        return createApiError('gallery-dl.bin not found or not executable', 500);
+      }
+      throw error;
     }
 
-    const batchResults: BatchUrlResult[] = [];
-    let overallSuccess = true;
-
-    for (const url of validUrls) {
-      if (typeof url !== 'string' || !url.trim()) {
-        batchResults.push({
-          url: (url as string) || 'INVALID_URL_ENTRY',
-          success: false,
-          error: 'Invalid URL entry provided in the list.',
-        });
-        overallSuccess = false;
-        continue;
-      }
-
-      const siteCliOptions = (await siteConfigManager.getCliOptionsForUrl(url)).filter(
-        ([optionId]) => !excluded.has(optionId),
-      );
-
-      const allArgs: Array<[string, string | number | boolean]> = [
-        ...siteCliOptions,
-        ...receivedArgs,
-      ];
-
-      const mergedArgs = new Map<string, string | number | boolean>();
-      for (const [optionId, value] of allArgs) {
-        mergedArgs.set(optionId, value);
-      }
-
-      const cliArgs = validateAndBuildCliArgs(mergedArgs);
-
-      const result = await executeGalleryDlCommand(url, cliArgs);
-
-      if (result.success && result.jobId) {
-        batchResults.push({
-          jobId: result.jobId,
-          url,
-          success: true,
-          message: 'Job started successfully',
-        });
-      } else {
-        batchResults.push({
-          url,
-          success: false,
-          error: result.error || 'Failed to start job',
-        });
-        overallSuccess = false;
-      }
-    }
+    const batchResults: BatchUrlResult[] = launchResults.map((result) =>
+      result.success && result.jobId
+        ? {
+            jobId: result.jobId,
+            url: result.url,
+            success: true,
+            message: 'Job started successfully',
+          }
+        : {
+            url: result.url,
+            success: false,
+            error: result.error || 'Failed to start job',
+          },
+    );
+    const overallSuccess = launchResults.every((result) => result.success);
 
     const resp = createApiResponse({
       overallSuccess,

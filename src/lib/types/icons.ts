@@ -63,4 +63,5 @@ export type IconName =
   | 'reload'
   | 'restore'
   | 'cookies'
-  | 'success';
+  | 'success'
+  | 'more-vertical';
