@@ -107,12 +107,12 @@ describe('route classification (REM-011: startsWith over-matching, denylist norm
     }
   });
 
-  test('extension route OPTIONS request receives CORS headers', async () => {
+  test('extension route OPTIONS request from an allowed scheme receives CORS headers', async () => {
     const event = {
       url: new URL('http://localhost/api/extension/ping'),
       request: new Request('http://localhost/api/extension/ping', {
         method: 'OPTIONS',
-        headers: { origin: 'https://example.test' },
+        headers: { origin: 'chrome-extension://abcdef' },
       }),
       locals: {},
     };
@@ -120,7 +120,7 @@ describe('route classification (REM-011: startsWith over-matching, denylist norm
 
     const response = (await handle({ event, resolve } as never)) as Response;
 
-    expect(response.headers.get('Access-Control-Allow-Origin')).toBe('https://example.test');
+    expect(response.headers.get('Access-Control-Allow-Origin')).toBe('chrome-extension://abcdef');
     expect(response.headers.get('Access-Control-Allow-Methods')).toContain('OPTIONS');
     expect(resolve).not.toHaveBeenCalled();
   });
@@ -204,5 +204,101 @@ describe('route classification (REM-011: startsWith over-matching, denylist norm
     expect(response.status).toBe(401);
     const body = (await response.json()) as { success: boolean };
     expect(body.success).toBe(false);
+  });
+});
+
+function makeExtensionEvent(method: string, origin?: string) {
+  const headers: Record<string, string> = origin === undefined ? {} : { origin };
+  return {
+    url: new URL('http://localhost/api/extension/ping'),
+    request: new Request('http://localhost/api/extension/ping', { method, headers }),
+    locals: {},
+  };
+}
+
+describe('extension CORS / PNA allowlist (REM-012: reflect-any-origin oracle closed)', () => {
+  test.each([['chrome-extension://abcdef'], ['moz-extension://abcdef']])(
+    'preflight from an allowed extension scheme (%s) gets ACAO, PNA, and Vary: Origin',
+    async (origin) => {
+      const resolve = vi.fn(async () => new Response('ok'));
+      const response = (await handle({
+        event: makeExtensionEvent('OPTIONS', origin),
+        resolve,
+      } as never)) as Response;
+
+      expect(response.headers.get('Access-Control-Allow-Origin')).toBe(origin);
+      expect(response.headers.get('Access-Control-Allow-Private-Network')).toBe('true');
+      expect(response.headers.get('Vary')).toBe('Origin');
+      expect(resolve).not.toHaveBeenCalled();
+    },
+  );
+
+  test('actual request from an allowed extension origin gets ACAO + PNA on the resolved response', async () => {
+    const resolve = vi.fn(async () => new Response('ok'));
+    const response = (await handle({
+      event: makeExtensionEvent('GET', 'chrome-extension://abcdef'),
+      resolve,
+    } as never)) as Response;
+
+    expect(resolve).toHaveBeenCalledOnce();
+    expect(response.headers.get('Access-Control-Allow-Origin')).toBe('chrome-extension://abcdef');
+    expect(response.headers.get('Access-Control-Allow-Private-Network')).toBe('true');
+    expect(response.headers.get('Vary')).toBe('Origin');
+  });
+
+  test('preflight and actual request from a non-allowed origin get no ACAO/PNA but do get Vary: Origin', async () => {
+    for (const method of ['OPTIONS', 'GET']) {
+      const resolve = vi.fn(async () => new Response('ok'));
+      const response = (await handle({
+        event: makeExtensionEvent(method, 'https://evil.example'),
+        resolve,
+      } as never)) as Response;
+
+      expect(response.headers.get('Access-Control-Allow-Origin')).toBeNull();
+      expect(response.headers.get('Access-Control-Allow-Private-Network')).toBeNull();
+      expect(response.headers.get('Vary')).toBe('Origin');
+      if (method === 'OPTIONS') {
+        expect(resolve).not.toHaveBeenCalled();
+      } else {
+        // Non-allowed origin is a header-grant decision only; the request
+        // itself still reaches resolve() and the route's own Bearer check.
+        expect(resolve).toHaveBeenCalledOnce();
+      }
+    }
+  });
+
+  test('a request with no Origin header gets no ACAO/PNA', async () => {
+    const resolve = vi.fn(async () => new Response('ok'));
+    const response = (await handle({
+      event: makeExtensionEvent('GET'),
+      resolve,
+    } as never)) as Response;
+
+    expect(resolve).toHaveBeenCalledOnce();
+    expect(response.headers.get('Access-Control-Allow-Origin')).toBeNull();
+    expect(response.headers.get('Access-Control-Allow-Private-Network')).toBeNull();
+  });
+
+  test('the configured ORIGIN is allowed when set', async () => {
+    const previousOrigin = process.env.ORIGIN;
+    process.env.ORIGIN = 'https://gdluxx.example.test';
+    try {
+      const resolve = vi.fn(async () => new Response('ok'));
+      const response = (await handle({
+        event: makeExtensionEvent('OPTIONS', 'https://gdluxx.example.test'),
+        resolve,
+      } as never)) as Response;
+
+      expect(response.headers.get('Access-Control-Allow-Origin')).toBe(
+        'https://gdluxx.example.test',
+      );
+      expect(response.headers.get('Access-Control-Allow-Private-Network')).toBe('true');
+    } finally {
+      if (previousOrigin === undefined) {
+        delete process.env.ORIGIN;
+      } else {
+        process.env.ORIGIN = previousOrigin;
+      }
+    }
   });
 });

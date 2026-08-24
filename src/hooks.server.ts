@@ -63,6 +63,51 @@ function isExtensionApiRoute(pathname: string): boolean {
   return extensionApiRoutes.some((route) => pathname === route);
 }
 
+// Scheme-prefix match only: extension IDs are per-install and cannot be
+// enumerated. No safari-web-extension:// entry — extension/wxt.config.ts
+// only builds chrome and firefox targets.
+const EXTENSION_ORIGIN_SCHEMES = ['chrome-extension://', 'moz-extension://'];
+
+// Mirrors better-auth.ts's resolveAppBaseURL. Read per-request (not cached at
+// module load) so a boot-time-unset ORIGIN doesn't wrongly freeze this closed.
+function resolveAppOrigin(): string | undefined {
+  const baseURL = process.env.APP_BASE_URL || process.env.ORIGIN;
+  if (!baseURL) {
+    return undefined;
+  }
+  try {
+    return new URL(baseURL).origin;
+  } catch {
+    // An invalid ORIGIN must not allow anything, so treat it as unset.
+    return undefined;
+  }
+}
+
+// AUTH-010/REM-012: CORS is not the auth boundary (Bearer still gates the
+// route) but reflecting arbitrary origins turned this into a LAN
+// fingerprinting oracle, so the origin grant itself is now allowlisted.
+function isAllowedExtensionOrigin(origin: string | null): origin is string {
+  if (!origin) {
+    return false;
+  }
+  return (
+    EXTENSION_ORIGIN_SCHEMES.some((scheme) => origin.startsWith(scheme)) ||
+    origin === resolveAppOrigin()
+  );
+}
+
+function appendVaryOrigin(headers: Headers): void {
+  const existing = headers.get('Vary');
+  if (!existing) {
+    headers.set('Vary', 'Origin');
+    return;
+  }
+  const values = existing.split(',').map((value) => value.trim());
+  if (!values.includes('Origin')) {
+    headers.set('Vary', `${existing}, Origin`);
+  }
+}
+
 function isPublicRoute(pathname: string): boolean {
   if (publicPageRoutes.has(pathname)) {
     return true;
@@ -142,28 +187,27 @@ export const handle: Handle = async ({ event, resolve }) => {
 
   if (isExtensionApiRoute(pathname)) {
     const origin = event.request.headers.get('origin');
-
-    const allowOrigin = origin || '*';
+    const allowed = isAllowedExtensionOrigin(origin);
 
     if (event.request.method === 'OPTIONS') {
-      return json(null, {
-        headers: {
-          'Access-Control-Allow-Origin': allowOrigin,
-          // Two way comm between extension and gdluxx requires expanding methods allowed
-          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-          'Access-Control-Allow-Private-Network': 'true',
-          ...(origin ? { Vary: 'Origin' } : {}),
-        },
-      });
+      const headers = new Headers();
+      if (allowed) {
+        headers.set('Access-Control-Allow-Origin', origin);
+        // Two way comm between extension and gdluxx requires expanding methods allowed
+        headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+        headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+        headers.set('Access-Control-Allow-Private-Network', 'true');
+      }
+      appendVaryOrigin(headers);
+      return json(null, { headers });
     }
 
     const response = await resolve(event);
-    response.headers.set('Access-Control-Allow-Origin', allowOrigin);
-    response.headers.set('Access-Control-Allow-Private-Network', 'true');
-    if (origin) {
-      response.headers.set('Vary', 'Origin');
+    if (allowed) {
+      response.headers.set('Access-Control-Allow-Origin', origin);
+      response.headers.set('Access-Control-Allow-Private-Network', 'true');
     }
+    appendVaryOrigin(response.headers);
 
     return response;
   }
