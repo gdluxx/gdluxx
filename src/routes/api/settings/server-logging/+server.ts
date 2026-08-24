@@ -14,8 +14,10 @@ import { createApiError, createApiResponse } from '$lib/server/api-utils';
 import { parseJson } from '$lib/server/validation/zod';
 import { serverLoggingConfigSchema, type ServerLoggingConfig } from '$lib/logging';
 import { readServerLoggingConfig, writeServerLoggingConfig } from '$lib/server/loggingManager';
+import { requireUser } from '$lib/server/auth/requireUser';
 
-export const GET: RequestHandler = async () => {
+export const GET: RequestHandler = async ({ locals }) => {
+  requireUser(locals);
   try {
     const config = await readServerLoggingConfig();
     return createApiResponse<ServerLoggingConfig>(config);
@@ -25,7 +27,8 @@ export const GET: RequestHandler = async () => {
   }
 };
 
-export const POST: RequestHandler = async ({ request }) => {
+export const POST: RequestHandler = async ({ request, locals }) => {
+  requireUser(locals);
   try {
     // Validated before anything is persisted. A bad fileMaxSize/fileMaxFiles
     // used to reach SQLite first and only blow up when the transport was

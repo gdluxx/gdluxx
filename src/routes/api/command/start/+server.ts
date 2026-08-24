@@ -18,8 +18,12 @@ import {
   type LaunchResult,
 } from '$lib/server/jobs/commandLauncher';
 import { createApiError, createApiResponse, handleApiError } from '$lib/server/api-utils';
+import { requireUser } from '$lib/server/auth/requireUser';
 
-export const POST: RequestHandler = async ({ request }) => {
+const URL_PATTERN = /^https?:\/\/.+/;
+
+export const POST: RequestHandler = async ({ request, locals }) => {
+  requireUser(locals);
   try {
     const requestData = await request.json();
     const { urls, args, excludedOptions } = requestData ?? {};
@@ -34,6 +38,10 @@ export const POST: RequestHandler = async ({ request }) => {
 
     if (validUrls.length === 0) {
       return createApiError('At least one valid URL is required', 400);
+    }
+
+    if (!validUrls.every((url: string) => URL_PATTERN.test(url))) {
+      return createApiError('All URLs must start with http:// or https://', 400);
     }
 
     let receivedArgs: Array<[string, string | number | boolean]> = [];

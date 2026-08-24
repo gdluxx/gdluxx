@@ -18,8 +18,10 @@ import {
   normalizeCookieDomain,
 } from '$lib/server/cookieBackupManager';
 import { removeCachedCookieFile } from '$lib/server/cookieFileManager';
+import { requireUser } from '$lib/server/auth/requireUser';
 
-export const DELETE: RequestHandler = async ({ params, url }) => {
+export const DELETE: RequestHandler = async ({ params, url, locals }) => {
+  requireUser(locals);
   try {
     const { apiKeyId } = params;
     if (!apiKeyId) {

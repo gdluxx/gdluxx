@@ -19,8 +19,10 @@ import {
   COMBINED_BUNDLE_KIND,
   COMBINED_BUNDLE_VERSION,
 } from '$lib/server/validation/extensionProfiles';
+import { requireUser } from '$lib/server/auth/requireUser';
 
-export const GET: RequestHandler = async ({ params }) => {
+export const GET: RequestHandler = async ({ params, locals }) => {
+  requireUser(locals);
   try {
     const { apiKeyId } = params;
     if (!apiKeyId) {
@@ -37,7 +39,7 @@ export const GET: RequestHandler = async ({ params }) => {
     const subBackup = getSubBackup(apiKeyId);
     const extractionBackup = getExtractionBackup(apiKeyId);
 
-    // Empty profiles on all sides is valid — yields an importable no-op file.
+    // Empty profiles on all sides is valid, yields an importable no-op file.
     const selectors = selectorBackup?.bundle ?? { version: 1, profiles: {} };
     const subs = subBackup?.bundle ?? { version: 1, profiles: {} };
     const extraction = extractionBackup?.bundle ?? { version: 1, profiles: {} };

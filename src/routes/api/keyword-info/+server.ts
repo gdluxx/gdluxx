@@ -16,6 +16,7 @@ import { PATHS } from '$lib/server/constants';
 import { createApiResponse, handleApiError } from '$lib/server/api-utils';
 import { validateInput } from '$lib/server/validation/validation-utils';
 import { keywordInfoSchema } from '$lib/server/validation/keyword-validation';
+import { requireUser } from '$lib/server/auth/requireUser';
 
 // `execFile` (no shell) so the user-supplied URL is passed as a discrete argv
 // entry and can never be interpreted as shell syntax. The validation schema
@@ -96,7 +97,8 @@ function parseListKeywords(raw: string): KeywordSection[] | null {
   return usable.length > 0 ? usable : null;
 }
 
-export const POST: RequestHandler = async ({ request }: RequestEvent): Promise<Response> => {
+export const POST: RequestHandler = async ({ request, locals }: RequestEvent): Promise<Response> => {
+  requireUser(locals);
   let body: KeywordInfoRequestBody;
 
   try {

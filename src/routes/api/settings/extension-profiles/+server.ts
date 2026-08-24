@@ -25,12 +25,14 @@ import type {
   SubBackupView,
   SubBundle,
 } from '$lib/extensionProfiles/types';
+import { requireUser } from '$lib/server/auth/requireUser';
 
 const emptySelectorBundle: SelectorBundle = { version: 1, profiles: {} };
 const emptySubBundle: SubBundle = { version: 1, profiles: {} };
 const emptyExtractionBundle: ExtractionBundle = { version: 1, profiles: {} };
 
-export const GET: RequestHandler = async (): Promise<Response> => {
+export const GET: RequestHandler = async ({ locals }): Promise<Response> => {
+  requireUser(locals);
   try {
     const apiKeys = await listApiKeys();
 

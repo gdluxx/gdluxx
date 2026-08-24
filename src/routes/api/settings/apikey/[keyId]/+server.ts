@@ -12,8 +12,10 @@ import type { RequestHandler } from './$types';
 import { serverLogger as logger } from '$lib/server/logger';
 import { deleteApiKey } from '$lib/server/apikey/apiKeyManager';
 import { createApiError, createApiResponse } from '$lib/server/api-utils';
+import { requireUser } from '$lib/server/auth/requireUser';
 
-export const DELETE: RequestHandler = async ({ params }): Promise<Response> => {
+export const DELETE: RequestHandler = async ({ params, locals }): Promise<Response> => {
+  requireUser(locals);
   try {
     const { keyId } = params;
 

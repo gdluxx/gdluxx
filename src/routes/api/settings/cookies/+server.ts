@@ -14,8 +14,10 @@ import { createApiResponse, handleApiError } from '$lib/server/api-utils';
 import { listApiKeys } from '$lib/server/apikey';
 import { getCookieBackup, toCookieBackupMetadata } from '$lib/server/cookieBackupManager';
 import type { ApiKeySummary, CookieBackupView, CookiesPageData } from '$lib/cookieBackups/types';
+import { requireUser } from '$lib/server/auth/requireUser';
 
-export const GET: RequestHandler = async (): Promise<Response> => {
+export const GET: RequestHandler = async ({ locals }): Promise<Response> => {
+  requireUser(locals);
   try {
     const apiKeys = await listApiKeys();
 

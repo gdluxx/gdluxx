@@ -12,8 +12,10 @@ import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { isRunningInDockerCached } from '$lib/server/environment';
 import { serverLogger } from '$lib/server/logger';
+import { requireUser } from '$lib/server/auth/requireUser';
 
-export const GET: RequestHandler = async () => {
+export const GET: RequestHandler = async ({ locals }) => {
+  requireUser(locals);
   try {
     const isDocker = isRunningInDockerCached();
     return json({ isDocker });

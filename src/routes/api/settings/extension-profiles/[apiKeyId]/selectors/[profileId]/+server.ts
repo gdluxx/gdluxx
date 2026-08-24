@@ -19,6 +19,7 @@ import {
 } from '$lib/server/extensionProfileBackupManager';
 import { parseJson } from '$lib/server/validation/zod';
 import { selectorProfileSchema } from '$lib/server/validation/extensionProfiles';
+import { requireUser } from '$lib/server/auth/requireUser';
 
 const updateSchema = z.object({
   startSelector: z.string(),
@@ -27,6 +28,7 @@ const updateSchema = z.object({
 });
 
 export const PUT: RequestHandler = async ({ request, params, locals }) => {
+  const user = requireUser(locals);
   try {
     const { apiKeyId, profileId } = params;
     if (!apiKeyId || !profileId) {
@@ -61,7 +63,7 @@ export const PUT: RequestHandler = async ({ request, params, locals }) => {
 
     existing.bundle.profiles[profileId] = updated;
 
-    const syncedBy = locals.user?.email ?? locals.user?.name ?? null;
+    const syncedBy = user.email ?? user.name ?? null;
     const saved = saveProfileBackup(apiKeyId, existing.bundle, syncedBy);
     if (!saved) {
       return createApiError('Failed to save selector profile', 500);
@@ -76,6 +78,7 @@ export const PUT: RequestHandler = async ({ request, params, locals }) => {
 };
 
 export const DELETE: RequestHandler = async ({ params, locals }) => {
+  const user = requireUser(locals);
   try {
     const { apiKeyId, profileId } = params;
     if (!apiKeyId || !profileId) {
@@ -91,7 +94,7 @@ export const DELETE: RequestHandler = async ({ params, locals }) => {
     Reflect.deleteProperty(nextProfiles, profileId);
     existing.bundle.profiles = nextProfiles;
 
-    const syncedBy = locals.user?.email ?? locals.user?.name ?? null;
+    const syncedBy = user.email ?? user.name ?? null;
     const saved = saveProfileBackup(apiKeyId, existing.bundle, syncedBy);
     if (!saved) {
       return createApiError('Failed to delete selector profile', 500);

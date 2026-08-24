@@ -12,7 +12,6 @@ import type { Handle, ServerInit } from '@sveltejs/kit';
 import { building } from '$app/environment';
 import { isRedirect, json, redirect } from '@sveltejs/kit';
 import { auth } from '$lib/server/auth/better-auth';
-import { DATABASE_PATH, openDatabase } from '$lib/server/database';
 // Keep the better-auth import above the coordinator's: better-auth's module
 // side effect execs schema.sql, and the schedule managers in the coordinator's
 // import graph open the shared database handle at module scope.
@@ -21,7 +20,7 @@ import { launchUrls } from '$lib/server/jobs/commandLauncher';
 import { jobManager } from '$lib/server/jobs/jobManager';
 import { userSettingsManager } from '$lib/server/userSettingsManager';
 import { getCurrentTimestamp } from '$lib/server/settingsManager';
-import { existsSync } from 'node:fs';
+import { getUserCountState } from '$lib/server/auth/userExistence';
 
 export const init: ServerInit = async () => {
   if (building) {
@@ -46,7 +45,8 @@ export const init: ServerInit = async () => {
   });
 };
 
-const publicRoutes = ['/auth/login', '/auth/setup', '/api/auth'];
+// Public PAGE routes match exactly, no startsWith over-match of /auth/loginX.
+const publicPageRoutes = new Set(['/auth/login', '/auth/setup']);
 const deniedAuthRoutes = new Set(['/api/auth/change-email', '/api/auth/list-sessions']);
 
 const extensionApiRoutes = [
@@ -63,78 +63,84 @@ function isExtensionApiRoute(pathname: string): boolean {
   return extensionApiRoutes.some((route) => pathname === route);
 }
 
-async function getUserCount(): Promise<number> {
-  try {
-    if (!existsSync(DATABASE_PATH)) {
-      return 0;
-    }
-
-    const db = openDatabase();
-
-    const tableCheck = db
-      .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='user'")
-      .all();
-
-    if (tableCheck.length === 0) {
-      db.close();
-      return 0;
-    }
-
-    const result = db.prepare('SELECT COUNT(*) as count FROM user').get() as { count: number };
-    db.close();
-
-    return result.count;
-  } catch (error) {
-    // eslint-disable-next-line no-console
-    console.error('Error checking user count:', error);
-    return 0;
+function isPublicRoute(pathname: string): boolean {
+  if (publicPageRoutes.has(pathname)) {
+    return true;
   }
+  // Better Auth needs its whole /api/auth subtree public, but only at a segment
+  // boundary so /api/authX is NOT treated as public.
+  if (pathname === '/api/auth' || pathname.startsWith('/api/auth/')) {
+    return true;
+  }
+  return isExtensionApiRoute(pathname);
+}
+
+// AUTH-013: normalize before the denylist so /api/auth//list-sessions and
+// /api/auth%2Flist-sessions cannot slip past it into the public subtree.
+function normalizePathname(pathname: string): string {
+  let decoded: string;
+  try {
+    decoded = decodeURIComponent(pathname);
+  } catch {
+    // Malformed percent-encoding: keep the raw path so a bad sequence can't
+    // slip a denied route past the check.
+    decoded = pathname;
+  }
+  return decoded.replace(/\/{2,}/g, '/');
+}
+
+// REM-011/AUTH-015: an unauthenticated API call gets 401 JSON, not a 302 to an
+// HTML login page an XHR cannot use. Page routes still redirect (this throws).
+function unauthenticated(pathname: string): Response {
+  if (pathname.startsWith('/api/')) {
+    return json({ success: false, error: 'Authentication required' }, { status: 401 });
+  }
+  redirect(302, '/auth/login');
 }
 
 export const handle: Handle = async ({ event, resolve }) => {
-  if (event.url.pathname.startsWith('/.well-known/appspecific/com.chrome.devtools')) {
+  const pathname = event.url.pathname;
+
+  if (pathname.startsWith('/.well-known/appspecific/com.chrome.devtools')) {
     return new Response(null, { status: 204 });
   }
 
-  if (deniedAuthRoutes.has(event.url.pathname)) {
+  if (deniedAuthRoutes.has(normalizePathname(pathname))) {
     return json({ error: 'Not found' }, { status: 404 });
   }
 
-  const isPublicRoute =
-    publicRoutes.some((route) => event.url.pathname.startsWith(route)) ||
-    isExtensionApiRoute(event.url.pathname);
+  if (!isPublicRoute(pathname)) {
+    const userCountState = await getUserCountState();
 
-  if (!isPublicRoute) {
-    const userCount = await getUserCount();
-    if (userCount === 0 && event.url.pathname !== '/auth/setup') {
+    if (userCountState === 'unknown') {
+      return json({ error: 'Service temporarily unavailable' }, { status: 503 });
+    }
+
+    if (userCountState === 'zero') {
       redirect(302, '/auth/setup');
     }
 
-    if (userCount > 0) {
-      try {
-        const session = await auth.api.getSession({
-          headers: event.request.headers,
-        });
-
-        if (!session) {
-          redirect(302, '/auth/login');
-        }
-
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        event.locals.session = session as any;
-        event.locals.user = session.user;
-      } catch (error) {
-        if (isRedirect(error)) {
-          throw error;
-        }
-        // eslint-disable-next-line no-console
-        console.error('Auth error:', error);
-        redirect(302, '/auth/login');
+    let session: Awaited<ReturnType<typeof auth.api.getSession>>;
+    try {
+      session = await auth.api.getSession({ headers: event.request.headers });
+    } catch (error) {
+      if (isRedirect(error)) {
+        throw error;
       }
+      // eslint-disable-next-line no-console
+      console.error('Auth error:', error);
+      session = null;
     }
+
+    if (!session) {
+      return unauthenticated(pathname);
+    }
+
+    event.locals.session = session;
+    event.locals.user = session.user;
   }
 
-  if (isExtensionApiRoute(event.url.pathname)) {
+  if (isExtensionApiRoute(pathname)) {
     const origin = event.request.headers.get('origin');
 
     const allowOrigin = origin || '*';

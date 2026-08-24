@@ -14,10 +14,12 @@ import { createApiError, createApiResponse, handleApiError } from '$lib/server/a
 import { parseJson } from '$lib/server/validation/zod';
 import { jobsDeleteSchema, jobsQuerySchema } from '$lib/server/validation/jobs-validation';
 import { attachOrigins } from '$lib/server/jobs/jobOrigins';
+import { requireUser } from '$lib/server/auth/requireUser';
 
 const QUERY_KEYS = ['limit', 'offset', 'status', 'sort', 'dir'] as const;
 
 export const GET: RequestHandler = async ({ url, locals }): Promise<Response> => {
+  const user = requireUser(locals);
   try {
     const raw: Record<string, string> = {};
     for (const key of QUERY_KEYS) {
@@ -42,7 +44,7 @@ export const GET: RequestHandler = async ({ url, locals }): Promise<Response> =>
       dir,
     });
 
-    const enrichedJobs = attachOrigins(jobs, locals.user?.id);
+    const enrichedJobs = attachOrigins(jobs, user.id);
 
     const resp = createApiResponse({ jobs: enrichedJobs, total, limit, offset });
     resp.headers.set('Cache-Control', 'no-store');
@@ -52,7 +54,8 @@ export const GET: RequestHandler = async ({ url, locals }): Promise<Response> =>
   }
 };
 
-export const DELETE: RequestHandler = async ({ request }): Promise<Response> => {
+export const DELETE: RequestHandler = async ({ request, locals }): Promise<Response> => {
+  requireUser(locals);
   try {
     const parseResult = await parseJson(request, jobsDeleteSchema);
     if ('errorResponse' in parseResult) {

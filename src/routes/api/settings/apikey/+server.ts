@@ -24,8 +24,10 @@ import {
 } from '$lib/server/apikey';
 import { createApiResponse, handleApiError } from '$lib/server/api-utils';
 import { validateInput } from '$lib/server/validation/validation-utils';
+import { requireUser } from '$lib/server/auth/requireUser';
 
-export const GET: RequestHandler = async (): Promise<Response> => {
+export const GET: RequestHandler = async ({ locals }): Promise<Response> => {
+  requireUser(locals);
   try {
     const apiKeys: ApiKey[] = await listApiKeys();
     const resp = createApiResponse({ apiKeys });
@@ -37,7 +39,8 @@ export const GET: RequestHandler = async (): Promise<Response> => {
   }
 };
 
-export const POST: RequestHandler = async ({ request }): Promise<Response> => {
+export const POST: RequestHandler = async ({ request, locals }): Promise<Response> => {
+  requireUser(locals);
   try {
     const body: CreateApiKeyRequest = await request.json();
 

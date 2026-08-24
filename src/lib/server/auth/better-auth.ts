@@ -9,7 +9,9 @@
  */
 
 import { betterAuth } from 'better-auth';
+import { APIError } from 'better-auth/api';
 import { apiKey } from '@better-auth/api-key';
+import { building } from '$app/environment';
 import { join } from 'path';
 import { randomBytes } from 'crypto';
 import { existsSync, readFileSync } from 'fs';
@@ -74,8 +76,9 @@ try {
 
     migrateApiKeyTable(db);
   } else {
-    // eslint-disable-next-line no-console
-    console.warn('Schema file not found at any of the expected paths:', schemaPaths);
+    // Fail closed: without a schema the DB has no `user` table, which the
+    // setup path would read as a fresh install and reopen bootstrap on.
+    throw new Error(`Schema file not found at any of the expected paths: ${schemaPaths.join(', ')}`);
   }
 } catch (error) {
   // Fail closed: a half-migrated database must abort boot rather than serve
@@ -167,6 +170,25 @@ function resolveSecureCookies(): boolean | undefined {
   return undefined;
 }
 
+// Better Auth's default derives the client IP from X-Forwarded-For.
+// On a directly exposed instance that header is attacker-controlled, so rotating
+// it would let an attacker bypass the login limiter. Only when TRUSTED_PROXY_HEADER
+// names the header a trusted reverse proxy sets do we read the client IP from it.
+function resolveIpAddressConfig(): { ipAddressHeaders: string[] } {
+  const header: string | undefined = process.env.TRUSTED_PROXY_HEADER?.trim();
+  if (header) {
+    return { ipAddressHeaders: [header] };
+  }
+  // Direct-exposed default: an EMPTY header list, NOT disableIpTracking.
+  // disableIpTracking:true makes Better Auth skip the limiter for every request
+  // (getIp -> null, resolveRateLimitConfig -> null, onRequestRateLimit no-ops), so
+  // the /sign-in/email rule would never fire. An empty ipAddressHeaders reads no
+  // header at all, so getIp still resolves to null and the limiter runs on one
+  // non-spoofable global bucket. A rotated XFF can no longer key (or reset) that
+  // bucket. Do NOT "simplify" this back to disableIpTracking, it reopens AUTH-005.
+  return { ipAddressHeaders: [] };
+}
+
 export const auth = betterAuth({
   database: db,
   // Better Auth refuses to construct under NODE_ENV=production without a secret,
@@ -179,6 +201,27 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     autoSignIn: true,
+    // Server-enforced; SetupForm.svelte mirrors this client-side.
+    minPasswordLength: 8,
+  },
+  // enforce the single-administrator invariant at the data
+  // layer. This is the only mechanism that can distinguish the first user (the
+  // bootstrap admin) from every later signup; the idx_user_singleton UNIQUE
+  // index is the atomic backstop for the read-then-write race below.
+  databaseHooks: {
+    user: {
+      create: {
+        before: async (user) => {
+          const { count } = db.prepare('SELECT COUNT(*) as count FROM user').get() as {
+            count: number;
+          };
+          if (count >= 1) {
+            throw new APIError('BAD_REQUEST', { message: 'Registration is closed.' });
+          }
+          return { data: user };
+        },
+      },
+    },
   },
   user: {
     changeEmail: {
@@ -192,6 +235,24 @@ export const auth = betterAuth({
   },
   // Better-Auth specific trusted origins
   trustedOrigins: buildTrustedOrigins(),
+  // Explicit so the limiter does not silently depend on the
+  // NODE_ENV-gated default. The whole /api/auth subtree gets the global window;
+  // /sign-in/email is tightened for brute-force resistance.
+  rateLimit: {
+    enabled: true,
+    window: 60,
+    max: 100,
+    customRules: {
+      '/sign-in/email': { window: 60, max: 5 },
+    },
+  },
+  // The app never calls auth.api.listSessions (it lists sessions via
+  // raw SQL in sessionManager), so disabling the HTTP endpoint is safe defense
+  // in depth alongside the path-normalized hook denylist. /change-email is
+  // deliberately NOT here: the password-reauthenticated flow uses the internal
+  // auth.api.changeEmail, and disabledPaths' effect on internal calls is
+  // unverified, it stays in the hook denylist instead.
+  disabledPaths: ['/list-sessions'],
   plugins: [
     apiKey({
       defaultPrefix: 'sk_',
@@ -205,6 +266,7 @@ export const auth = betterAuth({
       generateId: (): string => uuidv4(),
     },
     useSecureCookies: resolveSecureCookies(),
+    ipAddress: resolveIpAddressConfig(),
   },
 });
 

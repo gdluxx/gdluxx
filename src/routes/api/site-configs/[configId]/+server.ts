@@ -17,8 +17,10 @@ import {
   siteConfigIdSchema,
 } from '$lib/server/validation/site-config-validation';
 import { serverLogger as logger } from '$lib/server/logger';
+import { requireUser } from '$lib/server/auth/requireUser';
 
-export const GET: RequestHandler = async ({ params }) => {
+export const GET: RequestHandler = async ({ params, locals }) => {
+  requireUser(locals);
   try {
     validateInput(params, siteConfigIdSchema);
     const configId = parseInt(params.configId || '0');
@@ -38,7 +40,8 @@ export const GET: RequestHandler = async ({ params }) => {
   }
 };
 
-export const PUT: RequestHandler = async ({ request, params }) => {
+export const PUT: RequestHandler = async ({ request, params, locals }) => {
+  requireUser(locals);
   try {
     validateInput(params, siteConfigIdSchema);
     const configId = parseInt(params.configId || '0');
@@ -65,7 +68,8 @@ export const PUT: RequestHandler = async ({ request, params }) => {
   }
 };
 
-export const DELETE: RequestHandler = async ({ params }) => {
+export const DELETE: RequestHandler = async ({ params, locals }) => {
+  requireUser(locals);
   try {
     validateInput(params, siteConfigIdSchema);
     const configId = parseInt(params.configId || '0');

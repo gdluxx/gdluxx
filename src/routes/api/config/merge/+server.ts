@@ -15,8 +15,10 @@ import { parseJson } from '$lib/server/validation/zod';
 import { configMergeSchema } from '$lib/server/validation/config-merge-validation';
 import { readConfigFile, writeConfigFile } from '$lib/server/config-utils';
 import { mergeIntoConfigText } from '$lib/server/config-merge';
+import { requireUser } from '$lib/server/auth/requireUser';
 
-export const POST: RequestHandler = async ({ request }): Promise<Response> => {
+export const POST: RequestHandler = async ({ request, locals }): Promise<Response> => {
+  requireUser(locals);
   try {
     const parseResult = await parseJson(request, configMergeSchema);
     if ('errorResponse' in parseResult) {

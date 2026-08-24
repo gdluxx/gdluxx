@@ -22,8 +22,10 @@ import {
 } from '$lib/server/version/versionManager';
 import { serverLogger as logger } from '$lib/server/logger';
 import { createApiError, createApiResponse } from '$lib/server/api-utils';
+import { requireUser } from '$lib/server/auth/requireUser';
 
-export const POST: RequestHandler = async (): Promise<Response> => {
+export const POST: RequestHandler = async ({ locals }): Promise<Response> => {
+  requireUser(locals);
   try {
     const versionInfo: VersionInfo = await readVersionInfo();
     const binaryExists: boolean = await checkBinaryExists();

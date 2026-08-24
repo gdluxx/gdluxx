@@ -15,8 +15,10 @@ import { validateInput } from '$lib/server/validation/validation-utils';
 import { configUpdateSchema } from '$lib/server/validation/config-validation';
 import { readConfigFile, writeConfigFile } from '$lib/server/config-utils';
 import type { ConfigReadResult, ConfigWriteResult } from '$lib/server/config-utils';
+import { requireUser } from '$lib/server/auth/requireUser';
 
-export const GET: RequestHandler = async (): Promise<Response> => {
+export const GET: RequestHandler = async ({ locals }): Promise<Response> => {
+  requireUser(locals);
   try {
     const result: ConfigReadResult = await readConfigFile();
     const resp = createApiResponse(result);
@@ -28,7 +30,8 @@ export const GET: RequestHandler = async (): Promise<Response> => {
   }
 };
 
-export const POST: RequestHandler = async ({ request }): Promise<Response> => {
+export const POST: RequestHandler = async ({ request, locals }): Promise<Response> => {
+  requireUser(locals);
   try {
     const contentType = request.headers.get('content-type') || '';
 

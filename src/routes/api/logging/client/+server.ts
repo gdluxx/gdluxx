@@ -11,6 +11,7 @@
 import { json } from '@sveltejs/kit';
 import { serverLogger } from '$lib/server/logger';
 import type { RequestHandler } from './$types';
+import { requireUser } from '$lib/server/auth/requireUser';
 
 interface ClientLogEntry {
   timestamp: string;
@@ -21,7 +22,8 @@ interface ClientLogEntry {
   userAgent?: string;
 }
 
-export const POST: RequestHandler = async ({ request }) => {
+export const POST: RequestHandler = async ({ request, locals }) => {
+  requireUser(locals);
   try {
     const { logs } = await request.json();
 
