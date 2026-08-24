@@ -32,9 +32,9 @@ const emptySubBundle: SubBundle = { version: 1, profiles: {} };
 const emptyExtractionBundle: ExtractionBundle = { version: 1, profiles: {} };
 
 export const GET: RequestHandler = async ({ locals }): Promise<Response> => {
-  requireUser(locals);
+  const user = requireUser(locals);
   try {
-    const apiKeys = await listApiKeys();
+    const apiKeys = await listApiKeys(user.id);
 
     const summaries: ApiKeySummary[] = apiKeys.map((key) => ({
       id: key.id,

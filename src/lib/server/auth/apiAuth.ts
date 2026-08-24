@@ -10,6 +10,7 @@
 
 import { auth } from './better-auth';
 import { serverLogger as logger } from '$lib/server/logger';
+import { API_KEY_STATEMENTS } from '$lib/server/apikey/permissions';
 
 export interface AuthResult {
   success: boolean;
@@ -28,8 +29,11 @@ export async function validateApiKey(providedKey: unknown): Promise<AuthResult> 
       return { success: false, error: 'API key is required' };
     }
 
+    // Required, not just defaulted: a stored NULL-permissions row (pre-backfill,
+    // or a future creation path that skips defaultPermissions) fails closed here
+    // rather than silently verifying with no grant at all.
     const result = await auth.api.verifyApiKey({
-      body: { key: providedKey },
+      body: { key: providedKey, permissions: API_KEY_STATEMENTS },
     });
 
     if (result.valid && result.key) {

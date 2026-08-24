@@ -15,7 +15,7 @@ import { createApiError, createApiResponse } from '$lib/server/api-utils';
 import { requireUser } from '$lib/server/auth/requireUser';
 
 export const DELETE: RequestHandler = async ({ params, locals }): Promise<Response> => {
-  requireUser(locals);
+  const user = requireUser(locals);
   try {
     const { keyId } = params;
 
@@ -23,7 +23,7 @@ export const DELETE: RequestHandler = async ({ params, locals }): Promise<Respon
       return createApiError('API key ID is required', 400);
     }
 
-    await deleteApiKey(keyId);
+    await deleteApiKey(keyId, user.id);
 
     return createApiResponse({
       message: 'API key deleted successfully',

@@ -25,7 +25,7 @@ export const POST: RequestHandler = async ({ request, params, locals }) => {
       return createApiError('apiKeyId is required', 400);
     }
 
-    const apiKeys = await listApiKeys();
+    const apiKeys = await listApiKeys(user.id);
     if (!apiKeys.some((k) => k.id === apiKeyId)) {
       return createApiError('API key not found', 400);
     }

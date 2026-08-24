@@ -17,9 +17,9 @@ import type { ApiKeySummary, CookieBackupView, CookiesPageData } from '$lib/cook
 import { requireUser } from '$lib/server/auth/requireUser';
 
 export const GET: RequestHandler = async ({ locals }): Promise<Response> => {
-  requireUser(locals);
+  const user = requireUser(locals);
   try {
-    const apiKeys = await listApiKeys();
+    const apiKeys = await listApiKeys(user.id);
 
     const summaries: ApiKeySummary[] = apiKeys.map((key) => ({
       id: key.id,

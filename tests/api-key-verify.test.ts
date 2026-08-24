@@ -8,8 +8,6 @@
  * as published by the Free Software Foundation.
  */
 
-// `test.fails` cases define pending remediation behavior and become plain tests once it ships.
-
 import { afterEach, describe, expect, test, vi } from 'vitest';
 
 process.env.AUTH_SECRET = 'phase0-test-secret-not-for-prod-0123456789';
@@ -44,11 +42,23 @@ vi.mock('node:fs', async (importOriginal) => {
 });
 
 const { auth } = await import('$lib/server/auth/better-auth');
+// The owner-scoping tests below seed a second user directly (bypassing the
+// signup hook) to exercise cross-user isolation, which the production
+// single-admin index forbids. Better Auth's own boot re-execs schema.sql
+// (recreating the index if dropped earlier), so this must run after import,
+// not in the hoisted db setup above.
+db.exec('DROP INDEX IF EXISTS idx_user_singleton');
 const { validateApiKey } = await import('$lib/server/auth/apiAuth');
 const apiKeyManager = await import('$lib/server/apikey/apiKeyManager');
+const { API_KEY_STATEMENTS } = await import('$lib/server/apikey/permissions');
+const { backfillApiKeyPermissions } = await import('$lib/server/auth/apiKeyTableMigration');
 
 interface ApiKeyRow {
   expiresAt: number | string | null;
+}
+
+interface PermissionsRow {
+  permissions: string | null;
 }
 
 async function seedAdminUser(email: string): Promise<string> {
@@ -56,6 +66,17 @@ async function seedAdminUser(email: string): Promise<string> {
     body: { email, password: 'correct horse battery staple', name: 'Admin' },
   });
   return result.user.id;
+}
+
+// Bypasses signUpEmail and its single-admin hook for cross-user tests.
+function seedUser(id: string, email: string): void {
+  const ts = Date.now();
+  db.prepare('INSERT INTO user (id, email, createdAt, updatedAt) VALUES (?, ?, ?, ?)').run(
+    id,
+    email,
+    ts,
+    ts,
+  );
 }
 
 afterEach(() => {
@@ -102,10 +123,10 @@ describe('verifyApiKey round-trip (regression)', () => {
 
 describe('createApiKey expiresAt unit conversion (regression)', () => {
   test('a 7-day expiry is stored and returned in milliseconds, not seconds', async () => {
-    await seedAdminUser('expiry-owner@example.test');
+    const userId = await seedAdminUser('expiry-owner@example.test');
     const sevenDaysOut = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
-    const created = await apiKeyManager.createApiKey('expiring key', sevenDaysOut);
+    const created = await apiKeyManager.createApiKey('expiring key', userId, sevenDaysOut);
 
     const toleranceMs = 60 * 1000;
     expect(created.expiresAt).toBeDefined();
@@ -125,26 +146,47 @@ describe('createApiKey expiresAt unit conversion (regression)', () => {
   });
 });
 
-describe('REM-014: default key expiration', () => {
-  test.fails('a key created with no explicit expiry still gets a default expiresAt', async () => {
+describe('REM-014: default key expiration (manager-level, not plugin-level)', () => {
+  test('apiKeyManager.createApiKey with expiry omitted gets a ~365-day default expiresAt', async () => {
     const userId = await seedAdminUser('no-expiry-owner@example.test');
+    const before = Date.now();
 
-    const created = await auth.api.createApiKey({
-      body: { name: 'no explicit expiry', userId, prefix: 'sk_' },
-    });
+    const created = await apiKeyManager.createApiKey('no explicit expiry', userId);
 
-    expect(created.expiresAt).not.toBeNull();
     expect(created.expiresAt).toBeDefined();
+
+    const oneDayMs = 24 * 60 * 60 * 1000;
+    expect(created.expiresAt).toBeGreaterThan(before + 364 * oneDayMs);
+    expect(created.expiresAt).toBeLessThan(before + 366 * oneDayMs);
+
+    const row = db.prepare('SELECT expiresAt FROM apiKey WHERE id = ?').get(created.id) as
+      | ApiKeyRow
+      | undefined;
+    expect(row?.expiresAt).not.toBeNull();
+  });
+
+  test('apiKeyManager.createApiKey with expiresAt: null stores a NULL expiresAt and the key still authenticates under strict permissions', async () => {
+    const userId = await seedAdminUser('never-expires-owner@example.test');
+
+    const created = await apiKeyManager.createApiKey('never expires', userId, null);
+
+    expect(created.expiresAt).toBeUndefined();
+
+    const row = db.prepare('SELECT expiresAt FROM apiKey WHERE id = ?').get(created.id) as
+      | ApiKeyRow
+      | undefined;
+    expect(row?.expiresAt).toBeNull();
+
+    // Never-expiring must not be a side door around permission verification.
+    const result = await validateApiKey(created.key);
+    expect(result.success).toBe(true);
+    expect(result.keyInfo?.userId).toBe(userId);
   });
 });
 
-describe('REM-014: existing NULL-permission key keeps authenticating (backfill must not strand it)', () => {
-  // gdluxx verifies extension keys without a required-permission set, so a
-  // NULL-permission key must remain valid when default permissions are added.
-  // Better Auth applies defaults only when creating a key, not while verifying
-  // a pre-existing row.
-  test('a key with permissions=NULL still authenticates via the gdluxx verify path', async () => {
-    const userId = await seedAdminUser('legacy-owner@example.test');
+describe('REM-014: NULL-permission key backfill (migration-ordering contract)', () => {
+  test('a NULL-permission key WITHOUT the backfill fails strict verification (enforcement is real)', async () => {
+    const userId = await seedAdminUser('legacy-owner-unbackfilled@example.test');
     const created = await auth.api.createApiKey({
       body: { name: 'legacy key', userId, prefix: 'sk_' },
     });
@@ -153,7 +195,72 @@ describe('REM-014: existing NULL-permission key keeps authenticating (backfill m
 
     const result = await validateApiKey(created.key);
 
+    expect(result.success).toBe(false);
+  });
+
+  test('a NULL-permission key WITH the backfill authenticates (migration ordering holds)', async () => {
+    const userId = await seedAdminUser('legacy-owner-backfilled@example.test');
+    const created = await auth.api.createApiKey({
+      body: { name: 'legacy key', userId, prefix: 'sk_' },
+    });
+
+    db.prepare('UPDATE apiKey SET permissions = NULL WHERE id = ?').run(created.id);
+
+    backfillApiKeyPermissions(db);
+
+    const result = await validateApiKey(created.key);
+
     expect(result.success).toBe(true);
     expect(result.keyInfo?.userId).toBe(userId);
+  });
+});
+
+describe('REM-014: apiKeyManager ownership and permissions', () => {
+  test('a newly created key stores the canonical permissions and verifies under strict required permissions', async () => {
+    const userId = await seedAdminUser('canonical-owner@example.test');
+
+    const created = await apiKeyManager.createApiKey('canonical key', userId);
+
+    const row = db.prepare('SELECT permissions FROM apiKey WHERE id = ?').get(created.id) as
+      | PermissionsRow
+      | undefined;
+    expect(row?.permissions).not.toBeNull();
+    expect(JSON.parse(row!.permissions as string)).toEqual(API_KEY_STATEMENTS);
+
+    const result = await validateApiKey(created.key);
+    expect(result.success).toBe(true);
+  });
+
+  test('deleteApiKey is scoped to the owner: another user cannot delete it, the owner can', async () => {
+    const userAId = 'owner-scope-user-a';
+    const userBId = 'owner-scope-user-b';
+    seedUser(userAId, 'owner-a@example.test');
+    seedUser(userBId, 'owner-b@example.test');
+
+    const created = await apiKeyManager.createApiKey('scoped key', userAId);
+
+    await expect(apiKeyManager.deleteApiKey(created.id, userBId)).rejects.toThrow(
+      'API key not found',
+    );
+    const stillThere = db.prepare('SELECT id FROM apiKey WHERE id = ?').get(created.id);
+    expect(stillThere).toBeDefined();
+
+    await expect(apiKeyManager.deleteApiKey(created.id, userAId)).resolves.toBeUndefined();
+    const gone = db.prepare('SELECT id FROM apiKey WHERE id = ?').get(created.id);
+    expect(gone).toBeUndefined();
+  });
+
+  test('listApiKeys scopes results to the requesting user', async () => {
+    const userAId = 'list-scope-user-a';
+    const userBId = 'list-scope-user-b';
+    seedUser(userAId, 'list-a@example.test');
+    seedUser(userBId, 'list-b@example.test');
+
+    const keyA = await apiKeyManager.createApiKey('a key', userAId);
+    await apiKeyManager.createApiKey('b key', userBId);
+
+    const listedForA = await apiKeyManager.listApiKeys(userAId);
+
+    expect(listedForA.map((k) => k.id)).toEqual([keyA.id]);
   });
 });

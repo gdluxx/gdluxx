@@ -13,6 +13,7 @@ import { dev } from '$app/environment';
 import type { Actions } from './$types';
 import { serverLogger as logger } from '$lib/server/logger';
 import { createPageLoad } from '$lib/utils/page-load';
+import { requireUser } from '$lib/server/auth/requireUser';
 import {
   createApiKey,
   findApiKeyByName,
@@ -46,7 +47,8 @@ export const load = createPageLoad({
 });
 
 export const actions: Actions = {
-  create: async ({ request }) => {
+  create: async ({ request, locals }) => {
+    const user = requireUser(locals);
     try {
       const formData = await request.formData();
       const name = formData.get('name') as string;
@@ -69,7 +71,7 @@ export const actions: Actions = {
       }
 
       const trimmedName: string = name.trim();
-      const existingKey: ApiKey | null = await findApiKeyByName(trimmedName);
+      const existingKey: ApiKey | null = await findApiKeyByName(trimmedName, user.id);
       if (existingKey) {
         return fail(400, {
           error: API_KEY_VALIDATION.NAME.DUPLICATE_MESSAGE,
@@ -88,8 +90,14 @@ export const actions: Actions = {
         }
       }
 
-      const expiresAtDate: Date | undefined = expirationDate ? new Date(expirationDate) : undefined;
-      const result = await createApiKey(trimmedName, expiresAtDate);
+      // Three states: neverExpires -> null (never-expiring), no date given ->
+      // undefined (manager's 365-day default), explicit date -> that Date.
+      const expiresAtInput: Date | null | undefined = neverExpires
+        ? null
+        : expirationDate
+          ? new Date(expirationDate)
+          : undefined;
+      const result = await createApiKey(trimmedName, user.id, expiresAtInput);
 
       const response: NewApiKeyResponse = {
         apiKey: {
@@ -117,7 +125,8 @@ export const actions: Actions = {
     }
   },
 
-  delete: async ({ request }) => {
+  delete: async ({ request, locals }) => {
+    const user = requireUser(locals);
     try {
       const formData = await request.formData();
       const keyId = formData.get('keyId') as string;
@@ -129,7 +138,7 @@ export const actions: Actions = {
         });
       }
 
-      await deleteApiKey(keyId);
+      await deleteApiKey(keyId, user.id);
 
       return {
         success: true,

@@ -40,14 +40,14 @@ function emptyBundle(): ExtractionBundle {
 }
 
 export const GET: RequestHandler = async ({ params, locals }) => {
-  requireUser(locals);
+  const user = requireUser(locals);
   try {
     const { apiKeyId } = params;
     if (!apiKeyId) {
       return createApiError('apiKeyId is required', 400);
     }
 
-    const apiKeys = await listApiKeys();
+    const apiKeys = await listApiKeys(user.id);
     if (!apiKeys.some((k) => k.id === apiKeyId)) {
       return createApiError('API key not found', 404);
     }
@@ -93,7 +93,7 @@ export const POST: RequestHandler = async ({ request, params, locals }) => {
     }
     const input = parseResult.data;
 
-    const apiKeys = await listApiKeys();
+    const apiKeys = await listApiKeys(user.id);
     if (!apiKeys.some((k) => k.id === apiKeyId)) {
       return createApiError('API key not found', 404);
     }
@@ -167,14 +167,14 @@ export const POST: RequestHandler = async ({ request, params, locals }) => {
 };
 
 export const DELETE: RequestHandler = async ({ params, locals }) => {
-  requireUser(locals);
+  const user = requireUser(locals);
   try {
     const { apiKeyId } = params;
     if (!apiKeyId) {
       return createApiError('apiKeyId is required', 400);
     }
 
-    const apiKeys = await listApiKeys();
+    const apiKeys = await listApiKeys(user.id);
     if (!apiKeys.some((k) => k.id === apiKeyId)) {
       return createApiError('API key not found', 404);
     }

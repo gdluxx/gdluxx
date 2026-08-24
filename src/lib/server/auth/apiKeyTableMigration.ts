@@ -8,6 +8,7 @@
  * as published by the Free Software Foundation.
  */
 
+import { API_KEY_STATEMENTS } from '$lib/server/apikey/permissions';
 import type BetterSqlite3 from 'better-sqlite3';
 
 interface TableColumn {
@@ -246,4 +247,19 @@ export function migrateApiKeyTable(db: BetterSqlite3.Database): void {
   }
 
   db.exec(CREATE_API_KEY_INDEXES_SQL);
+}
+
+// Must run after migrateApiKeyTable (the column has to exist) and before
+// verification starts requiring permissions, or every pre-existing key would
+// fail closed. Idempotent and non-destructive: only ever touches rows still
+// at NULL, so it's safe to call unconditionally on every boot.
+export function backfillApiKeyPermissions(db: BetterSqlite3.Database): void {
+  const result = db
+    .prepare('UPDATE apiKey SET permissions = ? WHERE permissions IS NULL')
+    .run(JSON.stringify(API_KEY_STATEMENTS));
+
+  if (result.changes > 0) {
+    // eslint-disable-next-line no-console
+    console.log(`Backfilled permissions on ${result.changes} API key(s).`);
+  }
 }

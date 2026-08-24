@@ -22,14 +22,14 @@ import {
 import { requireUser } from '$lib/server/auth/requireUser';
 
 export const GET: RequestHandler = async ({ params, locals }) => {
-  requireUser(locals);
+  const user = requireUser(locals);
   try {
     const { apiKeyId } = params;
     if (!apiKeyId) {
       return createApiError('apiKeyId is required', 400);
     }
 
-    const apiKeys = await listApiKeys();
+    const apiKeys = await listApiKeys(user.id);
     const apiKey = apiKeys.find((k) => k.id === apiKeyId);
     if (!apiKey) {
       return createApiError('API key not found', 404);

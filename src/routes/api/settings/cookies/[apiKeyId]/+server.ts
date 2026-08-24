@@ -21,14 +21,14 @@ import { removeCachedCookieFile } from '$lib/server/cookieFileManager';
 import { requireUser } from '$lib/server/auth/requireUser';
 
 export const DELETE: RequestHandler = async ({ params, url, locals }) => {
-  requireUser(locals);
+  const user = requireUser(locals);
   try {
     const { apiKeyId } = params;
     if (!apiKeyId) {
       return createApiError('apiKeyId is required', 400);
     }
 
-    const apiKeys = await listApiKeys();
+    const apiKeys = await listApiKeys(user.id);
     if (!apiKeys.some((k) => k.id === apiKeyId)) {
       return createApiError('API key not found', 404);
     }

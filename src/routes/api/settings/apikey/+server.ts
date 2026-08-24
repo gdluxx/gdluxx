@@ -27,9 +27,9 @@ import { validateInput } from '$lib/server/validation/validation-utils';
 import { requireUser } from '$lib/server/auth/requireUser';
 
 export const GET: RequestHandler = async ({ locals }): Promise<Response> => {
-  requireUser(locals);
+  const user = requireUser(locals);
   try {
-    const apiKeys: ApiKey[] = await listApiKeys();
+    const apiKeys: ApiKey[] = await listApiKeys(user.id);
     const resp = createApiResponse({ apiKeys });
     resp.headers.set('Cache-Control', 'no-store');
     return resp;
@@ -40,7 +40,7 @@ export const GET: RequestHandler = async ({ locals }): Promise<Response> => {
 };
 
 export const POST: RequestHandler = async ({ request, locals }): Promise<Response> => {
-  requireUser(locals);
+  const user = requireUser(locals);
   try {
     const body: CreateApiKeyRequest = await request.json();
 
@@ -52,7 +52,7 @@ export const POST: RequestHandler = async ({ request, locals }): Promise<Respons
     }
 
     const trimmedName: string = body.name.trim();
-    const existingKey: ApiKey | null = await findApiKeyByName(trimmedName);
+    const existingKey: ApiKey | null = await findApiKeyByName(trimmedName, user.id);
     if (existingKey) {
       return handleApiError(new Error(API_KEY_VALIDATION.NAME.DUPLICATE_MESSAGE));
     }
@@ -65,7 +65,7 @@ export const POST: RequestHandler = async ({ request, locals }): Promise<Respons
     }
 
     const expiresAt: Date | undefined = body.expiresAt ? new Date(body.expiresAt) : undefined;
-    const result = await createApiKey(trimmedName, expiresAt);
+    const result = await createApiKey(trimmedName, user.id, expiresAt);
 
     const response: NewApiKeyResponse = {
       apiKey: {

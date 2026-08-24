@@ -8,8 +8,6 @@
  * as published by the Free Software Foundation.
  */
 
-export * from './apiKeyManager';
-export * from './permissions';
-export * from '$lib/apikey/apiKeyValidation';
-export * from '$lib/apikey/types';
-export * from '$lib/apikey/validation-schemas';
+export const API_KEY_STATEMENTS: Record<string, string[]> = {
+  extension: ['read', 'write'],
+};
