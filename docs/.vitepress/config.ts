@@ -23,6 +23,7 @@ export default defineConfig({
         items: [
           { text: 'Installation', link: '/getting-started/installation' },
           { text: 'First Run Setup', link: '/getting-started/first-run' },
+          { text: 'Upgrading', link: '/getting-started/upgrading' },
         ],
       },
       {
@@ -53,6 +54,7 @@ export default defineConfig({
         items: [
           { text: 'Using the API', link: '/advanced/api-usage' },
           { text: 'Reverse Proxy Guide', link: '/advanced/reverse-proxy' },
+          { text: 'Data & Recovery', link: '/advanced/data-recovery' },
         ],
       },
       {

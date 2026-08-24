@@ -14,8 +14,10 @@ import { validateInput } from '$lib/server/validation/validation-utils';
 import { createApiResponse, createApiError, handleApiError } from '$lib/server/api-utils';
 import { siteConfigSchema } from '$lib/server/validation/site-config-validation';
 import { serverLogger as logger } from '$lib/server/logger';
+import { requireUser } from '$lib/server/auth/requireUser';
 
-export const GET: RequestHandler = async () => {
+export const GET: RequestHandler = async ({ locals }) => {
+  requireUser(locals);
   try {
     const configs = await siteConfigManager.getSiteConfigsAll();
 
@@ -26,7 +28,8 @@ export const GET: RequestHandler = async () => {
   }
 };
 
-export const POST: RequestHandler = async ({ request }) => {
+export const POST: RequestHandler = async ({ request, locals }) => {
+  requireUser(locals);
   try {
     const data = await request.json();
 

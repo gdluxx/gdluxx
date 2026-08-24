@@ -11,8 +11,14 @@
 import { type Job, jobManager } from '$lib/server/jobs/jobManager';
 import type { RequestEvent, RequestHandler } from '@sveltejs/kit';
 import { serverLogger as logger } from '$lib/server/logger';
+import { requireUser } from '$lib/server/auth/requireUser';
 
-export const GET: RequestHandler = async ({ params, request }: RequestEvent): Promise<Response> => {
+export const GET: RequestHandler = async ({
+  params,
+  request,
+  locals,
+}: RequestEvent): Promise<Response> => {
+  requireUser(locals);
   const { jobId } = params;
 
   if (!jobId) {

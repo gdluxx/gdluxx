@@ -14,7 +14,7 @@ services:
       # - PORT=${PORT}
       # - HOST=${HOST}
       - AUTH_SECRET=${AUTH_SECRET}
-      - ORIGIN=${ORIGIN:-http://localhost:7755}
+      - ORIGIN=${ORIGIN:-http://localhost:7765}
       - USE_SECURE_COOKIES=${USE_SECURE_COOKIES:-}
       # - DOWNLOAD_PATH=/app/downloads
     env_file:

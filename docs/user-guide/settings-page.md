@@ -80,9 +80,7 @@ If downloads suddenly stop working:
 Currently, shows your account information. More features may be added in the
 future.
 
-{#api-keys}
-
-## API Key Manager
+## API Key Manager {#api-keys}
 
 This is where you create and manage API keys for external access (browser
 extension, scripts, or anything else you dream up).
@@ -91,9 +89,10 @@ extension, scripts, or anything else you dream up).
 
 1. Go to **Settings > API Key Manager**
 2. Give it a name (e.g., "Chrome Extension", "Mobile Script")
-3. Optionally set an expiration date
-   - Toggle off "Never expires?"
-   - Choose a date/time for expiration
+3. Set an expiration, or don't
+   - No date given: the key expires after 1 year by default
+   - Toggle on "Never expires?": the key stays valid until you delete it
+   - Or choose a specific date/time; at most 365 days out
 4. Click **Generate Key**
 5. **Copy the key immediately** as you'll only see it once
 
@@ -122,6 +121,8 @@ An API key is necessary to use the browser extension.
 
 - **View all keys**: The Key Manager lists all of your active keys
 - **See when they expire**: Each key shows its expiration date (if set)
+- **Older keys never expire**: keys created before gdluxx added the 1-year
+  default have no expiration date and stay valid until you delete them
 - **Revoke a key**: Click delete/trash icon to immediately revoke access
 - **Create multiple keys**: You can have as many keys as you want
 
@@ -185,23 +186,23 @@ collapsed **Legacy backups** section so you can review or delete them.
 - Go to **Settings > Cookies**
 
 This page shows the cookies synced from the browser extension's Cookies tab,
-organized per API key since that's how the extension authenticates. Pick a
-key from the dropdown to see which domains have synced cookies, how many, and
-when they were last updated.
+organized per API key since that's how the extension authenticates. Pick a key
+from the dropdown to see which domains have synced cookies, how many, and when
+they were last updated.
 
 You can delete a single domain's cookies or clear an entire key's backup.
-Deleting doesn't touch your browser - sync again from the extension's overlay
-if you want them back.
+Deleting doesn't touch your browser - sync again from the extension's overlay if
+you want them back.
 
 See [Cookie Sync](./cookies.md) for how synced cookies get applied to your
 downloads.
 
 ::: warning Security Note  
-Cookies are session-equivalent secrets. gdluxx stores them as plain text in
-the database and in the cookie files it writes for gallery-dl - there's no
+Cookies are session-equivalent secrets. gdluxx stores them as plain text in the
+database and in the cookie files it writes for gallery-dl - there's no
 encryption at rest. **Treat your gdluxx data directory with the same care as
-your browser's own cookie store.** Cookie values are never shown or returned
-by the API once synced.  
+your browser's own cookie store.** Cookie values are never shown or returned by
+the API once synced.  
 :::
 
 ## Log Manager

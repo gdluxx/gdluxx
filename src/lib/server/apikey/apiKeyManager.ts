@@ -14,13 +14,12 @@ import { deleteProfileBackup } from '$lib/server/extensionProfileBackupManager';
 import { deleteSubBackup } from '$lib/server/extensionSubBackupManager';
 import { getCookieBackup } from '$lib/server/cookieBackupManager';
 import { removeCachedCookieFile } from '$lib/server/cookieFileManager';
+import { API_KEY_STATEMENTS } from './permissions';
 import type { ApiKey } from '$lib/apikey/types';
 import type BetterSqlite3 from 'better-sqlite3';
 import type { RunResult, Statement } from 'better-sqlite3';
 
-interface UserRow {
-  id: string;
-}
+export const API_KEY_DEFAULT_EXPIRY_SECONDS = 365 * 24 * 60 * 60;
 
 interface ApiKeyRow {
   id: string;
@@ -46,26 +45,15 @@ interface ApiKeyRow {
   metadata: string | null;
 }
 
-async function getAdminUserId(): Promise<string> {
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const db = (auth as any).options.database as BetterSqlite3.Database;
-    const stmt: Statement = db.prepare('SELECT id FROM user LIMIT 1');
-    const user = stmt.get() as UserRow | undefined;
-
-    if (!user) {
-      throw new Error('No admin user found');
-    }
-    return user.id;
-  } catch (error) {
-    logger.error('Error getting admin user ID:', error);
-    throw error;
-  }
-}
-
+// The plugin's keyExpiration.defaultExpiresIn was removed from better-auth.ts, so
+// a direct auth.api.createApiKey call omitting expiresIn now creates a
+// never-expiring key. All key creation must go through this manager, which
+// supplies the 365-day default itself (expiresAt: undefined) and only
+// produces a never-expiring key on an explicit expiresAt: null.
 export async function createApiKey(
   name: string,
-  expiresAt?: Date,
+  userId: string,
+  expiresAt?: Date | null,
 ): Promise<{
   id: string;
   name: string;
@@ -75,13 +63,22 @@ export async function createApiKey(
   key: string;
 }> {
   try {
-    const userId: string = await getAdminUserId();
+    const expiresIn =
+      expiresAt instanceof Date
+        ? Math.floor((expiresAt.getTime() - Date.now()) / 1000)
+        : expiresAt === null
+          ? undefined
+          : API_KEY_DEFAULT_EXPIRY_SECONDS;
+
     const result = await auth.api.createApiKey({
       body: {
         name,
         userId,
         prefix: 'sk_',
-        expiresIn: expiresAt ? Math.floor((expiresAt.getTime() - Date.now()) / 1000) : undefined,
+        expiresIn,
+        // Manager-created keys must receive this grant independently of the
+        // plugin's default-permissions configuration.
+        permissions: API_KEY_STATEMENTS,
       },
     });
 
@@ -108,10 +105,8 @@ export async function createApiKey(
   }
 }
 
-export async function listApiKeys(): Promise<ApiKey[]> {
+export async function listApiKeys(userId: string): Promise<ApiKey[]> {
   try {
-    const userId: string = await getAdminUserId();
-
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const db = (auth as any).options.database as BetterSqlite3.Database;
     const stmt = db.prepare(`
@@ -136,7 +131,7 @@ export async function listApiKeys(): Promise<ApiKey[]> {
   }
 }
 
-export async function deleteApiKey(keyId: string): Promise<void> {
+export async function deleteApiKey(keyId: string, userId: string): Promise<void> {
   try {
     // cookie backup row is FK-cascaded with the apiKey row; capture its
     // domains first so the cached files can still be cleaned up afterward
@@ -145,8 +140,11 @@ export async function deleteApiKey(keyId: string): Promise<void> {
     // better-auth delete not working as expected, revisit
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const db = (auth as any).options.database as BetterSqlite3.Database;
-    const stmt: Statement = db.prepare('DELETE FROM apiKey WHERE id = ?');
-    const result: RunResult = stmt.run(keyId);
+    // Scoped by referenceId so one user can never delete another's key; the
+    // same generic error covers "not found" and "not yours" (no ownership
+    // disclosure).
+    const stmt: Statement = db.prepare('DELETE FROM apiKey WHERE id = ? AND referenceId = ?');
+    const result: RunResult = stmt.run(keyId, userId);
 
     if (result.changes === 0) {
       throw new Error('API key not found');
@@ -168,10 +166,8 @@ export async function deleteApiKey(keyId: string): Promise<void> {
   }
 }
 
-export async function findApiKeyByName(name: string): Promise<ApiKey | null> {
+export async function findApiKeyByName(name: string, userId: string): Promise<ApiKey | null> {
   try {
-    const userId: string = await getAdminUserId();
-
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const db = (auth as any).options.database as BetterSqlite3.Database;
     const stmt: Statement = db.prepare(`

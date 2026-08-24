@@ -27,6 +27,12 @@ vi.mock('node:fs', () => ({
   },
 }));
 
+// Isolate option-containment assertions from machine-local persisted config.
+vi.mock('$lib/server/jobs/configGuard', () => ({
+  assertConfigFileSafeForExecution: vi.fn().mockResolvedValue(undefined),
+  resetConfigGuardCache: vi.fn(),
+}));
+
 const { launchUrls, BinaryUnavailableError } = await import('$lib/server/jobs/commandLauncher');
 
 describe('commandLauncher.launchUrls', () => {

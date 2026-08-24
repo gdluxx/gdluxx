@@ -132,7 +132,8 @@ they will "freeze". Reloading the page will fix it.
 ### Why?
 
 - The API key was deleted from gdluxx
-- The key expired (if you set an expiration date)
+- The key expired. Keys default to a 1-year expiry unless set to "Never
+  expires?".
 - There was a typo when entering it (and kudos for typing it, but try
   copy/paste)
 
@@ -292,4 +293,5 @@ If you've tried everything above:
    - Enable logging to file
    - Look for errors about the API request
 
-For further help, check the [GitHub issues page](https://github.com/gdluxx/gdluxx/issues).
+For further help, check the
+[GitHub issues page](https://github.com/gdluxx/gdluxx/issues).

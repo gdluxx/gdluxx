@@ -12,6 +12,7 @@ import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { siteConfigManager } from '$lib/server/siteConfigManager';
 import { serverLogger as logger } from '$lib/server/logger';
+import { requireUser } from '$lib/server/auth/requireUser';
 
 interface LookupRequestBody {
   urls: string[];
@@ -26,7 +27,8 @@ interface LookupResult {
   options: Record<string, string | number | boolean>;
 }
 
-export const POST: RequestHandler = async ({ request }) => {
+export const POST: RequestHandler = async ({ request, locals }) => {
+  requireUser(locals);
   try {
     const body: LookupRequestBody = await request.json();
 

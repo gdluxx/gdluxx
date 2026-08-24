@@ -11,6 +11,7 @@
 import optionsData from '$lib/assets/options.json';
 import type { Option, OptionsData } from '$lib/types/options';
 import { serverLogger as logger } from '$lib/server/logger';
+import { assertOptionIdsAllowed } from '$lib/server/validation/exec-policy';
 
 const validOptions = new Map<string, Option>();
 Object.values(optionsData as OptionsData).forEach((category) => {
@@ -45,6 +46,8 @@ export function validateOptionValue(option: Option, value: unknown): string | nu
 }
 
 export function validateAndBuildCliArgs(argsMap: Map<string, unknown>): string[] {
+  assertOptionIdsAllowed(argsMap.keys());
+
   const cliArgs: string[] = [];
 
   for (const [optionId, value] of argsMap) {

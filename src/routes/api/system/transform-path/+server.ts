@@ -12,8 +12,10 @@ import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { transformLogPathSafe } from '$lib/server/config-utils';
 import { serverLogger } from '$lib/server/logger';
+import { requireUser } from '$lib/server/auth/requireUser';
 
-export const POST: RequestHandler = async ({ request }) => {
+export const POST: RequestHandler = async ({ request, locals }) => {
+  requireUser(locals);
   try {
     const { path, type } = await request.json();
 

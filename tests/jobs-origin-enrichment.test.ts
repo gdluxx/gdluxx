@@ -20,6 +20,9 @@ const { db } = await vi.hoisted(async () => {
   const database = new Database(':memory:');
   const schemaUrl = new URL('../src/lib/server/schema.sql', import.meta.url);
   database.exec(readFileSync(schemaUrl, 'utf8'));
+  // This suite seeds multiple users to exercise owner-vs-non-owner scoping,
+  // which the production single-user index forbids; drop it here.
+  database.exec('DROP INDEX IF EXISTS idx_user_singleton');
   return { db: database };
 });
 
@@ -183,7 +186,7 @@ function seedScheduledJobScenario(): Scenario {
   };
 }
 
-describe('GET /api/jobs — origin enrichment', () => {
+describe('GET /api/jobs - origin enrichment', () => {
   test('the owner sees the schedule link', async () => {
     const scenario = seedScheduledJobScenario();
 

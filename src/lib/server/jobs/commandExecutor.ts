@@ -16,6 +16,8 @@ import { PATHS, TERMINAL } from '$lib/server/constants';
 import { redactSensitiveArgs } from '$lib/server/validation/option-validation';
 import { getCookieFileForUrl } from '$lib/server/cookieFileManager';
 import { isUnsupportedUrlExit } from './galleryDlExit';
+import { assertConfigFileSafeForExecution } from './configGuard';
+import { ConfigExecutionBlockedError } from '$lib/server/validation/exec-policy';
 
 export interface CommandExecutionResult {
   success: boolean;
@@ -56,6 +58,18 @@ export async function executeGalleryDlCommand(
   cliArgs: string[],
   options?: GalleryDlCommandOptions,
 ): Promise<CommandExecutionResult> {
+  // This layer reports per-URL failures as results; throwing a policy failure
+  // would let callers flatten it into an unrelated route-level error.
+  try {
+    await assertConfigFileSafeForExecution();
+  } catch (error) {
+    if (error instanceof ConfigExecutionBlockedError) {
+      logger.error('Refusing to spawn gallery-dl:', error.violations);
+      return { success: false, error: error.clientMessage };
+    }
+    throw error;
+  }
+
   let createdJobId: string | undefined;
   try {
     const jobId = await jobManager.createJob(url);
@@ -151,6 +165,16 @@ export async function executeGalleryDlBatchCommand(
   cliArgs: string[],
   options?: GalleryDlBatchCommandOptions,
 ): Promise<CommandExecutionResult> {
+  try {
+    await assertConfigFileSafeForExecution();
+  } catch (error) {
+    if (error instanceof ConfigExecutionBlockedError) {
+      logger.error('Refusing to spawn gallery-dl:', error.violations);
+      return { success: false, error: error.clientMessage };
+    }
+    throw error;
+  }
+
   let createdJobId: string | undefined;
   try {
     const jobId = await jobManager.createBatchJob(urls);

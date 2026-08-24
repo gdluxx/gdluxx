@@ -212,10 +212,40 @@ This tells gallery-dl to:
 ```
 
 ::: tip  
-Instead of hand-editing cookies into your config, the browser extension can
-sync them for you and gdluxx will apply them automatically at job time - into
-the same `/app/data/cookies/` directory mentioned above. See
+Instead of hand-editing cookies into your config, the browser extension can sync
+them for you and gdluxx will apply them automatically at job time - into the
+same `/app/data/cookies/` directory mentioned above. See
 [Cookie Sync](./cookies.md).  
+:::
+
+## Rejected Settings
+
+Since gallery-dl runs with whatever `config.json` you save, gdluxx rejects a few
+settings that would let the config file itself run arbitrary code or write
+outside your data directory:
+
+- **`exec`/`python` post-processors**, and any `command`/`commands` key,
+  anywhere in the file. These run a shell command or import a Python module when
+  a job finishes.
+- **Paths that resolve outside your data directory.** `base-directory`,
+  `part-directory`, `archive`, `path`, `cookies` (when given as a file path),
+  and `cache.file` must stay under gdluxx's data directory (or your
+  `DOWNLOAD_PATH`, if set — see the
+  [install guide](../getting-started/installation.md#custom-download-location)).
+  Values starting with `~` or containing `$`/`%` are also rejected, since
+  gallery-dl would expand those after gdluxx has already validated the path.
+
+A save that trips either check is rejected with a 400 and nothing is written. A
+`config.json` already on disk that trips a check (e.g. hand-edited on the
+mounted volume) blocks every job until you fix and re-save it — gdluxx never
+silently rewrites or deletes it.
+
+::: info Bare-metal downloads on a separate drive  
+If you're not running in Docker and your downloads or archives live outside
+gdluxx's data directory (a second drive, a NAS mount), set
+`GDLUXX_CONFIG_PATH_ROOTS` (see `.env.example`) to the absolute root(s) you want
+allowed, colon-separated. This only takes effect via the process environment, so
+it can't be set from the config editor or an API request.  
 :::
 
 ## More Info

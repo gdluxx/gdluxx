@@ -33,19 +33,21 @@ import {
   normaliseOrigin,
   normalisePath,
 } from '$lib/extensionProfiles/profileId';
+import { requireUser } from '$lib/server/auth/requireUser';
 
 function emptyBundle(): ExtractionBundle {
   return { version: 1, profiles: {} };
 }
 
-export const GET: RequestHandler = async ({ params }) => {
+export const GET: RequestHandler = async ({ params, locals }) => {
+  const user = requireUser(locals);
   try {
     const { apiKeyId } = params;
     if (!apiKeyId) {
       return createApiError('apiKeyId is required', 400);
     }
 
-    const apiKeys = await listApiKeys();
+    const apiKeys = await listApiKeys(user.id);
     if (!apiKeys.some((k) => k.id === apiKeyId)) {
       return createApiError('API key not found', 404);
     }
@@ -78,6 +80,7 @@ export const GET: RequestHandler = async ({ params }) => {
 // this same path operate on the whole backup (mirrors the legacy selectors/subs
 // collection routes).
 export const POST: RequestHandler = async ({ request, params, locals }) => {
+  const user = requireUser(locals);
   try {
     const apiKeyId = params.apiKeyId;
     if (!apiKeyId) {
@@ -90,7 +93,7 @@ export const POST: RequestHandler = async ({ request, params, locals }) => {
     }
     const input = parseResult.data;
 
-    const apiKeys = await listApiKeys();
+    const apiKeys = await listApiKeys(user.id);
     if (!apiKeys.some((k) => k.id === apiKeyId)) {
       return createApiError('API key not found', 404);
     }
@@ -149,7 +152,7 @@ export const POST: RequestHandler = async ({ request, params, locals }) => {
 
     bundle.profiles[id] = newProfile;
 
-    const syncedBy = locals.user?.email ?? locals.user?.name ?? null;
+    const syncedBy = user.email ?? user.name ?? null;
     const saved = saveExtractionBackup(apiKeyId, bundle, syncedBy);
     if (!saved) {
       return createApiError('Failed to save extraction profile', 500);
@@ -163,14 +166,15 @@ export const POST: RequestHandler = async ({ request, params, locals }) => {
   }
 };
 
-export const DELETE: RequestHandler = async ({ params }) => {
+export const DELETE: RequestHandler = async ({ params, locals }) => {
+  const user = requireUser(locals);
   try {
     const { apiKeyId } = params;
     if (!apiKeyId) {
       return createApiError('apiKeyId is required', 400);
     }
 
-    const apiKeys = await listApiKeys();
+    const apiKeys = await listApiKeys(user.id);
     if (!apiKeys.some((k) => k.id === apiKeyId)) {
       return createApiError('API key not found', 404);
     }

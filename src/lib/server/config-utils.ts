@@ -13,6 +13,11 @@ import { join, dirname } from 'path';
 import { serverLogger as logger } from '$lib/server/logger';
 import { ensureDir } from '$lib/utils/fs';
 import { isRunningInDockerCached } from './environment';
+import {
+  assertCommandExecutionAbsent,
+  assertPathsConfined,
+  parseConfigText,
+} from '$lib/server/validation/exec-policy';
 
 export const DATA_PATH = process.env.FILE_STORAGE_PATH ?? './data';
 export const CONFIG_FILE = 'config.json';
@@ -412,8 +417,16 @@ export async function writeConfigFile(content: string): Promise<ConfigWriteResul
     throw new Error('Content cannot be empty');
   }
 
+  // The transform only rewrites path-string leaves, so it cannot introduce or
+  // remove a command-bearing key.
+  assertCommandExecutionAbsent(parseConfigText(content));
+
   const transformedContent: string = transformConfigPaths(content);
   const wasTransformed: boolean = content !== transformedContent;
+
+  // In Docker, validate the normalized bytes that will actually be persisted;
+  // on bare metal the transform is a no-op.
+  assertPathsConfined(parseConfigText(transformedContent));
 
   const fullPath: string = join(DATA_PATH, CONFIG_FILE);
   const tmpPath = `${fullPath}.tmp`;

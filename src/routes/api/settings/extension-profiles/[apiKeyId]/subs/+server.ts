@@ -31,6 +31,7 @@ import {
   normaliseOrigin,
   normalisePath,
 } from '$lib/extensionProfiles/profileId';
+import { requireUser } from '$lib/server/auth/requireUser';
 
 const profileScopeSchema = z.enum(['host', 'origin', 'path']);
 
@@ -49,6 +50,7 @@ function emptyBundle(): SubProfileBundle {
 }
 
 export const POST: RequestHandler = async ({ request, params, locals }) => {
+  const user = requireUser(locals);
   try {
     const apiKeyId = params.apiKeyId;
     if (!apiKeyId) {
@@ -95,7 +97,7 @@ export const POST: RequestHandler = async ({ request, params, locals }) => {
 
     bundle.profiles[id] = newProfile;
 
-    const syncedBy = locals.user?.email ?? locals.user?.name ?? null;
+    const syncedBy = user.email ?? user.name ?? null;
     const saved = saveSubBackup(apiKeyId, bundle, syncedBy);
     if (!saved) {
       return createApiError('Failed to save substitution profile', 500);

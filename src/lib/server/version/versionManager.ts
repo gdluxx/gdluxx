@@ -92,6 +92,8 @@ export async function getCurrentVersionFromBinary(): Promise<string | null> {
     await mkdir(PATHS.DATA_DIR, { recursive: true });
     await stat(PATHS.BIN_FILE);
 
+    // --version exits before config or postprocessor loading. Adding config or
+    // extraction flags here would require the execution guard.
     const { stdout } = await execAsync(`"${PATHS.BIN_FILE}" --version`);
     const versionMatch = stdout.trim().match(/(\d+\.\d+\.\d+)/);
     return versionMatch ? versionMatch[1] : null;

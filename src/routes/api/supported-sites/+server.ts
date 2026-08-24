@@ -13,8 +13,10 @@ import { siteConfigManager } from '$lib/server/siteConfigManager';
 import { siteDataFetcher } from '$lib/server/siteDataFetcher';
 import { createApiResponse, handleApiError } from '$lib/server/api-utils';
 import { serverLogger as logger } from '$lib/server/logger';
+import { requireUser } from '$lib/server/auth/requireUser';
 
-export const GET: RequestHandler = async ({ url }) => {
+export const GET: RequestHandler = async ({ url, locals }) => {
+  requireUser(locals);
   try {
     const category: string | undefined = url.searchParams.get('category') || undefined;
     const sites = await siteConfigManager.getSupportedSites(category);
@@ -36,7 +38,8 @@ export const GET: RequestHandler = async ({ url }) => {
   }
 };
 
-export const POST: RequestHandler = async () => {
+export const POST: RequestHandler = async ({ locals }) => {
+  requireUser(locals);
   try {
     logger.info('Manual refresh of supported sites requested');
     await siteDataFetcher.fetchAndParseSites();

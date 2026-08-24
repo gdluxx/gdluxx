@@ -1,9 +1,9 @@
 {
   "extractor": {
-    "base-directory": "~/gallery-dl/",
+    "base-directory": "./data/downloads/",
 
     "#": "set global archive file for all extractors",
-    "archive": "~/gallery-dl/archive.sqlite3",
+    "archive": "./data/archives/archive.sqlite3",
     "archive-pragma": ["journal_mode=WAL", "synchronous=NORMAL"],
 
     "#": "add two custom keywords into the metadata dictionary",
@@ -36,7 +36,7 @@
 
     "pixiv": {
       "#": "override global archive path for pixiv",
-      "archive": "~/gallery-dl/archive-pixiv.sqlite3",
+      "archive": "./data/archives/archive-pixiv.sqlite3",
 
       "#": "set custom directory and filename format strings for all pixiv downloads",
       "filename": "{id}{num}.{extension}",
@@ -252,7 +252,7 @@
       "post": {
         "directory": ["Booru", "AllGirlBooru", "Posts"]
       },
-      "archive": "~/gallery-dl/custom-archive-file-for-gelbooru_v01_instances.db",
+      "archive": "./data/archives/custom-archive-file-for-gelbooru_v01_instances.db",
       "filename": "{tags}_{id}_{md5}.{extension}",
       "sleep-request": [0, 1.2]
     },
@@ -305,7 +305,7 @@
       "post": {
         "directory": ["Other Boorus", "TBIB", "Posts"]
       },
-      "archive": "~/gallery-dl/custom-archive-file-for-TBIB.db",
+      "archive": "./data/archives/custom-archive-file-for-TBIB.db",
       "filename": "{id}_{md5}.{extension}",
       "sleep-request": [0, 1.2]
     },
@@ -329,7 +329,7 @@
     "timeout": 8.0,
 
     "#": "write '.part' files into a special directory",
-    "part-directory": "/tmp/.download/",
+    "part-directory": "./data/temp/",
 
     "#": "do not update file modification times",
     "mtime": false,
@@ -362,14 +362,14 @@
 
     "#": "write logging messages to a separate file",
     "logfile": {
-      "path": "~/gallery-dl/log.txt",
+      "path": "./data/gdluxx_logs/log.txt",
       "mode": "w",
       "level": "debug"
     },
 
     "#": "write unrecognized URLs to a separate file",
     "unsupportedfile": {
-      "path": "~/gallery-dl/unsupported.txt",
+      "path": "./data/gdluxx_logs/unsupported.txt",
       "mode": "a",
       "format": "{asctime} {message}",
       "format-date": "%Y-%m-%d-%H-%M-%S"
@@ -427,6 +427,6 @@
 
   "#": "use a custom cache file location",
   "cache": {
-    "file": "~/gallery-dl/cache.sqlite3"
+    "file": "./data/cache.sqlite3"
   }
 }

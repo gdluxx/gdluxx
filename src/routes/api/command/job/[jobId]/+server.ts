@@ -14,8 +14,10 @@ import type { RequestHandler } from './$types';
 import { createApiResponse, handleApiError } from '$lib/server/api-utils';
 import { validateInput } from '$lib/server/validation/validation-utils';
 import { jobIdSchema } from '$lib/server/validation/command-validation';
+import { requireUser } from '$lib/server/auth/requireUser';
 
-export const GET: RequestHandler = async ({ params }: RequestEvent): Promise<Response> => {
+export const GET: RequestHandler = async ({ params, locals }: RequestEvent): Promise<Response> => {
+  requireUser(locals);
   try {
     const { jobId } = params;
 
@@ -37,7 +39,11 @@ export const GET: RequestHandler = async ({ params }: RequestEvent): Promise<Res
   }
 };
 
-export const DELETE: RequestHandler = async ({ params }: RequestEvent): Promise<Response> => {
+export const DELETE: RequestHandler = async ({
+  params,
+  locals,
+}: RequestEvent): Promise<Response> => {
+  requireUser(locals);
   try {
     const { jobId } = params;
 

@@ -13,7 +13,12 @@
   import { enhance } from '$app/forms';
   import { ConfigEditor, Icon } from '$lib/components';
   import { Info, PageLayout } from '$lib/components/ui';
-  import { type ConfigSaveSuccessResult, isConfigSaveSuccess } from '$lib/types/form-results';
+  import {
+    type ConfigSaveSuccessResult,
+    isConfigSaveSuccess,
+    type FormFailureResult,
+    isFormFailure,
+  } from '$lib/types/form-results';
   import { clientLogger as logger } from '$lib/client/logger';
 
   const { data } = $props();
@@ -22,6 +27,7 @@
   let _isSubmitting = $state(false);
   let jsonContent = $state('{}');
   let lastSavedISO = $state<string | undefined>(undefined);
+  let saveError = $state<string | null>(null);
 
   // React to data changes from invalidation
   const loadMessage = $derived(data.message ?? '');
@@ -126,11 +132,24 @@
       </Info>
     {/if}
 
+    {#if saveError}
+      <Info
+        variant="warning"
+        title="Error"
+        dismissible
+        onDismiss={() => (saveError = null)}
+        class="my-8"
+      >
+        {saveError}
+      </Info>
+    {/if}
+
     <form
       bind:this={configForm}
       method="POST"
       use:enhance={() => {
         _isSubmitting = true;
+        saveError = null;
         return async ({ result }) => {
           _isSubmitting = false;
 
@@ -143,6 +162,11 @@
               }
               lastSavedISO = new Date().toISOString();
             }
+          } else if (result.type === 'failure' && result.data && isFormFailure(result.data)) {
+            const data: FormFailureResult = result.data;
+            saveError = data.error ?? 'Failed to save configuration';
+          } else if (result.type !== 'success') {
+            saveError = 'Failed to save configuration';
           }
         };
       }}

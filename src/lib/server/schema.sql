@@ -21,6 +21,16 @@ CREATE TABLE IF NOT EXISTS user (
     updatedAt INTEGER NOT NULL
 );
 
+/*
+ * REM-005 single-administrator invariant: at most one `user` row may exist.
+ * The databaseHooks.user.create.before gate reads-then-writes across an async
+ * boundary, so two concurrent first-user signups can both pass the count check;
+ * this constant-expression UNIQUE index makes the second INSERT fail at the DB,
+ * closing that TOCTOU. On an existing DB that already holds >=2 users the index
+ * creation itself fails and boot aborts (abnormal state needing operator action).
+ */
+CREATE UNIQUE INDEX IF NOT EXISTS idx_user_singleton ON user((1));
+
 CREATE TABLE IF NOT EXISTS session (
     id TEXT PRIMARY KEY,
     token TEXT UNIQUE NOT NULL,

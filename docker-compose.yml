@@ -10,9 +10,11 @@ services:
       - ./data:/app/data
       # - /host/path/to/downloads:/app/downloads
     environment:
-      - AUTH_SECRET=${AUTH_SECRET}
+      - 'AUTH_SECRET=${AUTH_SECRET:?AUTH_SECRET must be set - generate one with: openssl rand -hex 32}'
       - ORIGIN=${ORIGIN:-http://localhost:7755}
       - USE_SECURE_COOKIES=${USE_SECURE_COOKIES:-}
+      # Only behind a reverse proxy. See docs/advanced/reverse-proxy.md
+      - TRUSTED_PROXY_HEADER=${TRUSTED_PROXY_HEADER:-}
       # - DOWNLOAD_PATH=/app/downloads
     restart: unless-stopped
     deploy:

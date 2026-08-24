@@ -22,8 +22,10 @@ import {
   extractionProfileUpdateSchema,
   normaliseRuleInputs,
 } from '$lib/server/validation/extensionProfiles';
+import { requireUser } from '$lib/server/auth/requireUser';
 
 export const PUT: RequestHandler = async ({ request, params, locals }) => {
+  const user = requireUser(locals);
   try {
     const { apiKeyId, profileId } = params;
     if (!apiKeyId || !profileId) {
@@ -63,7 +65,7 @@ export const PUT: RequestHandler = async ({ request, params, locals }) => {
 
     existing.bundle.profiles[profileId] = updated;
 
-    const syncedBy = locals.user?.email ?? locals.user?.name ?? null;
+    const syncedBy = user.email ?? user.name ?? null;
     const saved = saveExtractionBackup(apiKeyId, existing.bundle, syncedBy);
     if (!saved) {
       return createApiError('Failed to save extraction profile', 500);
@@ -78,6 +80,7 @@ export const PUT: RequestHandler = async ({ request, params, locals }) => {
 };
 
 export const DELETE: RequestHandler = async ({ params, locals }) => {
+  const user = requireUser(locals);
   try {
     const { apiKeyId, profileId } = params;
     if (!apiKeyId || !profileId) {
@@ -93,7 +96,7 @@ export const DELETE: RequestHandler = async ({ params, locals }) => {
     Reflect.deleteProperty(nextProfiles, profileId);
     existing.bundle.profiles = nextProfiles;
 
-    const syncedBy = locals.user?.email ?? locals.user?.name ?? null;
+    const syncedBy = user.email ?? user.name ?? null;
     const saved = saveExtractionBackup(apiKeyId, existing.bundle, syncedBy);
     if (!saved) {
       return createApiError('Failed to delete extraction profile', 500);

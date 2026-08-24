@@ -9,6 +9,7 @@
  */
 
 export * from './apiKeyManager';
+export * from './permissions';
 export * from '$lib/apikey/apiKeyValidation';
 export * from '$lib/apikey/types';
 export * from '$lib/apikey/validation-schemas';

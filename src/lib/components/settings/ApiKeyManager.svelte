@@ -399,6 +399,14 @@
                         {/snippet}
                       </Field>
                     </div>
+                  {:else}
+                    <Info
+                      variant="warning"
+                      size="sm"
+                      class="ml-2"
+                    >
+                      This key will stay valid until you delete it.
+                    </Info>
                   {/if}
                 </div>
               </div>

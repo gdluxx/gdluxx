@@ -15,15 +15,17 @@ import { listApiKeys } from '$lib/server/apikey';
 import { importExtensionProfileBundles } from '$lib/server/extensionProfileImport';
 import { parseJson } from '$lib/server/validation/zod';
 import { importableCombinedBundleSchema } from '$lib/server/validation/extensionProfiles';
+import { requireUser } from '$lib/server/auth/requireUser';
 
 export const POST: RequestHandler = async ({ request, params, locals }) => {
+  const user = requireUser(locals);
   try {
     const { apiKeyId } = params;
     if (!apiKeyId) {
       return createApiError('apiKeyId is required', 400);
     }
 
-    const apiKeys = await listApiKeys();
+    const apiKeys = await listApiKeys(user.id);
     if (!apiKeys.some((k) => k.id === apiKeyId)) {
       return createApiError('API key not found', 400);
     }
@@ -34,7 +36,7 @@ export const POST: RequestHandler = async ({ request, params, locals }) => {
     }
     const imported = parseResult.data;
 
-    const syncedBy = locals.user?.email ?? locals.user?.name ?? null;
+    const syncedBy = user.email ?? user.name ?? null;
 
     // the merge + the three writes are one transaction
     const outcome = importExtensionProfileBundles(apiKeyId, imported, syncedBy);

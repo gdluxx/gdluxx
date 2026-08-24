@@ -18,7 +18,7 @@ gdluxx.example.com {
 }
 ```
 
-That's it — no other directives are required.
+That's it, no other directives are required.
 
 ## Live job output (SSE)
 
@@ -37,7 +37,7 @@ gdluxx.example.com {
 ```
 
 Whatever you do, don't put another proxy or load balancer in front of Caddy that
-buffers responses — that will stall or chunk the live output stream even though
+buffers responses, that will stall or chunk the live output stream even though
 Caddy itself is configured correctly.
 
 ## Set `ORIGIN`
@@ -50,3 +50,41 @@ ORIGIN=https://gdluxx.example.com
 ```
 
 See `.env.example` for the full explanation of `ORIGIN`.
+
+## Trusted Proxy Header {#trusted-proxy-header}
+
+gdluxx rate-limits login attempts. By default it trusts **no forwarding
+header**, so a directly-exposed instance can't be tricked by a spoofed/rotated
+`X-Forwarded-For` into bypassing the limiter, with no trusted header configured,
+gdluxx reads no client IP at all and throttles every login attempt through one
+shared global bucket. That's a safe default, and it's fine for a single-user
+self-host even behind a proxy.
+
+Set `TRUSTED_PROXY_HEADER` only if a reverse proxy sits in front of gdluxx
+**and** that proxy sets a trustworthy client-IP header, one it overwrites
+itself rather than passing through unchanged from the incoming request. Name
+that header to key the limiter per client IP instead of the shared global
+bucket:
+
+```
+TRUSTED_PROXY_HEADER=x-forwarded-for
+```
+
+Caddy and Traefik overwrite or sanitize `X-Forwarded-For` by default rather than
+appending to a client-supplied value. Nginx does **not**: the common
+`proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;` recipe appends to
+whatever the client sent, leaving the attacker in control of the first entry.
+Before trusting the header behind Nginx, configure it to overwrite:
+
+```nginx
+proxy_set_header X-Forwarded-For $remote_addr;
+```
+
+::: danger  
+Do **not** set `TRUSTED_PROXY_HEADER` on a directly-exposed instance (no proxy
+in front of gdluxx). Doing so lets anyone reach gdluxx directly and set that
+header themselves, re-opening the spoofing bypass the default is there to
+prevent.  
+:::
+
+See `.env.example` for the full explanation.

@@ -39,6 +39,12 @@ vi.mock('$lib/server/cookieFileManager', () => ({
   getCookieFileForUrl: (...args: unknown[]) => getCookieFileForUrlMock(...args),
 }));
 
+// Isolate the real executor from any machine-local persisted config.
+vi.mock('$lib/server/jobs/configGuard', () => ({
+  assertConfigFileSafeForExecution: vi.fn().mockResolvedValue(undefined),
+  resetConfigGuardCache: vi.fn(),
+}));
+
 const { executeGalleryDlCommand, executeGalleryDlBatchCommand } =
   await import('$lib/server/jobs/commandExecutor');
 
