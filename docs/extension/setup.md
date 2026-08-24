@@ -16,7 +16,9 @@ You'll need an API key from gdluxx. In your gdluxx web interface:
 1. Go to **Settings > API Key Manager**
 2. Click **Create New Key**
 3. Give it a name (e.g., "Chrome Extension" or "My Browser")
-4. Optionally set an expiration date (or leave it blank for no expiration)
+4. Set an expiration, or don't. Not setting a date means the key expires after 1
+   year by default; toggle "Never expires?" for a key that stays valid until you
+   delete it; or choose a specific date up to 365 days out
 5. Click **Create**
 6. Copy the key that appears (you'll only see it once)
 
@@ -38,8 +40,8 @@ the current page's URL. Try sending it—you should see a job appear in gdluxx.
 
 ## Keyboard Shortcuts
 
-The extension has a default keyboard shortcut (`Alt+L`) that opens the overlay UI
-without leaving your current page.
+The extension has a default keyboard shortcut (`Alt+L`) that opens the overlay
+UI without leaving your current page.
 
 ### Changing Your Hotkey
 
@@ -67,7 +69,7 @@ shortcuts like `Ctrl+C`, `Ctrl+V`, `Ctrl+S`, etc.
 The extension needs certain permissions to work.
 
 | Permission                  | Why?                                                   |
-|:----------------------------|:-------------------------------------------------------|
+| :-------------------------- | :----------------------------------------------------- |
 | **Read tab URL**            | To send the current page's URL to gdluxx               |
 | **Inject overlay**          | To show the overlay UI when you press your hotkey      |
 | **Storage**                 | To save your settings (server URL, API key, hotkey)    |
@@ -76,7 +78,8 @@ The extension needs certain permissions to work.
 | **Read cookies** (optional) | To sync your login session for a site with Cookie Sync |
 
 ::: info  
-Alternatively, you can enable gdluxx permissions for sites on an individual/specific basis.   
+Alternatively, you can enable gdluxx permissions for sites on an
+individual/specific basis.  
 :::
 
 Unlike the permissions above, **Read cookies** isn't requested upfront. It's
