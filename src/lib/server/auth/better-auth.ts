@@ -157,8 +157,9 @@ function buildTrustedOrigins(): string[] {
   return uniqueOrigins;
 }
 
-// undefined defers to Better Auth: Secure derives from the baseURL scheme,
-// or from NODE_ENV === 'production' when no baseURL resolves
+// Derive Secure directly from the configured origin so library parsing changes
+// cannot alter it. An absent or invalid origin defers to Better Auth's
+// environment fallback.
 function resolveSecureCookies(): boolean | undefined {
   const value: string | undefined = process.env.USE_SECURE_COOKIES;
   if (value === 'true') {
@@ -167,7 +168,15 @@ function resolveSecureCookies(): boolean | undefined {
   if (value === 'false') {
     return false;
   }
-  return undefined;
+  const baseURL: string | undefined = resolveAppBaseURL();
+  if (!baseURL) {
+    return undefined;
+  }
+  try {
+    return new URL(baseURL).protocol === 'https:';
+  } catch {
+    return undefined;
+  }
 }
 
 // Better Auth's default derives the client IP from X-Forwarded-For.
@@ -232,6 +241,11 @@ export const auth = betterAuth({
   session: {
     expiresIn: 60 * 60 * 24 * 7, // 7 days
     updateAge: 60 * 60 * 24, // 1 day
+    // Deliberate: without this, every request inside updateAge pushes
+    // expiresAt forward, so an active session never actually reaches
+    // expiresIn. This caps it as a true absolute lifetime; an active user
+    // re-authenticates once the 7 days are up.
+    disableSessionRefresh: true,
   },
   // Better-Auth specific trusted origins
   trustedOrigins: buildTrustedOrigins(),

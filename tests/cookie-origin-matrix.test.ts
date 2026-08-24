@@ -8,8 +8,6 @@
  * as published by the Free Software Foundation.
  */
 
-/* `test.fails` cases define pending absolute-session-expiry behavior. */
-
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import Database from 'better-sqlite3';
 import { readFileSync } from 'node:fs';
@@ -142,54 +140,48 @@ describe('cookie Secure derivation from ORIGIN scheme (regression guard, REM-009
 });
 
 describe('absolute session expiration cap (REM-009b: disableSessionRefresh)', () => {
-  test.fails(
-    'REM-009: session.disableSessionRefresh is true, capping expiresIn as an absolute limit [flip to test() when REM-009 lands]',
-    async () => {
-      delete process.env.USE_SECURE_COOKIES;
-      process.env.ORIGIN = 'https://example.test';
-      const { auth } = await loadAuth();
+  test('REM-009: session.disableSessionRefresh is true, capping expiresIn as an absolute limit', async () => {
+    delete process.env.USE_SECURE_COOKIES;
+    process.env.ORIGIN = 'https://example.test';
+    const { auth } = await loadAuth();
 
-      // Config-level proxy for the absolute-session-cap behavior: without
-      // this flag, every request within `updateAge` slides expiresAt
-      // forward, so a session can never reach its `expiresIn` cap.
-      expect(
-        (auth as unknown as { options: { session?: { disableSessionRefresh?: boolean } } }).options
-          .session?.disableSessionRefresh,
-      ).toBe(true);
-    },
-  );
+    // Config-level proxy for the absolute-session-cap behavior: without
+    // this flag, every request within `updateAge` slides expiresAt
+    // forward, so a session can never reach its `expiresIn` cap.
+    expect(
+      (auth as unknown as { options: { session?: { disableSessionRefresh?: boolean } } }).options
+        .session?.disableSessionRefresh,
+    ).toBe(true);
+  });
 
-  test.fails(
-    'REM-009: session expiresAt does not slide forward past updateAge activity [flip to test() when REM-009 lands]',
-    async () => {
-      delete process.env.USE_SECURE_COOKIES;
-      process.env.ORIGIN = 'https://example.test';
-      const { auth } = await loadAuth();
+  test('REM-009: session expiresAt does not slide forward past updateAge activity', async () => {
+    delete process.env.USE_SECURE_COOKIES;
+    process.env.ORIGIN = 'https://example.test';
+    const { auth } = await loadAuth();
 
-      const sessionCookie = await signUpAndGetSessionCookie(auth);
-      expect(sessionCookie).toBeDefined();
-      const cookiePair = sessionCookie!.split(';')[0];
+    const sessionCookie = await signUpAndGetSessionCookie(auth);
+    expect(sessionCookie).toBeDefined();
+    const cookiePair = sessionCookie!.split(';')[0];
 
-      const expiresAtBefore = (
-        currentDb.prepare('SELECT expiresAt FROM session').get() as {
-          expiresAt: string | number;
-        }
-      ).expiresAt;
+    const expiresAtBefore = (
+      currentDb.prepare('SELECT expiresAt FROM session').get() as {
+        expiresAt: string | number;
+      }
+    ).expiresAt;
 
-      // updateAge is 1 day; travel past it (but within the 7-day expiresIn)
-      // so a live session is exercised, not an expired one.
-      vi.useFakeTimers();
-      vi.setSystemTime(Date.now() + 1000 * 60 * 60 * 24 * 2);
+    // updateAge is 1 day; travel past it (but within the 7-day expiresIn)
+    // so a live session is exercised, not an expired one.
+    vi.useFakeTimers();
+    vi.setSystemTime(Date.now() + 1000 * 60 * 60 * 24 * 2);
 
-      await auth.api.getSession({ headers: new Headers({ cookie: cookiePair }) });
+    await auth.api.getSession({ headers: new Headers({ cookie: cookiePair }) });
 
-      const expiresAtAfter = (
-        currentDb.prepare('SELECT expiresAt FROM session').get() as {
-          expiresAt: string | number;
-        }
-      ).expiresAt;
+    const expiresAtAfter = (
+      currentDb.prepare('SELECT expiresAt FROM session').get() as {
+        expiresAt: string | number;
+      }
+    ).expiresAt;
 
-      expect(expiresAtAfter).toBe(expiresAtBefore);
-    },
-  );
+    expect(expiresAtAfter).toBe(expiresAtBefore);
+  });
 });
