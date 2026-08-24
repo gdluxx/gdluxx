@@ -12,7 +12,8 @@ saved gallery-dl configs. If this is a fresh install, skip this page and go to
     gdluxx's database lives at `<data dir>/gdluxx.db` (default
     `./data/gdluxx.db`; in Docker that's the `/app/data` volume). Stop the
     container/app first, or use SQLite's `.backup` command, then copy the file
-    somewhere safe.
+    somewhere safe. See [Data, Backups & Recovery](../advanced/data-recovery.md)
+    for more on backing up and protecting your data directory.
 
 2.  **Set `AUTH_SECRET`, if you haven't already.**
 

@@ -54,6 +54,7 @@ export default defineConfig({
         items: [
           { text: 'Using the API', link: '/advanced/api-usage' },
           { text: 'Reverse Proxy Guide', link: '/advanced/reverse-proxy' },
+          { text: 'Data & Recovery', link: '/advanced/data-recovery' },
         ],
       },
       {
