@@ -10,12 +10,13 @@
 
 import type { RequestHandler } from './$types';
 import { serverLogger as logger } from '$lib/server/logger';
-import { createApiResponse, handleApiError } from '$lib/server/api-utils';
+import { createApiError, createApiResponse, handleApiError } from '$lib/server/api-utils';
 import { validateInput } from '$lib/server/validation/validation-utils';
 import { configUpdateSchema } from '$lib/server/validation/config-validation';
 import { readConfigFile, writeConfigFile } from '$lib/server/config-utils';
 import type { ConfigReadResult, ConfigWriteResult } from '$lib/server/config-utils';
 import { requireUser } from '$lib/server/auth/requireUser';
+import { ProhibitedConfigError } from '$lib/server/validation/exec-policy';
 
 export const GET: RequestHandler = async ({ locals }): Promise<Response> => {
   requireUser(locals);
@@ -62,6 +63,10 @@ export const POST: RequestHandler = async ({ request, locals }): Promise<Respons
     resp.headers.set('Cache-Control', 'no-store');
     return resp;
   } catch (error) {
+    if (error instanceof ProhibitedConfigError) {
+      logger.warn('Rejected config write:', error.violations);
+      return createApiError(error.clientMessage, 400);
+    }
     logger.error('Error saving file:', error);
     return handleApiError(error as Error);
   }

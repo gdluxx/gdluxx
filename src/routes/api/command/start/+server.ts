@@ -19,6 +19,10 @@ import {
 } from '$lib/server/jobs/commandLauncher';
 import { createApiError, createApiResponse, handleApiError } from '$lib/server/api-utils';
 import { requireUser } from '$lib/server/auth/requireUser';
+import {
+  ConfigExecutionBlockedError,
+  ProhibitedOptionError,
+} from '$lib/server/validation/exec-policy';
 
 const URL_PATTERN = /^https?:\/\/.+/;
 
@@ -68,6 +72,14 @@ export const POST: RequestHandler = async ({ request, locals }) => {
       if (error instanceof BinaryUnavailableError) {
         logger.error('gallery-dl.bin not found or not executable');
         return createApiError('gallery-dl.bin not found or not executable', 500);
+      }
+      if (error instanceof ProhibitedOptionError) {
+        logger.warn(`Rejected prohibited option ids: ${error.optionIds.join(', ')}`);
+        return createApiError(error.clientMessage, 400);
+      }
+      if (error instanceof ConfigExecutionBlockedError) {
+        logger.error('Blocked job launch on stored config:', error.violations);
+        return createApiError(error.clientMessage, 409);
       }
       throw error;
     }

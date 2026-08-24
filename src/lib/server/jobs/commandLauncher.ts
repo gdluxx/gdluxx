@@ -12,6 +12,7 @@ import fs from 'node:fs';
 import { PATHS } from '$lib/server/constants';
 import { validateAndBuildCliArgs } from '$lib/server/validation/option-validation';
 import { executeGalleryDlCommand } from './commandExecutor';
+import { assertConfigFileSafeForExecution } from './configGuard';
 
 export class BinaryUnavailableError extends Error {}
 
@@ -36,6 +37,11 @@ export async function launchUrls(req: LaunchRequest): Promise<LaunchResult[]> {
   } catch {
     throw new BinaryUnavailableError('gallery-dl.bin not found or not executable');
   }
+
+  // Fails the whole batch once rather than once per URL; neither this nor
+  // the ProhibitedOptionError from validateAndBuildCliArgs is caught here —
+  // both propagate to the caller (REM-006).
+  await assertConfigFileSafeForExecution();
 
   const excluded = new Set(req.excludedOptions);
   const results: LaunchResult[] = [];

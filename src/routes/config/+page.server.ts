@@ -14,6 +14,7 @@ import { serverLogger as logger } from '$lib/server/logger';
 import { createPageLoad } from '$lib/utils/page-load';
 import { getClientSafeMessage } from '$lib/server/api-utils';
 import { writeConfigFile } from '$lib/server/config-utils';
+import { ProhibitedConfigError } from '$lib/server/validation/exec-policy';
 
 export const load = createPageLoad({
   endpoint: '/api/config',
@@ -33,6 +34,10 @@ export const actions: Actions = {
 
       return await writeConfigFile(content);
     } catch (error) {
+      if (error instanceof ProhibitedConfigError) {
+        logger.warn('Rejected config write:', error.violations);
+        return fail(400, { error: error.clientMessage });
+      }
       logger.error('Error saving file:', error);
       return fail(500, { error: getClientSafeMessage(error as Error) });
     }

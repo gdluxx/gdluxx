@@ -10,12 +10,13 @@
 
 import type { RequestHandler } from './$types';
 import { serverLogger as logger } from '$lib/server/logger';
-import { createApiResponse, handleApiError } from '$lib/server/api-utils';
+import { createApiError, createApiResponse, handleApiError } from '$lib/server/api-utils';
 import { parseJson } from '$lib/server/validation/zod';
 import { configMergeSchema } from '$lib/server/validation/config-merge-validation';
 import { readConfigFile, writeConfigFile } from '$lib/server/config-utils';
 import { mergeIntoConfigText } from '$lib/server/config-merge';
 import { requireUser } from '$lib/server/auth/requireUser';
+import { ProhibitedConfigError } from '$lib/server/validation/exec-policy';
 
 export const POST: RequestHandler = async ({ request, locals }): Promise<Response> => {
   requireUser(locals);
@@ -45,6 +46,10 @@ export const POST: RequestHandler = async ({ request, locals }): Promise<Respons
       action: merge.existed ? 'replaced' : 'created',
     });
   } catch (error) {
+    if (error instanceof ProhibitedConfigError) {
+      logger.warn('Rejected config write:', error.violations);
+      return createApiError(error.clientMessage, 400);
+    }
     logger.error('Error merging config value:', error);
     return handleApiError(error);
   }

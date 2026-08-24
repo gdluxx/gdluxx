@@ -131,6 +131,18 @@ If you're adding `DOWNLOAD_PATH` to an existing install, open the Config page
 and re-save your config, gdluxx will migrate the download paths to the new
 location for you.
 
+### Custom path on bare metal
+
+Outside Docker, gdluxx has no path-rewriting step, so a `config.json` path
+(`base-directory`, `archive`, `part-directory`, `cookies`, `cache.file`, …) must
+resolve under its data directory or it's rejected — see
+[Rejected Settings](../user-guide/config-page.md#rejected-settings). If your
+downloads live on a separate mount, set `GDLUXX_CONFIG_PATH_ROOTS` in your
+`.env` to that mount's absolute path (colon-separated for more than one). This
+is a process-environment setting, the same trust level as
+`DOWNLOAD_PATH`/`FILE_STORAGE_PATH` — it can't be set from the config editor or
+an API request.
+
 {#windows-note}
 
 :::info Windows Users  

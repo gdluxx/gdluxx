@@ -8,11 +8,6 @@
  * as published by the Free Software Foundation.
  */
 
-/**
- * `test.fails` cases define pending containment for gallery-dl argv options
- * that inject runtime configuration through scheduled dispatch.
- */
-
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import type { CreateScheduleInput } from '../src/lib/server/schedules/scheduleManager';
 
@@ -46,6 +41,12 @@ vi.mock('node:fs', async (importOriginal) => {
 
 vi.mock('$lib/server/logger', () => ({
   serverLogger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
+}));
+
+// Isolate option-containment assertions from machine-local persisted config.
+vi.mock('$lib/server/jobs/configGuard', () => ({
+  assertConfigFileSafeForExecution: vi.fn().mockResolvedValue(undefined),
+  resetConfigGuardCache: vi.fn(),
 }));
 
 // Mocking one level below commandLauncher keeps the real launchUrls,
@@ -113,70 +114,104 @@ afterEach(() => {
 });
 
 describe('validateAndBuildCliArgs: gallery-dl argv config injection [REM-006]', () => {
-  test.fails(
-    'REM-006: option/postprocessor/postprocessor-option are neutralized, not emitted as CLI flags [flip to test() when REM-006 lands]',
-    () => {
-      // REM-006 may neutralize by throwing (reject) or by dropping the ids;
-      // both are secure, so a throw here is a pass, not a masked failure.
-      let args: string[];
-      try {
-        args = validateAndBuildCliArgs(
-          new Map<string, unknown>([
-            ['option', 'extractor.base-directory=/tmp/pwned'],
-            ['postprocessor', 'exec'],
-            ['postprocessor-option', 'exec.command=touch /tmp/pwned'],
-          ]),
-        );
-      } catch {
-        return;
-      }
+  test('REM-006: option/postprocessor/postprocessor-option are neutralized, not emitted as CLI flags', () => {
+    // REM-006 may neutralize by throwing (reject) or by dropping the ids;
+    // both are secure, so a throw here is a pass, not a masked failure.
+    let args: string[];
+    try {
+      args = validateAndBuildCliArgs(
+        new Map<string, unknown>([
+          ['option', 'extractor.base-directory=/tmp/pwned'],
+          ['postprocessor', 'exec'],
+          ['postprocessor-option', 'exec.command=touch /tmp/pwned'],
+        ]),
+      );
+    } catch {
+      return;
+    }
 
-      expect(args).not.toContain('--option');
-      expect(args).not.toContain('--postprocessor');
-      expect(args).not.toContain('--postprocessor-option');
-    },
-  );
+    expect(args).not.toContain('--option');
+    expect(args).not.toContain('--postprocessor');
+    expect(args).not.toContain('--postprocessor-option');
+  });
 });
 
 describe('dispatchRun: stored schedule execution containment [REM-006]', () => {
-  test.fails(
-    'REM-006: a stored schedule with hostile userOptions does not reach spawn with unsafe flags [flip to test() when REM-006 lands]',
-    async () => {
-      seedUser('user-1');
-      seedJob('job-hostile', 'success');
-      const schedule = scheduleManager.createSchedule(
-        scheduleInput({
-          commandSource: {
-            urls: ['https://example.test/a'],
-            userOptions: [
-              ['option', 'extractor.base-directory=/tmp/pwned'],
-              ['postprocessor', 'exec'],
-            ],
-            excludedOptions: [],
-          },
-        }),
-      );
-      const run = scheduleRunManager.createRun({
-        scheduleId: schedule.id,
-        userId: 'user-1',
-        scheduleName: schedule.name,
-        trigger: 'manual',
-        outcome: 'dispatching',
-        scheduledFor: Date.now(),
-        urlCount: schedule.commandSource.urls.length,
-      });
-      executeGalleryDlCommandMock.mockResolvedValueOnce({ success: true, jobId: 'job-hostile' });
+  test('REM-006: a stored schedule with hostile userOptions does not reach spawn with unsafe flags', async () => {
+    seedUser('user-1');
+    seedJob('job-hostile', 'success');
+    const schedule = scheduleManager.createSchedule(
+      scheduleInput({
+        commandSource: {
+          urls: ['https://example.test/a'],
+          userOptions: [
+            ['option', 'extractor.base-directory=/tmp/pwned'],
+            ['postprocessor', 'exec'],
+          ],
+          excludedOptions: [],
+        },
+      }),
+    );
+    const run = scheduleRunManager.createRun({
+      scheduleId: schedule.id,
+      userId: 'user-1',
+      scheduleName: schedule.name,
+      trigger: 'manual',
+      outcome: 'dispatching',
+      scheduledFor: Date.now(),
+      urlCount: schedule.commandSource.urls.length,
+    });
+    executeGalleryDlCommandMock.mockResolvedValueOnce({ success: true, jobId: 'job-hostile' });
 
-      await dispatchRun(schedule, run.id, { launch: launchUrls, getMaxBatchUrls: () => 200 });
+    await dispatchRun(schedule, run.id, { launch: launchUrls, getMaxBatchUrls: () => 200 });
 
-      const unsafeCall = executeGalleryDlCommandMock.mock.calls.find(([, cliArgs]) =>
-        (cliArgs as string[]).some((flag) =>
-          ['--option', '--postprocessor', '--postprocessor-option'].includes(flag),
-        ),
-      );
-      expect(unsafeCall).toBeUndefined();
-    },
-  );
+    const unsafeCall = executeGalleryDlCommandMock.mock.calls.find(([, cliArgs]) =>
+      (cliArgs as string[]).some((flag) =>
+        ['--option', '--postprocessor', '--postprocessor-option'].includes(flag),
+      ),
+    );
+    expect(unsafeCall).toBeUndefined();
+  });
+
+  test('REM-006 T-4.1/T-4.2: a hostile schedule dispatch records launch_failed, notifies, and leaves the schedule row intact', async () => {
+    seedUser('user-1');
+    const schedule = scheduleManager.createSchedule(
+      scheduleInput({
+        commandSource: {
+          urls: ['https://example.test/a'],
+          userOptions: [['postprocessor', 'exec']],
+          excludedOptions: [],
+        },
+      }),
+    );
+    const run = scheduleRunManager.createRun({
+      scheduleId: schedule.id,
+      userId: 'user-1',
+      scheduleName: schedule.name,
+      trigger: 'manual',
+      outcome: 'dispatching',
+      scheduledFor: Date.now(),
+      urlCount: schedule.commandSource.urls.length,
+    });
+
+    const { outcome } = await dispatchRun(schedule, run.id, {
+      launch: launchUrls,
+      getMaxBatchUrls: () => 200,
+    });
+
+    expect(outcome).toBe('launch_failed');
+    expect(executeGalleryDlCommandMock).not.toHaveBeenCalled();
+    const notification = db
+      .prepare(
+        "SELECT * FROM schedule_notifications WHERE scheduleId = ? AND type = 'launch_failed'",
+      )
+      .get(schedule.id);
+    expect(notification).toBeDefined();
+
+    const stored = scheduleManager.readScheduleForUser(schedule.id, 'user-1');
+    expect(stored).not.toBeNull();
+    expect(stored?.commandSource).toEqual(schedule.commandSource);
+  });
 
   test('regression: a schedule with only benign userOptions dispatches and invokes executeGalleryDlCommand', async () => {
     seedUser('user-1');

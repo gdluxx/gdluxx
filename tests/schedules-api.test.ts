@@ -51,6 +51,12 @@ vi.mock('$lib/server/logger', () => ({
   serverLogger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
 }));
 
+// Isolate the real launcher's config pre-flight from machine-local state.
+vi.mock('$lib/server/jobs/configGuard', () => ({
+  assertConfigFileSafeForExecution: vi.fn().mockResolvedValue(undefined),
+  resetConfigGuardCache: vi.fn(),
+}));
+
 const getUserSettingsMock = vi.fn((_userId: string) => ({
   warnOnSiteRuleOverride: false,
   selectedTheme: 'indigo' as const,
@@ -358,6 +364,30 @@ describe('GET/POST /api/schedules', () => {
     );
     expect(response.status).toBe(400);
   });
+
+  test('REM-006 T-4.3: POST 400s when userOptions contains a prohibited option id; no schedule row is created', async () => {
+    seedUser('user-1');
+    const before = scheduleManager.readSchedulesForUser('user-1').length;
+
+    const response = await postSchedule(
+      stubEvent({
+        user: { id: 'user-1' },
+        request: jsonRequest(
+          'http://localhost/api/schedules',
+          'POST',
+          createPayload({
+            commandSource: {
+              urls: ['https://example.test/a'],
+              userOptions: [['option', 'x']],
+              excludedOptions: [],
+            },
+          }),
+        ),
+      }),
+    );
+    expect(response.status).toBe(400);
+    expect(scheduleManager.readSchedulesForUser('user-1').length).toBe(before);
+  });
 });
 
 describe('GET/PUT/DELETE /api/schedules/[scheduleId]', () => {
@@ -440,6 +470,40 @@ describe('GET/PUT/DELETE /api/schedules/[scheduleId]', () => {
       }),
     );
     expect(invalid.status).toBe(400);
+  });
+
+  test('REM-006 T-4.4: PUT 400s when userOptions adds a prohibited option id; stored commandSource is unchanged', async () => {
+    seedUser('user-1');
+    const schedule = scheduleManager.createSchedule(
+      scheduleInput({
+        commandSource: {
+          urls: ['https://example.test/a'],
+          userOptions: [['verbose', true]],
+          excludedOptions: [],
+        },
+      }),
+    );
+
+    const response = await putSchedule(
+      stubEvent({
+        user: { id: 'user-1' },
+        params: { scheduleId: schedule.id },
+        request: jsonRequest(`http://localhost/api/schedules/${schedule.id}`, 'PUT', {
+          commandSource: {
+            urls: ['https://example.test/a'],
+            userOptions: [
+              ['verbose', true],
+              ['postprocessor', 'exec'],
+            ],
+            excludedOptions: [],
+          },
+        }),
+      }),
+    );
+    expect(response.status).toBe(400);
+
+    const stored = scheduleManager.readScheduleForUser(schedule.id, 'user-1');
+    expect(stored?.commandSource).toEqual(schedule.commandSource);
   });
 
   test('PUT retains a {keep:true} sensitive option, replaces another, and removes an omitted one', async () => {

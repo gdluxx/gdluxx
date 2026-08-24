@@ -11,6 +11,7 @@
 import { z } from 'zod';
 import type { Recurrence } from '$lib/server/schedules/recurrence';
 import { validOptions } from '$lib/server/validation/option-validation';
+import { isProhibitedOptionId } from '$lib/server/validation/exec-policy';
 
 export const MAX_SCHEDULE_NAME_LENGTH = 100;
 export const MAX_SCHEDULES_PER_USER = 100;
@@ -102,11 +103,30 @@ const urlListSchema = z
   .min(1)
   .max(MAX_SCHEDULE_URLS);
 
-const commandSourceCreateSchema = z.object({
-  urls: urlListSchema,
-  userOptions: z.array(z.tuple([z.string().min(1), optionValueSchema])),
-  excludedOptions: z.array(z.string().min(1)),
-});
+// excludedOptions is not checked: it only removes ids from the merge and
+// cannot add a flag
+function rejectProhibitedOptionIds(
+  value: { userOptions: Array<[string, unknown]> },
+  ctx: z.RefinementCtx,
+): void {
+  value.userOptions.forEach(([optionId], index) => {
+    if (isProhibitedOptionId(optionId)) {
+      ctx.addIssue({
+        code: 'custom',
+        message: `"${optionId}" is not a permitted option.`,
+        path: ['userOptions', index, 0],
+      });
+    }
+  });
+}
+
+const commandSourceCreateSchema = z
+  .object({
+    urls: urlListSchema,
+    userOptions: z.array(z.tuple([z.string().min(1), optionValueSchema])),
+    excludedOptions: z.array(z.string().min(1)),
+  })
+  .superRefine(rejectProhibitedOptionIds);
 
 // Sensitive sentinels are permitted here (update only); a superRefine below
 // rejects one attached to a non-sensitive option id.
@@ -119,6 +139,7 @@ const commandSourceUpdateSchema = z
     excludedOptions: z.array(z.string().min(1)),
   })
   .superRefine((value, ctx) => {
+    rejectProhibitedOptionIds(value, ctx);
     value.userOptions.forEach(([optionId, optionValue], index) => {
       if (isKeepSentinelValue(optionValue) && !validOptions.get(optionId)?.sensitive) {
         ctx.addIssue({

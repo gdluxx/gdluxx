@@ -8,8 +8,6 @@
  * as published by the Free Software Foundation.
  */
 
-/** `test.fails` cases define pending config-write containment behavior. */
-
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { mkdtemp, readFile, rm } from 'fs/promises';
 import { tmpdir } from 'os';
@@ -153,107 +151,94 @@ describe('writeConfigFile: benign config (regression guard)', () => {
 });
 
 describe('writeConfigFile: exec/command containment [REM-006]', () => {
-  test.fails(
-    'REM-006: writeConfigFile rejects an exec post-processor, nested and top-level [flip to test() when REM-006 lands]',
-    async () => {
-      const mod = await loadConfigUtils();
+  test('REM-006: writeConfigFile rejects an exec post-processor, nested and top-level', async () => {
+    const mod = await loadConfigUtils();
 
-      await expect(mod.writeConfigFile(execPostprocessorNested())).rejects.toThrow();
-      await expect(mod.writeConfigFile(execPostprocessorTopLevel())).rejects.toThrow();
-    },
-  );
+    await expect(mod.writeConfigFile(execPostprocessorNested())).rejects.toThrow();
+    await expect(mod.writeConfigFile(execPostprocessorTopLevel())).rejects.toThrow();
+  });
 
-  test.fails(
-    'REM-006: writeConfigFile rejects a command-bearing non-exec post-processor [flip to test() when REM-006 lands]',
-    async () => {
-      const mod = await loadConfigUtils();
+  test('REM-006: writeConfigFile rejects a command-bearing non-exec post-processor', async () => {
+    const mod = await loadConfigUtils();
 
-      await expect(mod.writeConfigFile(commandBearingNonExecPostprocessor())).rejects.toThrow();
-    },
-  );
+    await expect(mod.writeConfigFile(commandBearingNonExecPostprocessor())).rejects.toThrow();
+  });
 
-  test.fails(
-    'REM-006: writeConfigFile rejects a base-directory/path that escapes the data dir [flip to test() when REM-006 lands]',
-    async () => {
-      const mod = await loadConfigUtils();
+  test('REM-006: writeConfigFile rejects a base-directory/path that escapes the data dir', async () => {
+    const mod = await loadConfigUtils();
 
-      for (const hostilePath of HOSTILE_BASE_DIRECTORIES) {
-        const content = JSON.stringify({ extractor: { 'base-directory': hostilePath } });
-        await expect(mod.writeConfigFile(content)).rejects.toThrow();
-      }
-    },
-  );
+    for (const hostilePath of HOSTILE_BASE_DIRECTORIES) {
+      const content = JSON.stringify({ extractor: { 'base-directory': hostilePath } });
+      await expect(mod.writeConfigFile(content)).rejects.toThrow();
+    }
+  });
+
+  test('REM-006 T-4.5: writeConfigFile rejects a command-bearing object outside any postprocessor container', async () => {
+    const mod = await loadConfigUtils();
+
+    const content = JSON.stringify({ a: { b: { c: { commands: ['gdluxx-rem006-sentinel'] } } } });
+    await expect(mod.writeConfigFile(content)).rejects.toThrow();
+    expect(await readConfigOnDisk()).toBeNull();
+  });
 });
 
 describe('POST /api/config: write-path containment [REM-006]', () => {
-  test.fails(
-    'REM-006: the multipart branch validates JSON before writing, not just the .json filename [flip to test() when REM-006 lands]',
-    async () => {
-      const { POST } = await loadConfigRoute();
+  test('REM-006: the multipart branch validates JSON before writing, not just the .json filename', async () => {
+    const { POST } = await loadConfigRoute();
 
-      const response = await POST(
-        requestEvent<typeof POST>(
-          multipartRequest('http://localhost/api/config', 'config.json', 'not valid json {{'),
+    const response = await POST(
+      requestEvent<typeof POST>(
+        multipartRequest('http://localhost/api/config', 'config.json', 'not valid json {{'),
+      ),
+    );
+
+    expect(response.status).toBeGreaterThanOrEqual(400);
+    expect(await readConfigOnDisk()).toBeNull();
+  });
+
+  test('REM-006: the multipart branch rejects an exec-bearing config', async () => {
+    const { POST } = await loadConfigRoute();
+
+    const response = await POST(
+      requestEvent<typeof POST>(
+        multipartRequest('http://localhost/api/config', 'config.json', execPostprocessorNested()),
+      ),
+    );
+
+    expect(response.status).toBeGreaterThanOrEqual(400);
+    expect(await readConfigOnDisk()).toBeNull();
+  });
+
+  test('REM-006: the JSON branch rejects an exec-bearing config', async () => {
+    const { POST } = await loadConfigRoute();
+
+    const response = await POST(
+      requestEvent<typeof POST>(
+        jsonConfigRequest('http://localhost/api/config', execPostprocessorNested()),
+      ),
+    );
+
+    expect(response.status).toBeGreaterThanOrEqual(400);
+    expect(await readConfigOnDisk()).toBeNull();
+  });
+
+  test('REM-006: POST /api/config/merge rejects an exec-bearing value', async () => {
+    const utilsMod = await loadConfigUtils();
+    await utilsMod.writeConfigFile(benignConfig(join(dataDir, 'downloads')));
+
+    const { POST: mergePost } = await loadMergeRoute();
+    const response = await mergePost(
+      requestEvent<typeof mergePost>(
+        mergeRequest(
+          'http://localhost/api/config/merge',
+          ['extractor', 'postprocessors'],
+          [{ name: 'exec', command: ['touch', '/tmp/pwned'] }],
         ),
-      );
+      ),
+    );
 
-      expect(response.status).toBeGreaterThanOrEqual(400);
-      expect(await readConfigOnDisk()).toBeNull();
-    },
-  );
-
-  test.fails(
-    'REM-006: the multipart branch rejects an exec-bearing config [flip to test() when REM-006 lands]',
-    async () => {
-      const { POST } = await loadConfigRoute();
-
-      const response = await POST(
-        requestEvent<typeof POST>(
-          multipartRequest('http://localhost/api/config', 'config.json', execPostprocessorNested()),
-        ),
-      );
-
-      expect(response.status).toBeGreaterThanOrEqual(400);
-      expect(await readConfigOnDisk()).toBeNull();
-    },
-  );
-
-  test.fails(
-    'REM-006: the JSON branch rejects an exec-bearing config [flip to test() when REM-006 lands]',
-    async () => {
-      const { POST } = await loadConfigRoute();
-
-      const response = await POST(
-        requestEvent<typeof POST>(
-          jsonConfigRequest('http://localhost/api/config', execPostprocessorNested()),
-        ),
-      );
-
-      expect(response.status).toBeGreaterThanOrEqual(400);
-      expect(await readConfigOnDisk()).toBeNull();
-    },
-  );
-
-  test.fails(
-    'REM-006: POST /api/config/merge rejects an exec-bearing value [flip to test() when REM-006 lands]',
-    async () => {
-      const utilsMod = await loadConfigUtils();
-      await utilsMod.writeConfigFile(benignConfig(join(dataDir, 'downloads')));
-
-      const { POST: mergePost } = await loadMergeRoute();
-      const response = await mergePost(
-        requestEvent<typeof mergePost>(
-          mergeRequest(
-            'http://localhost/api/config/merge',
-            ['extractor', 'postprocessors'],
-            [{ name: 'exec', command: ['touch', '/tmp/pwned'] }],
-          ),
-        ),
-      );
-
-      expect(response.status).toBeGreaterThanOrEqual(400);
-      const written = await readConfigOnDisk();
-      expect(written).not.toContain('"exec"');
-    },
-  );
+    expect(response.status).toBeGreaterThanOrEqual(400);
+    const written = await readConfigOnDisk();
+    expect(written).not.toContain('"exec"');
+  });
 });

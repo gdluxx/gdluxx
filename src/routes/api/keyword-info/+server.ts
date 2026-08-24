@@ -13,10 +13,12 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { serverLogger as logger } from '$lib/server/logger';
 import { PATHS } from '$lib/server/constants';
-import { createApiResponse, handleApiError } from '$lib/server/api-utils';
+import { createApiError, createApiResponse, handleApiError } from '$lib/server/api-utils';
 import { validateInput } from '$lib/server/validation/validation-utils';
 import { keywordInfoSchema } from '$lib/server/validation/keyword-validation';
 import { requireUser } from '$lib/server/auth/requireUser';
+import { assertConfigFileSafeForExecution } from '$lib/server/jobs/configGuard';
+import { ConfigExecutionBlockedError } from '$lib/server/validation/exec-policy';
 
 // `execFile` (no shell) so the user-supplied URL is passed as a discrete argv
 // entry and can never be interpreted as shell syntax. The validation schema
@@ -97,7 +99,10 @@ function parseListKeywords(raw: string): KeywordSection[] | null {
   return usable.length > 0 ? usable : null;
 }
 
-export const POST: RequestHandler = async ({ request, locals }: RequestEvent): Promise<Response> => {
+export const POST: RequestHandler = async ({
+  request,
+  locals,
+}: RequestEvent): Promise<Response> => {
   requireUser(locals);
   let body: KeywordInfoRequestBody;
 
@@ -137,6 +142,18 @@ export const POST: RequestHandler = async ({ request, locals }: RequestEvent): P
   const commandArgs = [galleryDlFlag, url, '--config', PATHS.CONFIG_FILE];
 
   logger.info(`Executing keyword info command: ${PATHS.BIN_FILE} ${commandArgs.join(' ')}`);
+
+  // --list-keywords loads the persisted config, so it requires the same
+  // execution-time policy check as download commands.
+  try {
+    await assertConfigFileSafeForExecution();
+  } catch (error) {
+    if (error instanceof ConfigExecutionBlockedError) {
+      logger.error('Refusing to run keyword-info:', error.violations);
+      return createApiError(error.clientMessage, 409);
+    }
+    throw error;
+  }
 
   try {
     const { stdout, stderr } = await execFileAsync(PATHS.BIN_FILE, commandArgs, {

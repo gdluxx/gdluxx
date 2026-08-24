@@ -161,10 +161,12 @@ describe('extension external route: fallback batch inherits site-config CLI args
     expect(fallback?.fallbackCliArgs).toEqual(['-o', 'directory=["example.com"]']);
   });
 
-  test('case 5: precedence pin — site config -o pair comes before the request-supplied -o pair', async () => {
+  test('case 5: precedence pin — a site-config flag comes before the request-supplied -o pair', async () => {
     const pageUrl = 'https://example.com/gallery/123';
     const cdnUrl = 'https://cdn.example.com/img.jpg';
-    getCliOptionsForUrlMock.mockResolvedValue([['option', 'directory=should-not-win']]);
+    // Use a permitted string option to isolate the ordering property from
+    // prohibited runtime-configuration flags.
+    getCliOptionsForUrlMock.mockResolvedValue([['filename', 'should-not-win']]);
 
     await POST({
       request: extRequest({
@@ -176,16 +178,11 @@ describe('extension external route: fallback batch inherits site-config CLI args
 
     const fallback = fallbackOptionsFromCall(0);
     const args = fallback?.fallbackCliArgs ?? [];
-    const siteOptionIndex = args.indexOf('--option');
+    const siteOptionIndex = args.indexOf('--filename');
     const requestDirIndex = args.indexOf('-o');
     expect(siteOptionIndex).toBeGreaterThanOrEqual(0);
     expect(requestDirIndex).toBeGreaterThan(siteOptionIndex);
-    expect(args).toEqual([
-      '--option',
-      'directory=should-not-win',
-      '-o',
-      'directory=["example.com"]',
-    ]);
+    expect(args).toEqual(['--filename', 'should-not-win', '-o', 'directory=["example.com"]']);
   });
 
   test('case 6: multi-URL requests discard the fallback entirely (fallbackOptions is undefined)', async () => {
