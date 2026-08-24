@@ -61,6 +61,10 @@ interface PermissionsRow {
   permissions: string | null;
 }
 
+interface StartRow {
+  start: string | null;
+}
+
 async function seedAdminUser(email: string): Promise<string> {
   const result = await auth.api.signUpEmail({
     body: { email, password: 'correct horse battery staple', name: 'Admin' },
@@ -262,5 +266,73 @@ describe('REM-014: apiKeyManager ownership and permissions', () => {
     const listedForA = await apiKeyManager.listApiKeys(userAId);
 
     expect(listedForA.map((k) => k.id)).toEqual([keyA.id]);
+  });
+});
+
+describe('start storage disabled', () => {
+  test('a manager-created key returns its plaintext key and is stored with start IS NULL', async () => {
+    const userId = await seedAdminUser('start-disabled-owner@example.test');
+
+    const created = await apiKeyManager.createApiKey('no stored start', userId);
+
+    expect(created.key).toMatch(/^sk_/);
+
+    const row = db.prepare('SELECT start FROM apiKey WHERE id = ?').get(created.id) as
+      | StartRow
+      | undefined;
+    expect(row?.start).toBeNull();
+  });
+
+  test('a key with no stored start still verifies through both verification paths', async () => {
+    const userId = await seedAdminUser('start-disabled-verify-owner@example.test');
+    const created = await apiKeyManager.createApiKey('verifies without start', userId);
+
+    const verified = await auth.api.verifyApiKey({ body: { key: created.key } });
+    expect(verified.valid).toBe(true);
+    expect(verified.key?.referenceId).toBe(userId);
+
+    const result = await validateApiKey(created.key);
+    expect(result.success).toBe(true);
+    expect(result.keyInfo?.userId).toBe(userId);
+  });
+
+  test('semantics unaffected: default expiry and permissions still apply with start disabled', async () => {
+    const userId = await seedAdminUser('start-disabled-expiry-owner@example.test');
+    const before = Date.now();
+
+    const created = await apiKeyManager.createApiKey('start disabled, still expires', userId);
+
+    const oneDayMs = 24 * 60 * 60 * 1000;
+    expect(created.expiresAt).toBeDefined();
+    expect(created.expiresAt).toBeGreaterThan(before + 364 * oneDayMs);
+    expect(created.expiresAt).toBeLessThan(before + 366 * oneDayMs);
+
+    const row = db
+      .prepare('SELECT expiresAt, permissions, start FROM apiKey WHERE id = ?')
+      .get(created.id) as (ApiKeyRow & PermissionsRow & StartRow) | undefined;
+    expect(row?.expiresAt).not.toBeNull();
+    expect(row?.permissions).not.toBeNull();
+    expect(row?.start).toBeNull();
+  });
+
+  test('a pre-existing legacy row keeps its stored start; a newly created key gets none', async () => {
+    const userId = await seedAdminUser('legacy-start-owner@example.test');
+    const legacyTs = Date.now();
+    db.prepare(
+      `INSERT INTO apiKey (id, key, referenceId, start, prefix, createdAt, updatedAt)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    ).run('legacy-start-key', 'legacy-hashed-key', userId, 'sk_abc', 'sk_', legacyTs, legacyTs);
+
+    const created = await apiKeyManager.createApiKey('new key after legacy row', userId);
+
+    const legacyRow = db
+      .prepare('SELECT start FROM apiKey WHERE id = ?')
+      .get('legacy-start-key') as StartRow | undefined;
+    expect(legacyRow?.start).toBe('sk_abc');
+
+    const newRow = db.prepare('SELECT start FROM apiKey WHERE id = ?').get(created.id) as
+      | StartRow
+      | undefined;
+    expect(newRow?.start).toBeNull();
   });
 });

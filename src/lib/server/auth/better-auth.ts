@@ -280,6 +280,13 @@ export const auth = betterAuth({
       permissions: {
         defaultPermissions: API_KEY_STATEMENTS,
       },
+      // No gdluxx surface reads the stored key prefix, and verification
+      // matches the hashed full key alone, so a fragment of key material need
+      // not persist at rest (AUTH-019b). Pre-existing rows keep their stored
+      // value; the `start` column stays.
+      startingCharactersConfig: {
+        shouldStore: false,
+      },
     }),
   ],
   advanced: {
