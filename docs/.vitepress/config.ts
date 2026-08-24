@@ -23,6 +23,7 @@ export default defineConfig({
         items: [
           { text: 'Installation', link: '/getting-started/installation' },
           { text: 'First Run Setup', link: '/getting-started/first-run' },
+          { text: 'Upgrading', link: '/getting-started/upgrading' },
         ],
       },
       {

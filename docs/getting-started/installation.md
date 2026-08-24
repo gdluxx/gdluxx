@@ -2,6 +2,12 @@
 
 Only Docker installation is supported.
 
+::: tip Already running gdluxx?  
+If you're upgrading an existing install (specifically v0.15.0 or earlier) rather
+than starting fresh, see the [Upgrading](./upgrading.md) guide instead. It
+covers breaking changes and a few steps to take before you update.  
+:::
+
 ### Quick Start
 
 :::danger ⚠️ **Critical: Directory Permissions** ⚠️  
@@ -47,16 +53,16 @@ Then update your compose `volumes` to: `- ~/Documents/gdluxx:/app/data`
 4.  Paste your generated `AUTH_SECRET` into your `.env` file.
 
     ```bash
-    AUTH_SECRET=your-super-secret-auth-key-change-this
+    AUTH_SECRET=<paste the value from step 3>
     ```
 
 5.  Configure your `ORIGIN`.
 
     The `ORIGIN` environment variable is **mandatory**. It tells _gdluxx_ what
     domain to expect for all requests. This helps prevent CSRF issues, and its
-    scheme also decides whether the session cookie is marked `Secure` — an
-    `http://` ORIGIN issues plain cookies, an `https://` ORIGIN issues `Secure`
-    ones.
+    scheme also decides whether the session cookie is marked `Secure`.
+    - An `http://` ORIGIN issues plain cookies
+    - An `https://` ORIGIN issues `Secure` cookies
 
     In your `.env` file, set `ORIGIN` to the URL you will use to access the
     application.
@@ -85,11 +91,14 @@ Then update your compose `volumes` to: `- ~/Documents/gdluxx:/app/data`
         volumes:
           - ./data:/app/data
         environment:
-          - AUTH_SECRET=${AUTH_SECRET}
+          - 'AUTH_SECRET=${AUTH_SECRET:?AUTH_SECRET must be set - generate one
+            with: openssl rand -hex 32}'
           - ORIGIN=${ORIGIN:-http://localhost:7755}
-          # Normally leave this unset — the right value is chosen automatically
+          # Normally leave this unset and the right value is chosen automatically
           # based on whether ORIGIN starts with http:// or https://
           - USE_SECURE_COOKIES=${USE_SECURE_COOKIES:-}
+          # Only behind a reverse proxy. See the Reverse Proxy guide
+          - TRUSTED_PROXY_HEADER=${TRUSTED_PROXY_HEADER:-}
         restart: unless-stopped
         deploy:
           restart_policy:
@@ -135,12 +144,12 @@ location for you.
 
 Outside Docker, gdluxx has no path-rewriting step, so a `config.json` path
 (`base-directory`, `archive`, `part-directory`, `cookies`, `cache.file`, …) must
-resolve under its data directory or it's rejected — see
+resolve under its data directory or it's rejected, see
 [Rejected Settings](../user-guide/config-page.md#rejected-settings). If your
 downloads live on a separate mount, set `GDLUXX_CONFIG_PATH_ROOTS` in your
 `.env` to that mount's absolute path (colon-separated for more than one). This
 is a process-environment setting, the same trust level as
-`DOWNLOAD_PATH`/`FILE_STORAGE_PATH` — it can't be set from the config editor or
+`DOWNLOAD_PATH`/`FILE_STORAGE_PATH`, it can't be set from the config editor or
 an API request.
 
 {#windows-note}

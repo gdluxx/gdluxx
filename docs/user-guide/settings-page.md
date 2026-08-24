@@ -123,6 +123,8 @@ An API key is necessary to use the browser extension.
 
 - **View all keys**: The Key Manager lists all of your active keys
 - **See when they expire**: Each key shows its expiration date (if set)
+- **Older keys never expire**: keys created before gdluxx added the 1-year
+  default have no expiration date and stay valid until you delete them
 - **Revoke a key**: Click delete/trash icon to immediately revoke access
 - **Create multiple keys**: You can have as many keys as you want
 
