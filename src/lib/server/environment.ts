@@ -10,6 +10,36 @@
 
 import { existsSync, readFileSync, accessSync, constants } from 'fs';
 
+// Shipped publicly in this repo's source and docs, so any instance still using
+// one has a cross-install-identical signing key: treat both as compromised.
+const PUBLIC_AUTH_SECRET_PLACEHOLDERS: ReadonlySet<string> = new Set([
+  'fallback-secret-please-set-AUTH_SECRET-in-production',
+  'your-super-secret-auth-key-change-this',
+]);
+
+export function assertAuthSecretConfigured(
+  secret: string | undefined,
+  nodeEnv: string | undefined,
+): void {
+  if (nodeEnv !== 'production') {
+    return;
+  }
+
+  const value: string = secret?.trim() ?? '';
+
+  if (value === '') {
+    throw new Error(
+      'AUTH_SECRET is required in production and is unset. Generate one with: openssl rand -hex 32',
+    );
+  }
+
+  if (PUBLIC_AUTH_SECRET_PLACEHOLDERS.has(value)) {
+    throw new Error(
+      'AUTH_SECRET is set to a publicly known placeholder. Generate one with: openssl rand -hex 32',
+    );
+  }
+}
+
 // Detect if the app is running in Docker container
 // Using multiple detection strategies
 

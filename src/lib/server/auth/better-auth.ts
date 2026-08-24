@@ -11,10 +11,23 @@
 import { betterAuth } from 'better-auth';
 import { apiKey } from '@better-auth/api-key';
 import { join } from 'path';
+import { randomBytes } from 'crypto';
 import { existsSync, readFileSync } from 'fs';
 import { v4 as uuidv4 } from 'uuid';
 import { openDatabase } from '$lib/server/database';
+import { assertAuthSecretConfigured } from '$lib/server/environment';
 import { migrateApiKeyTable } from './apiKeyTableMigration';
+
+// The build imports this module with NODE_ENV=production and no AUTH_SECRET;
+// only a real boot may fail closed on it.
+if (!building) {
+  assertAuthSecretConfigured(process.env.AUTH_SECRET, process.env.NODE_ENV);
+
+  if (!process.env.AUTH_SECRET) {
+    // eslint-disable-next-line no-console
+    console.warn('AUTH_SECRET is not set. Generate one with: openssl rand -hex 32');
+  }
+}
 
 const db = openDatabase();
 
@@ -41,12 +54,13 @@ try {
     );
 
     if (!hasTokenColumn) {
+      // `token` is UNIQUE NOT NULL, so it cannot be added in place to a
+      // populated table. Recreating `session` only costs a re-login;
+      // `user`/`account`/`verification` hold the only copy of the credentials
+      // and are never dropped.
       // eslint-disable-next-line no-console
-      console.log('Migrating database schema to add token column...');
+      console.log('Migrating database schema to add token column; sessions will be reset...');
       db.exec('DROP TABLE IF EXISTS session');
-      db.exec('DROP TABLE IF EXISTS account');
-      db.exec('DROP TABLE IF EXISTS verification');
-      db.exec('DROP TABLE IF EXISTS user');
     }
     db.exec(schema);
 
@@ -64,8 +78,20 @@ try {
     console.warn('Schema file not found at any of the expected paths:', schemaPaths);
   }
 } catch (error) {
+  // Fail closed: a half-migrated database must abort boot rather than serve
+  // requests against it.
   // eslint-disable-next-line no-console
-  console.warn('Could not initialize database schema:', error);
+  console.error('Fatal: could not initialize database schema:', error);
+  if (error instanceof Error && error.message.includes('idx_user_singleton')) {
+    // eslint-disable-next-line no-console
+    console.error(
+      'The single-administrator invariant (REM-005) could not be applied because the ' +
+        'user table already holds more than one row. This is an abnormal/compromised ' +
+        'state. Inspect the user table on the mounted database, remove the extra ' +
+        'account(s) so exactly one remains, then restart.',
+    );
+  }
+  throw error;
 }
 
 function isIpAddress(str: string): boolean {
@@ -143,7 +169,12 @@ function resolveSecureCookies(): boolean | undefined {
 
 export const auth = betterAuth({
   database: db,
-  secret: process.env.AUTH_SECRET || 'fallback-secret-please-set-AUTH_SECRET-in-production',
+  // Better Auth refuses to construct under NODE_ENV=production without a secret,
+  // and the build runs in that mode with AUTH_SECRET unset. Generated per build
+  // rather than hard-coded so it can never become a shared cross-install signing
+  // key; at runtime `building` is false and an absent AUTH_SECRET has already
+  // aborted boot above.
+  secret: building ? randomBytes(32).toString('hex') : process.env.AUTH_SECRET,
   baseURL: resolveAppBaseURL(),
   emailAndPassword: {
     enabled: true,
