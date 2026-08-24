@@ -32,7 +32,7 @@ interface SessionRow {
 }
 
 interface PreparedStatements {
-  listActive: Statement<[string, string]>;
+  listActive: Statement<[string]>;
   selectToken: Statement<[string, string]>;
   exists: Statement<[string, string]>;
 }
@@ -45,10 +45,14 @@ function getStatements(): PreparedStatements {
 
     try {
       statements = {
+        // No expiresAt comparison here: the column's on-disk representation
+        // (ISO text today, possibly epoch ms from a future adapter) isn't
+        // known at query time, and SQLite's type-ordering would silently
+        // misfilter a mix (AUTH-019c).
         listActive: db.prepare(
           `SELECT id, expiresAt, createdAt, updatedAt, ipAddress, userAgent
            FROM session
-           WHERE userId = ? AND expiresAt > ?
+           WHERE userId = ?
            ORDER BY createdAt DESC`,
         ),
         selectToken: db.prepare('SELECT token FROM session WHERE id = ? AND userId = ?'),
@@ -71,26 +75,82 @@ function emptyToNull(value: string | null): string | null {
   return value;
 }
 
-function toIsoString(value: string | number | null): string {
+// A positive expiresAt below this is almost certainly epoch-seconds (or another
+// wrong unit) rather than a genuine epoch-ms expiry decades in the past.
+const EPOCH_MS_PLAUSIBILITY_FLOOR = 1_000_000_000_000;
+
+/** Bare numbers are epoch milliseconds, never seconds. */
+function toEpochMs(value: string | number | null): number | null {
   if (value === null) {
+    return null;
+  }
+  if (typeof value === 'number') {
+    return value;
+  }
+  if (/^\d+$/.test(value)) {
+    return Number(value);
+  }
+  const parsed = Date.parse(value);
+  return Number.isNaN(parsed) ? null : parsed;
+}
+
+function toIsoString(value: string | number | null): string {
+  const epochMs = toEpochMs(value);
+  if (epochMs === null) {
     return '';
   }
-  const date = new Date(value);
+  const date = new Date(epochMs);
   return Number.isNaN(date.getTime()) ? '' : date.toISOString();
 }
 
 export function listActiveSessions(userId: string): ActiveSession[] {
   try {
-    const rows = getStatements().listActive.all(userId, new Date().toISOString()) as SessionRow[];
+    const rows = getStatements().listActive.all(userId) as SessionRow[];
+    const now = Date.now();
 
-    return rows.map((row) => ({
-      id: row.id,
-      createdAt: toIsoString(row.createdAt),
-      updatedAt: toIsoString(row.updatedAt),
-      expiresAt: toIsoString(row.expiresAt),
-      ipAddress: emptyToNull(row.ipAddress),
-      userAgent: emptyToNull(row.userAgent),
-    }));
+    let unparseableCount = 0;
+    let implausibleEpochCount = 0;
+
+    const normalized = rows.map((row) => {
+      const expiresAtMs = toEpochMs(row.expiresAt);
+      if (expiresAtMs === null) {
+        unparseableCount += 1;
+      } else if (expiresAtMs > 0 && expiresAtMs < EPOCH_MS_PLAUSIBILITY_FLOOR) {
+        implausibleEpochCount += 1;
+      }
+      return {
+        row,
+        expiresAtMs,
+        createdAtMs: toEpochMs(row.createdAt) ?? 0,
+      };
+    });
+
+    // A representation change that silently emptied this list would cost the
+    // user the per-session revoke control with no signal, so surface it rather
+    // than letting the filter below swallow it quietly.
+    if (unparseableCount > 0 || implausibleEpochCount > 0) {
+      console.warn(
+        `listActiveSessions: ${unparseableCount} session row(s) had unparseable expiresAt and ` +
+          `${implausibleEpochCount} had an implausible epoch value; both were treated as expired. ` +
+          `Investigate possible wrong-unit storage.`,
+      );
+    }
+
+    return (
+      normalized
+        // Fail closed for display: a session whose expiry can't be parsed is
+        // excluded rather than assumed active.
+        .filter(({ expiresAtMs }) => expiresAtMs !== null && expiresAtMs > now)
+        .sort((a, b) => b.createdAtMs - a.createdAtMs)
+        .map(({ row }) => ({
+          id: row.id,
+          createdAt: toIsoString(row.createdAt),
+          updatedAt: toIsoString(row.updatedAt),
+          expiresAt: toIsoString(row.expiresAt),
+          ipAddress: emptyToNull(row.ipAddress),
+          userAgent: emptyToNull(row.userAgent),
+        }))
+    );
   } catch (error) {
     console.error('Failed to list active sessions:', error);
     return [];
