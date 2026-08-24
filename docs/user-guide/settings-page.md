@@ -80,9 +80,7 @@ If downloads suddenly stop working:
 Currently, shows your account information. More features may be added in the
 future.
 
-{#api-keys}
-
-## API Key Manager
+## API Key Manager {#api-keys}
 
 This is where you create and manage API keys for external access (browser
 extension, scripts, or anything else you dream up).

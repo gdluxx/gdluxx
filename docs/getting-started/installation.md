@@ -152,7 +152,7 @@ is a process-environment setting, the same trust level as
 `DOWNLOAD_PATH`/`FILE_STORAGE_PATH`, it can't be set from the config editor or
 an API request.
 
-{#windows-note}
+### Windows Note {#windows-note}
 
 :::info Windows Users  
 If you are on Windows, you may not have `openssl`. You can use the Windows
