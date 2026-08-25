@@ -238,6 +238,97 @@ describe('scheduleCreateSchema', () => {
     );
     expect(result.success).toBe(false);
   });
+
+  test('rejects a boolean-typed option ("no-skip") given a value of false', () => {
+    const result = scheduleCreateSchema.safeParse(
+      baseCreatePayload({
+        commandSource: {
+          urls: ['https://example.test/a'],
+          userOptions: [['no-skip', false]],
+          excludedOptions: [],
+        },
+      }),
+    );
+    expect(result.success).toBe(false);
+  });
+
+  test('rejects a boolean-typed option ("no-skip") given a non-boolean value', () => {
+    const result = scheduleCreateSchema.safeParse(
+      baseCreatePayload({
+        commandSource: {
+          urls: ['https://example.test/a'],
+          userOptions: [['no-skip', 'yes']],
+          excludedOptions: [],
+        },
+      }),
+    );
+    expect(result.success).toBe(false);
+  });
+
+  test('accepts a boolean-typed option ("no-skip") given a value of true', () => {
+    const result = scheduleCreateSchema.safeParse(
+      baseCreatePayload({
+        commandSource: {
+          urls: ['https://example.test/a'],
+          userOptions: [['no-skip', true]],
+          excludedOptions: [],
+        },
+      }),
+    );
+    expect(result.success).toBe(true);
+  });
+
+  test('rejects a known string-typed option ("filename") given a number value', () => {
+    const result = scheduleCreateSchema.safeParse(
+      baseCreatePayload({
+        commandSource: {
+          urls: ['https://example.test/a'],
+          userOptions: [['filename', 123]],
+          excludedOptions: [],
+        },
+      }),
+    );
+    expect(result.success).toBe(false);
+  });
+
+  test('accepts a known string-typed option ("filename") given a valid string value', () => {
+    const result = scheduleCreateSchema.safeParse(
+      baseCreatePayload({
+        commandSource: {
+          urls: ['https://example.test/a'],
+          userOptions: [['filename', '%Y-%m-%d']],
+          excludedOptions: [],
+        },
+      }),
+    );
+    expect(result.success).toBe(true);
+  });
+
+  test('accepts an unknown option id regardless of value (catalog forward/backward compatibility)', () => {
+    const result = scheduleCreateSchema.safeParse(
+      baseCreatePayload({
+        commandSource: {
+          urls: ['https://example.test/a'],
+          userOptions: [['definitely-not-real', 'x']],
+          excludedOptions: [],
+        },
+      }),
+    );
+    expect(result.success).toBe(true);
+  });
+
+  test('rejects a range-typed option ("range") given a numeric value', () => {
+    const result = scheduleCreateSchema.safeParse(
+      baseCreatePayload({
+        commandSource: {
+          urls: ['https://example.test/a'],
+          userOptions: [['range', 5]],
+          excludedOptions: [],
+        },
+      }),
+    );
+    expect(result.success).toBe(false);
+  });
 });
 
 describe('scheduleUpdateSchema', () => {
@@ -315,6 +406,100 @@ describe('scheduleUpdateSchema', () => {
   test('accepts a partial update touching only the name', () => {
     const result = scheduleUpdateSchema.safeParse({ name: 'Renamed' });
     expect(result.success).toBe(true);
+  });
+
+  test('rejects a boolean-typed option ("no-skip") given a value of false', () => {
+    const result = scheduleUpdateSchema.safeParse({
+      commandSource: {
+        urls: ['https://example.test/a'],
+        userOptions: [['no-skip', false]],
+        excludedOptions: [],
+      },
+    });
+    expect(result.success).toBe(false);
+  });
+
+  test('rejects a boolean-typed option ("no-skip") given a non-boolean value', () => {
+    const result = scheduleUpdateSchema.safeParse({
+      commandSource: {
+        urls: ['https://example.test/a'],
+        userOptions: [['no-skip', 'yes']],
+        excludedOptions: [],
+      },
+    });
+    expect(result.success).toBe(false);
+  });
+
+  test('accepts a boolean-typed option ("no-skip") given a value of true', () => {
+    const result = scheduleUpdateSchema.safeParse({
+      commandSource: {
+        urls: ['https://example.test/a'],
+        userOptions: [['no-skip', true]],
+        excludedOptions: [],
+      },
+    });
+    expect(result.success).toBe(true);
+  });
+
+  test('rejects a known string-typed option ("filename") given a number value', () => {
+    const result = scheduleUpdateSchema.safeParse({
+      commandSource: {
+        urls: ['https://example.test/a'],
+        userOptions: [['filename', 123]],
+        excludedOptions: [],
+      },
+    });
+    expect(result.success).toBe(false);
+  });
+
+  test('accepts a known string-typed option ("filename") given a valid string value', () => {
+    const result = scheduleUpdateSchema.safeParse({
+      commandSource: {
+        urls: ['https://example.test/a'],
+        userOptions: [['filename', '%Y-%m-%d']],
+        excludedOptions: [],
+      },
+    });
+    expect(result.success).toBe(true);
+  });
+
+  test('accepts an unknown option id regardless of value (catalog forward/backward compatibility)', () => {
+    const result = scheduleUpdateSchema.safeParse({
+      commandSource: {
+        urls: ['https://example.test/a'],
+        userOptions: [['definitely-not-real', 'x']],
+        excludedOptions: [],
+      },
+    });
+    expect(result.success).toBe(true);
+  });
+
+  test('a {keep:true} sentinel remains valid alongside a userOptions entry that satisfies the new value check', () => {
+    const result = scheduleUpdateSchema.safeParse({
+      commandSource: {
+        urls: ['https://example.test/a'],
+        userOptions: [
+          ['password', { keep: true }],
+          ['no-skip', true],
+        ],
+        excludedOptions: [],
+      },
+    });
+    expect(result.success).toBe(true);
+  });
+
+  test('a {keep:true} sentinel does not exempt a sibling userOptions entry from the new value check', () => {
+    const result = scheduleUpdateSchema.safeParse({
+      commandSource: {
+        urls: ['https://example.test/a'],
+        userOptions: [
+          ['password', { keep: true }],
+          ['no-skip', false],
+        ],
+        excludedOptions: [],
+      },
+    });
+    expect(result.success).toBe(false);
   });
 });
 

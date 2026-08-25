@@ -11,6 +11,7 @@
 import type { ValidationSchema } from './validation-utils';
 import type { Option, OptionsData } from '$lib/types/options';
 import optionsData from '$lib/assets/options.json';
+import { isOptionValueValidForWrite } from '$lib/server/validation/option-validation';
 
 // map for CLI option validation
 const validOptions = new Map<string, Option>();
@@ -31,36 +32,20 @@ function containsDangerousChars(str: string): boolean {
   return DANGEROUS_CHARS.some((char) => str.includes(char));
 }
 
+const MAX_CLI_OPTION_VALUE_LENGTH = 500;
+
 function validateCliOptionValue(optionId: string, value: unknown): boolean {
   const option = validOptions.get(optionId);
   if (!option) {
     return false;
   }
 
-  if (option.type === 'boolean') {
-    return typeof value === 'boolean';
+  if (!isOptionValueValidForWrite(option, value)) {
+    return false;
   }
 
-  if (option.type === 'number') {
-    const num = Number(value);
-    return !isNaN(num) && isFinite(num);
-  }
-
-  if (option.type === 'string' || option.type === 'range') {
-    if (typeof value !== 'string') {
-      return false;
-    }
-
-    const str = value.trim();
-
-    if (str.length === 0 || str.length > 500) {
-      return false;
-    }
-
-    return true;
-  }
-
-  return false;
+  const isTextual = option.type === 'string' || option.type === 'range';
+  return !isTextual || String(value).trim().length <= MAX_CLI_OPTION_VALUE_LENGTH;
 }
 
 function validateSitePattern(pattern: string): boolean {
