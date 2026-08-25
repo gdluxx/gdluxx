@@ -19,6 +19,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { openDatabase } from '$lib/server/database';
 import { assertAuthSecretConfigured } from '$lib/server/environment';
 import { migrateApiKeyTable, backfillApiKeyPermissions } from './apiKeyTableMigration';
+import { normalizeBooleanOptionValues } from '$lib/server/optionValueMigration';
 import { API_KEY_STATEMENTS } from '$lib/server/apikey/permissions';
 
 // The build imports this module with NODE_ENV=production and no AUTH_SECRET;
@@ -77,6 +78,7 @@ try {
 
     migrateApiKeyTable(db);
     backfillApiKeyPermissions(db);
+    normalizeBooleanOptionValues(db);
   } else {
     // Fail closed: without a schema the DB has no `user` table, which the
     // setup path would read as a fresh install and reopen bootstrap on.
