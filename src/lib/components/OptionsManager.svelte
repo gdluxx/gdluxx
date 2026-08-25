@@ -231,7 +231,7 @@
     }
 
     const userOptions = getUserSelectedOptions();
-    return userOptions.size > 0;
+    return userOptions.size > 0 && emptyValueOptionIds.size === 0;
   }
 
   function getUserSelectedOptions(): Map<string, OptionWithSource> {

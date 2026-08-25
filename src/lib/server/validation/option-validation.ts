@@ -45,6 +45,17 @@ export function validateOptionValue(option: Option, value: unknown): string | nu
   return null;
 }
 
+export function isOptionValueValidForWrite(option: Option, value: unknown): boolean {
+  if (option.type === 'boolean') {
+    return value === true;
+  }
+
+  if (option.type === 'range') {
+    return typeof value === 'string' && validateOptionValue(option, value) !== null;
+  }
+  return validateOptionValue(option, value) !== null;
+}
+
 export function validateAndBuildCliArgs(argsMap: Map<string, unknown>): string[] {
   assertOptionIdsAllowed(argsMap.keys());
 

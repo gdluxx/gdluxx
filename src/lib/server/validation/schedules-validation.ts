@@ -10,7 +10,7 @@
 
 import { z } from 'zod';
 import type { Recurrence } from '$lib/server/schedules/recurrence';
-import { validOptions } from '$lib/server/validation/option-validation';
+import { isOptionValueValidForWrite, validOptions } from '$lib/server/validation/option-validation';
 import { isProhibitedOptionId } from '$lib/server/validation/exec-policy';
 
 export const MAX_SCHEDULE_NAME_LENGTH = 100;
@@ -120,13 +120,38 @@ function rejectProhibitedOptionIds(
   });
 }
 
+function rejectInvalidKnownOptionValues(
+  value: { userOptions: Array<[string, unknown]> },
+  ctx: z.RefinementCtx,
+): void {
+  value.userOptions.forEach(([optionId, optionValue], index) => {
+    if (isKeepSentinelValue(optionValue)) {
+      return;
+    }
+    const option = validOptions.get(optionId);
+    if (!option) {
+      return;
+    }
+    if (!isOptionValueValidForWrite(option, optionValue)) {
+      ctx.addIssue({
+        code: 'custom',
+        message: `"${optionId}" has a value that is not valid for this option.`,
+        path: ['userOptions', index, 1],
+      });
+    }
+  });
+}
+
 const commandSourceCreateSchema = z
   .object({
     urls: urlListSchema,
     userOptions: z.array(z.tuple([z.string().min(1), optionValueSchema])),
     excludedOptions: z.array(z.string().min(1)),
   })
-  .superRefine(rejectProhibitedOptionIds);
+  .superRefine((value, ctx) => {
+    rejectProhibitedOptionIds(value, ctx);
+    rejectInvalidKnownOptionValues(value, ctx);
+  });
 
 // Sensitive sentinels are permitted here (update only); a superRefine below
 // rejects one attached to a non-sensitive option id.
@@ -140,6 +165,7 @@ const commandSourceUpdateSchema = z
   })
   .superRefine((value, ctx) => {
     rejectProhibitedOptionIds(value, ctx);
+    rejectInvalidKnownOptionValues(value, ctx);
     value.userOptions.forEach(([optionId, optionValue], index) => {
       if (isKeepSentinelValue(optionValue) && !validOptions.get(optionId)?.sensitive) {
         ctx.addIssue({
