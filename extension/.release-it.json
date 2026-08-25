@@ -3,7 +3,10 @@
     "commitMessage": "chore(extension): release v${version}",
     "tagName": "extension-v${version}",
     "pushArgs": ["--follow-tags"],
-    "tagMatch": "extension-v*"
+    "tagMatch": "extension-v*",
+    "requireCommits": true,
+    "requireCommitsFail": false,
+    "commitsPath": "."
   },
   "npm": {
     "publish": false
@@ -16,9 +19,8 @@
     "@release-it/conventional-changelog": {
       "preset": "angular",
       "infile": "CHANGELOG.md",
-      "gitRawCommitsOpts": {
-        "path": "."
-      }
+      "commitsOpts": { "path": "." },
+      "gitRawCommitsOpts": { "path": "." }
     }
   }
 }

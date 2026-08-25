@@ -4,6 +4,10 @@ import { svelte } from '@sveltejs/vite-plugin-svelte';
 import path from 'node:path';
 
 export default defineConfig({
+  zip: {
+    artifactTemplate: '{{name}}-{{packageVersion}}-{{browser}}.zip',
+    sourcesTemplate: '{{name}}-{{packageVersion}}-sources.zip',
+  },
   vite: () => ({
     plugins: [svelte(), tailwindcss()],
     resolve: {

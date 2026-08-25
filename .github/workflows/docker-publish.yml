@@ -1,0 +1,109 @@
+name: Docker Publish
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing release tag to rebuild'
+        type: string
+        required: true
+      push_latest:
+        description: 'Also move :latest to this image'
+        type: boolean
+        default: false
+
+concurrency:
+  group: releases
+  cancel-in-progress: false
+  queue: max
+
+permissions:
+  contents: read
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Assert required secrets
+        env:
+          BOT_GH_TOKEN: ${{ secrets.BOT_GH_TOKEN }}
+        run: |
+          if [ -z "$BOT_GH_TOKEN" ]; then echo "::error::secret BOT_GH_TOKEN is empty"; exit 1; fi
+
+      - name: Validate tag input
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          TAG_RE='^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$'
+          if ! [[ "$TAG" =~ $TAG_RE ]]; then
+            echo "::error::tag '$TAG' does not look like a release tag (expected vX.Y.Z with optional prerelease suffix)"
+            exit 1
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: refs/tags/${{ inputs.tag }}
+          fetch-depth: 0
+
+      - name: 'Assert: tag is on the default branch'
+        env:
+          TAG: ${{ inputs.tag }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          if [ "$(git rev-parse HEAD)" != "$(git rev-parse "refs/tags/$TAG^{commit}")" ]; then
+            echo "::error::checked-out HEAD does not equal tag $TAG; refusing to publish"
+            exit 1
+          fi
+          if ! git merge-base --is-ancestor "refs/tags/$TAG" "origin/$DEFAULT_BRANCH"; then
+            echo "::error::tag $TAG is not in the history of $DEFAULT_BRANCH; refusing to publish"
+            exit 1
+          fi
+
+      - name: Derive image version
+        id: version
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          PKG_VERSION=$(jq -r .version package.json)
+          if [ "v$PKG_VERSION" != "$TAG" ]; then
+            echo "::error::package.json version $PKG_VERSION does not match tag $TAG; this ref is not the release commit"
+            exit 1
+          fi
+          echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to ghcr
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: gdluxx-bot
+          password: ${{ secrets.BOT_GH_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=latest,enable=${{ inputs.push_latest }}
+            type=raw,value=${{ steps.version.outputs.version }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

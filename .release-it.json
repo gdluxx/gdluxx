@@ -1,0 +1,33 @@
+{
+  "git": {
+    "commitMessage": "chore: release v${version}",
+    "tagName": "v${version}",
+    "tagMatch": "v[0-9]*",
+    "pushArgs": ["--follow-tags"],
+    "requireCommits": true,
+    "requireCommitsFail": false,
+    "commitsPath": ":!extension"
+  },
+  "npm": {
+    "publish": false
+  },
+  "github": {
+    "release": true,
+    "releaseName": "Release v${version}"
+  },
+  "plugins": {
+    "@release-it/conventional-changelog": {
+      "preset": "angular",
+      "infile": "CHANGELOG.md",
+      "commitsOpts": {
+        "path": ":!extension"
+      },
+      "gitRawCommitsOpts": {
+        "path": ":!extension"
+      }
+    }
+  },
+  "hooks": {
+    "before:release": ["pnpm run fixtures:refresh"]
+  }
+}

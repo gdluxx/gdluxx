@@ -2,94 +2,241 @@ name: Release
 
 on:
   workflow_dispatch:
+    inputs:
+      increment:
+        description: 'Version increment'
+        type: choice
+        options:
+          - auto
+          - patch
+          - minor
+          - major
+        default: auto
+      dry_run:
+        description: 'Run verification and version check without releasing'
+        type: boolean
+        default: false
+
+concurrency:
+  group: releases
+  cancel-in-progress: false
+  queue: max
+
+permissions:
+  contents: read
 
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  release-and-publish:
+  verify:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      packages: write
-      id-token: write
-
     steps:
+      - name: 'Guard: default branch only'
+        if: github.ref_name != github.event.repository.default_branch
+        run: |
+          echo "::error::Releases must be dispatched from ${{ github.event.repository.default_branch }} (got ${{ github.ref_name }})"
+          exit 1
+
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
-          token: ${{ secrets.BOT_GH_TOKEN }}
+      - name: 'Assert: verify checked out the dispatch SHA'
+        run: |
+          if [ "$(git rev-parse HEAD)" != "$GITHUB_SHA" ]; then
+            echo "::error::verify HEAD does not equal the dispatch SHA; a ref: override has broken event-SHA pinning"
+            exit 1
+          fi
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
 
       - name: Setup Node
         uses: actions/setup-node@v6
         with:
           node-version-file: .nvmrc
+          cache: pnpm
 
-      - name: Setup
-        uses: pnpm/action-setup@v4
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Type check
+        run: pnpm exec svelte-check --tsconfig ./tsconfig.json --config ./svelte.config.js --threshold error
+
+      - name: Lint
+        run: pnpm exec eslint .
+
+      - name: Test
+        run: pnpm exec vitest run
+
+      - name: Validate fixtures
+        run: pnpm fixtures:refresh
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Docker smoke build
+        uses: docker/build-push-action@v7
         with:
-          run_install: |
-            - args: [--frozen-lockfile]
+          context: .
+          platforms: linux/amd64
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  release-and-publish:
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - name: Assert required secrets
+        env:
+          BOT_GH_TOKEN: ${{ secrets.BOT_GH_TOKEN }}
+          BOT_GPG_PRIVATE_KEY: ${{ secrets.BOT_GPG_PRIVATE_KEY }}
+        run: |
+          for v in BOT_GH_TOKEN BOT_GPG_PRIVATE_KEY; do
+            if [ -z "${!v}" ]; then echo "::error::secret $v is empty"; exit 1; fi
+          done
+
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.BOT_GH_TOKEN }}
+
+      - name: 'Assert: candidate is still the live default-branch head'
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          if [ "$(git rev-parse HEAD)" != "$GITHUB_SHA" ]; then
+            echo "::error::checked-out HEAD does not equal the dispatch SHA; a ref: override has broken event-SHA pinning"
+            exit 1
+          fi
+          git fetch origin "$DEFAULT_BRANCH"
+          LIVE=$(git rev-parse FETCH_HEAD)
+          if [ "$LIVE" != "$GITHUB_SHA" ]; then
+            echo "::error::$DEFAULT_BRANCH advanced from $GITHUB_SHA to $LIVE after this run was dispatched; nothing was mutated. Dispatch again after this run completes to release the current head."
+            exit 1
+          fi
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check release
+        id: check
+        env:
+          INCREMENT: ${{ inputs.increment }}
+        run: |
+          ARGS=()
+          if [ "$INCREMENT" != "auto" ]; then
+            ARGS+=("$INCREMENT" --no-git.requireCommits)
+          fi
+          LOG="$RUNNER_TEMP/rel-check.log"
+          set +e
+          out=$(pnpm exec release-it "${ARGS[@]}" --ci --dry-run --release-version 2>"$LOG")
+          rc=$?
+          set -e
+          cat "$LOG" >&2
+          if [ "$rc" -ne 0 ]; then
+            echo "::error::release-it dry run failed (exit $rc)"
+            exit "$rc"
+          fi
+          if [ -n "$out" ]; then
+            SEMVER_RE='^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?([+][0-9A-Za-z.-]+)?$'
+            if ! [[ "$out" =~ $SEMVER_RE ]]; then
+              echo "::error::unexpected release-version output: $out"
+              exit 1
+            fi
+            if git rev-parse -q --verify "refs/tags/v$out" >/dev/null; then
+              echo "::error::tag v$out already exists; this version was already released. This happens after the re-run buttons (never use them) and when this dispatch sat queued behind a completed release. Recovery: a new dispatch created after this run completes, or docker-publish.yml."
+              exit 1
+            fi
+          else
+            echo "::notice::No commits in the release window; nothing to release."
+          fi
+          echo "new_version=$out" >> "$GITHUB_OUTPUT"
 
       - name: Import GPG key
-        uses: crazy-max/ghaction-import-gpg@v6
+        if: steps.check.outputs.new_version != ''
+        uses: crazy-max/ghaction-import-gpg@v7
         with:
           gpg_private_key: ${{ secrets.BOT_GPG_PRIVATE_KEY }}
           git_user_signingkey: true
           git_commit_gpgsign: true
 
-      - name: Git
+      - name: Configure git identity
+        if: steps.check.outputs.new_version != ''
         run: |
           git config user.name "gdluxx-bot"
           git config user.email "218500807+gdluxx-bot@users.noreply.github.com"
 
-      - name: Check release
-        id: release_check
-
-        run: |
-          echo "new_version=$(npx release-it --ci --dry-run --release-version || echo '')" >> $GITHUB_OUTPUT
-        env:
-          GITHUB_TOKEN: ${{ secrets.BOT_GH_TOKEN }}
-
       - name: Perform release
-        if: steps.release_check.outputs.new_version != ''
-        run: |
-          echo "New version detected: ${{ steps.release_check.outputs.new_version }}"
-          npx release-it --ci
+        if: steps.check.outputs.new_version != '' && !inputs.dry_run
         env:
           GITHUB_TOKEN: ${{ secrets.BOT_GH_TOKEN }}
+          INCREMENT: ${{ inputs.increment }}
+        run: |
+          ARGS=()
+          if [ "$INCREMENT" != "auto" ]; then
+            ARGS+=("$INCREMENT" --no-git.requireCommits)
+          fi
+          pnpm exec release-it "${ARGS[@]}" --ci
 
-      - name: Setup Docker
-        if: steps.release_check.outputs.new_version != ''
-        uses: docker/setup-buildx-action@v3
+      - name: Assert released version
+        id: released
+        if: steps.check.outputs.new_version != '' && !inputs.dry_run
+        env:
+          EXPECTED: ${{ steps.check.outputs.new_version }}
+        run: |
+          ACTUAL=$(jq -r .version package.json)
+          if [ "$ACTUAL" != "$EXPECTED" ]; then
+            echo "::error::released version $ACTUAL does not match predicted $EXPECTED; refusing to publish Docker"
+            exit 1
+          fi
+          if ! git rev-parse -q --verify "refs/tags/v$ACTUAL" >/dev/null; then
+            echo "::error::tag v$ACTUAL not found after release; refusing to publish Docker"
+            exit 1
+          fi
+          echo "version=$ACTUAL" >> "$GITHUB_OUTPUT"
+
+      - name: Setup Docker Buildx
+        if: steps.released.outputs.version != ''
+        uses: docker/setup-buildx-action@v4
 
       - name: Log in to ghcr
-        if: steps.release_check.outputs.new_version != ''
-        uses: docker/login-action@v3
+        if: steps.released.outputs.version != ''
+        uses: docker/login-action@v4
         with:
           registry: ${{ env.REGISTRY }}
           username: gdluxx-bot
           password: ${{ secrets.BOT_GH_TOKEN }}
 
       - name: Extract metadata
-        if: steps.release_check.outputs.new_version != ''
+        if: steps.released.outputs.version != ''
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
-            type=raw,value=${{ steps.release_check.outputs.new_version }}
+            type=raw,value=${{ steps.released.outputs.version }}
           labels: |
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
-            org.opencontainers.image.visibility=public
 
       - name: Build and push
-        if: steps.release_check.outputs.new_version != ''
-        uses: docker/build-push-action@v6
+        if: steps.released.outputs.version != ''
+        uses: docker/build-push-action@v7
         with:
           context: .
           platforms: linux/amd64,linux/arm64
@@ -98,5 +245,3 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          build-args: |
-            BUILDKIT_INLINE_CACHE=1

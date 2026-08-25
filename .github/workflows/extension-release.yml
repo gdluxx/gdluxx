@@ -2,91 +2,147 @@ name: Release Extension
 
 on:
   workflow_dispatch:
+    inputs:
+      increment:
+        description: 'Version increment'
+        type: choice
+        options:
+          - auto
+          - patch
+          - minor
+          - major
+        default: auto
+      dry_run:
+        description: 'Run verification and version check without releasing'
+        type: boolean
+        default: false
+
+concurrency:
+  group: releases
+  cancel-in-progress: false
+  queue: max
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   release:
     runs-on: ubuntu-latest
-    
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - name: 'Guard: default branch only'
+        if: github.ref_name != github.event.repository.default_branch
+        run: |
+          echo "::error::Releases must be dispatched from ${{ github.event.repository.default_branch }} (got ${{ github.ref_name }})"
+          exit 1
+
+      - name: Assert required secrets
+        env:
+          BOT_GH_TOKEN: ${{ secrets.BOT_GH_TOKEN }}
+          BOT_GPG_PRIVATE_KEY: ${{ secrets.BOT_GPG_PRIVATE_KEY }}
+          CHROME_EXTENSION_ID: ${{ secrets.CHROME_EXTENSION_ID }}
+          CHROME_CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
+          CHROME_CLIENT_SECRET: ${{ secrets.CHROME_CLIENT_SECRET }}
+          CHROME_REFRESH_TOKEN: ${{ secrets.CHROME_REFRESH_TOKEN }}
+          FIREFOX_EXTENSION_ID: ${{ secrets.FIREFOX_EXTENSION_ID }}
+          FIREFOX_JWT_ISSUER: ${{ secrets.FIREFOX_JWT_ISSUER }}
+          FIREFOX_JWT_SECRET: ${{ secrets.FIREFOX_JWT_SECRET }}
+        run: |
+          for v in BOT_GH_TOKEN BOT_GPG_PRIVATE_KEY CHROME_EXTENSION_ID CHROME_CLIENT_ID CHROME_CLIENT_SECRET CHROME_REFRESH_TOKEN FIREFOX_EXTENSION_ID FIREFOX_JWT_ISSUER FIREFOX_JWT_SECRET; do
+            if [ -z "${!v}" ]; then echo "::error::secret $v is empty"; exit 1; fi
+          done
+
+      - name: Checkout
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
           token: ${{ secrets.BOT_GH_TOKEN }}
 
-      - name: Reattach HEAD to branch
-        run: git checkout "${GITHUB_REF_NAME}"
+      - name: 'Assert: candidate is still the live default-branch head'
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          if [ "$(git rev-parse HEAD)" != "$GITHUB_SHA" ]; then
+            echo "::error::checked-out HEAD does not equal the dispatch SHA; a ref: override has broken event-SHA pinning"
+            exit 1
+          fi
+          git fetch origin "$DEFAULT_BRANCH"
+          LIVE=$(git rev-parse FETCH_HEAD)
+          if [ "$LIVE" != "$GITHUB_SHA" ]; then
+            echo "::error::$DEFAULT_BRANCH advanced from $GITHUB_SHA to $LIVE after this run was dispatched; nothing was mutated. Dispatch again after this run completes to release the current head."
+            exit 1
+          fi
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
 
       - name: Setup Node
         uses: actions/setup-node@v6
         with:
           node-version-file: .nvmrc
+          cache: pnpm
+          cache-dependency-path: |
+            pnpm-lock.yaml
+            extension/pnpm-lock.yaml
 
-      - name: Setup
-        uses: pnpm/action-setup@v4
-        with:
-          run_install: |
-            - args: [--frozen-lockfile]
-            - args: [--frozen-lockfile]
-              cwd: extension
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
-      - name: Run build checks
+      - name: Install extension dependencies
+        working-directory: ./extension
+        run: pnpm install --frozen-lockfile
+
+      - name: Check release
+        id: check
+        working-directory: ./extension
+        env:
+          INCREMENT: ${{ inputs.increment }}
+        run: |
+          ARGS=()
+          if [ "$INCREMENT" != "auto" ]; then
+            ARGS+=("$INCREMENT" --no-git.requireCommits)
+          fi
+          LOG="$RUNNER_TEMP/rel-check.log"
+          set +e
+          out=$(pnpm exec release-it "${ARGS[@]}" --ci --dry-run --release-version 2>"$LOG")
+          rc=$?
+          set -e
+          cat "$LOG" >&2
+          if [ "$rc" -ne 0 ]; then
+            echo "::error::release-it dry run failed (exit $rc)"
+            exit "$rc"
+          fi
+          if [ -n "$out" ]; then
+            SEMVER_RE='^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?([+][0-9A-Za-z.-]+)?$'
+            if ! [[ "$out" =~ $SEMVER_RE ]]; then
+              echo "::error::unexpected release-version output: $out"
+              exit 1
+            fi
+            if git rev-parse -q --verify "refs/tags/extension-v$out" >/dev/null; then
+              echo "::error::tag extension-v$out already exists; this version was already released. This happens after the re-run buttons (never use them) and when this dispatch sat queued behind a completed release. Recovery: a new dispatch created after this run completes."
+              exit 1
+            fi
+          else
+            echo "::notice::No extension commits in the release window; nothing to release."
+          fi
+          echo "new_version=$out" >> "$GITHUB_OUTPUT"
+
+      - name: Extension checks
+        if: steps.check.outputs.new_version != ''
         working-directory: ./extension
         run: |
           pnpm compile
           pnpm lint
+          pnpm test
 
-      - name: Import GPG key
-        uses: crazy-max/ghaction-import-gpg@v6
-        with:
-          gpg_private_key: ${{ secrets.BOT_GPG_PRIVATE_KEY }}
-          git_user_signingkey: true
-          git_commit_gpgsign: true
-
-      - name: Setup Git
+      - name: Pre-bump build proof
+        if: steps.check.outputs.new_version != ''
+        working-directory: ./extension
         run: |
-          git config user.name "gdluxx-bot"
-          git config user.email "218500807+gdluxx-bot@users.noreply.github.com"
+          pnpm zip:chrome
+          pnpm zip:firefox
 
-      - name: Determine release type
-        id: release-type
-        run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "type=${{ github.event.inputs.release-type }}" >> $GITHUB_OUTPUT
-          else
-            echo "type=patch" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Run release-it
-        working-directory: ./extension
-        env:
-          GITHUB_TOKEN: ${{ secrets.BOT_GH_TOKEN }}
-        run: pnpm release-it ${{ steps.release-type.outputs.type }} --ci
-
-      - name: Get release version
-        id: release-version
-        run: echo "version=$(node -p "require('./extension/package.json').version")" >> $GITHUB_OUTPUT
-
-      - name: Build Chrome extension
-        working-directory: ./extension
-        run: pnpm build:chrome
-
-      - name: Build Firefox extension
-        working-directory: ./extension
-        run: pnpm build:firefox
-
-      - name: Create Chrome zip
-        working-directory: ./extension
-        run: pnpm zip:chrome
-
-      - name: Create Firefox zip
-        working-directory: ./extension
-        run: pnpm zip:firefox
-
-      - name: Upload to stores
+      - name: Store credential preflight
+        if: steps.check.outputs.new_version != ''
         working-directory: ./extension
         env:
           CHROME_EXTENSION_ID: ${{ secrets.CHROME_EXTENSION_ID }}
@@ -97,22 +153,89 @@ jobs:
           FIREFOX_JWT_ISSUER: ${{ secrets.FIREFOX_JWT_ISSUER }}
           FIREFOX_JWT_SECRET: ${{ secrets.FIREFOX_JWT_SECRET }}
         run: |
+          PRE=$(jq -r .version package.json)
+          pnpm wxt submit --dry-run \
+            --chrome-zip .output/gdluxx-extension-$PRE-chrome.zip \
+            --firefox-zip .output/gdluxx-extension-$PRE-firefox.zip \
+            --firefox-sources-zip .output/gdluxx-extension-$PRE-sources.zip
+
+      - name: Import GPG key
+        if: steps.check.outputs.new_version != ''
+        uses: crazy-max/ghaction-import-gpg@v7
+        with:
+          gpg_private_key: ${{ secrets.BOT_GPG_PRIVATE_KEY }}
+          git_user_signingkey: true
+          git_commit_gpgsign: true
+
+      - name: Configure git identity
+        if: steps.check.outputs.new_version != ''
+        run: |
+          git config user.name "gdluxx-bot"
+          git config user.email "218500807+gdluxx-bot@users.noreply.github.com"
+
+      - name: Perform release
+        if: steps.check.outputs.new_version != '' && !inputs.dry_run
+        working-directory: ./extension
+        env:
+          GITHUB_TOKEN: ${{ secrets.BOT_GH_TOKEN }}
+          INCREMENT: ${{ inputs.increment }}
+        run: |
+          ARGS=()
+          if [ "$INCREMENT" != "auto" ]; then
+            ARGS+=("$INCREMENT" --no-git.requireCommits)
+          fi
+          pnpm exec release-it "${ARGS[@]}" --ci
+
+      - name: Assert released version
+        id: released
+        if: steps.check.outputs.new_version != '' && !inputs.dry_run
+        env:
+          EXPECTED: ${{ steps.check.outputs.new_version }}
+        run: |
+          ACTUAL=$(jq -r .version extension/package.json)
+          if [ "$ACTUAL" != "$EXPECTED" ]; then
+            echo "::error::released version $ACTUAL does not match predicted $EXPECTED; refusing to publish assets"
+            exit 1
+          fi
+          if ! git rev-parse -q --verify "refs/tags/extension-v$ACTUAL" >/dev/null; then
+            echo "::error::tag extension-v$ACTUAL not found after release; refusing to publish assets"
+            exit 1
+          fi
+          echo "version=$ACTUAL" >> "$GITHUB_OUTPUT"
+
+      - name: Rebuild versioned zips
+        if: steps.released.outputs.version != ''
+        working-directory: ./extension
+        run: |
+          pnpm zip:chrome
+          pnpm zip:firefox
+
+      - name: Upload release assets
+        if: steps.released.outputs.version != ''
+        uses: softprops/action-gh-release@v3
+        with:
+          token: ${{ secrets.BOT_GH_TOKEN }}
+          tag_name: extension-v${{ steps.released.outputs.version }}
+          fail_on_unmatched_files: true
+          files: |
+            extension/.output/gdluxx-extension-${{ steps.released.outputs.version }}-chrome.zip
+            extension/.output/gdluxx-extension-${{ steps.released.outputs.version }}-firefox.zip
+            extension/.output/gdluxx-extension-${{ steps.released.outputs.version }}-sources.zip
+
+      - name: Submit to stores
+        if: steps.released.outputs.version != ''
+        working-directory: ./extension
+        env:
+          VERSION: ${{ steps.released.outputs.version }}
+          CHROME_EXTENSION_ID: ${{ secrets.CHROME_EXTENSION_ID }}
+          CHROME_CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
+          CHROME_CLIENT_SECRET: ${{ secrets.CHROME_CLIENT_SECRET }}
+          CHROME_REFRESH_TOKEN: ${{ secrets.CHROME_REFRESH_TOKEN }}
+          FIREFOX_EXTENSION_ID: ${{ secrets.FIREFOX_EXTENSION_ID }}
+          FIREFOX_JWT_ISSUER: ${{ secrets.FIREFOX_JWT_ISSUER }}
+          FIREFOX_JWT_SECRET: ${{ secrets.FIREFOX_JWT_SECRET }}
+        run: |
           pnpm wxt submit \
-            --chrome-zip .output/gdluxx-extension-${{ steps.release-version.outputs.version }}-chrome.zip \
-            --firefox-zip .output/gdluxx-extension-${{ steps.release-version.outputs.version }}-firefox.zip
-
-      - name: Upload Chrome zip to release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: extension-v${{ steps.release-version.outputs.version }}
-          files: extension/.output/gdluxx-extension-${{ steps.release-version.outputs.version }}-chrome.zip
-        env:
-          GITHUB_TOKEN: ${{ secrets.BOT_GH_TOKEN }}
-
-      - name: Upload Firefox zip to release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: extension-v${{ steps.release-version.outputs.version }}
-          files: extension/.output/gdluxx-extension-${{ steps.release-version.outputs.version }}-firefox.zip
-        env:
-          GITHUB_TOKEN: ${{ secrets.BOT_GH_TOKEN }}
+            --chrome-zip .output/gdluxx-extension-$VERSION-chrome.zip \
+            --firefox-zip .output/gdluxx-extension-$VERSION-firefox.zip \
+            --firefox-sources-zip .output/gdluxx-extension-$VERSION-sources.zip
