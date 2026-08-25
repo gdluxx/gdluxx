@@ -77,10 +77,10 @@
 
   let urlsText = $state('');
 
-  let selectedOptions = $state(new Map<string, OptionWithSource>());
+  const selectedOptions = new SvelteMap<string, OptionWithSource>();
   let conflicts = $state<Conflict[]>([]);
-  let conflictWarnings = $state(new Map<string, string>());
-  let dismissedSiteRuleOptions = $state(new Set<string>());
+  const conflictWarnings = new SvelteMap<string, string>();
+  const dismissedSiteRuleOptions = new SvelteSet<string>();
   let untouchedSensitiveIds = $state(new Set<string>());
 
   let isSaving = $state(false);
@@ -140,19 +140,21 @@
       hydrateRecurrence(schedule.recurrence);
       urlsText = schedule.commandSource.urls.join('\n');
 
-      const nextSelected = new SvelteMap<string, OptionWithSource>();
+      selectedOptions.clear();
       const nextUntouched = new SvelteSet<string>();
       for (const [id, value] of schedule.commandSource.userOptions) {
         if (isMaskedValue(value)) {
-          nextSelected.set(id, { value: SENSITIVE_MASK, source: 'user' });
+          selectedOptions.set(id, { value: SENSITIVE_MASK, source: 'user' });
           nextUntouched.add(id);
         } else {
-          nextSelected.set(id, { value, source: 'user' });
+          selectedOptions.set(id, { value, source: 'user' });
         }
       }
-      selectedOptions = nextSelected;
       untouchedSensitiveIds = nextUntouched;
-      dismissedSiteRuleOptions = new SvelteSet(schedule.commandSource.excludedOptions);
+      dismissedSiteRuleOptions.clear();
+      for (const id of schedule.commandSource.excludedOptions) {
+        dismissedSiteRuleOptions.add(id);
+      }
     } else {
       name = '';
       timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -167,17 +169,19 @@
       dayOfMonth = 1;
       urlsText = (seedUrls ?? []).join('\n');
 
-      const nextSelected = new SvelteMap<string, OptionWithSource>();
+      selectedOptions.clear();
       for (const [id, value] of seedUserOptions ?? []) {
-        nextSelected.set(id, { value, source: 'user' });
+        selectedOptions.set(id, { value, source: 'user' });
       }
-      selectedOptions = nextSelected;
       untouchedSensitiveIds = new SvelteSet();
-      dismissedSiteRuleOptions = new SvelteSet(seedExcludedOptions ?? []);
+      dismissedSiteRuleOptions.clear();
+      for (const id of seedExcludedOptions ?? []) {
+        dismissedSiteRuleOptions.add(id);
+      }
     }
 
     conflicts = [];
-    conflictWarnings = new SvelteMap();
+    conflictWarnings.clear();
     previewOccurrences = [];
     previewSummary = '';
     siteRuleMatches = [];
@@ -725,10 +729,10 @@
     {/if}
 
     <OptionsManager
-      bind:selectedOptions
+      {selectedOptions}
       bind:conflicts
-      bind:conflictWarnings
-      bind:dismissedSiteRuleOptions
+      {conflictWarnings}
+      {dismissedSiteRuleOptions}
       siteConfigData={[]}
       userWarningSetting={false}
       showSubmit={false}
