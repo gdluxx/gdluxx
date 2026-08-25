@@ -61,7 +61,7 @@ async function ensureDataDir(): Promise<void> {
     await mkdir(PATHS.DATA_DIR, { recursive: true });
   } catch (error) {
     logger.error('Failed to create data directory:', PATHS.DATA_DIR, error);
-    throw new Error('Failed to ensure data directory exists.');
+    throw new Error('Failed to ensure data directory exists.', { cause: error });
   }
 }
 
@@ -83,7 +83,7 @@ export async function writeVersionInfo(info: VersionInfo): Promise<void> {
     await settingsManager.write(info);
   } catch (error) {
     logger.error('Error writing version to database:', error);
-    throw new Error('Failed to write version information.');
+    throw new Error('Failed to write version information.', { cause: error });
   }
 }
 

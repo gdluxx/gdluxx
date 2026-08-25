@@ -68,7 +68,7 @@ export function createSettingsManager<T>(
         stmt.run(...values, now, now);
       } catch (error) {
         serverLogger.error('Error writing config to database:', { tableName, error });
-        throw new Error(`Failed to write ${tableName} configuration.`);
+        throw new Error(`Failed to write ${tableName} configuration.`, { cause: error });
       }
     },
   };

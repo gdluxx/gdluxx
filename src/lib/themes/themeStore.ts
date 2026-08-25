@@ -166,7 +166,7 @@ class ThemeState {
 
       if (savedMode && (savedMode === 'light' || savedMode === 'dark')) {
         selectedMode = savedMode;
-      } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+      } else if (window.matchMedia?.('(prefers-color-scheme: light)').matches) {
         selectedMode = 'light';
       }
 
@@ -206,7 +206,7 @@ class ThemeState {
 
       if (savedMode && (savedMode === 'light' || savedMode === 'dark')) {
         mode = savedMode;
-      } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+      } else if (window.matchMedia?.('(prefers-color-scheme: light)').matches) {
         mode = 'light';
       }
 

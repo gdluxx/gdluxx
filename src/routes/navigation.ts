@@ -8,11 +8,13 @@
  * as published by the Free Software Foundation.
  */
 
+import type { Pathname } from '$app/types';
+
 export interface NavigationItem {
   id: string;
   label: string;
   icon: string;
-  href?: string;
+  href?: Pathname;
   children?: NavigationItem[];
 }
 

@@ -23,6 +23,7 @@
     optionsById,
   } from '$lib/utils/commandOptions';
   import { browser } from '$app/environment';
+  import { resolve } from '$app/paths';
   import { jobStore } from '$lib/stores/jobs.svelte';
   import { toastStore } from '$lib/stores/toast';
   import { parseUrls } from '$lib/utils/parseUrls';
@@ -590,7 +591,7 @@
         class="m-8"
       >
         There is at least one error in your <a
-          href="/config"
+          href={resolve('/config')}
           class="underline">config file</a
         >
         that you must fix before proceeding!
