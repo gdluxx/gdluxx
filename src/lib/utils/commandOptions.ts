@@ -24,6 +24,10 @@ export const optionsById: ReadonlyMap<string, Option> = new Map(
 
 export const SENSITIVE_MASK = '••••••••';
 
+export function initialOptionValue(option: Option): string | number | boolean {
+  return option.type === 'boolean' ? true : (option.defaultValue ?? '');
+}
+
 /**
  * True when a selected option's value is not submittable as a CLI argument.
  * Mirrors the server-side validation semantics in

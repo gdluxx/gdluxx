@@ -16,6 +16,7 @@
   import {
     allOptions,
     detectConflicts,
+    initialOptionValue,
     optionsById,
     SENSITIVE_MASK,
   } from '$lib/utils/commandOptions';
@@ -113,12 +114,12 @@
   );
 
   function toggleOption(option: Option) {
-    const { id, defaultValue } = option;
+    const { id } = option;
     if (selectedOptions.has(id)) {
       selectedOptions.delete(id);
     } else {
       selectedOptions.set(id, {
-        value: defaultValue ?? (option.type === 'boolean' ? true : ''),
+        value: initialOptionValue(option),
         source: 'user',
       });
     }
