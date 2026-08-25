@@ -87,9 +87,9 @@ class SiteConfigManager {
         'code' in error &&
         error.code === 'SQLITE_CONSTRAINT_UNIQUE'
       ) {
-        throw new Error('Site pattern already exists');
+        throw new Error('Site pattern already exists', { cause: error });
       }
-      throw new Error('Failed to create site config');
+      throw new Error('Failed to create site config', { cause: error });
     }
   }
 
@@ -154,7 +154,7 @@ class SiteConfigManager {
       return result.changes > 0;
     } catch (error) {
       serverLogger.error('Error updating site config in database:', error);
-      throw new Error('Failed to update site config.');
+      throw new Error('Failed to update site config.', { cause: error });
     }
   }
 
@@ -165,7 +165,7 @@ class SiteConfigManager {
       return result.changes > 0;
     } catch (error) {
       serverLogger.error('Error deleting site config from database:', error);
-      throw new Error('Failed to delete site config.');
+      throw new Error('Failed to delete site config.', { cause: error });
     }
   }
 
@@ -195,7 +195,7 @@ class SiteConfigManager {
       );
     } catch (error) {
       serverLogger.error('Error upserting supported site in database:', error);
-      throw new Error('Failed to update supported site.');
+      throw new Error('Failed to update supported site.', { cause: error });
     }
   }
 
@@ -238,7 +238,7 @@ class SiteConfigManager {
       this.db.prepare('DELETE FROM supported_sites').run();
     } catch (error) {
       serverLogger.error('Error clearing supported_sites table:', error);
-      throw new Error('Failed to clear supported sites.');
+      throw new Error('Failed to clear supported sites.', { cause: error });
     }
   }
 
@@ -302,7 +302,7 @@ class SiteConfigManager {
       stmt.run(...values, now, now);
     } catch (error) {
       serverLogger.error('Error updating site data meta in database:', error);
-      throw new Error('Failed to update site data meta.');
+      throw new Error('Failed to update site data meta.', { cause: error });
     }
   }
 

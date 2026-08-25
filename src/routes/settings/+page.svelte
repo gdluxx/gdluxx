@@ -10,6 +10,7 @@
 
 <script lang="ts">
   import { resolve } from '$app/paths';
+  import type { ResolvedPathname } from '$app/types';
   import { PageLayout } from '$lib/components/ui';
   import { Button } from '$lib/components/ui';
   import { Icon } from '$lib/components';
@@ -20,7 +21,7 @@
     title: string;
     description: string;
     icon: IconName;
-    href: string;
+    href: ResolvedPathname;
   }
 
   const settingsPages: SettingsPage[] = [

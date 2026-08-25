@@ -170,7 +170,7 @@ export function initializeTheme(element?: HTMLElement): void {
   let mode: ThemeMode = DEFAULT_MODE;
   if (savedMode && (savedMode === 'light' || savedMode === 'dark')) {
     mode = savedMode;
-  } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+  } else if (window.matchMedia?.('(prefers-color-scheme: light)').matches) {
     mode = 'light';
   }
 

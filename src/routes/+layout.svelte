@@ -20,6 +20,8 @@
   import { scheduleNotificationStore } from '$lib/stores/scheduleNotifications.svelte';
   import icon from '$lib/assets/gdl-ico.png';
   import { goto } from '$app/navigation';
+  import { resolve } from '$app/paths';
+  import type { Pathname, ResolvedPathname } from '$app/types';
   import { navItems } from './navigation';
   import { page } from '$app/state';
   import { browser } from '$app/environment';
@@ -32,6 +34,7 @@
 
   // Governs both jobStore and scheduleNotificationStore's summary refresh.
   const SUMMARY_POLL_INTERVAL_MS = 30_000;
+  const resolvePathname = resolve as (href: Pathname) => ResolvedPathname;
 
   const { children, data } = $props();
 
@@ -49,7 +52,7 @@
   function handleNavigate(item: NavigationItem) {
     logger.info('Navigating to:', item);
     if (item.href) {
-      goto(item.href);
+      goto(resolvePathname(item.href));
     }
     if (isMobile) {
       sidebarOpen = false;

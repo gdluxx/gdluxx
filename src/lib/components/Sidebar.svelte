@@ -10,6 +10,7 @@
 
 <script lang="ts">
   import { SvelteSet } from 'svelte/reactivity';
+  import type { Pathname } from '$app/types';
   import { Icon } from '$lib/components';
   import { signOut } from '$lib/auth-client';
   import { toastStore } from '$lib/stores/toast';
@@ -19,7 +20,7 @@
     id: string;
     label: string;
     icon: string;
-    href?: string;
+    href?: Pathname;
     children?: NavItem[];
   }
 

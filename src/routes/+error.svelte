@@ -12,6 +12,7 @@
   import { page } from '$app/state';
   import { Icon } from '$lib/components/index';
   import { goto } from '$app/navigation';
+  import { resolve } from '$app/paths';
   import { Button, Info } from '$lib/components/ui';
 
   const is404 = $derived(page.status === 404);
@@ -51,7 +52,7 @@
           </Button>
           <Button
             variant="outline-success"
-            onclick={() => goto('/')}
+            onclick={() => goto(resolve('/'))}
           >
             Go Home
           </Button>
@@ -99,7 +100,7 @@
           </Button>
           <Button
             variant="outline-success"
-            onclick={() => goto('/')}
+            onclick={() => goto(resolve('/'))}
           >
             Go Home
           </Button>
@@ -133,7 +134,7 @@
           </Button>
           <Button
             variant="outline-success"
-            onclick={() => goto('/')}
+            onclick={() => goto(resolve('/'))}
           >
             Go Home
           </Button>
