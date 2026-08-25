@@ -10,7 +10,7 @@
 
 import { describe, expect, test, vi } from 'vitest';
 import type { Option } from '$lib/types/options';
-import { allOptions, initialOptionValue } from '$lib/utils/commandOptions';
+import { allOptions, initialOptionValue, isValidRangeValue } from '$lib/utils/commandOptions';
 
 vi.mock('$lib/server/logger', () => ({
   serverLogger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
@@ -53,6 +53,31 @@ describe('initialOptionValue', () => {
     };
     expect(initialOptionValue(option)).toBe('');
   });
+});
+
+describe('isValidRangeValue', () => {
+  test.each([
+    '5',
+    '8-20',
+    '1:24:3',
+    '10-',
+    '-5',
+    '-',
+    ':',
+    '1:2,4:8:2',
+    '1-10,25,30-',
+    '5,',
+    ' - 3 , 4-  4, 2-6',
+  ])('accepts %j', (value) => {
+    expect(isValidRangeValue(value)).toBe(true);
+  });
+
+  test.each(['', ',', '8–20', '5 to 10', '1-2-3', '1-5:2', '1:2-3', 'abc', '1 0', '5..8'])(
+    'rejects %j',
+    (value) => {
+      expect(isValidRangeValue(value)).toBe(false);
+    },
+  );
 });
 
 describe('validateAndBuildCliArgs: boolean flag emission', () => {

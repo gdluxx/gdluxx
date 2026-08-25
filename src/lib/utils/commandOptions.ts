@@ -28,6 +28,25 @@ export function initialOptionValue(option: Option): string | number | boolean {
   return option.type === 'boolean' ? true : (option.defaultValue ?? '');
 }
 
+// Mirrors gallery-dl's predicate_range_parse: comma-separated groups, each an
+// optional-part slice (start:stop:step), an optional-part dash range, or a bare
+// index. Deliberately permissive; a miss warns in the UI but never blocks,
+// since the installed gallery-dl may accept more than the pinned catalog.
+const RANGE_GROUP_PATTERNS = [
+  /^\s*$/,
+  /^\s*\d*\s*:\s*\d*\s*(?::\s*\d*\s*)?$/,
+  /^\s*\d*\s*-\s*\d*\s*$/,
+  /^\s*\d+\s*$/,
+];
+
+export function isValidRangeValue(value: string): boolean {
+  const groups = value.split(',');
+  return (
+    groups.some((group) => group.trim().length > 0) &&
+    groups.every((group) => RANGE_GROUP_PATTERNS.some((pattern) => pattern.test(group)))
+  );
+}
+
 /**
  * True when a selected option's value is not submittable as a CLI argument.
  * Mirrors the server-side validation semantics in
