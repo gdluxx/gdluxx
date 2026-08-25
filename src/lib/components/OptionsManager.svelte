@@ -17,6 +17,7 @@
     allOptions,
     detectConflicts,
     initialOptionValue,
+    isValidRangeValue,
     optionsById,
     SENSITIVE_MASK,
   } from '$lib/utils/commandOptions';
@@ -111,6 +112,22 @@
 
   const filteredOptionCount = $derived(
     filteredCategories.reduce((sum, [, category]) => sum + category.options.length, 0),
+  );
+
+  const invalidRangeOptionIds = $derived(
+    new Set(
+      [...selectedOptions]
+        .filter(([id, data]) => {
+          const option = optionsById.get(id);
+          return (
+            option?.type === 'range' &&
+            typeof data.value === 'string' &&
+            data.value.trim().length > 0 &&
+            !isValidRangeValue(data.value)
+          );
+        })
+        .map(([id]) => id),
+    ),
   );
 
   function toggleOption(option: Option) {
@@ -414,10 +431,16 @@
                           }}
                           placeholder={option.placeholder ?? ''}
                           class="form-input"
-                          class:border-warning={emptyValueOptionIds.has(option.id)}
+                          class:border-warning={emptyValueOptionIds.has(option.id) ||
+                            invalidRangeOptionIds.has(option.id)}
                         />
                         {#if emptyValueOptionIds.has(option.id)}
                           <p class="mt-1 text-xs text-warning">Value required</p>
+                        {/if}
+                        {#if invalidRangeOptionIds.has(option.id)}
+                          <p class="mt-1 text-xs text-warning">
+                            Invalid range syntax. Examples: 5, 8-20, 1:24:3, 10-
+                          </p>
                         {/if}
                       </div>
                     {/if}
