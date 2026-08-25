@@ -9,6 +9,8 @@
   -->
 
 <script lang="ts">
+  import { SvelteMap } from 'svelte/reactivity';
+  import type { SvelteSet } from 'svelte/reactivity';
   import { Button, Chip, Info, Toggle } from '$lib/components/ui';
   import optionsData from '$lib/assets/options.json';
   import type { Option, OptionCategory, OptionsData } from '$lib/types/options';
@@ -30,10 +32,10 @@
   const typedOptionsData = optionsData as OptionsData;
 
   let {
-    selectedOptions = $bindable(),
+    selectedOptions, // eslint-disable-line prefer-const
     conflicts = $bindable(),
-    conflictWarnings = $bindable(),
-    dismissedSiteRuleOptions = $bindable(),
+    conflictWarnings, // eslint-disable-line prefer-const
+    dismissedSiteRuleOptions, // eslint-disable-line prefer-const
 
     siteConfigData, // eslint-disable-line prefer-const
     userWarningSetting, // eslint-disable-line prefer-const
@@ -49,10 +51,10 @@
     onConflictDetected, // eslint-disable-line prefer-const
     onSiteRuleSaved, // eslint-disable-line prefer-const
   }: {
-    selectedOptions: Map<string, OptionWithSource>;
+    selectedOptions: SvelteMap<string, OptionWithSource>;
     conflicts: Conflict[];
-    conflictWarnings: Map<string, string>;
-    dismissedSiteRuleOptions: Set<string>;
+    conflictWarnings: SvelteMap<string, string>;
+    dismissedSiteRuleOptions: SvelteSet<string>;
     siteConfigData: SiteConfigData[];
     userWarningSetting: boolean;
     commandUrlsInput?: string;
@@ -67,26 +69,10 @@
     onSiteRuleSaved?: () => void;
   } = $props();
 
-  let selectedOptionsByCategory = $state<Map<string, Map<string, OptionWithSource>>>(new Map());
-  let categoryAccordionStates = $state(new Map<string, boolean>());
+  const selectedOptionsByCategory = $derived(groupSelectedOptionsByCategory(selectedOptions));
+  const categoryAccordionStates = new SvelteMap<string, boolean>();
   let isAccordionOpen = $state(false);
   let showSaveRuleDialog = $state(false);
-
-  $effect(() => {
-    const newAccordionStates = new Map(categoryAccordionStates);
-    let hasChanges = false;
-
-    for (const categoryKey of Object.keys(typedOptionsData)) {
-      if (!newAccordionStates.has(categoryKey)) {
-        newAccordionStates.set(categoryKey, false);
-        hasChanges = true;
-      }
-    }
-
-    if (hasChanges) {
-      categoryAccordionStates = newAccordionStates;
-    }
-  });
 
   const categoriesArray = Object.entries(typedOptionsData);
 
@@ -140,20 +126,17 @@
         source: 'user',
       });
     }
-    selectedOptions = new Map(selectedOptions);
   }
 
   function removeOption(optionId: string) {
-    // Dismissing a site-rule chip suppresses it from the parent's re-merge so it
-    // won't immediately reappear; the reassignment triggers that effect
+    // Dismissing a site-rule chip suppresses it from the parent's re-merge,
+    // which tracks this set's size
     if (selectedOptions.get(optionId)?.source === 'site-config') {
-      dismissedSiteRuleOptions = new Set([...dismissedSiteRuleOptions, optionId]);
+      dismissedSiteRuleOptions.add(optionId);
     }
 
     selectedOptions.delete(optionId);
     conflictWarnings.delete(optionId);
-    selectedOptions = new Map(selectedOptions);
-    conflictWarnings = new Map(conflictWarnings);
   }
 
   function editOption(optionId: string, newValue: string | number | boolean) {
@@ -164,7 +147,6 @@
           ...currentOption,
           value: newValue,
         });
-        selectedOptions = new Map(selectedOptions);
       }
     }
   }
@@ -187,23 +169,22 @@
     return categoryMap ? categoryMap.size : 0;
   }
 
-  function updateCategoryTracking() {
-    const newCategoryMap = new Map<string, Map<string, OptionWithSource>>();
-
-    for (const [optionId, optionData] of selectedOptions.entries()) {
+  function groupSelectedOptionsByCategory(
+    selected: Map<string, OptionWithSource>,
+  ): Map<string, Map<string, OptionWithSource>> {
+    const grouped: Record<string, Array<[string, OptionWithSource]>> = {};
+    for (const [optionId, optionData] of selected.entries()) {
       const categoryKey = getCategoryKeyForOption(optionId);
       if (categoryKey) {
-        if (!newCategoryMap.has(categoryKey)) {
-          newCategoryMap.set(categoryKey, new Map());
-        }
-        const categoryMap = newCategoryMap.get(categoryKey);
-        if (categoryMap) {
-          categoryMap.set(optionId, optionData);
-        }
+        (grouped[categoryKey] ??= []).push([optionId, optionData]);
       }
     }
-
-    selectedOptionsByCategory = newCategoryMap;
+    return new Map(
+      Object.entries(grouped).map(([key, entries]): [string, Map<string, OptionWithSource>] => [
+        key,
+        new Map(entries),
+      ]),
+    );
   }
 
   function revertToSiteConfig(optionId: string) {
@@ -229,17 +210,18 @@
     }
 
     conflictWarnings.delete(optionId);
-
-    selectedOptions = new Map(selectedOptions);
-    conflictWarnings = new Map(conflictWarnings);
   }
 
   function clearAllOptions() {
     // Keep site-config (and any non-user) entries; clearing dismissals lets the
     // parent's re-merge restore previously dismissed site-rule chips
-    selectedOptions = new Map([...selectedOptions].filter(([, d]) => d.source !== 'user'));
-    conflictWarnings = new Map();
-    dismissedSiteRuleOptions = new Set();
+    for (const [optionId, optionData] of [...selectedOptions]) {
+      if (optionData.source === 'user') {
+        selectedOptions.delete(optionId);
+      }
+    }
+    conflictWarnings.clear();
+    dismissedSiteRuleOptions.clear();
   }
 
   function canSaveAsSiteRule(): boolean {
@@ -252,13 +234,7 @@
   }
 
   function getUserSelectedOptions(): Map<string, OptionWithSource> {
-    const userOptions = new Map<string, OptionWithSource>();
-    for (const [key, optionData] of selectedOptions) {
-      if (optionData.source === 'user') {
-        userOptions.set(key, optionData);
-      }
-    }
-    return userOptions;
+    return new Map([...selectedOptions].filter(([, optionData]) => optionData.source === 'user'));
   }
 
   function handleSiteRuleSaved() {
@@ -283,10 +259,6 @@
       conflicts = [];
       previousConflictCount = 0;
     }
-  });
-
-  $effect(() => {
-    updateCategoryTracking();
   });
 </script>
 
@@ -354,7 +326,6 @@
             }
             const target = e.target as HTMLDetailsElement;
             categoryAccordionStates.set(categoryKey, target.open);
-            categoryAccordionStates = new Map(categoryAccordionStates);
           }}
         >
           <summary

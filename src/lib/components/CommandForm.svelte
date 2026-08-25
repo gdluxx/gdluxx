@@ -10,6 +10,7 @@
 
 <script lang="ts">
   import { onMount, untrack } from 'svelte';
+  import { SvelteMap, SvelteSet } from 'svelte/reactivity';
   import { hasJsonLintErrors } from '$lib/stores/lint';
   import { clientLogger as logger } from '$lib/client/logger';
   import { Button, Chip, Info } from '$lib/components/ui';
@@ -43,17 +44,16 @@
   let commandUrlsInput = $state('');
   let isLoading = $state(false);
   let formError = $state<string | null>(null);
-  let selectedOptions = $state(new Map<string, OptionWithSource>());
+  const selectedOptions = new SvelteMap<string, OptionWithSource>();
   let siteConfigData = $state<SiteConfigData[]>([]);
-  let conflictWarnings = $state(new Map<string, string>());
+  const conflictWarnings = new SvelteMap<string, string>();
   let userWarningSetting = $state(false);
   let showConflictWarning = $state(false);
   let detectedConflicts = $state<Conflict[]>([]);
 
   // Site-rule options the user has explicitly dismissed; excluded from the merge
   // and sent to the server so they aren't reapplied per URL
-  // Always reassigned, never mutated in place, so the merge effect re-fires
-  let dismissedSiteRuleOptions = $state(new Set<string>());
+  const dismissedSiteRuleOptions = new SvelteSet<string>();
 
   // Live, non-blocking site-rule hint shown while typing (before submit)
   let siteRuleHints = $state<SiteConfigData[]>([]);
@@ -226,15 +226,13 @@
         source: 'user',
       });
     }
-
-    selectedOptions = new Map(selectedOptions);
-    conflictWarnings = new Map(conflictWarnings);
   }
 
   $effect(() => {
     const hints = siteRuleHints;
-    // Register the dismissal set as a dependency
-    void dismissedSiteRuleOptions;
+    // The set is mutated in place so its identity never changes; reading .size is
+    // what makes dismissals re-run the merge
+    void dismissedSiteRuleOptions.size;
 
     untrack(() => {
       mergeSiteConfigsWithUserOptions(hints);
@@ -602,10 +600,10 @@
 
   <!-- OptionsManager -->
   <OptionsManager
-    bind:selectedOptions
+    {selectedOptions}
     bind:conflicts={detectedConflicts}
-    bind:conflictWarnings
-    bind:dismissedSiteRuleOptions
+    {conflictWarnings}
+    {dismissedSiteRuleOptions}
     siteConfigData={siteConfigData.length > 0 ? siteConfigData : siteRuleHints}
     {userWarningSetting}
     {commandUrlsInput}
