@@ -48,7 +48,7 @@
 
 <div class="mt-4">
   <div
-    class="flex h-7 overflow-hidden rounded-sm border border-strong"
+    class="flex h-7 overflow-hidden rounded-surface border border-strong"
     role="group"
     aria-label="Filter by value type"
   >
@@ -77,7 +77,7 @@
         aria-pressed={selectedKinds.has(segment.kind)}
         onclick={() => onToggle(segment.kind)}
       >
-        <span class="h-2.5 w-2.5 rounded-xs {kindSwatchClasses(segment.kind)}"></span>
+        <span class="h-2.5 w-2.5 rounded-surface {kindSwatchClasses(segment.kind)}"></span>
         {KIND_LABELS[segment.kind]}
         <span class="text-foreground">{segment.count}</span>
       </button>

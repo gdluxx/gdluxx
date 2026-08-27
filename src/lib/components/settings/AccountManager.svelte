@@ -588,7 +588,7 @@
     {:else}
       <ul class="mt-4 space-y-3">
         {#each sessions as session (session.id)}
-          <li class="rounded-sm border-strong p-4">
+          <li class="rounded-surface border-strong p-4">
             <div class="flex flex-wrap items-start justify-between gap-3">
               <div class="min-w-0 flex-1">
                 <div class="flex flex-wrap items-center gap-2">

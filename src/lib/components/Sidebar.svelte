@@ -128,7 +128,7 @@
       <button
         onclick={handleSidebarClick}
         onkeydown={handleSidebarKeydown}
-        class="flex w-full cursor-pointer items-center gap-3 rounded-sm py-2 pl-3 text-muted-foreground transition-colors hover:bg-surface-hover focus:bg-surface-active focus:outline-hidden focus:border-focus"
+        class="flex w-full cursor-pointer items-center gap-3 rounded-control py-2 pl-3 text-muted-foreground transition-colors hover:bg-surface-hover focus:bg-surface-active"
         aria-label={collapsed ? 'Expand sidebar navigation' : 'Collapse sidebar navigation'}
         aria-expanded={!collapsed}
         aria-controls="nav-items-list"
@@ -174,7 +174,7 @@
         <li>
           {#if item.children && (!collapsed || isMobile)}
             <div
-              class="flex w-full items-stretch gap-1 rounded-sm text-foreground transition-colors {activeItemId ===
+              class="flex w-full items-stretch gap-1 rounded-control text-foreground transition-colors {activeItemId ===
               item.id
                 ? 'bg-surface-selected text-foreground'
                 : ''}"
@@ -182,7 +182,7 @@
               <button
                 onclick={() => handleItemClick(item)}
                 onkeydown={(e) => handleKeydown(e, item)}
-                class="flex min-w-0 flex-1 cursor-pointer items-center gap-3 rounded-sm px-3 py-2 text-left transition-colors hover:bg-surface-hover focus:bg-surface-hover focus:ring-2 focus:ring-primary/20 focus:outline-hidden"
+                class="flex min-w-0 flex-1 cursor-pointer items-center gap-3 rounded-control px-3 py-2 text-left transition-colors hover:bg-surface-hover focus:bg-surface-hover"
                 aria-current={activeItemId === item.id ? 'page' : undefined}
                 tabindex="0"
               >
@@ -200,7 +200,7 @@
               <button
                 type="button"
                 onclick={(e) => handleToggleClick(e, item.id)}
-                class="flex flex-shrink-0 cursor-pointer items-center rounded-sm px-2 text-foreground transition-colors hover:bg-surface-hover focus:bg-surface-hover focus:ring-2 focus:ring-primary/20 focus:outline-hidden"
+                class="flex flex-shrink-0 cursor-pointer items-center rounded-control px-2 text-foreground transition-colors hover:bg-surface-hover focus:bg-surface-hover"
                 aria-expanded={isItemExpanded(item.id)}
                 aria-controls="{item.id}-submenu"
                 aria-label={isItemExpanded(item.id)
@@ -210,7 +210,7 @@
                 <Icon
                   iconName="chevron-right"
                   size={16}
-                  class="transition-all duration-200 {isItemExpanded(item.id) ? 'rotate-90' : ''}"
+                  class="transition-all duration-base {isItemExpanded(item.id) ? 'rotate-90' : ''}"
                   ariaLabel=""
                 />
               </button>
@@ -219,7 +219,7 @@
             <button
               onclick={() => handleItemClick(item)}
               onkeydown={(e) => handleKeydown(e, item)}
-              class="flex w-full cursor-pointer items-center gap-3 rounded-sm px-3 py-2 text-foreground transition-colors hover:bg-surface-hover focus:bg-surface-hover focus:ring-2 focus:ring-primary/20 focus:outline-hidden {activeItemId ===
+              class="flex w-full cursor-pointer items-center gap-3 rounded-control px-3 py-2 text-foreground transition-colors hover:bg-surface-hover focus:bg-surface-hover {activeItemId ===
               item.id
                 ? 'bg-surface-selected text-foreground'
                 : ''}"
@@ -257,7 +257,7 @@
           {#if item.children && isItemExpanded(item.id) && (!collapsed || isMobile)}
             <ul
               id="{item.id}-submenu"
-              class="border-strong bg-surface-elevated mt-1 ml-2 space-y-1 rounded-md p-1 shadow-sm"
+              class="border-strong bg-surface-elevated mt-1 ml-2 space-y-1 rounded-overlay p-1 shadow-raised"
               role="list"
               aria-label="{item.label} submenu"
             >
@@ -266,7 +266,7 @@
                   <button
                     onclick={() => handleItemClick(child)}
                     onkeydown={(e) => handleKeydown(e, child)}
-                    class="flex w-full cursor-pointer items-center gap-3 rounded-sm px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-surface-hover focus:bg-surface-hover focus:ring-2 focus:ring-primary/20 focus:outline-hidden {activeItemId ===
+                    class="flex w-full cursor-pointer items-center gap-3 rounded-control px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-surface-hover focus:bg-surface-hover {activeItemId ===
                     child.id
                       ? 'bg-surface-selected text-foreground'
                       : ''}"
@@ -298,7 +298,7 @@
       {#if !collapsed || isMobile}
         <div class="flex flex-row items-center">
           <div
-            class="flex w-full cursor-default items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground"
+            class="flex w-full cursor-default items-center gap-3 rounded-surface px-3 py-2 text-muted-foreground"
           >
             <!-- Avatar -->
             <div
@@ -319,7 +319,7 @@
               onclick={() => {
                 handleLogout();
               }}
-              class="cursor-pointer rounded-sm p-1.5 text-muted-foreground hover:bg-surface-hover focus:ring-2 focus:ring-primary/20 focus:outline-hidden"
+              class="cursor-pointer rounded-control p-1.5 text-muted-foreground hover:bg-surface-hover"
               title="Sign out"
               aria-label="Sign out"
             >
@@ -341,7 +341,7 @@
             onclick={() => {
               handleLogout();
             }}
-            class="cursor-pointer rounded-sm p-2 text-muted-foreground hover:bg-surface-hover focus:ring-2 focus:ring-primary/20 focus:outline-hidden"
+            class="cursor-pointer rounded-control p-2 text-muted-foreground hover:bg-surface-hover"
             title="Sign out"
             aria-label="Sign out"
           >

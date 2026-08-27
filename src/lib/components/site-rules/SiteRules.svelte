@@ -201,7 +201,7 @@
         type="text"
         bind:value={formData.display_name}
         placeholder="YouTube, Twitter, etc."
-        class="form-input {errors.display_name ? 'border-red-300 dark:border-red-700' : ''}"
+        class="form-input {errors.display_name ? 'border-error bg-input-invalid' : ''}"
       />
       {#if errors.display_name}
         <p class="mt-1 text-sm text-error">{errors.display_name}</p>
@@ -214,7 +214,7 @@
         for="enabled"
         class="cursor-pointer"
       >
-        <div class="flex items-center justify-between rounded-sm border bg-surface p-3">
+        <div class="flex items-center justify-between rounded-surface border bg-surface p-3">
           <span class="font-medium text-foreground">
             Rule {formData.enabled ? 'Enabled' : 'Disabled'}
           </span>
@@ -233,7 +233,7 @@
     <!-- CLI Options Selection -->
     <div>
       <h3 class="mb-4 cursor-default text-lg font-medium text-foreground">CLI Options</h3>
-      <div class="rounded border bg-surface p-4">
+      <div class="rounded-surface border bg-surface p-4">
         {#each Object.entries(typedOptionsData) as [_categoryKey, category] (_categoryKey)}
           <details class="mb-4">
             <summary class="cursor-pointer font-medium text-foreground hover:text-primary">
@@ -241,7 +241,7 @@
             </summary>
             <div class="mt-2 space-y-2">
               {#each category.options as option (option.id)}
-                <div class="flex items-start gap-2 rounded bg-surface-elevated p-2">
+                <div class="flex items-start gap-2 rounded-surface bg-surface-elevated p-2">
                   <!-- slider -->
                   <div class="relative inline-block h-4 w-[26px]">
                     <Toggle

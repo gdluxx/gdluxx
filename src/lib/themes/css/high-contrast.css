@@ -9,11 +9,14 @@
  */
 
 .theme-high-contrast {
+  color-scheme: light;
+
   --color-background: #ffffff;
   --color-surface: #fafafa;
   --color-surface-elevated: #ffffff;
   --color-surface-sunken: #f0f0f0;
   --color-surface-overlay: #f8fafc;
+  --color-scrim: rgb(0 0 0 / 0.3);
 
   --color-foreground: #000000;
   --color-muted-foreground: #666666;
@@ -52,7 +55,6 @@
   --color-border: #cccccc;
   --color-border-strong: #999999;
   --color-border-focus: #3730a3;
-  --color-border-disabled: #e5e5e5;
   --color-border-error: #fca5a5;
   --color-border-success: #86efac;
 
@@ -64,17 +66,20 @@
   --color-skeleton: #f0f0f0;
   --color-spinner: #3730a3;
 
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.1);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.15);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.2);
+  --shadow-raised: 0 1px 2px 0 rgb(0 0 0 / 0.1);
+  --shadow-floating: 0 10px 15px -3px rgb(0 0 0 / 0.2);
+  --shadow-overlay: 0 20px 25px -5px rgb(0 0 0 / 0.25), 0 8px 10px -6px rgb(0 0 0 / 0.2);
 }
 
 .theme-high-contrast.dark {
+  color-scheme: dark;
+
   --color-background: #000000;
   --color-surface: #1a1a1a;
   --color-surface-elevated: #2a2a2a;
   --color-surface-sunken: #000000;
   --color-surface-overlay: #3a3a3a;
+  --color-scrim: rgb(0 0 0 / 0.3);
 
   --color-foreground: #ffffff;
   --color-muted-foreground: #b0b0b0;
@@ -113,7 +118,6 @@
   --color-border: #404040;
   --color-border-strong: #606060;
   --color-border-focus: #4f46e5;
-  --color-border-disabled: #2a2a2a;
   --color-border-error: #dc2626;
   --color-border-success: #15803d;
 
@@ -125,7 +129,8 @@
   --color-skeleton: #2a2a2a;
   --color-spinner: #4f46e5;
 
-  --shadow-sm: 0 1px 2px 0 rgb(255 255 255 / 0.1);
-  --shadow-md: 0 4px 6px -1px rgb(255 255 255 / 0.15);
-  --shadow-lg: 0 10px 15px -3px rgb(255 255 255 / 0.2);
+  --shadow-raised: 0 1px 2px 0 rgb(255 255 255 / 0.2);
+  --shadow-floating: 0 10px 15px -3px rgb(255 255 255 / 0.3);
+  --shadow-overlay:
+    0 20px 25px -5px rgb(255 255 255 / 0.35), 0 8px 10px -6px rgb(255 255 255 / 0.3);
 }

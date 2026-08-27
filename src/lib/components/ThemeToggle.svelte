@@ -9,67 +9,58 @@
   -->
 
 <script lang="ts">
-  import { onMount } from 'svelte';
   import { themeStore } from '$lib/themes/themeStore';
+  import type { ThemeMode } from '$lib/themes/themeUtils';
 
   const isDarkStore = themeStore.isDark;
+  const modeStore = themeStore.mode;
+
   let isDark = $state(false);
+  let mode = $state<ThemeMode>('system');
 
   $effect(() => {
     const unsubscribe = isDarkStore.subscribe((value) => (isDark = value));
     return unsubscribe;
   });
 
+  $effect(() => {
+    const unsubscribe = modeStore.subscribe((value) => (mode = value));
+    return unsubscribe;
+  });
+
+  const modeLabel = $derived(
+    mode === 'system'
+      ? `System (${isDark ? 'dark' : 'light'})`
+      : mode === 'dark'
+        ? 'Dark'
+        : 'Light',
+  );
+  const nextLabel = $derived(mode === 'light' ? 'dark' : mode === 'dark' ? 'system' : 'light');
+
   // Remove focus ring when user clicks theme toggle
   // But keep it for keyboard navigation for accessibility
   function handleThemeToggleClick(event: MouseEvent) {
-    themeStore.toggleMode();
+    themeStore.cycleMode();
 
     if (event.detail > 0 && event.currentTarget) {
       const target = event.currentTarget as HTMLButtonElement | null;
       target?.blur();
     }
   }
-
-  onMount(() => {
-    // Listening for system theme changes
-    if (window.matchMedia) {
-      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-
-      const handleSystemThemeChange = (e: MediaQueryListEvent) => {
-        const hasManualPreference = localStorage.getItem('gdluxx-theme-mode');
-        if (!hasManualPreference) {
-          // Apply system preference to current theme
-          const newMode = e.matches ? 'dark' : 'light';
-          if (newMode === 'dark') {
-            themeStore.setDarkMode();
-          } else {
-            themeStore.setLightMode();
-          }
-        }
-      };
-
-      mediaQuery.addEventListener('change', handleSystemThemeChange);
-
-      return () => {
-        mediaQuery.removeEventListener('change', handleSystemThemeChange);
-      };
-    }
-  });
 </script>
 
 <button
   type="button"
-  class="relative flex h-10 w-10 cursor-pointer items-center justify-center transition-all duration-200"
-  aria-pressed={isDark}
-  aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+  class="relative flex h-10 w-10 cursor-pointer items-center justify-center transition-all duration-base"
+  aria-label={`Theme mode: ${modeLabel}. Switch to ${nextLabel} mode`}
+  title={`Theme mode: ${modeLabel}`}
   onclick={handleThemeToggleClick}
 >
   <!-- light mode -->
   <svg
-    class="absolute h-6 w-6 text-primary transition-all duration-400 {isDark
-      ? 'scale-75 rotate-180 opacity-0'
-      : 'scale-100 rotate-0 opacity-100'}"
+    class="absolute h-6 w-6 text-primary transition-all duration-400 {mode === 'light'
+      ? 'scale-100 rotate-0 opacity-100'
+      : 'scale-75 rotate-180 opacity-0'}"
     fill="none"
     stroke="currentColor"
     viewBox="0 0 24 24"
@@ -85,7 +76,7 @@
 
   <!-- dark mode -->
   <svg
-    class="absolute h-6 w-6 text-primary transition-all duration-400 {isDark
+    class="absolute h-6 w-6 text-primary transition-all duration-400 {mode === 'dark'
       ? 'scale-100 rotate-0 opacity-100'
       : 'scale-75 rotate-180 opacity-0'}"
     xmlns="http://www.w3.org/2000/svg"
@@ -98,8 +89,33 @@
     />
   </svg>
 
+  <!-- system mode -->
+  <svg
+    class="absolute h-6 w-6 text-primary transition-all duration-400 {mode === 'system'
+      ? 'scale-100 rotate-0 opacity-100'
+      : 'scale-75 rotate-180 opacity-0'}"
+    fill="none"
+    stroke="currentColor"
+    viewBox="0 0 24 24"
+    aria-hidden="true"
+  >
+    <rect
+      x="3"
+      y="4"
+      width="18"
+      height="13"
+      rx="2"
+      stroke-width="2"
+    />
+    <path
+      stroke-linecap="round"
+      stroke-width="2"
+      d="M8 21h8m-4-4v4"
+    />
+  </svg>
+
   <!-- Screen reader, text only -->
   <span class="sr-only">
-    {isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+    Theme mode: {modeLabel}. Switch to {nextLabel} mode
   </span>
 </button>

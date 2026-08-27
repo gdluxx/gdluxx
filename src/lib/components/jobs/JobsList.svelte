@@ -220,7 +220,7 @@
       <!-- running card -->
       <button
         onclick={() => toggleFilter('running')}
-        class={`cursor-pointer rounded-sm border px-3 py-1.5 text-foreground ${
+        class={`cursor-pointer rounded-surface border px-3 py-1.5 text-foreground ${
           activeFilters.has('running')
             ? 'border-info bg-info/10'
             : 'bg-surface-elevated border-strong hover:border-info hover:bg-info-hover/10'
@@ -228,7 +228,7 @@
       >
         <div class="flex items-center justify-center gap-2">
           <div class="h-2 w-2 rounded-full bg-info"></div>
-          <span class="text-md font-medium text-accent-foreground">Running</span>
+          <span class="text-base font-medium text-accent-foreground">Running</span>
         </div>
         <div class="mt-1 flex justify-center text-xl font-semibold text-primary">
           {jobStore.runningJobCount}
@@ -238,7 +238,7 @@
       <!-- success card -->
       <button
         onclick={() => toggleFilter('success')}
-        class={`cursor-pointer rounded-sm border px-3 py-1.5 text-foreground ${
+        class={`cursor-pointer rounded-surface border px-3 py-1.5 text-foreground ${
           activeFilters.has('success')
             ? 'border-success bg-success/10'
             : 'bg-surface-elevated border-strong hover:border-success hover:bg-success-hover/10'
@@ -246,7 +246,7 @@
       >
         <div class="flex items-center justify-center gap-2">
           <div class="h-2 w-2 rounded-full bg-success"></div>
-          <span class="text-md font-medium text-accent-foreground">Success</span>
+          <span class="text-base font-medium text-accent-foreground">Success</span>
         </div>
         <div class="mt-1 flex justify-center text-xl font-semibold text-primary">
           {jobStore.successJobCount}
@@ -256,7 +256,7 @@
       <!-- skips card -->
       <button
         onclick={() => toggleFilter('no_action')}
-        class={`cursor-pointer rounded-sm border px-3 py-1.5 text-foreground ${
+        class={`cursor-pointer rounded-surface border px-3 py-1.5 text-foreground ${
           activeFilters.has('no_action')
             ? 'border-warning bg-warning/10'
             : 'bg-surface-elevated border-strong hover:border-warning hover:bg-warning-hover/10'
@@ -264,7 +264,7 @@
       >
         <div class="flex items-center justify-center gap-2">
           <div class="h-2 w-2 rounded-full bg-warning"></div>
-          <span class="text-md font-medium text-accent-foreground">Skipped</span>
+          <span class="text-base font-medium text-accent-foreground">Skipped</span>
         </div>
         <div class="mt-1 flex justify-center text-xl font-semibold text-primary">
           {jobStore.noActionJobCount}
@@ -274,7 +274,7 @@
       <!-- error card -->
       <button
         onclick={() => toggleFilter('error')}
-        class={`cursor-pointer rounded-sm border px-3 py-1.5 text-foreground ${
+        class={`cursor-pointer rounded-surface border px-3 py-1.5 text-foreground ${
           activeFilters.has('error')
             ? 'border-error bg-error/10'
             : 'bg-surface-elevated border-strong hover:border-error hover:bg-error-hover/10'
@@ -282,7 +282,7 @@
       >
         <div class="flex items-center justify-center gap-2">
           <div class="h-2 w-2 rounded-full bg-error"></div>
-          <span class="text-md font-medium text-accent-foreground">Errors</span>
+          <span class="text-base font-medium text-accent-foreground">Errors</span>
         </div>
         <div class="mt-1 flex justify-center text-xl font-semibold text-primary">
           {jobStore.errorJobCount}
@@ -297,7 +297,7 @@
             size={18}
             class="-mx-1 align-middle text-success"
           />
-          <span class="text-md font-medium text-accent-foreground">Downloads</span>
+          <span class="text-base font-medium text-accent-foreground">Downloads</span>
         </div>
         <div class="mt-1 flex justify-center text-xl font-semibold text-primary">
           {jobStore.totalDownloads}
@@ -312,7 +312,7 @@
             size={16}
             class="align-middle text-warning"
           />
-          <span class="text-md font-medium text-accent-foreground">Skipped</span>
+          <span class="text-base font-medium text-accent-foreground">Skipped</span>
         </div>
         <div class="mt-1 flex justify-center text-xl font-semibold text-primary">
           {jobStore.totalSkips}
@@ -516,7 +516,7 @@
           {/if}
           <button
             onclick={(e) => deleteJob(e, job.id)}
-            class="ml-4 cursor-pointer rounded-sm p-1 text-error transition-colors hover:bg-error/50 hover:text-foreground focus:outline-none"
+            class="ml-4 cursor-pointer rounded-control p-1 text-error transition-colors hover:bg-error/50 hover:text-foreground"
             title="Delete job"
             aria-label={`Delete job ${job.url}`}
           >
@@ -553,7 +553,7 @@
 <!-- Tooltip -->
 {#if tooltip.visible}
   <div
-    class="pointer-events-none fixed z-50 rounded bg-surface-elevated px-2 py-1 text-xs whitespace-nowrap text-foreground shadow-lg border-strong"
+    class="pointer-events-none fixed z-50 rounded-overlay bg-surface-elevated px-2 py-1 text-xs whitespace-nowrap text-foreground shadow-floating border-strong"
     style:left="{tooltip.x + 10}px"
     style:top="{tooltip.y - 30}px"
     transition:fade={{ duration: 150 }}

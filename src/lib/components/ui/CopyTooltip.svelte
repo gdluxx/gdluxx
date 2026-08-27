@@ -21,7 +21,7 @@
 
 {#if visible}
   <div
-    class="bg-surface-elevated text-primary border border-primary/75 shadow-md pointer-events-none fixed z-50 -translate-x-1/2 -translate-y-full rounded px-2.5 py-1.5 text-sm whitespace-nowrap"
+    class="bg-surface-elevated text-primary border border-primary/75 shadow-floating pointer-events-none fixed z-50 -translate-x-1/2 -translate-y-full rounded-overlay px-2.5 py-1.5 text-sm whitespace-nowrap"
     style:top="{y}px"
     style:left="{x}px"
   >

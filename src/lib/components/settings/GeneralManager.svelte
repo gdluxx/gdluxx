@@ -32,9 +32,9 @@
   const maxBatchUrlsSaver = createSettingsSaver();
   const themeSaver = createSettingsSaver();
 
-  const sortedThemes = Object.values(AVAILABLE_THEMES).sort((a, b) =>
-    a.displayName.localeCompare(b.displayName),
-  );
+  const sortedThemes = Object.values(AVAILABLE_THEMES)
+    .filter((theme) => !theme.devOnly)
+    .sort((a, b) => a.displayName.localeCompare(b.displayName));
 
   $effect(() => {
     settings.warnOnSiteRuleOverride = userSettings.warnOnSiteRuleOverride;
@@ -209,7 +209,7 @@
             aria-describedby="theme-{theme.name}-description"
             onclick={() => handleThemeChange(theme.name)}
             disabled={themeSaver.saving}
-            class="relative cursor-pointer rounded-sm border-2 p-4 text-left transition-all hover:shadow-md focus:ring-2 focus:ring-primary focus:ring-offset-2 {settings.selectedTheme ===
+            class="relative cursor-pointer rounded-surface border-2 p-4 text-left transition-all hover:shadow-raised {settings.selectedTheme ===
             theme.name
               ? 'border-primary bg-surface-selected'
               : 'border-border bg-surface-elevated hover:border-primary/35 hover:bg-surface-hover'}"
@@ -248,7 +248,7 @@
       {#if themeSaver.saving}
         <div class="absolute inset-0 flex items-center justify-center bg-surface/50">
           <div
-            class="flex items-center gap-2 rounded border bg-surface-elevated px-3 py-2 shadow-md"
+            class="flex items-center gap-2 rounded-overlay border bg-surface-elevated px-3 py-2 shadow-floating"
           >
             <Spinner
               variant="ring"

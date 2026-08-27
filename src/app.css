@@ -8,284 +8,157 @@
  * as published by the Free Software Foundation.
  */
 
-@import 'tailwindcss';
+/* Limit scanning to app source; the extension builds separately and prose data can generate unguarded utilities. */
+@import 'tailwindcss' source('.');
+@source not './lib/assets';
 
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
+  /* These values register utilities; the pre-paint theme class supplies rendered values. */
   --color-background: #ffffff;
-  --color-surface: #fafafa;
+  --color-surface: #f8fafc;
   --color-surface-elevated: #ffffff;
-  --color-surface-sunken: #f5f5f5;
+  --color-surface-sunken: #f1f5f9;
   --color-surface-overlay: #f8fafc;
+  --color-scrim: rgb(0 0 0 / 0.3);
 
-  --color-foreground: #111111;
-  --color-muted-foreground: #6b7280;
-  --color-accent-foreground: #374151;
+  --color-foreground: #0f172a;
+  --color-muted-foreground: #64748b;
+  --color-accent-foreground: #475569;
   --color-text-inverse: #ffffff;
-  --color-text-disabled: #9ca3af;
+  --color-text-disabled: #94a3b8;
 
   --color-primary: #6366f1;
-  --color-primary-hover: #4f46e5;
-  --color-primary-active: #4338ca;
-  --color-primary-disabled: #c7d2fe;
+  --color-primary-hover: #5b21b6;
+  --color-primary-active: #4c1d95;
+  --color-primary-disabled: #e0e7ff;
   --color-primary-text: #ffffff;
 
-  --color-surface-hover: #f3f4f6;
-  --color-surface-active: #e5e7eb;
+  --color-surface-hover: #f1f5f9;
+  --color-surface-active: #e2e8f0;
   --color-surface-selected: #eef2ff;
-  --color-surface-disabled: #f9fafb;
+  --color-surface-disabled: #f8fafc;
 
   --color-success: #059669;
   --color-success-hover: #047857;
   --color-success-active: #065f46;
   --color-success-text: #ffffff;
 
-  --color-warning: #d97706;
-  --color-warning-hover: #b45309;
-  --color-warning-active: #92400e;
-  --color-warning-text: #ffffff;
+  --color-warning: #eab308;
+  --color-warning-hover: #ca8a04;
+  --color-warning-active: #a16207;
+  --color-warning-text: #000000;
 
   --color-error: #dc2626;
   --color-error-hover: #b91c1c;
   --color-error-active: #991b1b;
   --color-error-text: #ffffff;
 
-  --color-info: #2563eb;
-  --color-info-hover: #1d4ed8;
-  --color-info-active: #1e40af;
+  --color-info: #0ea5e9;
+  --color-info-hover: #0284c7;
+  --color-info-active: #0369a1;
   --color-info-text: #ffffff;
 
-  --color-border: #e5e7eb;
-  --color-border-strong: #d1d5db;
+  --color-border: #e2e8f0;
+  --color-border-strong: #cbd5e1;
   --color-border-focus: #6366f1;
-  --color-border-disabled: #f3f4f6;
   --color-border-error: #fca5a5;
   --color-border-success: #86efac;
-  --color-border-info: #93c5fd;
-  --color-border-warning: #fed7aa;
 
-  --color-input-background: #ffffff;
-  --color-input-disabled: #f9fafb;
+  --color-input-background: #f8fafc;
+  --color-input-disabled: #f1f5f9;
   --color-input-invalid: #fef2f2;
   --color-input-valid: #f0fdf4;
 
-  --color-skeleton: #f3f4f6;
+  --color-skeleton: #e2e8f0;
   --color-spinner: #6366f1;
 
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+  /* Clear stock shadow utilities so undeclared elevation roles fail visibly. */
+  --shadow-*: initial;
+
+  --radius-control: 0.25rem;
+  --radius-surface: 0.25rem;
+  --radius-overlay: 0.5rem;
+  --radius-pill: 9999px;
+
+  --font-sans:
+    ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
+    'Noto Color Emoji';
+  --font-mono:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
+    monospace;
 }
 
-/* Border utilities are border width + color */
 @utility border-strong {
-  border: 1px solid var(--color-border-strong);
+  border: var(--stroke-base, 1px) solid var(--color-border-strong);
 }
 @utility border-focus {
-  border: 1px solid var(--color-border-focus);
+  border: var(--stroke-base, 1px) solid var(--color-border-focus);
 }
-@utility border-disabled {
-  border: 1px solid var(--color-border-disabled);
-}
-@utility border-primary {
-  border: 1px solid var(--color-primary);
-}
-@utility border-success {
-  border: 1px solid var(--color-success);
-}
-@utility border-warning {
-  border: 1px solid var(--color-warning);
-}
-@utility border-error {
-  border: 1px solid var(--color-error);
-}
-@utility border-info {
-  border: 1px solid var(--color-info);
-}
-
-/* Directional borders */
 @utility border-t-strong {
-  border-top: 1px solid var(--color-border-strong);
+  border-top: var(--stroke-base, 1px) solid var(--color-border-strong);
 }
 @utility border-r-strong {
-  border-right: 1px solid var(--color-border-strong);
+  border-right: var(--stroke-base, 1px) solid var(--color-border-strong);
 }
 @utility border-b-strong {
-  border-bottom: 1px solid var(--color-border-strong);
-}
-@utility border-l-strong {
-  border-left: 1px solid var(--color-border-strong);
+  border-bottom: var(--stroke-base, 1px) solid var(--color-border-strong);
 }
 
-@utility border-t-primary {
-  border-top: 1px solid var(--color-primary);
+/* Custom utilities preserve class-scoped overrides because tailwind inlines @theme shadow values. */
+@utility shadow-raised {
+  box-shadow: var(--shadow-raised);
 }
-@utility border-r-primary {
-  border-right: 1px solid var(--color-primary);
+@utility shadow-floating {
+  box-shadow: var(--shadow-floating);
 }
-@utility border-b-primary {
-  border-bottom: 1px solid var(--color-primary);
-}
-@utility border-l-primary {
-  border-left: 1px solid var(--color-primary);
+@utility shadow-overlay {
+  box-shadow: var(--shadow-overlay);
 }
 
-@utility border-t-success {
-  border-top: 1px solid var(--color-success);
+@utility duration-fast {
+  transition-duration: var(--motion-fast, 150ms);
 }
-@utility border-r-success {
-  border-right: 1px solid var(--color-success);
-}
-@utility border-b-success {
-  border-bottom: 1px solid var(--color-success);
-}
-@utility border-l-success {
-  border-left: 1px solid var(--color-success);
-}
-
-@utility border-t-error {
-  border-top: 1px solid var(--color-error);
-}
-@utility border-r-error {
-  border-right: 1px solid var(--color-error);
-}
-@utility border-b-error {
-  border-bottom: 1px solid var(--color-error);
-}
-@utility border-l-error {
-  border-left: 1px solid var(--color-error);
+@utility duration-base {
+  transition-duration: var(--motion-base, 200ms);
 }
 
 @layer utilities {
-  .border-strong {
-    border-color: var(--color-border-strong);
-  }
-  .border-focus {
-    border-color: var(--color-border-focus);
-  }
-  .border-disabled {
-    border-color: var(--color-border-disabled);
-  }
-
-  .bg-primary-hover {
-    background-color: var(--color-primary-hover);
-  }
-  .bg-primary-active {
-    background-color: var(--color-primary-active);
-  }
-  .bg-primary-disabled {
-    background-color: var(--color-primary-disabled);
-  }
-
   .text-on-primary {
     color: var(--color-primary-text);
-  }
-
-  .bg-success-hover {
-    background-color: var(--color-success-hover);
-  }
-  .bg-success-active {
-    background-color: var(--color-success-active);
   }
   .text-on-success {
     color: var(--color-success-text);
   }
-
-  .bg-warning-hover {
-    background-color: var(--color-warning-hover);
-  }
-  .bg-warning-active {
-    background-color: var(--color-warning-active);
-  }
   .text-on-warning {
     color: var(--color-warning-text);
   }
-
-  .bg-error-hover {
-    background-color: var(--color-error-hover);
-  }
-  .bg-error-active {
-    background-color: var(--color-error-active);
-  }
   .text-on-error {
     color: var(--color-error-text);
-  }
-
-  .bg-info-hover {
-    background-color: var(--color-info-hover);
-  }
-  .bg-info-active {
-    background-color: var(--color-info-active);
   }
   .text-on-info {
     color: var(--color-info-text);
   }
 
-  .bg-surface-sunken {
-    background-color: var(--color-surface-sunken);
-  }
-  .bg-surface-overlay {
-    background-color: var(--color-surface-overlay);
-  }
-  .bg-surface-hover {
-    background-color: var(--color-surface-hover);
-  }
-  .bg-surface-active {
-    background-color: var(--color-surface-active);
-  }
-  .bg-surface-selected {
-    background-color: var(--color-surface-selected);
-  }
-  .bg-surface-disabled {
-    background-color: var(--color-surface-disabled);
-  }
-
-  .bg-input-background {
-    background-color: var(--color-input-background);
-  }
-  .bg-input-disabled {
-    background-color: var(--color-input-disabled);
-  }
-  .bg-input-invalid {
-    background-color: var(--color-input-invalid);
-  }
-  .bg-input-valid {
-    background-color: var(--color-input-valid);
-  }
-
-  .text-accent-foreground {
-    color: var(--color-accent-foreground);
-  }
   .text-inverse {
     color: var(--color-text-inverse);
   }
   .text-disabled {
     color: var(--color-text-disabled);
   }
-
-  .bg-skeleton {
-    background-color: var(--color-skeleton);
-  }
-  .text-spinner {
-    color: var(--color-spinner);
-  }
-
-  .shadow-sm {
-    box-shadow: var(--shadow-sm);
-  }
-  .shadow-md {
-    box-shadow: var(--shadow-md);
-  }
-  .shadow-lg {
-    box-shadow: var(--shadow-lg);
-  }
 }
 
 @layer components {
+  .scrim {
+    /* Keep these fallbacks aligned with Modal's ::backdrop, which may not inherit them. */
+    background-color: var(--color-scrim, rgb(0 0 0 / 0.3));
+    backdrop-filter: var(--backdrop-filter, blur(4px));
+  }
+
   .content-panel {
-    @apply cursor-default rounded-sm border bg-surface p-4 text-foreground;
-    border: 1px solid var(--color-border-strong);
+    @apply cursor-default rounded-surface bg-surface p-4 text-foreground;
+    border: var(--stroke-base, 1px) solid var(--color-border-strong);
   }
   .content-panel h1 {
     @apply mb-4 text-2xl font-bold text-foreground;
@@ -297,38 +170,38 @@
     @apply mb-2 text-lg font-medium text-accent-foreground;
   }
   .content-panel-elevated {
-    @apply rounded-sm border border-primary/35 bg-surface-elevated p-6 text-foreground shadow-sm;
+    @apply rounded-surface border-(length:--stroke-base) border-primary/35 bg-surface-elevated p-6 text-foreground shadow-raised;
   }
   .content-panel-sunken {
-    @apply rounded-sm border border-primary/35 bg-surface-sunken p-6 text-foreground;
+    @apply rounded-surface border-(length:--stroke-base) border-primary/35 bg-surface-sunken p-6 text-foreground;
   }
 
   .data-list {
-    @apply cursor-default rounded-sm border bg-surface;
-    border: 1px solid var(--color-border-strong);
+    @apply cursor-default rounded-surface bg-surface;
+    border: var(--stroke-base, 1px) solid var(--color-border-strong);
   }
 
   .data-list-header {
     @apply p-4 font-medium text-foreground;
-    border-bottom: 1px solid var(--color-border-strong);
+    border-bottom: var(--stroke-base, 1px) solid var(--color-border-strong);
   }
   .data-list-header h2 {
     @apply mb-3 text-xl font-semibold text-foreground;
   }
 
   .data-list-item {
-    @apply m-4 rounded-sm bg-surface-elevated p-4 transition-colors duration-150 hover:bg-surface-hover;
-    border: 1px solid var(--color-border-strong);
+    @apply m-4 rounded-surface bg-surface-elevated p-4 transition-colors duration-fast hover:bg-surface-hover;
+    border: var(--stroke-base, 1px) solid var(--color-border-strong);
   }
 
   .data-list-stats {
-    @apply rounded-sm bg-surface-elevated p-4 text-foreground;
-    border: 1px solid var(--color-border-strong);
+    @apply rounded-surface bg-surface-elevated p-4 text-foreground;
+    border: var(--stroke-base, 1px) solid var(--color-border-strong);
   }
 
   .data-list-controls {
-    @apply rounded-sm bg-surface-elevated p-3;
-    border: 1px solid var(--color-border-strong);
+    @apply rounded-surface bg-surface-elevated p-3;
+    border: var(--stroke-base, 1px) solid var(--color-border-strong);
   }
 
   .data-list-item-interactive {
@@ -340,47 +213,43 @@
   }
 
   .form-input {
-    @apply w-full rounded-sm border px-3 py-2 text-sm text-foreground;
-    @apply focus:ring-1 focus:ring-primary focus:outline-none;
-    @apply transition-colors duration-150;
+    @apply w-full rounded-control px-3 py-2 text-sm text-foreground;
+    @apply transition-colors duration-fast;
     @apply placeholder:text-muted-foreground;
     background-color: var(--color-input-background);
-    border: 1px solid var(--color-border-strong);
+    border: var(--stroke-base, 1px) solid var(--color-border-strong);
   }
 
   .form-input:focus,
   .form-input:focus-visible {
     border-color: var(--color-border-focus);
-    box-shadow: 0 0 0 1px var(--color-primary);
   }
 
   .form-input:disabled {
     @apply cursor-not-allowed;
     background-color: var(--color-input-disabled);
-    border: 1px solid var(--color-border-strong);
+    border: var(--stroke-base, 1px) solid var(--color-border-strong);
     color: var(--color-text-disabled);
   }
 
   .form-input-error {
     background-color: var(--color-input-invalid);
-    border-color: var(--color-error);
+    border-color: var(--color-border-error);
   }
 
   .form-input-error:focus,
   .form-input-error:focus-visible {
     border-color: var(--color-error);
-    box-shadow: 0 0 0 1px var(--color-error);
   }
 
   .form-input-success {
     background-color: var(--color-input-valid);
-    border-color: var(--color-success);
+    border-color: var(--color-border-success);
   }
 
   .form-input-success:focus,
   .form-input-success:focus-visible {
     border-color: var(--color-success);
-    box-shadow: 0 0 0 1px var(--color-success);
   }
 
   .form-input-sm {
@@ -392,36 +261,33 @@
   }
 
   .form-textarea {
-    @apply w-full rounded-sm border px-3 py-2 text-sm text-foreground;
-    @apply focus:ring-1 focus:ring-primary focus:outline-none;
-    @apply transition-colors duration-150;
+    @apply w-full rounded-control px-3 py-2 text-sm text-foreground;
+    @apply transition-colors duration-fast;
     @apply placeholder:text-muted-foreground;
     @apply min-h-[80px] resize-none;
     background-color: var(--color-input-background);
-    border: 1px solid var(--color-border-strong);
+    border: var(--stroke-base, 1px) solid var(--color-border-strong);
   }
 
   .form-textarea:focus,
   .form-textarea:focus-visible {
     border-color: var(--color-border-focus);
-    box-shadow: 0 0 0 1px var(--color-primary);
   }
 
   .form-textarea:disabled {
     @apply cursor-not-allowed;
     background-color: var(--color-input-disabled);
-    border: 1px solid var(--color-border-strong);
+    border: var(--stroke-base, 1px) solid var(--color-border-strong);
     color: var(--color-text-disabled);
   }
 
   .form-select {
-    @apply w-full rounded-sm border px-3 py-2 text-sm text-foreground;
-    @apply focus:ring-1 focus:ring-primary focus:outline-none;
-    @apply transition-colors duration-150;
+    @apply w-full rounded-control px-3 py-2 text-sm text-foreground;
+    @apply transition-colors duration-fast;
     @apply placeholder:text-muted-foreground;
     @apply cursor-pointer;
     background-color: var(--color-input-background);
-    border: 1px solid var(--color-border-strong);
+    border: var(--stroke-base, 1px) solid var(--color-border-strong);
     appearance: none;
     background-image:
       linear-gradient(45deg, transparent 50%, var(--color-muted-foreground) 50%),
@@ -439,29 +305,41 @@
   .form-select:focus,
   .form-select:focus-visible {
     border-color: var(--color-border-focus);
-    box-shadow: 0 0 0 1px var(--color-primary);
   }
 
   .form-select:disabled {
     @apply cursor-not-allowed;
     background-color: var(--color-input-disabled);
-    border: 1px solid var(--color-border-strong);
+    border: var(--stroke-base, 1px) solid var(--color-border-strong);
     color: var(--color-text-disabled);
     background-image: none;
   }
 }
 
 @layer base {
+  /* Layer defaults so unlayered theme files win regardless of import order. */
+  :root {
+    --stroke-base: 1px;
+    --focus-ring-width: 2px;
+    --focus-ring-offset: 2px;
+    --motion-fast: 150ms;
+    --motion-base: 200ms;
+    --shadow-raised: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-floating: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+    --shadow-overlay: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    --backdrop-filter: blur(4px);
+  }
+
   *,
   *::before,
   *::after {
+    /* Transform timing remains component-owned. */
     transition:
       background-color 0.3s ease-in-out,
       border-color 0.3s ease-in-out,
       color 0.3s ease-in-out,
       opacity 0.3s ease-in-out,
-      box-shadow 0.3s ease-in-out,
-      transform 0.3s ease-in-out;
+      box-shadow 0.3s ease-in-out;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -475,29 +353,8 @@
   }
 
   :focus-visible {
-    outline: 2px solid var(--color-primary);
-    outline-offset: 2px;
-  }
-
-  @media (prefers-contrast: more) {
-    button,
-    [role='button'],
-    input,
-    select,
-    textarea {
-      border: 2px solid;
-    }
-  }
-
-  button:focus-visible,
-  [role='button']:focus-visible,
-  a:focus-visible,
-  input:focus-visible,
-  select:focus-visible,
-  textarea:focus-visible {
-    box-shadow:
-      0 0 0 2px var(--color-background),
-      0 0 0 4px var(--color-primary);
+    outline: var(--focus-ring-width, 2px) solid var(--color-border-focus);
+    outline-offset: var(--focus-ring-offset, 2px);
   }
 
   input[type='search']::-webkit-search-cancel-button {

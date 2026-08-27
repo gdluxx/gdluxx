@@ -48,7 +48,7 @@
   <header>
     <a
       href={resolve('/dev')}
-      class="mb-3 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary focus:ring-2 focus:ring-focus focus:outline-hidden"
+      class="mb-3 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary"
     >
       <Icon
         iconName="chevron-right"

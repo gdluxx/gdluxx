@@ -9,11 +9,14 @@
  */
 
 .theme-indigo {
+  color-scheme: light;
+
   --color-background: #ffffff;
   --color-surface: #f8fafc;
   --color-surface-elevated: #ffffff;
   --color-surface-sunken: #f1f5f9;
   --color-surface-overlay: #f8fafc;
+  --color-scrim: rgb(0 0 0 / 0.3);
 
   --color-foreground: #0f172a;
   --color-muted-foreground: #64748b;
@@ -55,7 +58,6 @@
   --color-border: #e2e8f0;
   --color-border-strong: #cbd5e1;
   --color-border-focus: #6366f1;
-  --color-border-disabled: #f1f5f9;
   --color-border-error: #fca5a5;
   --color-border-success: #86efac;
 
@@ -67,18 +69,20 @@
   --color-skeleton: #e2e8f0;
   --color-spinner: #6366f1;
 
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -1px rgb(0 0 0 / 0.06);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -2px rgb(0 0 0 / 0.05);
-  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 10px 10px -5px rgb(0 0 0 / 0.04);
+  --shadow-raised: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-floating: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -2px rgb(0 0 0 / 0.05);
+  --shadow-overlay: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 10px 10px -5px rgb(0 0 0 / 0.04);
 }
 
 .theme-indigo.dark {
+  color-scheme: dark;
+
   --color-background: #020617;
   --color-surface: #0f172a;
   --color-surface-elevated: #1e293b;
   --color-surface-sunken: #020617;
   --color-surface-overlay: #334155;
+  --color-scrim: rgb(0 0 0 / 0.3);
 
   --color-foreground: #e2e8f0;
   --color-muted-foreground: #64748b;
@@ -120,7 +124,6 @@
   --color-border: #334155;
   --color-border-strong: #475569;
   --color-border-focus: #8b5cf6;
-  --color-border-disabled: #1e293b;
   --color-border-error: #ef4444;
   --color-border-success: #22c55e;
 
@@ -132,8 +135,7 @@
   --color-skeleton: #1e293b;
   --color-spinner: #8b5cf6;
 
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -1px rgb(0 0 0 / 0.3);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.5), 0 4px 6px -2px rgb(0 0 0 / 0.4);
-  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.6), 0 10px 10px -5px rgb(0 0 0 / 0.5);
+  --shadow-raised: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+  --shadow-floating: 0 10px 15px -3px rgb(0 0 0 / 0.5), 0 4px 6px -2px rgb(0 0 0 / 0.4);
+  --shadow-overlay: 0 20px 25px -5px rgb(0 0 0 / 0.6), 0 10px 10px -5px rgb(0 0 0 / 0.5);
 }

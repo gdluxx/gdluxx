@@ -40,7 +40,7 @@
     <input
       id="copy-tooltip-text"
       bind:value={text}
-      class="mt-2 w-full max-w-sm rounded border border-border bg-input px-3 py-2 text-foreground focus:border-focus focus:outline-hidden"
+      class="mt-2 w-full max-w-sm rounded-control border border-border bg-input-background px-3 py-2 text-foreground"
     />
     <div class="mt-4 flex flex-wrap gap-3">
       <Button

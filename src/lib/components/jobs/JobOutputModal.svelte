@@ -102,9 +102,9 @@
       // added trim to handle carriage returns
       const trimmedData = output.data.trim();
       if (trimmedData.startsWith('✔ ')) {
-        htmlContent = `<span style="color: limegreen;">${htmlContent}</span>`;
+        htmlContent = `<span style="color: var(--color-success);">${htmlContent}</span>`;
       } else if (trimmedData.startsWith('# ')) {
-        htmlContent = `<span style="color: gray;">${htmlContent}</span>`;
+        htmlContent = `<span style="color: var(--color-muted-foreground);">${htmlContent}</span>`;
       }
     }
 
@@ -219,7 +219,7 @@
       <button
         onclick={(event: MouseEvent) => handleCopy(job.url, event)}
         aria-label="Copy Job URL"
-        class="flex-shrink-0 cursor-pointer p-1 text-muted-foreground transition-all duration-200 hover:scale-110 hover:text-foreground"
+        class="flex-shrink-0 cursor-pointer p-1 text-muted-foreground transition-all duration-base hover:scale-110 hover:text-foreground"
         title="Copy Job URL"
       >
         <Icon

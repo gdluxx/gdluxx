@@ -177,14 +177,16 @@
             : `https://github.com/${versionState.source.user}/${versionState.source.repo}`}
           target="_blank"
           rel="noopener noreferrer"
-          class="text-link hover:underline"
+          class="text-primary hover:underline"
         >
           {versionState.source.provider === 'codeberg'
             ? 'codeberg.org'
             : 'github.com'}/{versionState.source.user}/{versionState.source.repo}
         </a>
         {#if versionState.source.isArm64}
-          <span class="bg-muted ml-2 rounded px-1.5 py-0.5 text-xs text-muted-foreground">
+          <span
+            class="ml-2 rounded-surface bg-surface-active px-1.5 py-0.5 text-xs text-muted-foreground"
+          >
             ARM64
           </span>
         {/if}

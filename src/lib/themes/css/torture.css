@@ -1,0 +1,156 @@
+/*
+ * Copyright (C) 2025 jsouthgb
+ *
+ * This file is part of gdluxx.
+ *
+ * gdluxx is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 (GPL-2.0),
+ * as published by the Free Software Foundation.
+ */
+
+/* Non-shipping QA theme that exercises every dial, including an intentional warning.
+   Components must never special-case it. */
+
+.theme-torture {
+  color-scheme: light;
+
+  --color-background: #ffffff;
+  --color-surface: #fff0fa;
+  --color-surface-elevated: #fffafd;
+  --color-surface-sunken: #f5d9ec;
+  --color-surface-overlay: #fdeaf8;
+  --color-scrim: rgb(80 0 60 / 0.7);
+
+  --color-foreground: #24001f;
+  --color-muted-foreground: #6b2a5c;
+  --color-accent-foreground: #55007a;
+  --color-text-inverse: #ffffff;
+  --color-text-disabled: #7a4a6e;
+
+  --color-primary: #c00087;
+  --color-primary-hover: #a10071;
+  --color-primary-active: #82005b;
+  --color-primary-disabled: #f2b8e2;
+  --color-primary-text: #ffffff;
+
+  --color-surface-hover: #ffe2f5;
+  --color-surface-active: #f8d3ee;
+  --color-surface-selected: #f3c8f8;
+  --color-surface-disabled: #f8ecf4;
+
+  --color-success: #007000;
+  --color-success-hover: #005c00;
+  --color-success-active: #004a00;
+  --color-success-text: #ffffff;
+
+  --color-warning: #7a6000;
+  --color-warning-hover: #635000;
+  --color-warning-active: #4f4000;
+  --color-warning-text: #ffffff;
+
+  --color-error: #c80000;
+  --color-error-hover: #a60000;
+  --color-error-active: #850000;
+  --color-error-text: #ffffff;
+
+  --color-info: #2244ff;
+  --color-info-hover: #1b36d6;
+  --color-info-active: #152cb0;
+  --color-info-text: #ffffff;
+
+  --color-border: #8a3a78;
+  --color-border-strong: #55184a;
+  --color-border-focus: #0000ee;
+  --color-border-error: #8a0000;
+  --color-border-success: #005214;
+
+  --color-input-background: #fff5fc;
+  --color-input-disabled: #f6e3f0;
+  --color-input-invalid: #ffe0e0;
+  --color-input-valid: #dcffdc;
+
+  --color-skeleton: #f0cfe6;
+  --color-spinner: #000000;
+
+  --radius-control: 0;
+  --radius-surface: 0;
+  --radius-overlay: 0;
+  --radius-pill: 0;
+  --stroke-base: 4px;
+
+  --shadow-raised: none;
+  --shadow-floating: none;
+  --shadow-overlay: none;
+  --backdrop-filter: none;
+
+  --focus-ring-width: 6px;
+  --focus-ring-offset: 0;
+
+  --motion-fast: 80ms;
+  --motion-base: 120ms;
+
+  --font-sans: 'Courier New', Courier, monospace;
+  --font-mono: Consolas, 'Lucida Console', monospace;
+}
+
+.theme-torture.dark {
+  color-scheme: dark;
+
+  --color-background: #000000;
+  --color-surface: #14001c;
+  --color-surface-elevated: #26103a;
+  --color-surface-sunken: #0a000e;
+  --color-surface-overlay: #1e0430;
+  --color-scrim: rgb(255 0 200 / 0.35);
+
+  --color-foreground: #ffe6ff;
+  --color-muted-foreground: #dda8d0;
+  --color-accent-foreground: #ccb0ff;
+  --color-text-inverse: #14001c;
+  --color-text-disabled: #a06890;
+
+  --color-primary: #ff99f0;
+  --color-primary-hover: #ffb3f5;
+  --color-primary-active: #ff80ea;
+  --color-primary-disabled: #5c2452;
+  --color-primary-text: #000000;
+
+  --color-surface-hover: #240630;
+  --color-surface-active: #33104a;
+  --color-surface-selected: #3d1458;
+  --color-surface-disabled: #170220;
+
+  --color-success: #44ee44;
+  --color-success-hover: #66ff66;
+  --color-success-active: #22cc22;
+  --color-success-text: #000000;
+
+  --color-warning: #ffcc00;
+  --color-warning-hover: #ffe066;
+  --color-warning-active: #e6b800;
+  --color-warning-text: #000000;
+
+  --color-error: #ffaa88;
+  --color-error-hover: #ffc0a8;
+  --color-error-active: #ff8f66;
+  --color-error-text: #000000;
+
+  --color-info: #55ccff;
+  --color-info-hover: #88dcff;
+  --color-info-active: #2fb8ff;
+  --color-info-text: #000000;
+
+  --color-border: #b070c0;
+  --color-border-strong: #e0a0e8;
+  --color-border-focus: #66ff99;
+  --color-border-error: #ff7744;
+  --color-border-success: #33cc55;
+
+  --color-input-background: #1c0428;
+  --color-input-disabled: #170220;
+  --color-input-invalid: #4a0808;
+  --color-input-valid: #06350a;
+
+  --color-skeleton: #0d0511;
+  --color-spinner: #5f6063;
+}

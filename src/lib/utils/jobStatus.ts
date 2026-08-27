@@ -12,9 +12,9 @@ import type { ClientJob } from '$lib/stores/jobs.svelte';
 
 export interface StatusColorOptions {
   /**
-   * When true, adds the heavier "list item" treatment (shadow, running
-   * pulse, and a more visible unknown-status fallback). Defaults to the
-   * plainer "modal header" treatment used elsewhere.
+   * When true, adds the heavier "list item" treatment (running pulse and a
+   * more visible unknown-status fallback). Defaults to the plainer "modal
+   * header" treatment used elsewhere.
    */
   emphasized?: boolean;
 }
@@ -23,9 +23,9 @@ export interface StatusColorOptions {
  * Maps a job status to its indicator background color classes.
  *
  * Pass `{ emphasized: true }` to reproduce the JobsList list-item styling
- * (adds `shadow-lg`, plus `animate-pulse` for running jobs, and falls back
- * to `bg-surface-sunken` for unknown statuses). Without it, this reproduces
- * the plainer JobOutputModal styling, falling back to `bg-muted-foreground`.
+ * (`animate-pulse` for running jobs, `bg-surface-sunken` for unknown
+ * statuses). Without it, this reproduces the plainer JobOutputModal styling,
+ * falling back to `bg-muted-foreground`.
  */
 export function getStatusColor(
   status: ClientJob['status'],
@@ -35,13 +35,13 @@ export function getStatusColor(
 
   switch (status) {
     case 'running':
-      return emphasized ? 'bg-info shadow-lg animate-pulse' : 'bg-info';
+      return emphasized ? 'bg-info animate-pulse' : 'bg-info';
     case 'success':
-      return emphasized ? 'bg-success shadow-lg' : 'bg-success';
+      return 'bg-success';
     case 'no_action':
-      return emphasized ? 'bg-warning shadow-lg' : 'bg-warning';
+      return 'bg-warning';
     case 'error':
-      return emphasized ? 'bg-error shadow-lg' : 'bg-error';
+      return 'bg-error';
     default:
       return emphasized ? 'bg-surface-sunken' : 'bg-muted-foreground';
   }

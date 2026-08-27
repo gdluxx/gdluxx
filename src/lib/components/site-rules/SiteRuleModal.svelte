@@ -164,7 +164,7 @@
           </Field>
 
           {#if getUserOptions().length > 0}
-            <div class="options-preview rounded-sm border bg-primary/10 p-3">
+            <div class="options-preview rounded-surface border bg-primary/10 p-3">
               <h4 class="mb-2 text-sm font-medium text-foreground">
                 Options to save ({getUserOptions().length}):
               </h4>
@@ -181,7 +181,7 @@
           {/if}
 
           {#if error}
-            <div class="-error rounded-sm bg-error/50 p-3">
+            <div class="rounded-surface bg-error/50 p-3">
               <div class="text-sm text-error">
                 {error}
               </div>

@@ -432,7 +432,7 @@
       >
         {#each siteConfigData as config (config.url)}
           <div
-            class="config-item flex items-center justify-between rounded bg-surface-elevated px-3 py-2 border-strong"
+            class="config-item flex items-center justify-between rounded-surface bg-surface-elevated px-3 py-2 border-strong"
           >
             <div class="flex flex-col">
               <span class="text-sm font-medium text-primary">
@@ -475,11 +475,11 @@
                   {/if}:
                   <br />
                   Your
-                  <code class="rounded bg-surface-elevated px-1 text-xs"
+                  <code class="rounded-surface bg-surface-elevated px-1 text-xs"
                     >{option.command} = {conflict.userValue}</code
                   >
                   will override
-                  <code class="rounded bg-surface-elevated px-1 text-xs"
+                  <code class="rounded-surface bg-surface-elevated px-1 text-xs"
                     >{option.command} = {conflict.siteRuleValue}</code
                   >
                 </li>
@@ -512,7 +512,7 @@
           >Command preview</span
         >
         <pre
-          class="overflow-x-auto rounded-sm bg-surface-sunken px-3 py-2 text-xs text-foreground border-strong"><code
+          class="overflow-x-auto rounded-surface bg-surface-sunken px-3 py-2 text-xs text-foreground border-strong"><code
             >{commandPreview.text}</code
           ></pre>
         {#if siteRuleHints.length > 0 || siteConfigData.length > 0}

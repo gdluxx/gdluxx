@@ -557,7 +557,7 @@
                 type="button"
                 onclick={() => toggleWeekday(option.day)}
                 aria-pressed={weekdays.has(option.day)}
-                class="rounded-full border px-3 py-1 text-sm font-medium transition-colors"
+                class="rounded-pill border px-3 py-1 text-sm font-medium transition-colors"
                 class:bg-primary={weekdays.has(option.day)}
                 class:text-on-primary={weekdays.has(option.day)}
                 class:border-primary={weekdays.has(option.day)}
@@ -674,7 +674,7 @@
       {/snippet}
     </Field>
 
-    <div class="rounded-sm bg-surface p-4 border-strong">
+    <div class="rounded-surface bg-surface p-4 border-strong">
       <p class="mb-1 text-sm font-medium text-foreground">
         {previewSummary || 'Recurrence preview'}
       </p>

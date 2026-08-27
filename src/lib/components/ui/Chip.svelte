@@ -99,15 +99,15 @@
     'gap-1.5',
     'font-medium',
     'transition-all',
-    'duration-150',
+    'duration-fast',
     'ease-in-out',
     'group',
   ];
 
   const sizeClasses: Record<ChipSize, string[]> = {
-    sm: ['px-2', 'py-0.5', 'text-xs', 'rounded-full'],
-    default: ['px-3', 'py-1', 'text-sm', 'rounded-full'],
-    lg: ['px-4', 'py-1.5', 'text-base', 'rounded-full'],
+    sm: ['px-2', 'py-0.5', 'text-xs', 'rounded-pill'],
+    default: ['px-3', 'py-1', 'text-sm', 'rounded-pill'],
+    lg: ['px-4', 'py-1.5', 'text-base', 'rounded-pill'],
   };
 
   const variantClasses: Record<ChipVariant, string[]> = {
@@ -200,7 +200,6 @@
     [
       'bg-transparent',
       'border-none',
-      'outline-none',
       'text-current',
       'min-w-0',
       size === 'sm' ? 'w-16' : size === 'lg' ? 'w-24' : 'w-20',
@@ -253,7 +252,7 @@
     {#if dismissible}
       <button
         onclick={handleDismiss}
-        class="-mr-0.5 ml-0.5 flex-shrink-0 cursor-pointer rounded-full p-0.5 opacity-60 transition-all group-hover:opacity-100 hover:bg-surface-hover hover:opacity-100 focus:ring-2 focus:ring-current/20 focus:outline-hidden"
+        class="-mr-1 ml-0.5 flex h-6 w-6 flex-shrink-0 cursor-pointer items-center justify-center rounded-full opacity-60 transition-all group-hover:opacity-100 hover:bg-surface-hover hover:opacity-100"
         aria-label="Dismiss chip"
         title="Dismiss"
         type="button"

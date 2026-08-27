@@ -158,7 +158,7 @@
     />
 
     <div
-      class="rounded-sm sticky top-0 z-10 -mx-2 mt-4 border-b border-strong bg-background px-3 py-3 sm:mx-0"
+      class="rounded-surface sticky top-0 z-10 -mx-2 mt-4 border-b border-strong bg-background px-3 py-3 sm:mx-0"
     >
       <CatalogToolbar
         query={rawQuery}

@@ -182,13 +182,13 @@
       <div
         role="group"
         aria-label="Select command"
-        class="inline-flex w-full overflow-hidden rounded-sm border border-primary sm:w-auto"
+        class="inline-flex w-full overflow-hidden rounded-control border border-primary sm:w-auto"
       >
         <button
           type="button"
           aria-pressed={mode === 'list-keywords'}
           onclick={() => selectMode('list-keywords')}
-          class="flex-1 cursor-pointer px-4 py-1.5 text-sm font-medium transition-colors focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:flex-none {mode ===
+          class="flex-1 cursor-pointer px-4 py-1.5 text-sm font-medium transition-colors focus-visible:z-10 sm:flex-none {mode ===
           'list-keywords'
             ? 'bg-primary text-on-primary'
             : 'bg-transparent text-primary hover:bg-primary/10'}"
@@ -199,7 +199,7 @@
           type="button"
           aria-pressed={mode === 'extractor-info'}
           onclick={() => selectMode('extractor-info')}
-          class="flex-1 cursor-pointer border-l border-primary px-4 py-1.5 text-sm font-medium transition-colors focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:flex-none {mode ===
+          class="flex-1 cursor-pointer border-l border-primary px-4 py-1.5 text-sm font-medium transition-colors focus-visible:z-10 sm:flex-none {mode ===
           'extractor-info'
             ? 'bg-primary text-on-primary'
             : 'bg-transparent text-primary hover:bg-primary/10'}"
@@ -294,7 +294,7 @@
 
           {#if keywordInfoStore.state.isLoading}
             <div
-              class="mt-4 flex items-center justify-center rounded-sm border bg-surface px-4 py-8 text-foreground"
+              class="mt-4 flex items-center justify-center rounded-surface border bg-surface px-4 py-8 text-foreground"
             >
               <Spinner
                 size={24}
@@ -307,7 +307,7 @@
           {:else if keywordInfoStore.currentSections()}
             <!-- Structured list-keywords view: keyword -> example table -->
             <div
-              class="mt-4 max-h-[calc(100vh-550px)] w-full overflow-auto rounded-sm border bg-surface"
+              class="mt-4 max-h-[calc(100vh-550px)] w-full overflow-auto rounded-surface border bg-surface"
             >
               {#each keywordInfoStore.currentSections() ?? [] as section (section.title)}
                 <div class="border-b last:border-b-0">
@@ -331,7 +331,7 @@
                           onclick={(e) => copyKeyword(keyword.name, e)}
                           onkeydown={(e) => handleKeywordKeydown(keyword.name, e)}
                           title={`Copy {${keyword.name}}`}
-                          class="cursor-pointer border-b last:border-b-0 hover:bg-surface-hover focus-visible:bg-surface-hover focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary"
+                          class="cursor-pointer border-b last:border-b-0 hover:bg-surface-hover focus-visible:bg-surface-hover focus-visible:outline-(length:--focus-ring-width) focus-visible:-outline-offset-2 focus-visible:outline-border-focus"
                         >
                           <td class="px-4 py-1.5 align-top font-mono text-primary">
                             <span class="block truncate">{`{${keyword.name}}`}</span>
@@ -353,14 +353,14 @@
             </div>
           {:else if keywordInfoStore.currentOutput()}
             <div
-              class="mt-4 max-h-[calc(100vh-550px)] w-full cursor-default overflow-auto rounded-sm border bg-surface px-4 py-3 font-mono text-sm leading-relaxed break-words whitespace-pre-wrap text-foreground"
+              class="mt-4 max-h-[calc(100vh-550px)] w-full cursor-default overflow-auto rounded-surface border bg-surface px-4 py-3 font-mono text-sm leading-relaxed break-words whitespace-pre-wrap text-foreground"
             >
               <!-- prettier-ignore -->
               {keywordInfoStore.currentOutput()}
             </div>
           {:else}
             <div
-              class="mt-4 w-full rounded-sm border bg-surface px-4 py-3 font-mono text-sm text-foreground"
+              class="mt-4 w-full rounded-surface border bg-surface px-4 py-3 font-mono text-sm text-foreground"
             >
               <span class="text-muted-foreground italic"> No output to display </span>
             </div>

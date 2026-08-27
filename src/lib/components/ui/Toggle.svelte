@@ -71,23 +71,23 @@
 
   const variantClasses: Record<ToggleVariant, { trackOff: string; trackOn: string }> = {
     default: {
-      trackOff: 'bg-border-strong',
+      trackOff: 'bg-surface-active',
       trackOn: 'peer-checked:bg-foreground',
     },
     primary: {
-      trackOff: 'bg-border-strong',
+      trackOff: 'bg-surface-active',
       trackOn: 'peer-checked:bg-primary',
     },
     success: {
-      trackOff: 'bg-border-strong',
+      trackOff: 'bg-surface-active',
       trackOn: 'peer-checked:bg-success',
     },
     warning: {
-      trackOff: 'bg-border-strong',
+      trackOff: 'bg-surface-active',
       trackOn: 'peer-checked:bg-warning',
     },
     danger: {
-      trackOff: 'bg-border-strong',
+      trackOff: 'bg-surface-active',
       trackOn: 'peer-checked:bg-error',
     },
   };
@@ -111,7 +111,7 @@
       'bg-surface-elevated',
       'transition-transform',
       'peer-disabled:opacity-70',
-      'shadow-sm',
+      'shadow-raised',
     ].join(' '),
   );
 
@@ -187,3 +187,10 @@
     {description}
   </p>
 {/if}
+
+<style>
+  input:focus-visible + div {
+    outline: var(--focus-ring-width, 2px) solid var(--color-border-focus);
+    outline-offset: var(--focus-ring-offset, 2px);
+  }
+</style>

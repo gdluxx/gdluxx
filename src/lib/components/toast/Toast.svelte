@@ -32,7 +32,7 @@
       title: 'text-foreground',
       message: 'text-muted-foreground',
       close: 'text-success hover:text-success-hover',
-      closeButton: 'hover:bg-success/10 focus:ring-success',
+      closeButton: 'hover:bg-success/10',
     },
     error: {
       container: 'bg-surface-overlay border-error',
@@ -40,7 +40,7 @@
       title: 'text-foreground',
       message: 'text-muted-foreground',
       close: 'text-error hover:text-error-hover',
-      closeButton: 'hover:bg-error/10 focus:ring-error',
+      closeButton: 'hover:bg-error/10',
     },
     warning: {
       container: 'bg-surface-overlay border-warning',
@@ -48,7 +48,7 @@
       title: 'text-foreground',
       message: 'text-muted-foreground',
       close: 'text-warning hover:text-warning-hover',
-      closeButton: 'hover:bg-warning/10 focus:ring-warning',
+      closeButton: 'hover:bg-warning/10',
     },
     info: {
       container: 'bg-surface-overlay border-info',
@@ -56,7 +56,7 @@
       title: 'text-foreground',
       message: 'text-muted-foreground',
       close: 'text-info hover:text-info-hover',
-      closeButton: 'hover:bg-info/10 focus:ring-info',
+      closeButton: 'hover:bg-info/10',
     },
   };
 
@@ -68,7 +68,7 @@
 </script>
 
 <div
-  class="pointer-events-auto w-full max-w-sm overflow-hidden rounded-lg border-l-8 shadow-lg {styles.container}"
+  class="pointer-events-auto w-full max-w-sm overflow-hidden rounded-overlay border-l-8 shadow-floating {styles.container}"
   transition:fly={{ x: 400, duration: 300 }}
 >
   <div class="p-4">
@@ -108,7 +108,7 @@
       <div class="ml-4 flex flex-shrink-0">
         <button
           type="button"
-          class="inline-flex cursor-pointer rounded-sm p-1.5 transition-colors duration-150 focus:ring-1 focus:ring-offset-1 focus:outline-none {styles.close} {styles.closeButton}"
+          class="inline-flex cursor-pointer rounded-control p-1.5 transition-colors duration-fast {styles.close} {styles.closeButton}"
           onclick={handleClose}
         >
           <span class="sr-only">Close</span>

@@ -13,7 +13,7 @@
   import { PageLayout } from '$lib/components/ui';
 </script>
 
-<div class="rounded-lg border border-dashed border-border-strong bg-surface p-4 sm:p-6">
+<div class="rounded-surface border border-dashed border-border-strong bg-surface p-4 sm:p-6">
   <PageLayout
     title="Example Page"
     description="PageLayout coordinates document metadata, an accessible page heading, an optional icon, and page content."
@@ -26,7 +26,7 @@
       />
     {/snippet}
 
-    <div class="rounded-lg border border-border bg-surface-elevated p-5 text-foreground">
+    <div class="rounded-surface border border-border bg-surface-elevated p-5 text-foreground">
       This content is rendered through the PageLayout children snippet.
     </div>
   </PageLayout>

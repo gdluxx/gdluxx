@@ -13,9 +13,11 @@ import {
   applyTheme,
   type ThemeName,
   type ThemeMode,
+  type ResolvedThemeMode,
+  resolveMode,
+  readStoredMode,
   getCurrentTheme,
   getCurrentMode,
-  validateTheme,
   AVAILABLE_THEMES,
   DEFAULT_THEME,
   DEFAULT_MODE,
@@ -57,6 +59,33 @@ function saveThemePreference(theme: ThemeName): void {
 
 const _themeStore = writable<ThemeName>(DEFAULT_THEME);
 const _modeStore = writable<ThemeMode>(DEFAULT_MODE);
+const _resolvedModeStore = writable<ResolvedThemeMode>('dark');
+
+let systemListenerBound = false;
+
+function bindSystemListener(): void {
+  if (systemListenerBound || typeof window === 'undefined' || !window.matchMedia) {
+    return;
+  }
+  systemListenerBound = true;
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (event) => {
+    if (get(_modeStore) !== 'system') {
+      return;
+    }
+    const resolved: ResolvedThemeMode = event.matches ? 'dark' : 'light';
+    debugLog(`System preference changed: ${resolved}`);
+    applyTheme(get(_themeStore), resolved);
+    _resolvedModeStore.set(resolved);
+  });
+}
+
+function applyPreference(theme: ThemeName, mode: ThemeMode): void {
+  const resolved = resolveMode(mode);
+  applyTheme(theme, resolved);
+  _themeStore.set(theme);
+  _modeStore.set(mode);
+  _resolvedModeStore.set(resolved);
+}
 
 class ThemeState {
   get theme() {
@@ -67,20 +96,20 @@ class ThemeState {
     return _modeStore;
   }
 
+  get resolvedMode() {
+    return _resolvedModeStore;
+  }
+
   get isDark() {
     return {
       subscribe: (callback: (value: boolean) => void) => {
-        return _modeStore.subscribe((mode) => callback(mode === 'dark'));
+        return _resolvedModeStore.subscribe((mode) => callback(mode === 'dark'));
       },
     };
   }
 
   async setTheme(theme: ThemeName, mode?: ThemeMode): Promise<void> {
-    let currentMode: ThemeMode = DEFAULT_MODE;
-    const unsubscribe = _modeStore.subscribe((m) => (currentMode = m));
-    unsubscribe();
-
-    const newMode = mode || currentMode;
+    const newMode = mode || get(_modeStore);
     debugLog(`Setting theme: ${theme}, mode: ${newMode}`);
 
     if (!AVAILABLE_THEMES[theme]) {
@@ -88,47 +117,37 @@ class ThemeState {
       throw new Error(`Invalid theme: ${theme}`);
     }
 
-    const isValid = validateTheme(theme, newMode);
-    if (!isValid) {
-      themeWarn(`Theme "${theme}" failed validation`);
-      // Continue with warning since theme may partially work
-    }
-
-    applyTheme(theme, newMode);
-    _themeStore.set(theme);
-    _modeStore.set(newMode);
+    applyPreference(theme, newMode);
 
     await saveThemeToDatabase(theme);
     saveThemePreference(theme);
     saveModePreference(newMode);
   }
 
+  setMode(mode: ThemeMode): void {
+    debugLog(`Setting mode preference: ${mode}`);
+    applyPreference(get(_themeStore), mode);
+    saveModePreference(mode);
+  }
+
+  cycleMode(): void {
+    const order: ThemeMode[] = ['light', 'dark', 'system'];
+    const current = get(_modeStore);
+    const next = order[(order.indexOf(current) + 1) % order.length];
+    this.setMode(next);
+  }
+
   toggleMode(): void {
-    const currentTheme = get(_themeStore);
-    const currentMode = get(_modeStore);
-    const newMode: ThemeMode = currentMode === 'light' ? 'dark' : 'light';
-
-    debugLog(`Toggling mode: ${currentMode} → ${newMode}`);
-
-    applyTheme(currentTheme, newMode);
-    _modeStore.set(newMode);
-    saveModePreference(newMode);
+    const next: ThemeMode = get(_resolvedModeStore) === 'light' ? 'dark' : 'light';
+    this.setMode(next);
   }
 
   setLightMode(): void {
-    const currentMode = get(_modeStore);
-
-    if (currentMode !== 'light') {
-      this.toggleMode();
-    }
+    this.setMode('light');
   }
 
   setDarkMode(): void {
-    const currentMode = get(_modeStore);
-
-    if (currentMode !== 'dark') {
-      this.toggleMode();
-    }
+    this.setMode('dark');
   }
 
   async initializeFromUserSettings(): Promise<void> {
@@ -160,34 +179,12 @@ class ThemeState {
         themeWarn('Failed to load theme from database:', error);
       }
 
-      // Get light/dark mode and fallback to system preference
-      const savedMode = localStorage.getItem('gdluxx-theme-mode') as ThemeMode;
-      let selectedMode: ThemeMode = DEFAULT_MODE;
-
-      if (savedMode && (savedMode === 'light' || savedMode === 'dark')) {
-        selectedMode = savedMode;
-      } else if (window.matchMedia?.('(prefers-color-scheme: light)').matches) {
-        selectedMode = 'light';
-      }
-
-      // Theme validation
-      const isValid = validateTheme(selectedTheme, selectedMode);
-
-      if (!isValid) {
-        themeWarn(`Theme "${selectedTheme}" failed validation, falling back to ${DEFAULT_THEME}`);
-        selectedTheme = DEFAULT_THEME;
-        if (!validateTheme(selectedTheme, selectedMode)) {
-          themeError('Fallback theme validation failed, using defaults');
-          selectedTheme = DEFAULT_THEME;
-          selectedMode = DEFAULT_MODE;
-        }
-      }
+      const selectedMode = readStoredMode();
 
       debugLog(`Theme initialized: ${selectedTheme}, ${selectedMode}`);
 
-      _themeStore.set(selectedTheme);
-      _modeStore.set(selectedMode);
-      applyTheme(selectedTheme, selectedMode);
+      bindSystemListener();
+      applyPreference(selectedTheme, selectedMode);
 
       // Sync localStorage with database values to prevent flashing
       saveThemePreference(selectedTheme);
@@ -198,28 +195,17 @@ class ThemeState {
   initialize(): void {
     if (typeof window !== 'undefined') {
       const savedTheme = localStorage.getItem('gdluxx-theme') as ThemeName;
-      const savedMode = localStorage.getItem('gdluxx-theme-mode') as ThemeMode;
-
       const theme: ThemeName =
         savedTheme && AVAILABLE_THEMES[savedTheme] ? savedTheme : DEFAULT_THEME;
-      let mode: ThemeMode = DEFAULT_MODE;
-
-      if (savedMode && (savedMode === 'light' || savedMode === 'dark')) {
-        mode = savedMode;
-      } else if (window.matchMedia?.('(prefers-color-scheme: light)').matches) {
-        mode = 'light';
-      }
+      const mode = readStoredMode();
 
       debugLog(`Theme fallback initialized: ${theme}, ${mode}`);
 
-      applyTheme(theme, mode);
-      _themeStore.set(theme);
-      _modeStore.set(mode);
+      bindSystemListener();
+      applyPreference(theme, mode);
     } else {
-      const currentTheme = getCurrentTheme();
-      const currentMode = getCurrentMode();
-      _themeStore.set(currentTheme);
-      _modeStore.set(currentMode);
+      _themeStore.set(getCurrentTheme());
+      _resolvedModeStore.set(getCurrentMode());
     }
   }
 }
@@ -232,34 +218,4 @@ export async function initializeThemeStore(): Promise<void> {
 
 export function initializeThemeStoreFallback(): void {
   themeStore.initialize();
-}
-
-export function validateThemeSystem(): { valid: boolean; errors: string[] } {
-  const errors: string[] = [];
-
-  const themeNames = Object.keys(AVAILABLE_THEMES) as ThemeName[];
-  if (themeNames.length === 0) {
-    errors.push('No themes available in AVAILABLE_THEMES');
-  }
-
-  for (const themeName of themeNames) {
-    const config = AVAILABLE_THEMES[themeName];
-    if (!config) {
-      errors.push(`Theme "${themeName}" missing configuration`);
-      continue;
-    }
-
-    if (!validateTheme(themeName, 'light')) {
-      errors.push(`Theme "${themeName}" failed light mode validation`);
-    }
-
-    if (config.supportsDarkMode && !validateTheme(themeName, 'dark')) {
-      errors.push(`Theme "${themeName}" failed dark mode validation`);
-    }
-  }
-
-  return {
-    valid: errors.length === 0,
-    errors,
-  };
 }

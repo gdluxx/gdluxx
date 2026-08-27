@@ -17,7 +17,7 @@
 
 <a
   href={resolve('/schedules/notifications')}
-  class="relative flex items-center justify-center rounded-sm p-2 text-muted-foreground hover:bg-surface-hover focus:outline-hidden focus:border-focus"
+  class="relative flex items-center justify-center rounded-control p-2 text-muted-foreground hover:bg-surface-hover"
   aria-label="Schedule notifications"
   title="Schedule notifications"
 >

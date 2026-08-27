@@ -178,7 +178,7 @@
       </a>
       <!-- eslint-enable svelte/no-navigation-without-resolve -->
       {#if site.auth}
-        <span class="rounded-xs bg-surface-selected px-1.5 py-0.5 text-foreground">
+        <span class="rounded-surface bg-surface-selected px-1.5 py-0.5 text-foreground">
           Auth: {site.auth}
         </span>
       {/if}
@@ -228,7 +228,7 @@
       <h4 class="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
         Default by site
       </h4>
-      <div class="mt-1 overflow-x-auto rounded-sm border border-strong">
+      <div class="mt-1 overflow-x-auto rounded-surface border border-strong">
         <table class="w-full text-left text-xs">
           <thead class="bg-surface-elevated text-muted-foreground">
             <tr>
@@ -261,7 +261,7 @@
           {#each terms as term (term.t)}
             <div class="flex flex-wrap items-baseline gap-x-2">
               <dt
-                class="rounded-xs bg-surface-selected px-1.5 py-0.5 font-mono text-xs text-foreground"
+                class="rounded-surface bg-surface-selected px-1.5 py-0.5 font-mono text-xs text-foreground"
               >
                 {term.t}
               </dt>
@@ -304,7 +304,7 @@
       <div class="mt-1 space-y-2">
         {#each option.ex as example, i (i)}
           <pre
-            class="overflow-x-auto rounded-sm border border-strong bg-surface-elevated p-3 font-mono text-xs">{example}</pre>
+            class="overflow-x-auto rounded-surface border border-strong bg-surface-elevated p-3 font-mono text-xs">{example}</pre>
         {/each}
       </div>
     </div>
@@ -316,7 +316,7 @@
     </h4>
     <div class="relative mt-1">
       <pre
-        class="overflow-x-auto rounded-sm border border-strong bg-surface-elevated p-3 pr-40 font-mono text-xs">{snippet.json}</pre>
+        class="overflow-x-auto rounded-surface border border-strong bg-surface-elevated p-3 pr-40 font-mono text-xs">{snippet.json}</pre>
       <div class="absolute top-2 right-2 flex items-center gap-2">
         <Button
           type="button"
@@ -359,7 +359,7 @@
     <code class="font-mono text-foreground">{snippet.path.join('.')}</code> is already set in your config.json:
   </p>
   <pre
-    class="mt-2 max-h-64 overflow-auto rounded-sm border border-strong bg-surface-elevated p-3 font-mono text-xs text-foreground">{overwriteCurrentValueDisplay}</pre>
+    class="mt-2 max-h-64 overflow-auto rounded-surface border border-strong bg-surface-elevated p-3 font-mono text-xs text-foreground">{overwriteCurrentValueDisplay}</pre>
   <p class="mt-2 text-sm text-muted-foreground">
     Overwrite it with the value shown in the snippet above?
   </p>

@@ -68,7 +68,7 @@
 <div class="flex flex-col gap-2.5">
   <div class="flex items-center gap-2.5">
     <label
-      class="flex flex-1 items-center gap-2 rounded-sm border border-strong bg-surface px-3 py-2 focus-within:border-focus focus-within:ring-1 focus-within:ring-primary"
+      class="flex flex-1 items-center gap-2 rounded-control border border-strong bg-surface px-3 py-2 focus-within:border-focus focus-within:ring-1 focus-within:ring-border-focus"
     >
       <svg
         width="15"
@@ -97,7 +97,7 @@
         class="min-w-0 flex-1 border-0 bg-transparent font-mono text-sm text-foreground outline-none placeholder:text-muted-foreground"
       />
       <kbd
-        class="flex-shrink-0 rounded-xs border border-strong px-1.5 text-xs text-muted-foreground"
+        class="flex-shrink-0 rounded-surface border border-strong px-1.5 text-xs text-muted-foreground"
         >/</kbd
       >
     </label>
@@ -117,7 +117,7 @@
   >
     <button
       type="button"
-      class="cursor-pointer rounded-full border px-3 py-1 text-xs font-medium tabular-nums transition-colors {activeSection ===
+      class="cursor-pointer rounded-pill border px-3 py-1 text-xs font-medium tabular-nums transition-colors {activeSection ===
       ''
         ? 'border-primary bg-primary text-on-primary'
         : 'border-strong bg-surface text-foreground/80 hover:border-primary hover:text-foreground'}"
@@ -129,7 +129,7 @@
     {#each sections as section (section.id)}
       <button
         type="button"
-        class="cursor-pointer rounded-full border px-3 py-1 text-xs font-medium tabular-nums transition-colors {activeSection ===
+        class="cursor-pointer rounded-pill border px-3 py-1 text-xs font-medium tabular-nums transition-colors {activeSection ===
         section.id
           ? 'border-primary bg-primary text-on-primary'
           : 'border-strong bg-surface text-foreground/80 hover:border-primary hover:text-foreground'}"

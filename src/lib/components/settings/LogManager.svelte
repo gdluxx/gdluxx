@@ -314,7 +314,7 @@
 
     {#if storedConfigWarning}
       <div
-        class="mb-4 rounded-sm border-warning bg-warning/10 p-3 text-sm text-foreground"
+        class="mb-4 rounded-surface border border-warning bg-warning/10 p-3 text-sm text-foreground"
         role="status"
       >
         <span class="font-medium">Saved settings need attention:</span>
@@ -427,7 +427,7 @@
           </Field>
 
           {#if isDockerEnvironment}
-            <div class="rounded-sm border-strong bg-surface-elevated p-3 text-sm">
+            <div class="rounded-surface border-strong bg-surface-elevated p-3 text-sm">
               <div class="mb-1 flex items-center gap-2">
                 <Icon
                   iconName="settings"
@@ -441,7 +441,9 @@
                 <div class="ml-6">
                   <div class="text-foreground">
                     Effective path on the server:
-                    <code class="rounded bg-primary/10 px-1 py-0.5 font-mono text-xs break-all">
+                    <code
+                      class="rounded-surface bg-primary/10 px-1 py-0.5 font-mono text-xs break-all"
+                    >
                       {pathPreview.path}
                     </code>
                   </div>
@@ -587,19 +589,21 @@
 
     {#if tailError}
       <p
-        class="rounded-sm border-error bg-error/10 p-3 text-sm text-foreground"
+        class="rounded-surface border border-error bg-error/10 p-3 text-sm text-foreground"
         role="alert"
       >
         {tailError}
       </p>
     {:else if tail && !tail.available}
-      <p class="rounded-sm bg-surface-elevated p-3 text-sm text-muted-foreground border-strong">
+      <p
+        class="rounded-surface bg-surface-elevated p-3 text-sm text-muted-foreground border-strong"
+      >
         {tailMessage}
       </p>
     {:else if tail}
       {#if !tail.loggingEnabled}
         <p
-          class="mb-3 rounded-sm border-warning bg-warning/10 p-3 text-sm text-foreground"
+          class="mb-3 rounded-surface border border-warning bg-warning/10 p-3 text-sm text-foreground"
           role="status"
         >
           Server logging is disabled; showing the last output that was written.
@@ -619,17 +623,21 @@
       </div>
 
       {#if tail.lines.length === 0}
-        <p class="rounded-sm bg-surface-elevated p-3 text-sm text-muted-foreground border-strong">
+        <p
+          class="rounded-surface bg-surface-elevated p-3 text-sm text-muted-foreground border-strong"
+        >
           The log file is empty.
         </p>
       {:else}
         <pre
-          class="max-h-96 overflow-x-auto overflow-y-auto rounded-sm bg-surface-sunken p-3 font-mono text-xs text-foreground border-strong"><code
+          class="max-h-96 overflow-x-auto overflow-y-auto rounded-surface bg-surface-sunken p-3 font-mono text-xs text-foreground border-strong"><code
             >{tail.lines.join('\n')}</code
           ></pre>
       {/if}
     {:else if !tailLoading}
-      <p class="rounded-sm bg-surface-elevated p-3 text-sm text-muted-foreground border-strong">
+      <p
+        class="rounded-surface bg-surface-elevated p-3 text-sm text-muted-foreground border-strong"
+      >
         No log output loaded.
       </p>
     {/if}
