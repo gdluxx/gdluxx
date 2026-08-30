@@ -349,7 +349,7 @@
   {:else if activeTab === 'states'}
     <div class="space-y-6">
       <div class="content-panel">
-        <h3>Button: every variant at rest / disabled / loading</h3>
+        <h3>Button: every variant at rest / disabled / loading / disabled loading</h3>
         <div class="space-y-2">
           {#each buttonVariants as variant (variant)}
             <div class="flex flex-wrap items-center gap-2">
@@ -362,6 +362,11 @@
                 {variant}
                 loading>loading</Button
               >
+              <Button
+                {variant}
+                disabled
+                loading>disabled loading</Button
+              >
             </div>
           {/each}
         </div>
@@ -372,7 +377,7 @@
       </div>
 
       <div class="content-panel">
-        <h3>Chip variants, dismissible and editable</h3>
+        <h3>Chip variants, dismissible, editable, and disabled</h3>
         <div class="flex flex-wrap gap-2">
           {#each chipVariants as variant (variant)}
             <Chip
@@ -380,12 +385,48 @@
               label={variant}
               dismissible
             />
+            <Chip
+              {variant}
+              label="disabled {variant}"
+              dismissible
+              disabled
+            />
           {/each}
           <Chip
             variant="primary"
             label="editable"
             value="value"
             editable
+          />
+        </div>
+      </div>
+
+      <div class="content-panel">
+        <h3>Tooltip tints</h3>
+        <div class="flex flex-wrap gap-3">
+          <Tooltip
+            content="Info tooltip"
+            variant="info"
+            trigger="manual"
+            show
+            placement="auto"
+            class="static! opacity-100!"
+          />
+          <Tooltip
+            content="Warning tooltip"
+            variant="warning"
+            trigger="manual"
+            show
+            placement="auto"
+            class="static! opacity-100!"
+          />
+          <Tooltip
+            content="Danger tooltip"
+            variant="danger"
+            trigger="manual"
+            show
+            placement="auto"
+            class="static! opacity-100!"
           />
         </div>
       </div>
@@ -438,7 +479,9 @@
           <div class="rounded-surface border border-primary bg-primary/10 px-3 py-1.5">
             stat-card selected
           </div>
-          <div class="rounded-surface bg-surface-selected px-3 py-1.5">surface-selected</div>
+          <div class="rounded-surface border border-primary bg-surface-selected px-3 py-1.5">
+            surface-selected
+          </div>
           <button
             type="button"
             class="cursor-pointer rounded-pill border border-primary bg-primary px-3 py-1 text-xs text-on-primary"

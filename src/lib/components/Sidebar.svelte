@@ -174,10 +174,10 @@
         <li>
           {#if item.children && (!collapsed || isMobile)}
             <div
-              class="flex w-full items-stretch gap-1 rounded-control text-foreground transition-colors {activeItemId ===
+              class="flex w-full items-stretch gap-1 rounded-control border text-foreground transition-colors {activeItemId ===
               item.id
-                ? 'bg-surface-selected text-foreground'
-                : ''}"
+                ? 'border-primary bg-surface-selected text-foreground'
+                : 'border-transparent'}"
             >
               <button
                 onclick={() => handleItemClick(item)}
@@ -219,10 +219,10 @@
             <button
               onclick={() => handleItemClick(item)}
               onkeydown={(e) => handleKeydown(e, item)}
-              class="flex w-full cursor-pointer items-center gap-3 rounded-control px-3 py-2 text-foreground transition-colors hover:bg-surface-hover focus:bg-surface-hover {activeItemId ===
+              class="flex w-full cursor-pointer items-center gap-3 rounded-control border px-3 py-2 text-foreground transition-colors hover:bg-surface-hover focus:bg-surface-hover {activeItemId ===
               item.id
-                ? 'bg-surface-selected text-foreground'
-                : ''}"
+                ? 'border-primary bg-surface-selected text-foreground'
+                : 'border-transparent'}"
               aria-current={activeItemId === item.id ? 'page' : undefined}
               aria-describedby={collapsed && !isMobile ? `${item.id}-tooltip` : undefined}
               tabindex="0"
@@ -266,10 +266,10 @@
                   <button
                     onclick={() => handleItemClick(child)}
                     onkeydown={(e) => handleKeydown(e, child)}
-                    class="flex w-full cursor-pointer items-center gap-3 rounded-control px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-surface-hover focus:bg-surface-hover {activeItemId ===
+                    class="flex w-full cursor-pointer items-center gap-3 rounded-control border px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-surface-hover focus:bg-surface-hover {activeItemId ===
                     child.id
-                      ? 'bg-surface-selected text-foreground'
-                      : ''}"
+                      ? 'border-primary bg-surface-selected text-foreground'
+                      : 'border-transparent'}"
                     aria-current={activeItemId === child.id ? 'page' : undefined}
                     tabindex="0"
                   >

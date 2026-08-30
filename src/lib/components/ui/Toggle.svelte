@@ -109,6 +109,7 @@
       sizeClasses[size].thumb,
       'rounded-full',
       'bg-surface-elevated',
+      'border-strong',
       'transition-transform',
       'peer-disabled:opacity-70',
       'shadow-raised',

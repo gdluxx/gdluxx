@@ -31,6 +31,7 @@
     value?: string | number | boolean;
     editable?: boolean;
     dismissible?: boolean;
+    disabled?: boolean;
     variant?: ChipVariant;
     size?: ChipSize;
     icon?: Snippet;
@@ -45,6 +46,7 @@
     value,
     editable = false,
     dismissible = false,
+    disabled = false,
     variant = 'primary',
     size = 'default',
     icon,
@@ -61,12 +63,16 @@
   let inputRef = $state<HTMLInputElement>();
 
   function handleDismiss(): void {
+    if (disabled) {
+      return;
+    }
+
     dismissed = true;
     onDismiss?.();
   }
 
   function startEditing() {
-    if (editable && value && typeof value !== 'boolean') {
+    if (!disabled && editable && value && typeof value !== 'boolean') {
       isEditing = true;
       editValue = String(value);
       // Focus input in next tick
@@ -79,6 +85,11 @@
   }
 
   function handleEditSubmit() {
+    if (disabled) {
+      stopEditing();
+      return;
+    }
+
     if (editValue.trim()) {
       onEdit?.(editValue.trim());
     }
@@ -125,27 +136,9 @@
       'hover:bg-success-hover',
       'hover:border-success',
     ],
-    warning: [
-      'bg-surface-selected',
-      'text-warning',
-      'border-warning',
-      'hover:bg-warning/10',
-      'hover:border-warning',
-    ],
-    danger: [
-      'bg-input-invalid',
-      'text-error',
-      'border-error',
-      'hover:bg-error/10',
-      'hover:border-error',
-    ],
-    info: [
-      'bg-surface-selected',
-      'text-info',
-      'border-info',
-      'hover:bg-info/10',
-      'hover:border-info',
-    ],
+    warning: ['bg-warning/10', 'text-foreground', 'border-warning'],
+    danger: ['bg-error/10', 'text-foreground', 'border-error'],
+    info: ['bg-info/10', 'text-foreground', 'border-info'],
     'outline-primary': [
       'bg-transparent',
       'text-primary',
@@ -183,11 +176,19 @@
     ],
   };
 
+  const disabledClasses = ['bg-surface-disabled', 'text-disabled', 'border-border'];
+
+  const tintIconClasses: Partial<Record<ChipVariant, string>> = {
+    warning: 'text-warning',
+    danger: 'text-error',
+    info: 'text-info',
+  };
+
   const computedClasses = $derived(
     [
       ...baseClasses,
       ...sizeClasses[size],
-      ...variantClasses[variant],
+      ...(disabled ? disabledClasses : variantClasses[variant]),
       'border',
       dismissed && 'hidden',
       className,
@@ -206,8 +207,46 @@
     ].join(' '),
   );
 
+  const iconClasses = $derived(
+    ['flex-shrink-0', disabled ? 'text-disabled' : tintIconClasses[variant]]
+      .filter(Boolean)
+      .join(' '),
+  );
+
+  const editButtonClasses = $derived(
+    [
+      'border-none',
+      'bg-transparent',
+      'p-0',
+      'font-medium',
+      'transition-opacity',
+      disabled
+        ? 'cursor-not-allowed'
+        : 'cursor-pointer opacity-80 hover:underline hover:opacity-100',
+    ].join(' '),
+  );
+
+  const dismissButtonClasses = $derived(
+    [
+      '-mr-1',
+      'ml-0.5',
+      'flex',
+      'h-6',
+      'w-6',
+      'flex-shrink-0',
+      'items-center',
+      'justify-center',
+      'rounded-full',
+      'transition-all',
+      disabled
+        ? 'cursor-not-allowed'
+        : 'cursor-pointer opacity-60 group-hover:opacity-100 hover:bg-surface-hover hover:opacity-100',
+    ].join(' '),
+  );
+
   const ariaAttributes = $derived<Record<string, string | undefined>>({
     'aria-label': ariaLabel ?? `${variant} chip: ${label}`,
+    'aria-disabled': disabled ? 'true' : undefined,
     role: 'status',
     'aria-live': 'polite',
   });
@@ -220,7 +259,7 @@
     {...restProps}
   >
     {#if icon}
-      <div class="flex-shrink-0">
+      <div class={iconClasses}>
         {@render icon()}
       </div>
     {/if}
@@ -235,14 +274,16 @@
           onblur={stopEditing}
           class={inputClasses}
           placeholder="Enter value"
+          {disabled}
         />
       {:else}
         <button
           type="button"
-          class="cursor-pointer border-none bg-transparent p-0 font-medium opacity-80 transition-opacity hover:underline hover:opacity-100"
+          class={editButtonClasses}
           onclick={startEditing}
           onkeydown={(e) => e.key === 'Enter' && startEditing()}
           title={editable ? 'Click to edit' : ''}
+          {disabled}
         >
           {value}
         </button>
@@ -252,10 +293,11 @@
     {#if dismissible}
       <button
         onclick={handleDismiss}
-        class="-mr-1 ml-0.5 flex h-6 w-6 flex-shrink-0 cursor-pointer items-center justify-center rounded-full opacity-60 transition-all group-hover:opacity-100 hover:bg-surface-hover hover:opacity-100"
+        class={dismissButtonClasses}
         aria-label="Dismiss chip"
         title="Dismiss"
         type="button"
+        {disabled}
       >
         <Icon
           iconName="close"

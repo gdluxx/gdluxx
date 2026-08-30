@@ -74,7 +74,6 @@
     'whitespace-nowrap',
     'select-none',
     'cursor-pointer',
-    'disabled:opacity-60',
     'disabled:cursor-not-allowed',
     'hover:enabled:-translate-y-0.5',
     'hover:enabled:shadow-raised',
@@ -161,6 +160,7 @@
       'border-primary',
       'hover:enabled:bg-primary/10',
       'hover:enabled:border-primary',
+      'active:enabled:bg-primary/20',
     ],
     'outline-success': [
       'bg-transparent',
@@ -168,6 +168,7 @@
       'border-success',
       'hover:enabled:bg-success/10',
       'hover:enabled:border-success',
+      'active:enabled:bg-success/20',
     ],
     'outline-warning': [
       'bg-transparent',
@@ -175,6 +176,7 @@
       'border-warning',
       'hover:enabled:bg-warning/10',
       'hover:enabled:border-warning',
+      'active:enabled:bg-warning/20',
     ],
     'outline-danger': [
       'bg-transparent',
@@ -182,6 +184,7 @@
       'border-error',
       'hover:enabled:bg-error/10',
       'hover:enabled:border-error',
+      'active:enabled:bg-error/20',
     ],
     'outline-info': [
       'bg-transparent',
@@ -189,14 +192,49 @@
       'border-info',
       'hover:enabled:bg-info/10',
       'hover:enabled:border-info',
+      'active:enabled:bg-info/20',
     ],
   };
+
+  const disabledVariantClasses: Record<ButtonVariant, string[]> = {
+    default: ['bg-surface-disabled', 'text-disabled', 'border-border'],
+    primary: ['bg-primary-disabled', 'text-disabled', 'border-primary-disabled'],
+    success: ['bg-surface-disabled', 'text-disabled', 'border-border'],
+    warning: ['bg-surface-disabled', 'text-disabled', 'border-border'],
+    danger: ['bg-surface-disabled', 'text-disabled', 'border-border'],
+    info: ['bg-surface-disabled', 'text-disabled', 'border-border'],
+    light: ['bg-surface-disabled', 'text-disabled', 'border-border'],
+    dark: ['bg-surface-disabled', 'text-disabled', 'border-border'],
+    'outline-primary': ['bg-transparent', 'text-disabled', 'border-border'],
+    'outline-success': ['bg-transparent', 'text-disabled', 'border-border'],
+    'outline-warning': ['bg-transparent', 'text-disabled', 'border-border'],
+    'outline-danger': ['bg-transparent', 'text-disabled', 'border-border'],
+    'outline-info': ['bg-transparent', 'text-disabled', 'border-border'],
+  };
+
+  const spinnerClasses: Record<ButtonVariant, string> = {
+    default: 'border-skeleton border-t-spinner',
+    primary: 'border-primary-text/25 border-t-primary-text',
+    success: 'border-success-text/25 border-t-success-text',
+    warning: 'border-warning-text/25 border-t-warning-text',
+    danger: 'border-error-text/25 border-t-error-text',
+    info: 'border-info-text/25 border-t-info-text',
+    light: 'border-skeleton border-t-spinner',
+    dark: 'border-background/25 border-t-background',
+    'outline-primary': 'border-skeleton border-t-primary',
+    'outline-success': 'border-skeleton border-t-success',
+    'outline-warning': 'border-skeleton border-t-warning',
+    'outline-danger': 'border-skeleton border-t-error',
+    'outline-info': 'border-skeleton border-t-info',
+  };
+
+  const visuallyDisabled = $derived(disabled && !loading);
 
   const computedClasses = $derived(
     [
       ...baseClasses,
       ...getSizeClasses(size),
-      ...variantClasses[variant],
+      ...(visuallyDisabled ? disabledVariantClasses[variant] : variantClasses[variant]),
       block && 'flex w-full',
       loading && 'relative pointer-events-none',
       className,
@@ -244,7 +282,7 @@
         variant="ring"
         size={16}
         border="full"
-        class="border-skeleton border-t-spinner"
+        class={spinnerClasses[variant]}
       />
     </div>
   {/if}

@@ -149,9 +149,9 @@
 </dialog>
 
 <style>
-  /* Reset UA dialog chrome; surface/rounding/shadow come from utility classes. */
+  /* Reset UA dialog chrome; the stroke dial carries the modal edge (HC dark has no shadow). */
   .modal {
-    border: none;
+    border: var(--stroke-base, 1px) solid var(--color-border-strong);
   }
 
   /* The `flex` utility on the dialog overrides the UA's

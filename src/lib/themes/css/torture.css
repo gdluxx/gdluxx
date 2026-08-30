@@ -8,8 +8,7 @@
  * as published by the Free Software Foundation.
  */
 
-/* Non-shipping QA theme that exercises every dial, including an intentional warning.
-   Components must never special-case it. */
+/* QA theme that exercises every dial. Components must never special-case it. */
 
 .theme-torture {
   color-scheme: light;
@@ -18,19 +17,19 @@
   --color-surface: #fff0fa;
   --color-surface-elevated: #fffafd;
   --color-surface-sunken: #f5d9ec;
-  --color-surface-overlay: #fdeaf8;
+  --color-surface-overlay: #ffffff;
   --color-scrim: rgb(80 0 60 / 0.7);
 
   --color-foreground: #24001f;
-  --color-muted-foreground: #6b2a5c;
+  --color-muted-foreground: #7a3c6b;
   --color-accent-foreground: #55007a;
   --color-text-inverse: #ffffff;
-  --color-text-disabled: #7a4a6e;
+  --color-text-disabled: #946b89;
 
-  --color-primary: #c00087;
-  --color-primary-hover: #a10071;
-  --color-primary-active: #82005b;
-  --color-primary-disabled: #f2b8e2;
+  --color-primary: #5c002e;
+  --color-primary-hover: #4e0027;
+  --color-primary-active: #400020;
+  --color-primary-disabled: #f8d7ef;
   --color-primary-text: #ffffff;
 
   --color-surface-hover: #ffe2f5;
@@ -38,24 +37,24 @@
   --color-surface-selected: #f3c8f8;
   --color-surface-disabled: #f8ecf4;
 
-  --color-success: #007000;
-  --color-success-hover: #005c00;
-  --color-success-active: #004a00;
+  --color-success: #00005c;
+  --color-success-hover: #00004e;
+  --color-success-active: #000040;
   --color-success-text: #ffffff;
 
-  --color-warning: #7a6000;
-  --color-warning-hover: #635000;
-  --color-warning-active: #4f4000;
+  --color-warning: #29007a;
+  --color-warning-hover: #230068;
+  --color-warning-active: #1d0055;
   --color-warning-text: #ffffff;
 
-  --color-error: #c80000;
-  --color-error-hover: #a60000;
-  --color-error-active: #850000;
+  --color-error: #0e0eaa;
+  --color-error-hover: #0c0c91;
+  --color-error-active: #0a0a77;
   --color-error-text: #ffffff;
 
-  --color-info: #2244ff;
-  --color-info-hover: #1b36d6;
-  --color-info-active: #152cb0;
+  --color-info: #1f386b;
+  --color-info-hover: #1a305b;
+  --color-info-active: #16274b;
   --color-info-text: #ffffff;
 
   --color-border: #8a3a78;
@@ -64,7 +63,7 @@
   --color-border-error: #8a0000;
   --color-border-success: #005214;
 
-  --color-input-background: #fff5fc;
+  --color-input-background: #ffe0f5;
   --color-input-disabled: #f6e3f0;
   --color-input-invalid: #ffe0e0;
   --color-input-valid: #dcffdc;
@@ -78,9 +77,9 @@
   --radius-pill: 0;
   --stroke-base: 4px;
 
-  --shadow-raised: none;
-  --shadow-floating: none;
-  --shadow-overlay: none;
+  --shadow-raised: 0 0 #0000;
+  --shadow-floating: 0 0 #0000;
+  --shadow-overlay: 0 0 #0000;
   --backdrop-filter: none;
 
   --focus-ring-width: 6px;
@@ -100,44 +99,44 @@
   --color-surface: #14001c;
   --color-surface-elevated: #26103a;
   --color-surface-sunken: #0a000e;
-  --color-surface-overlay: #1e0430;
+  --color-surface-overlay: #382050;
   --color-scrim: rgb(255 0 200 / 0.35);
 
   --color-foreground: #ffe6ff;
-  --color-muted-foreground: #dda8d0;
+  --color-muted-foreground: #ba8aaf;
   --color-accent-foreground: #ccb0ff;
   --color-text-inverse: #14001c;
-  --color-text-disabled: #a06890;
+  --color-text-disabled: #5a5aa5;
 
-  --color-primary: #ff99f0;
-  --color-primary-hover: #ffb3f5;
-  --color-primary-active: #ff80ea;
-  --color-primary-disabled: #5c2452;
+  --color-primary: #387aff;
+  --color-primary-hover: #4c87ff;
+  --color-primary-active: #3573f0;
+  --color-primary-disabled: #000000;
   --color-primary-text: #000000;
 
   --color-surface-hover: #240630;
-  --color-surface-active: #33104a;
+  --color-surface-active: #280a3a;
   --color-surface-selected: #3d1458;
   --color-surface-disabled: #170220;
 
-  --color-success: #44ee44;
-  --color-success-hover: #66ff66;
-  --color-success-active: #22cc22;
+  --color-success: #df6249;
+  --color-success-hover: #e2725b;
+  --color-success-active: #d25c45;
   --color-success-text: #000000;
 
-  --color-warning: #ffcc00;
-  --color-warning-hover: #ffe066;
-  --color-warning-active: #e6b800;
+  --color-warning: #d67192;
+  --color-warning-hover: #da7f9d;
+  --color-warning-active: #c96a89;
   --color-warning-text: #000000;
 
-  --color-error: #ffaa88;
-  --color-error-hover: #ffc0a8;
-  --color-error-active: #ff8f66;
+  --color-error: #f263c3;
+  --color-error-hover: #f373c9;
+  --color-error-active: #e35db7;
   --color-error-text: #000000;
 
-  --color-info: #55ccff;
-  --color-info-hover: #88dcff;
-  --color-info-active: #2fb8ff;
+  --color-info: #c285ff;
+  --color-info-hover: #c891ff;
+  --color-info-active: #b67df0;
   --color-info-text: #000000;
 
   --color-border: #b070c0;
@@ -146,7 +145,7 @@
   --color-border-error: #ff7744;
   --color-border-success: #33cc55;
 
-  --color-input-background: #1c0428;
+  --color-input-background: #2c0a38;
   --color-input-disabled: #170220;
   --color-input-invalid: #4a0808;
   --color-input-valid: #06350a;

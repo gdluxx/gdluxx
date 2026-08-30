@@ -93,9 +93,9 @@
     default: ['bg-surface-overlay', 'text-primary', 'border', 'border-primary/75'],
     dark: ['bg-surface-overlay', 'text-primary', 'border', 'border-border-strong'],
     light: ['bg-surface-elevated', 'text-primary', 'border', 'border-border', 'shadow-floating'],
-    info: ['bg-info/10', 'text-info', 'border', 'border-info/30'],
-    warning: ['bg-warning/10', 'text-warning', 'border', 'border-warning/30'],
-    danger: ['bg-error/10', 'text-error', 'border', 'border-error/30'],
+    info: ['bg-info/10', 'text-foreground', 'border', 'border-info/30'],
+    warning: ['bg-warning/10', 'text-foreground', 'border', 'border-warning/30'],
+    danger: ['bg-error/10', 'text-foreground', 'border', 'border-error/30'],
   };
 
   const placementClasses: Record<TooltipPlacement, string[]> = {

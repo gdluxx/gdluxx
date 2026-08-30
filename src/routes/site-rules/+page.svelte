@@ -435,7 +435,7 @@
               </h3>
               {#if config.is_default}
                 <span
-                  class="inline-flex items-center rounded-pill bg-surface-selected px-2.5 py-0.5 text-xs font-medium text-info"
+                  class="inline-flex items-center rounded-pill border border-info/30 bg-info/10 px-2.5 py-0.5 text-xs font-medium text-foreground"
                 >
                   Default
                 </span>
@@ -590,7 +590,7 @@
               {site.url}
               {#if site.category}
                 <span
-                  class="ml-2 inline-flex items-center rounded-pill bg-surface-selected px-2 py-0.5 text-info"
+                  class="ml-2 inline-flex items-center rounded-pill border border-info/30 bg-info/10 px-2 py-0.5 text-foreground"
                 >
                   {site.category}
                 </span>

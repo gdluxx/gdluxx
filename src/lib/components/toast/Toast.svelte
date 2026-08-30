@@ -31,7 +31,7 @@
       icon: 'bg-success text-on-success',
       title: 'text-foreground',
       message: 'text-muted-foreground',
-      close: 'text-success hover:text-success-hover',
+      close: 'text-muted-foreground hover:text-foreground',
       closeButton: 'hover:bg-success/10',
     },
     error: {
@@ -39,7 +39,7 @@
       icon: 'bg-error text-on-error',
       title: 'text-foreground',
       message: 'text-muted-foreground',
-      close: 'text-error hover:text-error-hover',
+      close: 'text-muted-foreground hover:text-foreground',
       closeButton: 'hover:bg-error/10',
     },
     warning: {
@@ -47,7 +47,7 @@
       icon: 'bg-warning text-on-warning',
       title: 'text-foreground',
       message: 'text-muted-foreground',
-      close: 'text-warning hover:text-warning-hover',
+      close: 'text-muted-foreground hover:text-foreground',
       closeButton: 'hover:bg-warning/10',
     },
     info: {
@@ -55,7 +55,7 @@
       icon: 'bg-info text-on-info',
       title: 'text-foreground',
       message: 'text-muted-foreground',
-      close: 'text-info hover:text-info-hover',
+      close: 'text-muted-foreground hover:text-foreground',
       closeButton: 'hover:bg-info/10',
     },
   };
@@ -68,7 +68,7 @@
 </script>
 
 <div
-  class="pointer-events-auto w-full max-w-sm overflow-hidden rounded-overlay border-l-8 shadow-floating {styles.container}"
+  class="pointer-events-auto w-full max-w-sm overflow-hidden rounded-overlay border border-l-8 shadow-floating {styles.container}"
   transition:fly={{ x: 400, duration: 300 }}
 >
   <div class="p-4">
