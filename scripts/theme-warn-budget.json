@@ -1,0 +1,28 @@
+{
+  "comment": "Exact post-waiver warning snapshots across all validated theme-mode blocks; waived findings do not consume budget. When remediation lowers a family's count, lower the committed number in the same change; slack is never left.",
+  "families": {
+    "border-anchor": 0,
+    "dark-active-depth": 0,
+    "disabled-text": 0,
+    "focus-selected": 0,
+    "grayscale-spread": 15,
+    "high-contrast": 0,
+    "hue-distance": 13,
+    "hue-family-stability": 0,
+    "hue-label-interaction": 0,
+    "hue-state-direction": 0,
+    "hue-text-surfaces": 4,
+    "hue-tint-composite": 16,
+    "input-surface-split": 0,
+    "label-polarity": 0,
+    "legacy-border-surface": 8,
+    "legacy-disabled-input": 0,
+    "report-grouping": 0,
+    "selected-hover-separation": 0,
+    "spinner-fill": 0,
+    "state-text-interaction": 0,
+    "state-text-selected": 0,
+    "surface-ladder-perceptual": 0,
+    "text-hierarchy": 0
+  }
+}

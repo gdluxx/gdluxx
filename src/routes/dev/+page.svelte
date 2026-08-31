@@ -28,13 +28,31 @@
   <div class="grid gap-4 sm:grid-cols-2">
     <a
       href={resolve('/dev/components')}
-      class="group rounded-lg border border-border bg-surface p-5 transition-colors hover:border-primary hover:bg-surface-hover focus:border-focus focus:ring-2 focus:ring-focus focus:outline-hidden"
+      class="group rounded-surface border border-border bg-surface p-5 transition-colors hover:border-primary hover:bg-surface-hover"
     >
       <div class="flex items-start justify-between gap-4">
         <div>
           <h2 class="text-lg font-semibold text-primary">Component Gallery</h2>
           <p class="mt-1 text-sm text-muted-foreground">
             Review variants, sizes, states, and interactions for shared UI components.
+          </p>
+        </div>
+        <Icon
+          iconName="chevron-right"
+          size={20}
+          class="mt-1 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
+        />
+      </div>
+    </a>
+    <a
+      href={resolve('/dev/theme')}
+      class="group rounded-surface border border-border bg-surface p-5 transition-colors hover:border-primary hover:bg-surface-hover"
+    >
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <h2 class="text-lg font-semibold text-primary">Theme QA</h2>
+          <p class="mt-1 text-sm text-muted-foreground">
+            Role recipes, primitives, and the states board across every theme and mode.
           </p>
         </div>
         <Icon

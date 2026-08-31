@@ -26,11 +26,7 @@
   import { page } from '$app/state';
   import { browser } from '$app/environment';
   import { clientLogger as logger } from '$lib/client/logger';
-  import {
-    initializeThemeStore,
-    initializeThemeStoreFallback,
-    validateThemeSystem,
-  } from '$lib/themes/themeStore';
+  import { initializeThemeStore, initializeThemeStoreFallback } from '$lib/themes/themeStore';
 
   // Governs both jobStore and scheduleNotificationStore's summary refresh.
   const SUMMARY_POLL_INTERVAL_MS = 30_000;
@@ -79,8 +75,6 @@
   }
 
   onMount(() => {
-    document.body.classList.remove('preload');
-
     checkMobile();
 
     jobStore
@@ -102,11 +96,6 @@
           .catch((error) => logger.error('Failed to poll jobs summary:', error));
         void scheduleNotificationStore.loadSummary();
       }, SUMMARY_POLL_INTERVAL_MS);
-    }
-
-    const validation = validateThemeSystem();
-    if (!validation.valid) {
-      logger.warn('Theme system validation failed:', validation.errors);
     }
 
     (async () => {
@@ -140,18 +129,6 @@
       }
     };
   });
-
-  $effect(() => {
-    if (typeof window !== 'undefined') {
-      if (user) {
-        initializeThemeStore().catch(() => {
-          initializeThemeStoreFallback();
-        });
-      } else {
-        initializeThemeStoreFallback();
-      }
-    }
-  });
 </script>
 
 {#if isAuthRoute}
@@ -169,7 +146,7 @@
             <!-- hamburger -->
             <button
               onclick={handleSidebarToggle}
-              class="rounded-md p-2 text-muted-foreground hover:bg-surface-hover focus:outline-hidden focus:border-focus"
+              class="rounded-control p-2 text-muted-foreground hover:bg-surface-hover"
               aria-label={sidebarOpen ? 'Close navigation menu' : 'Open navigation menu'}
               aria-expanded={sidebarOpen}
             >
@@ -215,7 +192,7 @@
       <!-- Mobile sidebar is overlay so there's no squishing -->
       {#if isMobile && sidebarOpen}
         <div
-          class="bg-blur-sm fixed inset-0 z-40 md:hidden"
+          class="scrim fixed inset-0 z-40 md:hidden"
           onclick={closeSidebar}
           aria-hidden="true"
         ></div>

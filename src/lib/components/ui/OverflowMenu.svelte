@@ -47,16 +47,16 @@
 
   const panelClasses = $derived(
     [
-      'absolute right-0 z-20 rounded-md border-strong bg-surface-elevated p-1 shadow-lg',
+      'absolute right-0 z-20 rounded-overlay border-strong bg-surface-elevated p-1 shadow-floating',
       flipUp ? 'bottom-full mb-1' : 'mt-1',
     ].join(' '),
   );
 
   function itemClasses(item: OverflowMenuItem): string {
     return [
-      'flex w-full items-center rounded-sm px-3 text-left text-sm transition-colors duration-150',
+      'flex w-full items-center rounded-control px-3 text-left text-sm transition-colors duration-fast',
       'min-h-11 @2xl:min-h-8',
-      'focus:bg-surface-hover focus:outline-hidden',
+      'focus:bg-surface-hover',
       'disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-transparent',
       item.variant === 'danger'
         ? 'text-error hover:bg-error/10'

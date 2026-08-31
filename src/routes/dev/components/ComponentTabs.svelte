@@ -28,7 +28,7 @@
       <a
         href={resolve(`/dev/components?component=${component.key}`)}
         aria-current={component.key === activeKey ? 'page' : undefined}
-        class="border-b-2 px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors focus:ring-2 focus:ring-focus focus:outline-hidden {component.key ===
+        class="border-b-2 px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors {component.key ===
         activeKey
           ? 'border-primary text-primary'
           : 'border-transparent text-muted-foreground hover:border-border-strong hover:text-foreground'}"

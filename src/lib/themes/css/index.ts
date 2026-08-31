@@ -17,6 +17,7 @@ import './media-downloader.css';
 import './media-gallery.css';
 import './power-user.css';
 import './terminal-dark.css';
+import './torture.css';
 
 export const AVAILABLE_THEME_FILES = [
   'developer-tool',
@@ -26,6 +27,7 @@ export const AVAILABLE_THEME_FILES = [
   'media-gallery',
   'power-user',
   'terminal-dark',
+  'torture',
 ] as const;
 
 export type ThemeFileName = (typeof AVAILABLE_THEME_FILES)[number];

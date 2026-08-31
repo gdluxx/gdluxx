@@ -27,7 +27,7 @@
       <p class="mt-1 text-sm text-muted-foreground">{description}</p>
     {/if}
   </header>
-  <div class="rounded-lg border border-border bg-surface p-4 sm:p-6">
+  <div class="rounded-surface border border-border bg-surface p-4 sm:p-6">
     {@render children()}
   </div>
 </section>

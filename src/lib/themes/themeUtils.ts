@@ -17,12 +17,28 @@ export type ThemeName =
   | 'high-contrast'
   | 'media-downloader'
   | 'terminal-dark'
-  | 'power-user';
+  | 'power-user'
+  | 'torture';
 
-export type ThemeMode = 'light' | 'dark';
+export type ThemeMode = 'light' | 'dark' | 'system';
+export type ResolvedThemeMode = 'light' | 'dark';
 
 export const DEFAULT_THEME: ThemeName = 'indigo';
-export const DEFAULT_MODE: ThemeMode = 'dark';
+export const DEFAULT_MODE: ThemeMode = 'system';
+
+export function systemPrefersDark(): boolean {
+  if (typeof window === 'undefined' || !window.matchMedia) {
+    return true;
+  }
+  return window.matchMedia('(prefers-color-scheme: dark)').matches;
+}
+
+export function resolveMode(mode: ThemeMode): ResolvedThemeMode {
+  if (mode === 'light' || mode === 'dark') {
+    return mode;
+  }
+  return systemPrefersDark() ? 'dark' : 'light';
+}
 
 const debugLog = (message: string, ...args: unknown[]) =>
   logger.debug(`[ThemeUtils] ${message}`, ...args);
@@ -34,6 +50,11 @@ export interface ThemeConfig {
   displayName: string;
   description: string;
   supportsDarkMode: boolean;
+  /**
+   * Hidden from the theme picker (QA/torture themes). The theme still ships
+   * in the bundle and the store still accepts it from storage or the DB
+   */
+  devOnly?: boolean;
   /**
    * Small set of signature colors (primary/success/warning/info) taken
    * directly from this theme's own CSS token file (light mode). Used to
@@ -50,60 +71,68 @@ export const AVAILABLE_THEMES: Record<ThemeName, ThemeConfig> = {
     displayName: 'Indigo',
     description: 'Enhanced indigo',
     supportsDarkMode: true,
-    swatch: ['#6366f1', '#059669', '#eab308', '#0ea5e9'],
+    swatch: ['#4844c9', '#015327', '#815906', '#11547b'],
   },
   'media-gallery': {
     name: 'media-gallery',
     displayName: 'Media Gallery',
     description: 'Orange-focused',
     supportsDarkMode: true,
-    swatch: ['#ea580c', '#059669', '#f59e0b', '#0ea5e9'],
+    swatch: ['#9f4819', '#01692e', '#5c4100', '#005785'],
   },
   'developer-tool': {
     name: 'developer-tool',
     displayName: 'Developer Tool',
     description: 'GitHub-inspired',
     supportsDarkMode: true,
-    swatch: ['#0969da', '#1a7f37', '#bf8700', '#0969da'],
+    swatch: ['#075dc3', '#167033', '#684a15', '#17546f'],
   },
   'high-contrast': {
     name: 'high-contrast',
     displayName: 'High Contrast',
     description: 'Maximum contrast',
     supportsDarkMode: true,
-    swatch: ['#7c2d12', '#15803d', '#a16207', '#1d4ed8'],
+    swatch: ['#3730a3', '#1d420e', '#2f2303', '#00305b'],
   },
   'media-downloader': {
     name: 'media-downloader',
     displayName: 'Media Downloader',
     description: 'Amber-focused',
     supportsDarkMode: true,
-    swatch: ['#d97706', '#059669', '#d97706', '#2563eb'],
+    swatch: ['#994c00', '#005943', '#5a4300', '#00509e'],
   },
   'terminal-dark': {
     name: 'terminal-dark',
     displayName: 'Terminal Dark',
     description: 'Green-focused',
     supportsDarkMode: true,
-    swatch: ['#16a34a', '#059669', '#d97706', '#2563eb'],
+    swatch: ['#097100', '#00574a', '#5b4403', '#0051c3'],
   },
   'power-user': {
     name: 'power-user',
     displayName: 'Power User',
     description: 'Purple-focused',
     supportsDarkMode: true,
-    swatch: ['#7c3aed', '#059669', '#d97706', '#2563eb'],
+    swatch: ['#7632e5', '#156141', '#554623', '#19517b'],
+  },
+  torture: {
+    name: 'torture',
+    displayName: 'Torture (QA)',
+    description: 'Architecture torture test',
+    supportsDarkMode: true,
+    devOnly: true,
+    swatch: ['#5c002e', '#00005c', '#29007a', '#1f386b'],
   },
 };
 
 let currentTheme: ThemeName = DEFAULT_THEME;
-let currentMode: ThemeMode = DEFAULT_MODE;
+let currentMode: ResolvedThemeMode = 'dark';
 
 export function getCurrentTheme(): ThemeName {
   return currentTheme;
 }
 
-export function getCurrentMode(): ThemeMode {
+export function getCurrentMode(): ResolvedThemeMode {
   return currentMode;
 }
 
@@ -113,7 +142,7 @@ export function getThemeConfig(themeName: ThemeName): ThemeConfig {
 
 export function applyTheme(
   themeName: ThemeName,
-  mode: ThemeMode = 'dark',
+  mode: ResolvedThemeMode = 'dark',
   element?: HTMLElement,
 ): void {
   const targetElement =
@@ -150,10 +179,18 @@ export function applyTheme(
   targetElement.dispatchEvent(event);
 }
 
-export function toggleMode(element?: HTMLElement): ThemeMode {
+export function toggleMode(element?: HTMLElement): ResolvedThemeMode {
   const newMode = currentMode === 'light' ? 'dark' : 'light';
   applyTheme(currentTheme, newMode, element);
   return newMode;
+}
+
+export function readStoredMode(): ThemeMode {
+  if (typeof window === 'undefined') {
+    return DEFAULT_MODE;
+  }
+  const saved = localStorage.getItem('gdluxx-theme-mode');
+  return saved === 'light' || saved === 'dark' || saved === 'system' ? saved : DEFAULT_MODE;
 }
 
 export function initializeTheme(element?: HTMLElement): void {
@@ -163,257 +200,7 @@ export function initializeTheme(element?: HTMLElement): void {
   }
 
   const savedTheme = localStorage.getItem('gdluxx-theme') as ThemeName;
-  const savedMode = localStorage.getItem('gdluxx-theme-mode') as ThemeMode;
-
   const theme = savedTheme && AVAILABLE_THEMES[savedTheme] ? savedTheme : DEFAULT_THEME;
 
-  let mode: ThemeMode = DEFAULT_MODE;
-  if (savedMode && (savedMode === 'light' || savedMode === 'dark')) {
-    mode = savedMode;
-  } else if (window.matchMedia?.('(prefers-color-scheme: light)').matches) {
-    mode = 'light';
-  }
-
-  applyTheme(theme, mode, element);
-}
-
-export function saveThemePreference(): void {
-  localStorage.setItem('gdluxx-theme', currentTheme);
-  localStorage.setItem('gdluxx-theme-mode', currentMode);
-}
-
-export function setupSystemThemeListener(): void {
-  if (window.matchMedia) {
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-
-    mediaQuery.addEventListener('change', (e) => {
-      const hasManualPreference = localStorage.getItem('gdluxx-theme-mode');
-      if (!hasManualPreference) {
-        const newMode = e.matches ? 'dark' : 'light';
-        applyTheme(currentTheme, newMode);
-      }
-    });
-  }
-}
-
-export function validateTheme(themeName: ThemeName, mode: ThemeMode = 'light'): boolean {
-  const requiredTokens = [
-    '--color-background',
-    '--color-surface',
-    '--color-surface-elevated',
-    '--color-surface-sunken',
-    '--color-surface-hover',
-    '--color-surface-active',
-    '--color-surface-selected',
-    '--color-surface-disabled',
-
-    '--color-foreground',
-    '--color-muted-foreground',
-    '--color-accent-foreground',
-    '--color-text-inverse',
-    '--color-text-disabled',
-
-    '--color-primary',
-    '--color-primary-hover',
-    '--color-primary-active',
-    '--color-primary-disabled',
-    '--color-primary-text',
-
-    '--color-success',
-    '--color-warning',
-    '--color-error',
-    '--color-info',
-
-    '--color-border',
-    '--color-border-strong',
-    '--color-border-focus',
-    '--color-border-disabled',
-    '--color-border-error',
-    '--color-border-success',
-
-    '--color-input-background',
-    '--color-input-disabled',
-    '--color-input-invalid',
-    '--color-input-valid',
-
-    '--color-skeleton',
-    '--color-spinner',
-
-    '--shadow-sm',
-    '--shadow-md',
-    '--shadow-lg',
-  ];
-
-  const testElement = document.createElement('div');
-  testElement.classList.add(`theme-${themeName}`);
-  if (mode === 'dark') {
-    testElement.classList.add('dark');
-  }
-  document.body.appendChild(testElement);
-
-  const styles = getComputedStyle(testElement);
-  const missingTokens: string[] = [];
-
-  for (const token of requiredTokens) {
-    const value = styles.getPropertyValue(token).trim();
-    if (!value) {
-      missingTokens.push(token);
-    }
-  }
-
-  document.body.removeChild(testElement);
-
-  if (missingTokens.length > 0) {
-    themeWarn(`Theme "${themeName}" (${mode}) is missing tokens:`, missingTokens);
-    return false;
-  }
-
-  return true;
-}
-
-export function getSemanticTokenValues(
-  element: HTMLElement = document.documentElement,
-): Record<string, string> {
-  const styles = getComputedStyle(element);
-  const tokens: Record<string, string> = {};
-
-  const allProperties = Array.from(document.styleSheets)
-    .flatMap((sheet) => {
-      try {
-        return Array.from(sheet.cssRules || []);
-      } catch {
-        return [];
-      }
-    })
-    .flatMap((rule) => {
-      if (rule instanceof CSSStyleRule) {
-        return Array.from(rule.style).filter(
-          (prop) => prop.startsWith('--color-') || prop.startsWith('--shadow-'),
-        );
-      }
-      return [];
-    });
-
-  const uniqueProperties = Array.from(new Set(allProperties));
-
-  for (const property of uniqueProperties) {
-    const value = styles.getPropertyValue(property).trim();
-    if (value) {
-      tokens[property] = value;
-    }
-  }
-
-  return tokens;
-}
-
-export function validateThemeSystemHealth(): {
-  valid: boolean;
-  errors: string[];
-  warnings: string[];
-  performance: Record<string, number>;
-  themes: Record<string, { valid: boolean; errors: string[] }>;
-} {
-  const startTime = performance.now();
-  const errors: string[] = [];
-  const warnings: string[] = [];
-  const performanceMetrics: Record<string, number> = {};
-  const themeResults: Record<string, { valid: boolean; errors: string[] }> = {};
-
-  if (!AVAILABLE_THEMES || Object.keys(AVAILABLE_THEMES).length === 0) {
-    errors.push('No themes available in AVAILABLE_THEMES');
-    return {
-      valid: false,
-      errors,
-      warnings,
-      performance: performanceMetrics,
-      themes: themeResults,
-    };
-  }
-
-  const themeNames = Object.keys(AVAILABLE_THEMES) as ThemeName[];
-  const validationStart = performance.now();
-
-  for (const themeName of themeNames) {
-    const themeStart = performance.now();
-    const themeErrors: string[] = [];
-
-    const config = AVAILABLE_THEMES[themeName];
-    if (!config) {
-      themeErrors.push(`Missing configuration for theme "${themeName}"`);
-    } else {
-      if (!config.name || !config.displayName || !config.description) {
-        themeErrors.push(`Theme "${themeName}" missing required config properties`);
-      }
-      if (config.name !== themeName) {
-        themeErrors.push(`Theme "${themeName}" config.name mismatch: "${config.name}"`);
-      }
-    }
-
-    const lightModeValid = validateTheme(themeName, 'light');
-    const darkModeValid = config?.supportsDarkMode ? validateTheme(themeName, 'dark') : true;
-
-    if (!lightModeValid) {
-      themeErrors.push(`Theme "${themeName}" failed light mode validation`);
-    }
-    if (config?.supportsDarkMode && !darkModeValid) {
-      themeErrors.push(`Theme "${themeName}" failed dark mode validation`);
-    }
-
-    const themeTime = performance.now() - themeStart;
-    performanceMetrics[`theme_${themeName}_validation_ms`] = Math.round(themeTime * 100) / 100;
-
-    themeResults[themeName] = {
-      valid: themeErrors.length === 0,
-      errors: themeErrors,
-    };
-
-    errors.push(...themeErrors);
-  }
-
-  const validationTime = performance.now() - validationStart;
-  performanceMetrics.total_validation_ms = Math.round(validationTime * 100) / 100;
-
-  if (typeof document !== 'undefined') {
-    const cssCheckStart = performance.now();
-
-    const testElement = document.createElement('div');
-    testElement.classList.add(`theme-${DEFAULT_THEME}`);
-    document.body.appendChild(testElement);
-
-    const computedStyle = getComputedStyle(testElement);
-    const hasThemeTokens = computedStyle.getPropertyValue('--color-primary').trim() !== '';
-
-    if (!hasThemeTokens) {
-      warnings.push('Theme CSS may not be properly loaded - no CSS custom properties detected');
-    }
-
-    document.body.removeChild(testElement);
-    performanceMetrics.css_check_ms = Math.round((performance.now() - cssCheckStart) * 100) / 100;
-  }
-
-  if (!AVAILABLE_THEMES[DEFAULT_THEME]) {
-    errors.push(`DEFAULT_THEME "${DEFAULT_THEME}" not found in AVAILABLE_THEMES`);
-  }
-
-  const totalTime = performance.now() - startTime;
-  performanceMetrics.total_health_check_ms = Math.round(totalTime * 100) / 100;
-
-  if (totalTime > 100) {
-    warnings.push(`Theme system health check took ${Math.round(totalTime)}ms (>100ms threshold)`);
-  }
-
-  const validThemes = Object.values(themeResults).filter((r) => r.valid).length;
-  const totalThemes = Object.keys(themeResults).length;
-
-  if (validThemes < totalThemes) {
-    warnings.push(`${totalThemes - validThemes} of ${totalThemes} themes have validation issues`);
-  }
-
-  return {
-    valid: errors.length === 0,
-    errors,
-    warnings,
-    performance: performanceMetrics,
-    themes: themeResults,
-  };
+  applyTheme(theme, resolveMode(readStoredMode()), element);
 }

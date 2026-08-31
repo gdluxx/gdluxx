@@ -196,7 +196,7 @@
 
   {#if open}
     <div
-      class="absolute right-0 z-20 mt-1 max-w-[24rem] rounded-md border border-strong bg-surface-elevated p-1 shadow-lg"
+      class="absolute right-0 z-20 mt-1 max-w-[24rem] rounded-overlay border border-strong bg-surface-elevated p-1 shadow-floating"
       style:min-width="{panelMinWidth}px"
     >
       <input
@@ -233,7 +233,7 @@
               id="{listboxId}-option-{i}"
               role="option"
               aria-selected={choice.value === value}
-              class="flex cursor-pointer items-center rounded-sm px-3 py-1.5 text-sm text-foreground"
+              class="flex cursor-pointer items-center rounded-control px-3 py-1.5 text-sm text-foreground"
               class:bg-surface-hover={i === activeIndex}
               onmousedown={(event) => event.preventDefault()}
               onclick={() => selectChoice(choice)}

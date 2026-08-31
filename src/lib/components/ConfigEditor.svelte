@@ -430,7 +430,7 @@
 <div
   class="transition-all duration-300 {isFullscreen
     ? 'fixed inset-5 z-50 mx-0'
-    : 'mx-auto'} rounded-t-sm bg-surface border-strong"
+    : 'mx-auto'} rounded-t-surface bg-surface border-strong"
 >
   <Info
     size="sm"
@@ -445,7 +445,7 @@
       </a>.
     </span>
   </Info>
-  <div class="rounded-t-sm px-4 py-3 font-medium border-b-strong">
+  <div class="rounded-t-surface px-4 py-3 font-medium border-b-strong">
     <div class="">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <!-- badges -->

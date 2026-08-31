@@ -49,14 +49,14 @@
     'gap-3',
     'border',
     'transition-all',
-    'duration-150',
+    'duration-fast',
     'ease-in-out',
   ];
 
   const sizeClasses: Record<InfoSize, string[]> = {
-    sm: ['p-3', 'text-sm', 'rounded-xs'],
-    default: ['p-4', 'text-base', 'rounded-sm'],
-    lg: ['p-5', 'text-lg', 'rounded-sm'],
+    sm: ['p-3', 'text-sm', 'rounded-surface'],
+    default: ['p-4', 'text-base', 'rounded-surface'],
+    lg: ['p-5', 'text-lg', 'rounded-surface'],
   };
 
   const variantClasses: Record<InfoVariant, string[]> = {
@@ -150,7 +150,7 @@
     {#if dismissible}
       <button
         onclick={handleDismiss}
-        class="-mt-1 -mr-1 ml-2 flex-shrink-0 cursor-pointer rounded-xs p-1 opacity-60 transition-all hover:bg-surface-hover hover:opacity-100 focus:ring-2 focus:ring-current/20 focus:outline-hidden"
+        class="-mt-1 -mr-1 ml-2 flex-shrink-0 cursor-pointer rounded-control p-1 opacity-60 transition-all hover:bg-surface-hover hover:opacity-100"
         aria-label="Dismiss notification"
         type="button"
       >

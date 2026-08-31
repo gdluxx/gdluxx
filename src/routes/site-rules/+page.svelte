@@ -325,7 +325,7 @@
         <button
           type="button"
           onclick={openSupportedSitesModal}
-          class="data-list-stats flex w-full items-center justify-between gap-2 p-3 text-left transition-colors hover:bg-surface-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          class="data-list-stats flex w-full items-center justify-between gap-2 p-3 text-left transition-colors hover:bg-surface-hover"
           aria-haspopup="dialog"
           title="View and search supported sites"
         >
@@ -435,7 +435,7 @@
               </h3>
               {#if config.is_default}
                 <span
-                  class="inline-flex items-center rounded-full bg-surface-selected px-2.5 py-0.5 text-xs font-medium text-info"
+                  class="inline-flex items-center rounded-pill border border-info/30 bg-info/10 px-2.5 py-0.5 text-xs font-medium text-foreground"
                 >
                   Default
                 </span>
@@ -450,9 +450,10 @@
             </div>
             <p class="text-sm text-muted-foreground">
               Pattern: <code
-                class="rounded-sm bg-surface-selected px-1 py-0.5 text-muted-foreground"
-                >{config.site_pattern}</code
+                class="rounded-surface bg-surface-selected px-1 py-0.5 text-muted-foreground"
               >
+                {config.site_pattern}
+              </code>
             </p>
             <p class="text-sm text-muted-foreground">
               CLI Options: {config.cli_options.length}
@@ -547,7 +548,7 @@
       </p>
       <p class="mb-4 text-sm text-accent-foreground">
         Pattern:
-        <code class="rounded bg-surface-elevated px-1">
+        <code class="rounded-surface bg-surface-elevated px-1">
           {configToDelete.site_pattern}
         </code>
       </p>
@@ -589,7 +590,7 @@
               {site.url}
               {#if site.category}
                 <span
-                  class="ml-2 inline-flex items-center rounded-full bg-surface-selected px-2 py-0.5 text-info"
+                  class="ml-2 inline-flex items-center rounded-pill border border-info/30 bg-info/10 px-2 py-0.5 text-foreground"
                 >
                   {site.category}
                 </span>

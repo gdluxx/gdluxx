@@ -55,10 +55,10 @@
   const detailId = $derived(`catalog-detail-${option.n.replace(/[^a-zA-Z0-9]/g, '-')}`);
 </script>
 
-<div class="mt-5 rounded-sm border border-strong">
+<div class="mt-5 rounded-surface border border-strong">
   <button
     type="button"
-    class="w-full cursor-pointer rounded-sm px-3 pt-3 text-left transition-colors hover:bg-surface-hover {open
+    class="w-full cursor-pointer rounded-surface px-3 pt-3 text-left transition-colors hover:bg-surface-hover {open
       ? 'pb-2'
       : 'pb-5'}"
     aria-expanded={open}
@@ -71,7 +71,7 @@
       </span>
       {#each option.t.slice(0, 3) as ref (ref.x)}
         <span
-          class="rounded-xs px-1.5 py-px font-mono text-[10.5px] font-medium whitespace-nowrap {kindBadgeClasses(
+          class="rounded-surface px-1.5 py-px font-mono text-[10.5px] font-medium whitespace-nowrap {kindBadgeClasses(
             bucketKind(ref.k),
           )}"
           title={customTypes[ref.x]}
@@ -81,7 +81,7 @@
       {/each}
       {#if familyBadge}
         <span
-          class="rounded-full border border-strong px-2 py-px text-[10.5px] font-medium whitespace-nowrap text-muted-foreground"
+          class="rounded-pill border border-strong px-2 py-px text-[10.5px] font-medium whitespace-nowrap text-muted-foreground"
           title={`Applies to every ${familyBadge.label} instance`}
         >
           {familyBadge.label} · {familyBadge.count} sites

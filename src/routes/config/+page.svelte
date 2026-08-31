@@ -10,6 +10,7 @@
 
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { themeStore } from '$lib/themes/themeStore';
   import { enhance } from '$app/forms';
   import { ConfigEditor, Icon } from '$lib/components';
   import { Info, PageLayout } from '$lib/components/ui';
@@ -56,25 +57,10 @@
     return { message: 'Submitting...' };
   }
 
-  function checkTheme() {
-    theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
-  }
-
   onMount(() => {
-    checkTheme();
-
-    const observer = new MutationObserver(() => {
-      checkTheme();
+    return themeStore.isDark.subscribe((dark) => {
+      theme = dark ? 'dark' : 'light';
     });
-
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['class'],
-    });
-
-    return () => {
-      observer.disconnect();
-    };
   });
 
   function handleUploadSuccess(file: File) {

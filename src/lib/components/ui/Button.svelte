@@ -30,7 +30,7 @@
     | 'outline-danger'
     | 'outline-info';
 
-  interface ButtonProps extends Omit<HTMLButtonAttributes, 'type' | 'class'> {
+  interface ButtonBaseProps extends Omit<HTMLButtonAttributes, 'type' | 'class'> {
     children?: Snippet;
     class?: string;
     type?: ButtonType;
@@ -39,11 +39,12 @@
     size?: ButtonSize;
     loading?: boolean;
     block?: boolean;
-    pill?: boolean;
-    square?: boolean;
     icon?: boolean;
     ariaLabel?: string;
   }
+
+  type ButtonProps = ButtonBaseProps &
+    ({ pill?: boolean; square?: never } | { square?: boolean; pill?: never });
 
   const {
     children,
@@ -67,19 +68,16 @@
     'justify-center',
     'font-medium',
     'transition-all',
-    'duration-150',
+    'duration-fast',
     'ease-in-out',
     'border',
-    'focus:outline-hidden',
     'whitespace-nowrap',
     'select-none',
     'cursor-pointer',
-    'disabled:opacity-60',
     'disabled:cursor-not-allowed',
     'hover:enabled:-translate-y-0.5',
-    'hover:enabled:shadow-sm',
+    'hover:enabled:shadow-raised',
     'active:enabled:translate-y-0',
-    'active:enabled:shadow-xs',
   ];
 
   function getSizeClasses(buttonSize: ButtonSize): string[] {
@@ -87,8 +85,8 @@
       ? { sm: 'p-1', default: 'p-2', lg: 'p-3' }[buttonSize]
       : { sm: 'px-3 py-1', default: 'px-4 py-2', lg: 'px-6 py-3' }[buttonSize];
     const textSize = { sm: 'text-sm', default: 'text-base', lg: 'text-lg' }[buttonSize];
-    const defaultRadius = buttonSize === 'sm' ? 'rounded-xs' : 'rounded-sm';
-    const radius = square ? 'rounded-none' : pill ? 'rounded-full' : defaultRadius;
+    const defaultRadius = 'rounded-control';
+    const radius = square ? 'rounded-none' : pill ? 'rounded-pill' : defaultRadius;
 
     return [padding, textSize, radius];
   }
@@ -97,9 +95,9 @@
     default: [
       'bg-surface',
       'text-foreground',
-      'border-transparent',
+      'border-border-strong',
       'hover:enabled:bg-surface-hover',
-      'focus:border-focus',
+      'active:enabled:bg-surface-active',
     ],
     primary: [
       'bg-primary',
@@ -107,7 +105,7 @@
       'border-primary',
       'hover:enabled:bg-primary-hover',
       'hover:enabled:border-primary-hover',
-      'focus:border-focus',
+      'active:enabled:bg-primary-active',
     ],
     success: [
       'bg-success',
@@ -115,7 +113,7 @@
       'border-success',
       'hover:enabled:bg-success-hover',
       'hover:enabled:border-success-hover',
-      'focus:border-focus',
+      'active:enabled:bg-success-active',
     ],
     warning: [
       'bg-warning',
@@ -123,7 +121,7 @@
       'border-warning',
       'hover:enabled:bg-warning-hover',
       'hover:enabled:border-warning-hover',
-      'focus:border-focus',
+      'active:enabled:bg-warning-active',
     ],
     danger: [
       'bg-error',
@@ -131,7 +129,7 @@
       'border-error',
       'hover:enabled:bg-error-hover',
       'hover:enabled:border-error-hover',
-      'focus:border-focus',
+      'active:enabled:bg-error-active',
     ],
     info: [
       'bg-info',
@@ -139,7 +137,7 @@
       'border-info',
       'hover:enabled:bg-info-hover',
       'hover:enabled:border-info-hover',
-      'focus:border-focus',
+      'active:enabled:bg-info-active',
     ],
     light: [
       'bg-surface',
@@ -147,14 +145,14 @@
       'border',
       'hover:enabled:bg-surface-hover',
       'hover:enabled:border-strong',
-      'focus:border-focus',
+      'active:enabled:bg-surface-active',
     ],
     dark: [
       'bg-foreground',
       'text-background',
       'border-foreground',
       'hover:enabled:opacity-90',
-      'focus:border-focus',
+      'active:enabled:opacity-80',
     ],
     'outline-primary': [
       'bg-transparent',
@@ -162,7 +160,7 @@
       'border-primary',
       'hover:enabled:bg-primary/10',
       'hover:enabled:border-primary',
-      'focus:border-focus',
+      'active:enabled:bg-primary/20',
     ],
     'outline-success': [
       'bg-transparent',
@@ -170,7 +168,7 @@
       'border-success',
       'hover:enabled:bg-success/10',
       'hover:enabled:border-success',
-      'focus:border-focus',
+      'active:enabled:bg-success/20',
     ],
     'outline-warning': [
       'bg-transparent',
@@ -178,7 +176,7 @@
       'border-warning',
       'hover:enabled:bg-warning/10',
       'hover:enabled:border-warning',
-      'focus:border-focus',
+      'active:enabled:bg-warning/20',
     ],
     'outline-danger': [
       'bg-transparent',
@@ -186,7 +184,7 @@
       'border-error',
       'hover:enabled:bg-error/10',
       'hover:enabled:border-error',
-      'focus:border-focus',
+      'active:enabled:bg-error/20',
     ],
     'outline-info': [
       'bg-transparent',
@@ -194,17 +192,51 @@
       'border-info',
       'hover:enabled:bg-info/10',
       'hover:enabled:border-info',
-      'focus:border-focus',
+      'active:enabled:bg-info/20',
     ],
   };
+
+  const disabledVariantClasses: Record<ButtonVariant, string[]> = {
+    default: ['bg-surface-disabled', 'text-disabled', 'border-border'],
+    primary: ['bg-primary-disabled', 'text-disabled', 'border-primary-disabled'],
+    success: ['bg-surface-disabled', 'text-disabled', 'border-border'],
+    warning: ['bg-surface-disabled', 'text-disabled', 'border-border'],
+    danger: ['bg-surface-disabled', 'text-disabled', 'border-border'],
+    info: ['bg-surface-disabled', 'text-disabled', 'border-border'],
+    light: ['bg-surface-disabled', 'text-disabled', 'border-border'],
+    dark: ['bg-surface-disabled', 'text-disabled', 'border-border'],
+    'outline-primary': ['bg-transparent', 'text-disabled', 'border-border'],
+    'outline-success': ['bg-transparent', 'text-disabled', 'border-border'],
+    'outline-warning': ['bg-transparent', 'text-disabled', 'border-border'],
+    'outline-danger': ['bg-transparent', 'text-disabled', 'border-border'],
+    'outline-info': ['bg-transparent', 'text-disabled', 'border-border'],
+  };
+
+  const spinnerClasses: Record<ButtonVariant, string> = {
+    default: 'border-skeleton border-t-spinner',
+    primary: 'border-primary-text/25 border-t-primary-text',
+    success: 'border-success-text/25 border-t-success-text',
+    warning: 'border-warning-text/25 border-t-warning-text',
+    danger: 'border-error-text/25 border-t-error-text',
+    info: 'border-info-text/25 border-t-info-text',
+    light: 'border-skeleton border-t-spinner',
+    dark: 'border-background/25 border-t-background',
+    'outline-primary': 'border-skeleton border-t-primary',
+    'outline-success': 'border-skeleton border-t-success',
+    'outline-warning': 'border-skeleton border-t-warning',
+    'outline-danger': 'border-skeleton border-t-error',
+    'outline-info': 'border-skeleton border-t-info',
+  };
+
+  const visuallyDisabled = $derived(disabled && !loading);
 
   const computedClasses = $derived(
     [
       ...baseClasses,
       ...getSizeClasses(size),
-      ...variantClasses[variant],
+      ...(visuallyDisabled ? disabledVariantClasses[variant] : variantClasses[variant]),
       block && 'flex w-full',
-      loading && 'relative text-transparent pointer-events-none',
+      loading && 'relative pointer-events-none',
       className,
     ]
       .filter(Boolean)
@@ -229,15 +261,19 @@
   {...ariaAttributes}
   {...restProps}
 >
-  {@render children?.()}
+  <span
+    class="contents"
+    class:invisible={loading}
+    aria-hidden={loading ? 'true' : undefined}
+  >
+    {@render children?.()}
+  </span>
 
   <!-- Screen reader loading announcement -->
   {#if loading}
     <span class="sr-only">{loadingText}</span>
-  {/if}
 
-  <!-- Loading spinner -->
-  {#if loading}
+    <!-- Loading spinner -->
     <div
       class="absolute inset-0 flex items-center justify-center"
       aria-hidden="true"
@@ -246,7 +282,7 @@
         variant="ring"
         size={16}
         border="full"
-        class="border-skeleton border-t-spinner"
+        class={spinnerClasses[variant]}
       />
     </div>
   {/if}

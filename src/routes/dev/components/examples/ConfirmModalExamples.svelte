@@ -133,7 +133,7 @@
     onConfirm={() => finish('Confirm callback fired.')}
     onClose={() => finish('Close callback fired.')}
   >
-    <div class="rounded border border-border bg-surface p-4 text-foreground">
+    <div class="rounded-surface border border-border bg-surface p-4 text-foreground">
       This content comes from the children snippet.
     </div>
   </ConfirmModal>

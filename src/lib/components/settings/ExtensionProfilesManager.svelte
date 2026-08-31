@@ -207,7 +207,7 @@
   >
     <p class="text-sm">
       Create an API key in <a
-        class="text-link hover:underline"
+        class="text-primary hover:underline"
         href={resolve('/settings/apikey')}>API Keys</a
       > to enable extension profile syncing.
     </p>

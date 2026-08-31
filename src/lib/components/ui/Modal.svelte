@@ -95,7 +95,7 @@
   bind:this={dialogElement}
   class="modal m-auto w-[calc(100vw-2rem)] {sizeClasses[
     size
-  ]} flex max-h-[90vh] flex-col overflow-hidden rounded-lg bg-surface-elevated p-0 shadow-xl"
+  ]} flex max-h-[90vh] flex-col overflow-hidden rounded-overlay bg-surface-elevated p-0 shadow-overlay"
   oncancel={handleCancel}
   onclick={handleClick}
 >
@@ -134,7 +134,7 @@
         <button
           type="button"
           onclick={onClose}
-          class="inline-flex h-8 w-8 flex-shrink-0 cursor-pointer items-center justify-center rounded-full border-transparent bg-surface-hover text-muted-foreground transition-all hover:bg-surface-active focus:border-focus focus:bg-surface-active focus:ring-2 focus:outline-hidden"
+          class="inline-flex h-8 w-8 flex-shrink-0 cursor-pointer items-center justify-center rounded-full border-transparent bg-surface-hover text-muted-foreground transition-all hover:bg-surface-active focus:bg-surface-active"
           aria-label="Close modal"
         >
           <span class="sr-only">Close</span>
@@ -149,9 +149,9 @@
 </dialog>
 
 <style>
-  /* Reset UA dialog chrome; surface/rounding/shadow come from utility classes. */
+  /* Reset UA dialog chrome; the stroke dial carries the modal edge (HC dark has no shadow). */
   .modal {
-    border: none;
+    border: var(--stroke-base, 1px) solid var(--color-border-strong);
   }
 
   /* The `flex` utility on the dialog overrides the UA's
@@ -167,10 +167,10 @@
     opacity: 0;
     transform: scale(0.95);
     transition:
-      opacity 200ms ease,
-      transform 200ms ease,
-      overlay 200ms ease allow-discrete,
-      display 200ms ease allow-discrete;
+      opacity var(--motion-base, 200ms) ease,
+      transform var(--motion-base, 200ms) ease,
+      overlay var(--motion-base, 200ms) ease allow-discrete,
+      display var(--motion-base, 200ms) ease allow-discrete;
   }
 
   .modal[open] {
@@ -186,13 +186,13 @@
   }
 
   .modal::backdrop {
-    background-color: rgb(0 0 0 / 0.3);
-    backdrop-filter: blur(4px);
+    background-color: var(--color-scrim, rgb(0 0 0 / 0.3));
+    backdrop-filter: var(--backdrop-filter, blur(4px));
     opacity: 0;
     transition:
-      opacity 200ms ease,
-      overlay 200ms ease allow-discrete,
-      display 200ms ease allow-discrete;
+      opacity var(--motion-base, 200ms) ease,
+      overlay var(--motion-base, 200ms) ease allow-discrete,
+      display var(--motion-base, 200ms) ease allow-discrete;
   }
 
   .modal[open]::backdrop {

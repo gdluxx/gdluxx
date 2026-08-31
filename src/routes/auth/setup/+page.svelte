@@ -18,7 +18,7 @@
 </svelte:head>
 
 <div class="flex min-h-screen items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
-  <div class="rounded-sm bg-surface-elevated p-8">
+  <div class="rounded-surface bg-surface-elevated p-8">
     <div class="w-full max-w-md space-y-8">
       <div class="text-center">
         <div class="mb-6 flex items-center justify-center">

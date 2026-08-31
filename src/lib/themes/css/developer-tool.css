@@ -9,123 +9,131 @@
  */
 
 .theme-developer-tool {
-  --color-background: #ffffff;
-  --color-surface: #f6f8fa;
-  --color-surface-elevated: #ffffff;
-  --color-surface-sunken: #f1f3f4;
-  --color-surface-overlay: #f8fafc;
+  color-scheme: light;
+
+  --color-background: #f7fbfe;
+  --color-surface: #f1f5f8;
+  --color-surface-elevated: #fcfdfe;
+  --color-surface-sunken: #ebeff2;
+  --color-surface-overlay: #ffffff;
+  --color-scrim: rgb(0 0 0 / 0.3);
 
   --color-foreground: #1f2328;
-  --color-muted-foreground: #656d76;
+  --color-muted-foreground: #616973;
   --color-accent-foreground: #424a53;
   --color-text-inverse: #ffffff;
-  --color-text-disabled: #8c959f;
+  --color-text-disabled: #6f7882;
 
-  --color-primary: #0969da;
-  --color-primary-hover: #0550ae;
-  --color-primary-active: #0347d4;
-  --color-primary-disabled: #b6e3ff;
+  --color-primary: #075dc3;
+  --color-primary-hover: #004da6;
+  --color-primary-active: #00408c;
+  --color-primary-disabled: #c9dcf9;
   --color-primary-text: #ffffff;
 
-  --color-surface-hover: #f3f4f6;
-  --color-surface-active: #e1e4e8;
-  --color-surface-selected: #ddf4ff;
-  --color-surface-disabled: #f8f9fa;
+  --color-surface-hover: #ecf0f3;
+  --color-surface-active: #e7ebee;
+  --color-surface-selected: #d3f1ff;
+  --color-surface-disabled: #edf1f4;
 
-  --color-success: #1a7f37;
-  --color-success-hover: #1f883d;
-  --color-success-active: #0f5132;
+  --color-success: #167033;
+  --color-success-hover: #0c5c27;
+  --color-success-active: #084c1f;
   --color-success-text: #ffffff;
-  --color-warning: #bf8700;
-  --color-warning-hover: #9a6700;
-  --color-warning-active: #7d4e00;
+  --color-warning: #684a15;
+  --color-warning-hover: #553b0b;
+  --color-warning-active: #452e05;
   --color-warning-text: #ffffff;
-  --color-error: #d1242f;
-  --color-error-hover: #cf222e;
-  --color-error-active: #a40e26;
+  --color-error: #b8272d;
+  --color-error-hover: #9d1d23;
+  --color-error-active: #86171c;
   --color-error-text: #ffffff;
-  --color-info: #0969da;
-  --color-info-hover: #0550ae;
-  --color-info-active: #0347d4;
+  --color-info: #17546f;
+  --color-info-hover: #0b445b;
+  --color-info-active: #06354a;
   --color-info-text: #ffffff;
 
   --color-border: #d1d9e0;
-  --color-border-strong: #8c959f;
-  --color-border-focus: #0969da;
-  --color-border-disabled: #eaeef2;
-  --color-border-error: #ffb3ba;
-  --color-border-success: #aff5b4;
+  --color-border-strong: #838c96;
+  --color-border-focus: #075dc3;
+  --color-border-error: #d16a74;
+  --color-border-success: #57a065;
 
   --color-input-background: #ffffff;
-  --color-input-disabled: #f8f9fa;
-  --color-input-invalid: #fff5f5;
+  --color-input-disabled: #edf1f4;
+  --color-input-invalid: #ffeaed;
   --color-input-valid: #f0fff4;
 
-  --color-skeleton: #f1f3f4;
-  --color-spinner: #0969da;
+  --color-skeleton: #ebeff2;
+  --color-spinner: #075dc3;
 
-  --shadow-sm: 0 1px 2px 0 rgb(31 35 40 / 0.04);
-  --shadow-md: 0 4px 6px -1px rgb(31 35 40 / 0.1);
-  --shadow-lg: 0 10px 15px -3px rgb(31 35 40 / 0.1);
+  --radius-control: 6px;
+  --font-mono:
+    ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
+
+  --shadow-raised: 0 1px 2px 0 rgb(31 35 40 / 0.04);
+  --shadow-floating: 0 10px 15px -3px rgb(31 35 40 / 0.1);
+  --shadow-overlay: 0 20px 25px -5px rgb(31 35 40 / 0.1), 0 8px 10px -6px rgb(31 35 40 / 0.1);
 }
 
 .theme-developer-tool.dark {
+  color-scheme: dark;
+
   --color-background: #010409;
   --color-surface: #0d1117;
   --color-surface-elevated: #161b22;
   --color-surface-sunken: #010409;
   --color-surface-overlay: #21262d;
+  --color-scrim: rgb(0 0 0 / 0.3);
 
-  --color-foreground: #f0f6ff;
-  --color-muted-foreground: #8c959f;
+  --color-foreground: #dfe7ee;
+  --color-muted-foreground: #9aa3ad;
   --color-accent-foreground: #afb8c1;
   --color-text-inverse: #1f2328;
-  --color-text-disabled: #656d76;
+  --color-text-disabled: #727b85;
 
   --color-primary: #409eff;
-  --color-primary-hover: #79c0ff;
-  --color-primary-active: #1f6feb;
-  --color-primary-disabled: #21262d;
+  --color-primary-hover: #5bb1ff;
+  --color-primary-active: #207dea;
+  --color-primary-disabled: #252b33;
   --color-primary-text: #010409;
 
   --color-surface-hover: #1c2128;
   --color-surface-active: #21262d;
-  --color-surface-selected: #0c2d6b;
-  --color-surface-disabled: #0d1117;
+  --color-surface-selected: #012c5e;
+  --color-surface-disabled: #161b22;
 
   --color-success: #3fb950;
-  --color-success-hover: #56d364;
-  --color-success-active: #238636;
-  --color-success-text: #0d1117;
-  --color-warning: #d29922;
-  --color-warning-hover: #e3b341;
-  --color-warning-active: #bb8009;
-  --color-warning-text: #0d1117;
+  --color-success-hover: #42cd57;
+  --color-success-active: #009300;
+  --color-success-text: #010409;
+  --color-warning: #d59c22;
+  --color-warning-hover: #eca923;
+  --color-warning-active: #a97400;
+  --color-warning-text: #010409;
   --color-error: #f85149;
-  --color-error-hover: #ff7b72;
-  --color-error-active: #da3633;
-  --color-error-text: #0d1117;
-  --color-info: #409eff;
-  --color-info-hover: #79c0ff;
-  --color-info-active: #1f6feb;
-  --color-info-text: #0d1117;
+  --color-error-hover: #ff6f62;
+  --color-error-active: #f0322c;
+  --color-error-text: #010409;
+  --color-info: #5891a9;
+  --color-info-hover: #62a2bd;
+  --color-info-active: #4786a1;
+  --color-info-text: #010409;
 
   --color-border: #2e353c;
-  --color-border-strong: #484f58;
+  --color-border-strong: #6e7681;
   --color-border-focus: #409eff;
-  --color-border-disabled: #21262d;
-  --color-border-error: #da3633;
-  --color-border-success: #238636;
+  --color-border-error: #f0322c;
+  --color-border-success: #009300;
 
-  --color-input-background: #0d1117;
-  --color-input-disabled: #010409;
-  --color-input-invalid: #21262d;
-  --color-input-valid: #0d1421;
+  --color-input-background: #010409;
+  --color-input-disabled: #0d1117;
+  --color-input-invalid: #2d1214;
+  --color-input-valid: #102b1b;
 
-  --color-skeleton: #161b22;
+  --color-skeleton: #30363d;
   --color-spinner: #409eff;
 
-  --shadow-sm: 0 1px 2px 0 rgb(1 4 9 / 0.3);
-  --shadow-md: 0 4px 6px -1px rgb(1 4 9 / 0.4);
-  --shadow-lg: 0 10px 15px -3px rgb(1 4 9 / 0.5);
+  --shadow-raised: 0 1px 2px 0 rgb(1 4 9 / 0.3);
+  --shadow-floating: 0 10px 15px -3px rgb(1 4 9 / 0.5);
+  --shadow-overlay: 0 20px 25px -5px rgb(1 4 9 / 0.6), 0 8px 10px -6px rgb(1 4 9 / 0.5);
 }

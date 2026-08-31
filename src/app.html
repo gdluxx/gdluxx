@@ -17,9 +17,10 @@
       try {
         const savedTheme = localStorage.getItem('gdluxx-theme') || 'indigo';
         const savedMode = localStorage.getItem('gdluxx-theme-mode');
+        // 'system', absent, or unrecognized all follow the OS preference
         const isDark =
           savedMode === 'dark' ||
-          (!savedMode && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          (savedMode !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
         // Apply theme class
         document.documentElement.classList.add(`theme-${savedTheme}`);
@@ -31,8 +32,17 @@
           document.documentElement.classList.remove('dark');
         }
       } catch (e) {
-        // Fallback to default theme and dark mode if there's any error
-        document.documentElement.classList.add('theme-indigo', 'dark');
+        // Storage failed but still respect the OS preference if we can.
+        let dark = true;
+        try {
+          dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        } catch (inner) {
+          // No signal at all keeps the dark fallback.
+        }
+        document.documentElement.classList.add('theme-indigo');
+        if (dark) {
+          document.documentElement.classList.add('dark');
+        }
       }
     })();
   </script>
@@ -51,7 +61,7 @@
     %sveltekit.head%
   </head>
 
-  <body class="preload">
+  <body>
     <main>%sveltekit.body%</main>
   </body>
 </html>

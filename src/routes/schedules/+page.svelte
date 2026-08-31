@@ -400,7 +400,7 @@
       {:else}
         <ul class="space-y-3">
           {#each historyRuns as run (run.id)}
-            <li class="rounded-sm border-strong p-3">
+            <li class="rounded-surface border-strong p-3">
               <div class="mb-1 flex items-center justify-between gap-2">
                 <Chip
                   label={OUTCOME_LABELS[run.outcome]}

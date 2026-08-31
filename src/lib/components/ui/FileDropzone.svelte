@@ -119,7 +119,7 @@
 />
 
 <div
-  class="cursor-pointer rounded-sm border-2 border-dashed p-8 text-center transition-colors {zoneStateClasses} {className}"
+  class="cursor-pointer rounded-surface border-2 border-dashed p-8 text-center transition-colors {zoneStateClasses} {className}"
   class:cursor-not-allowed={disabled}
   class:opacity-60={disabled}
   ondragover={handleDragOver}

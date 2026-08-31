@@ -58,7 +58,7 @@
             onclick={() => openJob(job)}
             onkeydown={(e) => handleKeydown(e, job)}
             class:border-t-strong={i > 0}
-            class="flex w-full min-w-0 cursor-pointer items-center gap-3 py-2 text-left transition-colors duration-150 hover:bg-surface-hover focus:outline-none focus-visible:border-focus"
+            class="flex w-full min-w-0 cursor-pointer items-center gap-3 py-2 text-left transition-colors duration-fast hover:bg-surface-hover"
             aria-label={`View details for job ${job.url}`}
           >
             <div

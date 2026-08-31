@@ -238,7 +238,7 @@
     <strong>Important:</strong> This is the only time you'll be able to see your API key. Make sure
     to copy it now and store it securely.
 
-    <div class="-success my-4 rounded-sm p-3">
+    <div class="my-4 rounded-surface bg-success/10 p-3">
       <div class="flex items-center justify-between">
         <code class="mr-4 flex-1 font-mono text-lg break-all text-foreground">
           {createdKey.key}
@@ -246,7 +246,7 @@
         {#if clipboard !== undefined}
           <button
             onclick={() => copyApiKey(createdKey.key, createdKey.name)}
-            class="cursor-pointer rounded p-2 text-success transition-colors focus:ring-1 focus:ring-success focus:outline-none"
+            class="cursor-pointer rounded-control p-2 text-success transition-colors"
             aria-label={`Copy API key for ${createdKey.name} to clipboard`}
           >
             <Icon
@@ -493,7 +493,7 @@
         </Button>
       </EmptyState>
     {:else}
-      <div class="overflow-x-auto rounded-sm border-strong">
+      <div class="overflow-x-auto rounded-surface border-strong">
         <table class="min-w-full">
           <thead class="border-b-strong bg-surface">
             <tr>
@@ -511,7 +511,7 @@
                 <button
                   type="button"
                   onclick={() => toggleSort('createdAt')}
-                  class="inline-flex cursor-pointer items-center gap-1 rounded-xs hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  class="inline-flex cursor-pointer items-center gap-1 rounded-control hover:text-primary"
                   aria-label={`Sort by creation time (currently ${sortLabelFor('createdAt')})`}
                 >
                   Created
@@ -534,7 +534,7 @@
                 <button
                   type="button"
                   onclick={() => toggleSort('lastUsedAt')}
-                  class="inline-flex cursor-pointer items-center gap-1 rounded-xs hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  class="inline-flex cursor-pointer items-center gap-1 rounded-control hover:text-primary"
                   aria-label={`Sort by last used time (currently ${sortLabelFor('lastUsedAt')})`}
                 >
                   Last used
@@ -591,7 +591,7 @@
                     type="button"
                     onclick={() => confirmDelete(apiKey.id)}
                     disabled={deleting}
-                    class="cursor-pointer rounded-sm p-1 text-error transition-colors hover:bg-error/75 hover:text-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50"
+                    class="cursor-pointer rounded-control p-1 text-error transition-colors hover:bg-error/75 hover:text-foreground disabled:pointer-events-none disabled:opacity-50"
                     aria-label={`Delete API key for ${apiKey.name}`}
                   >
                     <Icon

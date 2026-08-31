@@ -150,13 +150,13 @@
             <div class="mt-2 grid gap-1 text-xs text-muted-foreground">
               <div>
                 Start selector:
-                <code class="rounded-sm bg-background px-1 py-0.5">
+                <code class="rounded-surface bg-background px-1 py-0.5">
                   {profile.startSelector || '—'}
                 </code>
               </div>
               <div>
                 End selector:
-                <code class="rounded-sm bg-background px-1 py-0.5">
+                <code class="rounded-surface bg-background px-1 py-0.5">
                   {profile.endSelector || '—'}
                 </code>
               </div>
@@ -209,7 +209,7 @@
                 · Last used: {formatTimestamp(profile.lastUsed)}
               {/if}
             </div>
-            <ul class="mt-2 rounded-sm bg-background px-2 py-1">
+            <ul class="mt-2 rounded-surface bg-background px-2 py-1">
               {#each profile.rules as rule (rule.id)}
                 <li class="font-mono text-[11px] leading-snug">
                   <span class={rule.enabled ? '' : 'text-muted-foreground line-through opacity-70'}>

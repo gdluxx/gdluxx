@@ -264,11 +264,11 @@
 
 <!-- Options Accordion -->
 <details
-  class="group m-4 rounded-sm bg-surface-elevated border-strong"
+  class="group m-4 rounded-surface bg-surface-elevated border-strong"
   bind:open={isAccordionOpen}
 >
   <summary
-    class="flex cursor-pointer items-center justify-between p-4 transition-colors hover:rounded-t-sm hover:bg-surface-hover"
+    class="flex cursor-pointer items-center justify-between p-4 transition-colors hover:rounded-t-surface hover:bg-surface-hover"
   >
     <div class="flex items-center gap-1">
       <Icon
@@ -318,7 +318,7 @@
     <div class="space-y-2 p-4 pt-2">
       {#each filteredCategories as [categoryKey, category] (categoryKey)}
         <details
-          class="group rounded-sm bg-surface-elevated border-strong"
+          class="group rounded-surface bg-surface-elevated border-strong"
           open={searchActive ? true : (categoryAccordionStates.get(categoryKey) ?? false)}
           ontoggle={(e) => {
             if (searchActive) {
@@ -329,7 +329,7 @@
           }}
         >
           <summary
-            class="flex cursor-pointer items-center justify-between p-3 transition-colors hover:rounded-sm hover:bg-surface-hover"
+            class="flex cursor-pointer items-center justify-between p-3 transition-colors hover:rounded-surface hover:bg-surface-hover"
           >
             <span class="font-medium text-foreground">
               {category.title}
@@ -357,7 +357,7 @@
             <div class="space-y-3">
               {#each category.options as option (option.id)}
                 <div
-                  class="flex items-start gap-3 rounded bg-surface-elevated p-2 transition-colors border-strong"
+                  class="flex items-start gap-3 rounded-surface bg-surface-elevated p-2 transition-colors border-strong"
                 >
                   <Toggle
                     id="{idPrefix}-{option.id}"
@@ -443,7 +443,7 @@
       {@const option = optionsById.get(optionId)}
       {#if option}
         <div
-          class="config-item flex items-center justify-between rounded border bg-surface px-3 py-2"
+          class="config-item flex items-center justify-between rounded-surface border bg-surface px-3 py-2"
         >
           <div class="flex flex-col">
             <span class="text-sm font-medium text-foreground">
@@ -468,10 +468,10 @@
 
 <!-- Selected options display -->
 {#if selectedOptions.size > 0}
-  <div class="m-4 rounded-sm bg-surface-elevated p-2 border-strong">
+  <div class="m-4 rounded-surface bg-surface-elevated p-2 border-strong">
     <!-- Optional to save as Site Rule -->
     {#if showSaveAsSiteRule && canSaveAsSiteRule()}
-      <div class="save-site-rule mx-4 mt-4 mb-4 rounded-sm bg-surface p-4 border-strong">
+      <div class="save-site-rule mx-4 mt-4 mb-4 rounded-surface bg-surface p-4 border-strong">
         <div class="flex items-center justify-between">
           <div class="flex flex-col">
             <h4 class="text-sm font-medium text-foreground">Save Current Options</h4>

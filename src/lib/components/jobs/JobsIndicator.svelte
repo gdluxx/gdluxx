@@ -17,9 +17,8 @@
 </script>
 
 <div
-  class="relative flex items-center justify-center rounded-sm p-2 text-muted-foreground"
-  aria-label="Show jobs list"
-  title="Show jobs list"
+  class="relative flex items-center justify-center rounded-control p-2 text-muted-foreground"
+  title="Jobs"
 >
   <Icon
     iconName="job"
@@ -29,11 +28,11 @@
     <span
       class="absolute -top-1 -right-1 flex h-5 min-w-5 animate-pulse items-center justify-center rounded-full bg-error/75 px-1 text-xs font-semibold text-foreground"
     >
-      (runningJobCount)
+      {runningJobCount}
     </span>
   {:else}
     <span
-      class="absolute -top-1 -right-1 flex h-5 min-w-5 cursor-default items-center justify-center rounded-full bg-primary/75 px-1 text-xs font-semibold text-black select-none"
+      class="absolute -top-1 -right-1 flex h-5 min-w-5 cursor-default items-center justify-center rounded-full bg-primary/75 px-1 text-xs font-semibold text-on-primary select-none"
     >
       {jobCount}
     </span>

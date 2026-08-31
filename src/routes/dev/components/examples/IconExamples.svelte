@@ -79,7 +79,7 @@
   >
     <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
       {#each iconNames as iconName (iconName)}
-        <div class="flex min-w-0 items-center gap-3 rounded border border-border p-3">
+        <div class="flex min-w-0 items-center gap-3 rounded-surface border border-border p-3">
           <Icon
             {iconName}
             size={20}

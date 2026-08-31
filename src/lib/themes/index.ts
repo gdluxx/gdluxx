@@ -21,11 +21,6 @@ export {
   applyTheme,
   toggleMode,
   initializeTheme,
-  saveThemePreference,
-  setupSystemThemeListener,
-  validateTheme,
-  validateThemeSystemHealth,
-  getSemanticTokenValues,
 } from './themeUtils';
 
 export * from './themeUtils';

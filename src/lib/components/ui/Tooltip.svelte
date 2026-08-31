@@ -72,13 +72,13 @@
     'z-50',
     'px-3',
     'py-2',
-    'rounded',
-    'shadow-lg',
+    'rounded-overlay',
+    'shadow-floating',
     'text-sm',
     'font-medium',
     'pointer-events-none',
     'transition-opacity',
-    'duration-200',
+    'duration-base',
     'whitespace-nowrap',
     'cursor-help',
   ];
@@ -92,10 +92,10 @@
   const variantClasses: Record<TooltipVariant, string[]> = {
     default: ['bg-surface-overlay', 'text-primary', 'border', 'border-primary/75'],
     dark: ['bg-surface-overlay', 'text-primary', 'border', 'border-border-strong'],
-    light: ['bg-surface-elevated', 'text-primary', 'border', 'border-border', 'shadow-lg'],
-    info: ['bg-info/10', 'text-info', 'border', 'border-info/30'],
-    warning: ['bg-warning/10', 'text-warning', 'border', 'border-warning/30'],
-    danger: ['bg-error/10', 'text-error', 'border', 'border-error/30'],
+    light: ['bg-surface-elevated', 'text-primary', 'border', 'border-border', 'shadow-floating'],
+    info: ['bg-info/10', 'text-foreground', 'border', 'border-info/30'],
+    warning: ['bg-warning/10', 'text-foreground', 'border', 'border-warning/30'],
+    danger: ['bg-error/10', 'text-foreground', 'border', 'border-error/30'],
   };
 
   const placementClasses: Record<TooltipPlacement, string[]> = {

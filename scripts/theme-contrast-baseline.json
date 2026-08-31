@@ -1,0 +1,9 @@
+{
+  "comment": "Accepted pre-existing theme legibility debt, recorded when the contrast gate landed (Phase 1 of the theme overhaul). The gate fails only on regressions and on new themes: nothing may be added here for new work, and entries whose checks now pass are reported stale and must be removed. Burning this list down is scheduled maintenance (plan section 15, decisions 5 and 6).",
+  "waivers": [
+    {
+      "id": "power-user.dark.hue-distance.primary-vs-info-deuteranopia",
+      "reason": "Permanent advisory: Power User's purple primary and cooler blue info remain close under deuteranopia simulation; icon and text reinforcement prevents color-only signaling."
+    }
+  ]
+}
