@@ -82,6 +82,7 @@ function fakePty() {
 const ORIGINAL_FILE_STORAGE_PATH = process.env.FILE_STORAGE_PATH;
 const ORIGINAL_DOWNLOAD_PATH = process.env.DOWNLOAD_PATH;
 const ORIGINAL_EXTRA_ROOTS = process.env.GDLUXX_CONFIG_PATH_ROOTS;
+const ORIGINAL_GALLERY_DL_MODE = process.env.GDLUXX_GDL_POLICY;
 
 let jobCounter = 0;
 
@@ -101,6 +102,30 @@ function hostilePathConfig(): string {
 
 function benignConfig(): string {
   return JSON.stringify({ extractor: { 'base-directory': join(currentTmpDir, 'downloads') } });
+}
+
+function deeplyNestedConfig(): string {
+  let nested: unknown = { leaf: true };
+  for (let i = 0; i < 66; i++) {
+    nested = { nested };
+  }
+  return JSON.stringify({
+    command: ['gdluxx-mode-sentinel'],
+    'base-directory': '/gdluxx-mode-sentinel/outside',
+    nested,
+  });
+}
+
+async function loadRuntime(mode: 'restricted' | 'unrestricted') {
+  process.env.GDLUXX_GDL_POLICY = mode;
+  vi.resetModules();
+  const [commandExecutor, commandLauncher, execPolicy, configGuard] = await Promise.all([
+    import('$lib/server/jobs/commandExecutor'),
+    import('$lib/server/jobs/commandLauncher'),
+    import('$lib/server/validation/exec-policy'),
+    import('$lib/server/jobs/configGuard'),
+  ]);
+  return { commandExecutor, commandLauncher, execPolicy, configGuard };
 }
 
 beforeEach(() => {
@@ -140,6 +165,12 @@ afterEach(() => {
   } else {
     process.env.GDLUXX_CONFIG_PATH_ROOTS = ORIGINAL_EXTRA_ROOTS;
   }
+  if (ORIGINAL_GALLERY_DL_MODE === undefined) {
+    delete process.env.GDLUXX_GDL_POLICY;
+  } else {
+    process.env.GDLUXX_GDL_POLICY = ORIGINAL_GALLERY_DL_MODE;
+  }
+  vi.resetModules();
 });
 
 const url = 'https://sentinel.invalid/gallery/1';
@@ -234,4 +265,64 @@ describe('exec-containment-runtime: hostile config.json on disk', () => {
     expect(second.success).toBe(false);
     expect(spawnMock).toHaveBeenCalledTimes(1);
   });
+});
+
+describe('exec-containment-runtime: deployment mode enforcement', () => {
+  test('Restricted blocks saved command and path findings before spawn', async () => {
+    const runtime = await loadRuntime('restricted');
+    writeConfig(hostileExecConfig());
+
+    await expect(
+      runtime.commandLauncher.launchUrls({
+        urls: [url],
+        args: [],
+        excludedOptions: [],
+        resolveSiteOptions: async () => [],
+      }),
+    ).rejects.toBeInstanceOf(runtime.execPolicy.ConfigExecutionBlockedError);
+    expect(spawnMock).not.toHaveBeenCalled();
+
+    runtime.configGuard.resetConfigGuardCache();
+    writeConfig(hostilePathConfig());
+    const result = await runtime.commandExecutor.executeGalleryDlCommand(url, []);
+
+    expect(result.success).toBe(false);
+    expect(spawnMock).not.toHaveBeenCalled();
+  });
+
+  test('Unrestricted permits saved command and path findings through the config guard', async () => {
+    const runtime = await loadRuntime('unrestricted');
+    writeConfig(hostileExecConfig());
+
+    const commandResult = await runtime.commandExecutor.executeGalleryDlCommand(url, []);
+
+    expect(commandResult.success).toBe(true);
+    expect(spawnMock).toHaveBeenCalledTimes(1);
+
+    runtime.configGuard.resetConfigGuardCache();
+    spawnMock.mockClear();
+    writeConfig(hostilePathConfig());
+    const pathResult = await runtime.commandExecutor.executeGalleryDlCommand(url, []);
+
+    expect(pathResult.success).toBe(true);
+    expect(spawnMock).toHaveBeenCalledTimes(1);
+  });
+
+  test.each(['restricted', 'unrestricted'] as const)(
+    '%s blocks malformed and excessively nested saved config before spawn',
+    async (mode) => {
+      const runtime = await loadRuntime(mode);
+
+      for (const content of ['not valid json {{', deeplyNestedConfig()]) {
+        runtime.configGuard.resetConfigGuardCache();
+        spawnMock.mockClear();
+        writeConfig(content);
+
+        const result = await runtime.commandExecutor.executeGalleryDlCommand(url, []);
+
+        expect(result.success).toBe(false);
+        expect(spawnMock).not.toHaveBeenCalled();
+      }
+    },
+  );
 });

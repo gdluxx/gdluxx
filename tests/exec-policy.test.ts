@@ -33,6 +33,7 @@ import { validOptions } from '../src/lib/server/validation/option-validation';
 const ORIGINAL_FILE_STORAGE_PATH = process.env.FILE_STORAGE_PATH;
 const ORIGINAL_DOWNLOAD_PATH = process.env.DOWNLOAD_PATH;
 const ORIGINAL_EXTRA_ROOTS = process.env.GDLUXX_CONFIG_PATH_ROOTS;
+const ORIGINAL_GALLERY_DL_MODE = process.env.GDLUXX_GDL_POLICY;
 
 function restoreEnv(): void {
   if (ORIGINAL_FILE_STORAGE_PATH === undefined) {
@@ -50,6 +51,31 @@ function restoreEnv(): void {
   } else {
     process.env.GDLUXX_CONFIG_PATH_ROOTS = ORIGINAL_EXTRA_ROOTS;
   }
+  if (ORIGINAL_GALLERY_DL_MODE === undefined) {
+    delete process.env.GDLUXX_GDL_POLICY;
+  } else {
+    process.env.GDLUXX_GDL_POLICY = ORIGINAL_GALLERY_DL_MODE;
+  }
+}
+
+async function loadExecPolicy(mode: 'restricted' | 'unrestricted') {
+  process.env.GDLUXX_GDL_POLICY = mode;
+  vi.resetModules();
+  return import('../src/lib/server/validation/exec-policy');
+}
+
+function deeplyNestedConfig(includeIgnoredFindings: boolean): unknown {
+  let nested: unknown = { leaf: true };
+  for (let i = 0; i < 66; i++) {
+    nested = { nested };
+  }
+  return {
+    ...(includeIgnoredFindings && {
+      command: ['gdluxx-mode-sentinel'],
+      'base-directory': '/gdluxx-mode-sentinel/outside',
+    }),
+    nested,
+  };
 }
 
 describe('exec-policy: R1-R3 command-execution detection', () => {
@@ -131,7 +157,9 @@ describe('exec-policy: R1-R3 command-execution detection', () => {
 
   test('T-1.7: every PROHIBITED_OPTION_IDS entry exists in the options catalog (drift guard)', () => {
     for (const id of PROHIBITED_OPTION_IDS) {
-      expect(validOptions.has(id)).toBe(true);
+      const option = validOptions.get(id);
+      expect(option).toBeDefined();
+      expect(option?.command).toBeTruthy();
     }
   });
 
@@ -213,6 +241,16 @@ describe('exec-policy: R4 path confinement', () => {
 });
 
 describe('exec-policy: prohibited option ids', () => {
+  test('the canonical set contains exactly the five command-capable option ids', () => {
+    expect(Array.from(PROHIBITED_OPTION_IDS)).toEqual([
+      'option',
+      'postprocessor',
+      'postprocessor-option',
+      'exec',
+      'exec-after',
+    ]);
+  });
+
   test('T-1.13: a set of entirely permitted ids does not throw', () => {
     expect(() => assertOptionIdsAllowed(['verbose', 'username'])).not.toThrow();
   });
@@ -228,10 +266,138 @@ describe('exec-policy: prohibited option ids', () => {
     }
   });
 
-  test('isProhibitedOptionId matches exactly the three closed-set ids', () => {
-    expect(isProhibitedOptionId('option')).toBe(true);
-    expect(isProhibitedOptionId('postprocessor')).toBe(true);
-    expect(isProhibitedOptionId('postprocessor-option')).toBe(true);
+  test('isProhibitedOptionId matches the canonical closed set', () => {
+    for (const optionId of PROHIBITED_OPTION_IDS) {
+      expect(isProhibitedOptionId(optionId)).toBe(true);
+    }
     expect(isProhibitedOptionId('verbose')).toBe(false);
+  });
+});
+
+describe('exec-policy: deployment mode enforcement', () => {
+  afterEach(() => {
+    restoreEnv();
+    vi.resetModules();
+  });
+
+  test('pure findings and prohibited-id classification are identical in either mode', async () => {
+    const config = {
+      command: ['gdluxx-mode-sentinel'],
+      postprocessor: [{ name: 'exec' }],
+      extractor: { 'base-directory': '/gdluxx-mode-sentinel/outside' },
+      nested: deeplyNestedConfig(false),
+    };
+    const restricted = await loadExecPolicy('restricted');
+    const restrictedFindings = {
+      command: restricted.findCommandExecutionViolations(config),
+      path: restricted.findPathViolations(config),
+      config: restricted.findConfigViolations(config),
+    };
+
+    const unrestricted = await loadExecPolicy('unrestricted');
+
+    expect(unrestricted.findCommandExecutionViolations(config)).toEqual(restrictedFindings.command);
+    expect(unrestricted.findPathViolations(config)).toEqual(restrictedFindings.path);
+    expect(unrestricted.findConfigViolations(config)).toEqual(restrictedFindings.config);
+    for (const optionId of unrestricted.PROHIBITED_OPTION_IDS) {
+      expect(restricted.isProhibitedOptionId(optionId)).toBe(true);
+      expect(unrestricted.isProhibitedOptionId(optionId)).toBe(true);
+    }
+    expect(restricted.isProhibitedOptionId('verbose')).toBe(false);
+    expect(unrestricted.isProhibitedOptionId('verbose')).toBe(false);
+  });
+
+  test('Restricted assertions enforce command, postprocessor, and path findings', async () => {
+    const policy = await loadExecPolicy('restricted');
+
+    expect(() => policy.assertCommandExecutionAbsent({ command: ['x'] })).toThrow(
+      policy.ProhibitedConfigError,
+    );
+    expect(() => policy.assertCommandExecutionAbsent({ postprocessor: 'exec' })).toThrow(
+      policy.ProhibitedConfigError,
+    );
+    expect(() =>
+      policy.assertPathsConfined({ 'base-directory': '/gdluxx-mode-sentinel/outside' }),
+    ).toThrow(policy.ProhibitedConfigError);
+    expect(() =>
+      policy.assertConfigObjectAllowed({
+        command: ['x'],
+        postprocessor: 'exec',
+        'base-directory': '/gdluxx-mode-sentinel/outside',
+      }),
+    ).toThrow(policy.ProhibitedConfigError);
+  });
+
+  test('Unrestricted assertions ignore only command, postprocessor, and path findings', async () => {
+    const policy = await loadExecPolicy('unrestricted');
+
+    expect(() => policy.assertCommandExecutionAbsent({ command: ['x'] })).not.toThrow();
+    expect(() => policy.assertCommandExecutionAbsent({ postprocessor: 'exec' })).not.toThrow();
+    expect(() =>
+      policy.assertPathsConfined({ 'base-directory': '/gdluxx-mode-sentinel/outside' }),
+    ).not.toThrow();
+    expect(() =>
+      policy.assertConfigObjectAllowed({
+        command: ['x'],
+        postprocessor: 'exec',
+        'base-directory': '/gdluxx-mode-sentinel/outside',
+      }),
+    ).not.toThrow();
+  });
+
+  test.each(['restricted', 'unrestricted'] as const)(
+    '%s rejects excessive nesting through every configuration assertion',
+    async (mode) => {
+      const policy = await loadExecPolicy(mode);
+      const config = deeplyNestedConfig(true);
+      const assertions = [
+        policy.assertCommandExecutionAbsent,
+        policy.assertPathsConfined,
+        policy.assertConfigObjectAllowed,
+      ];
+
+      for (const assertion of assertions) {
+        try {
+          assertion(config);
+          expect.unreachable();
+        } catch (error) {
+          expect(error).toBeInstanceOf(policy.ProhibitedConfigError);
+          const rules = (error as InstanceType<typeof policy.ProhibitedConfigError>).violations.map(
+            (violation) => violation.rule,
+          );
+          expect(rules).toContain('max-depth-exceeded');
+          if (mode === 'unrestricted') {
+            expect(rules).toEqual(['max-depth-exceeded']);
+          }
+        }
+      }
+    },
+  );
+
+  test.each(['restricted', 'unrestricted'] as const)(
+    '%s rejects malformed JSON and non-object roots',
+    async (mode) => {
+      const policy = await loadExecPolicy(mode);
+
+      for (const content of ['not json {{', 'null', '[]', '"text"', '1']) {
+        expect(() => policy.parseConfigText(content)).toThrow(policy.ProhibitedConfigError);
+      }
+    },
+  );
+
+  test('prohibited option assertions are mode-aware without changing classification', async () => {
+    const restricted = await loadExecPolicy('restricted');
+    const prohibitedIds = Array.from(restricted.PROHIBITED_OPTION_IDS);
+
+    expect(() => restricted.assertOptionIdsAllowed(prohibitedIds)).toThrow(
+      restricted.ProhibitedOptionError,
+    );
+
+    const unrestricted = await loadExecPolicy('unrestricted');
+
+    expect(() => unrestricted.assertOptionIdsAllowed(prohibitedIds)).not.toThrow();
+    for (const optionId of prohibitedIds) {
+      expect(unrestricted.isProhibitedOptionId(optionId)).toBe(true);
+    }
   });
 });

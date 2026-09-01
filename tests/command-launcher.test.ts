@@ -8,7 +8,7 @@
  * as published by the Free Software Foundation.
  */
 
-import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
 vi.mock('$lib/server/logger', () => ({
   serverLogger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
@@ -34,6 +34,27 @@ vi.mock('$lib/server/jobs/configGuard', () => ({
 }));
 
 const { launchUrls, BinaryUnavailableError } = await import('$lib/server/jobs/commandLauncher');
+const ORIGINAL_GALLERY_DL_MODE = process.env.GDLUXX_GDL_POLICY;
+
+async function loadLauncherMode(mode: 'restricted' | 'unrestricted') {
+  process.env.GDLUXX_GDL_POLICY = mode;
+  vi.resetModules();
+  const [commandLauncher, execPolicy, optionValidation] = await Promise.all([
+    import('$lib/server/jobs/commandLauncher'),
+    import('$lib/server/validation/exec-policy'),
+    import('$lib/server/validation/option-validation'),
+  ]);
+  return { commandLauncher, execPolicy, optionValidation };
+}
+
+afterEach(() => {
+  if (ORIGINAL_GALLERY_DL_MODE === undefined) {
+    delete process.env.GDLUXX_GDL_POLICY;
+  } else {
+    process.env.GDLUXX_GDL_POLICY = ORIGINAL_GALLERY_DL_MODE;
+  }
+  vi.resetModules();
+});
 
 describe('commandLauncher.launchUrls', () => {
   beforeEach(() => {
@@ -148,5 +169,80 @@ describe('commandLauncher.launchUrls', () => {
     expect(results).toEqual([
       { url: 'https://example.com/a', success: false, error: 'Failed to start job' },
     ]);
+  });
+});
+
+describe('commandLauncher.launchUrls deployment posture', () => {
+  test('Restricted rejects every canonical prohibited option before execution', async () => {
+    const { commandLauncher, execPolicy } = await loadLauncherMode('restricted');
+    executeGalleryDlCommandMock.mockClear();
+    const prohibitedOptions = Array.from(
+      execPolicy.PROHIBITED_OPTION_IDS,
+      (optionId) => [optionId, `restricted-${optionId}`] as [string, string],
+    );
+
+    await expect(
+      commandLauncher.launchUrls({
+        urls: ['https://example.com/a'],
+        args: prohibitedOptions,
+        excludedOptions: [],
+        resolveSiteOptions: vi.fn().mockResolvedValue([]),
+      }),
+    ).rejects.toBeInstanceOf(execPolicy.ProhibitedOptionError);
+
+    expect(executeGalleryDlCommandMock).not.toHaveBeenCalled();
+  });
+
+  test('Unrestricted builds every canonical catalog argv pair', async () => {
+    const { commandLauncher, execPolicy, optionValidation } =
+      await loadLauncherMode('unrestricted');
+    executeGalleryDlCommandMock.mockClear();
+    const options = Array.from(
+      execPolicy.PROHIBITED_OPTION_IDS,
+      (optionId) => [optionId, `value-${optionId}`] as [string, string],
+    );
+    const expectedArgs = options.flatMap(([optionId, value]) => [
+      optionValidation.validOptions.get(optionId)?.command,
+      value,
+    ]);
+
+    await commandLauncher.launchUrls({
+      urls: ['https://example.com/a'],
+      args: options,
+      excludedOptions: [],
+      resolveSiteOptions: vi.fn().mockResolvedValue([]),
+    });
+
+    expect(expectedArgs).not.toContain(undefined);
+    expect(executeGalleryDlCommandMock).toHaveBeenCalledWith('https://example.com/a', expectedArgs);
+  });
+
+  test('Unrestricted keeps Run-over-Site-Rule Map precedence for canonical ids', async () => {
+    const { commandLauncher, execPolicy, optionValidation } =
+      await loadLauncherMode('unrestricted');
+    executeGalleryDlCommandMock.mockClear();
+    const siteOptions = Array.from(
+      execPolicy.PROHIBITED_OPTION_IDS,
+      (optionId) => [optionId, `site-${optionId}`] as [string, string],
+    );
+    const runOptions = Array.from(
+      execPolicy.PROHIBITED_OPTION_IDS,
+      (optionId) => [optionId, `run-${optionId}`] as [string, string],
+    );
+    const expectedArgs = runOptions.flatMap(([optionId, value]) => [
+      optionValidation.validOptions.get(optionId)?.command,
+      value,
+    ]);
+
+    await commandLauncher.launchUrls({
+      urls: ['https://example.com/a'],
+      args: runOptions,
+      excludedOptions: [],
+      resolveSiteOptions: vi.fn().mockResolvedValue(siteOptions),
+    });
+
+    expect(expectedArgs).not.toContain(undefined);
+    expect(executeGalleryDlCommandMock).toHaveBeenCalledWith('https://example.com/a', expectedArgs);
+    expect(JSON.stringify(executeGalleryDlCommandMock.mock.calls)).not.toContain('site-exec');
   });
 });

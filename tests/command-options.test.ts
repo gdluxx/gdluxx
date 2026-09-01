@@ -8,15 +8,141 @@
  * as published by the Free Software Foundation.
  */
 
-import { describe, expect, test, vi } from 'vitest';
+import { afterEach, describe, expect, test, vi } from 'vitest';
+import type { OptionWithSource } from '$lib/types/command-form';
 import type { Option } from '$lib/types/options';
-import { allOptions, initialOptionValue, isValidRangeValue } from '$lib/utils/commandOptions';
+import {
+  allOptions,
+  getOptionCapability,
+  hasRestrictedProhibitedSelection,
+  hasRestrictedProhibitedUserSelection,
+  initialOptionValue,
+  isValidRangeValue,
+} from '$lib/utils/commandOptions';
 
+const loggerWarnMock = vi.fn();
 vi.mock('$lib/server/logger', () => ({
-  serverLogger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
+  serverLogger: {
+    info: vi.fn(),
+    warn: (...args: unknown[]) => loggerWarnMock(...args),
+    error: vi.fn(),
+    debug: vi.fn(),
+  },
 }));
 
 const { validateAndBuildCliArgs } = await import('$lib/server/validation/option-validation');
+const ORIGINAL_GALLERY_DL_MODE = process.env.GDLUXX_GDL_POLICY;
+
+afterEach(() => {
+  loggerWarnMock.mockClear();
+  if (ORIGINAL_GALLERY_DL_MODE === undefined) {
+    delete process.env.GDLUXX_GDL_POLICY;
+  } else {
+    process.env.GDLUXX_GDL_POLICY = ORIGINAL_GALLERY_DL_MODE;
+  }
+  vi.resetModules();
+});
+
+async function loadOptionValidation(mode: 'restricted' | 'unrestricted') {
+  process.env.GDLUXX_GDL_POLICY = mode;
+  vi.resetModules();
+  const optionValidation = await import('$lib/server/validation/option-validation');
+  const execPolicy = await import('$lib/server/validation/exec-policy');
+  return { optionValidation, execPolicy };
+}
+
+describe('option capabilities', () => {
+  test.each([
+    {
+      mode: 'restricted' as const,
+      prohibited: true,
+      selected: true,
+      expected: { canAdd: false, canEdit: false, canRemove: true },
+    },
+    {
+      mode: 'restricted' as const,
+      prohibited: true,
+      selected: false,
+      expected: { canAdd: false, canEdit: false, canRemove: false },
+    },
+    {
+      mode: 'restricted' as const,
+      prohibited: false,
+      selected: true,
+      expected: { canAdd: true, canEdit: true, canRemove: true },
+    },
+    {
+      mode: 'restricted' as const,
+      prohibited: false,
+      selected: false,
+      expected: { canAdd: true, canEdit: true, canRemove: true },
+    },
+    {
+      mode: 'unrestricted' as const,
+      prohibited: true,
+      selected: false,
+      expected: { canAdd: true, canEdit: true, canRemove: true },
+    },
+  ])('$mode mode, prohibited=$prohibited, selected=$selected', (scenario) => {
+    expect(getOptionCapability(scenario.mode, scenario.prohibited, scenario.selected)).toEqual(
+      scenario.expected,
+    );
+  });
+});
+
+describe('restricted prohibited selections', () => {
+  const prohibitedOptionIds = ['exec', 'exec-after'];
+
+  test('blocks until every prohibited active selection is absent', () => {
+    const selected = new Map<string, OptionWithSource>([
+      ['exec', { value: 'command', source: 'site-config' }],
+      ['write-metadata', { value: true, source: 'user' }],
+    ]);
+
+    expect(hasRestrictedProhibitedSelection('restricted', prohibitedOptionIds, selected)).toBe(
+      true,
+    );
+
+    selected.delete('exec');
+
+    expect(hasRestrictedProhibitedSelection('restricted', prohibitedOptionIds, selected)).toBe(
+      false,
+    );
+  });
+
+  test('never blocks in Unrestricted mode', () => {
+    const selected = new Map<string, OptionWithSource>([
+      ['exec', { value: 'command', source: 'user' }],
+    ]);
+
+    expect(hasRestrictedProhibitedSelection('unrestricted', prohibitedOptionIds, selected)).toBe(
+      false,
+    );
+  });
+
+  test('the user-only predicate ignores Site Rule-sourced prohibited options', () => {
+    const selected = new Map<string, OptionWithSource>([
+      ['exec', { value: 'site-command', source: 'site-config' }],
+      ['write-metadata', { value: true, source: 'user' }],
+    ]);
+
+    expect(hasRestrictedProhibitedSelection('restricted', prohibitedOptionIds, selected)).toBe(
+      true,
+    );
+    expect(hasRestrictedProhibitedUserSelection('restricted', prohibitedOptionIds, selected)).toBe(
+      false,
+    );
+
+    selected.set('exec-after', { value: 'user-command', source: 'user' });
+
+    expect(hasRestrictedProhibitedUserSelection('restricted', prohibitedOptionIds, selected)).toBe(
+      true,
+    );
+    expect(
+      hasRestrictedProhibitedUserSelection('unrestricted', prohibitedOptionIds, selected),
+    ).toBe(false);
+  });
+});
 
 describe('initialOptionValue', () => {
   const booleanOptions = allOptions.filter((option) => option.type === 'boolean');
@@ -89,5 +215,81 @@ describe('validateAndBuildCliArgs: boolean flag emission', () => {
   test('a boolean option set to false omits its CLI flag', () => {
     const args = validateAndBuildCliArgs(new Map([['no-skip', false]]));
     expect(args).not.toContain('--no-skip');
+  });
+});
+
+describe('validateAndBuildCliArgs: command-capable options', () => {
+  test('Restricted rejects every canonical prohibited option id', async () => {
+    const { optionValidation, execPolicy } = await loadOptionValidation('restricted');
+    const args = new Map(
+      Array.from(execPolicy.PROHIBITED_OPTION_IDS, (optionId) => [optionId, 'value'] as const),
+    );
+
+    expect(() => optionValidation.validateAndBuildCliArgs(args)).toThrow(
+      execPolicy.ProhibitedOptionError,
+    );
+  });
+
+  test('Unrestricted builds exact argv pairs for exec and exec-after', async () => {
+    const { optionValidation } = await loadOptionValidation('unrestricted');
+
+    expect(
+      optionValidation.validateAndBuildCliArgs(
+        new Map([
+          ['exec', 'per-file-command'],
+          ['exec-after', 'final-command'],
+        ]),
+      ),
+    ).toEqual(['--exec', 'per-file-command', '--exec-after', 'final-command']);
+  });
+
+  test('a Run value replaces a Site Rule value for the same option id', async () => {
+    const { optionValidation } = await loadOptionValidation('unrestricted');
+    const siteOptions = new Map([['exec', 'site-command']]);
+    const runOptions = new Map([['exec', 'run-command']]);
+    const merged = new Map([...siteOptions, ...runOptions]);
+
+    expect(optionValidation.validateAndBuildCliArgs(merged)).toEqual(['--exec', 'run-command']);
+  });
+});
+
+describe('option value redaction', () => {
+  test('the redaction flag set equals catalog-sensitive flags plus canonical prohibited flags', async () => {
+    const { optionValidation, execPolicy } = await loadOptionValidation('restricted');
+    const prohibitedCommands = Array.from(
+      execPolicy.PROHIBITED_OPTION_IDS,
+      (optionId) => optionValidation.validOptions.get(optionId)?.command,
+    );
+    expect(prohibitedCommands).not.toContain(undefined);
+    const expected = new Set([
+      ...optionValidation.sensitiveCommands,
+      ...(prohibitedCommands as string[]),
+    ]);
+
+    expect(Array.from(optionValidation.redactedValueCommands).sort()).toEqual(
+      Array.from(expected).sort(),
+    );
+  });
+
+  test('every command-capable and catalog-sensitive option value is redacted', async () => {
+    const { optionValidation } = await loadOptionValidation('restricted');
+    const sentinel = 'unique-command-value-sentinel-91f2';
+
+    expect(optionValidation.redactedValueCommands).toContain('--exec');
+    expect(optionValidation.redactedValueCommands).toContain('--exec-after');
+    for (const command of optionValidation.redactedValueCommands) {
+      const redacted = optionValidation.redactSensitiveArgs([command, sentinel]);
+      expect(redacted).toEqual([command, '[REDACTED]']);
+      expect(redacted).not.toContain(sentinel);
+    }
+  });
+
+  test('invalid known-option warnings contain the option id but never the rejected value', async () => {
+    const { optionValidation } = await loadOptionValidation('restricted');
+    const sentinel = 'unique-invalid-option-value-sentinel-a72c';
+
+    expect(optionValidation.validateAndBuildCliArgs(new Map([['no-skip', sentinel]]))).toEqual([]);
+    expect(loggerWarnMock).toHaveBeenCalledWith('Invalid value for option no-skip');
+    expect(JSON.stringify(loggerWarnMock.mock.calls)).not.toContain(sentinel);
   });
 });

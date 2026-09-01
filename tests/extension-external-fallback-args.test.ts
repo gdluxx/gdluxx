@@ -47,6 +47,7 @@ vi.mock('$lib/server/jobs/commandExecutor', () => ({
 }));
 
 const { POST } = await import('../src/routes/api/extension/external/+server');
+const ORIGINAL_GALLERY_DL_MODE = process.env.GDLUXX_GDL_POLICY;
 
 const VALID_KEY_INFO = {
   id: 'key-1',
@@ -69,6 +70,17 @@ function fallbackOptionsFromCall(callIndex: number): GalleryDlCommandOptions | u
     | undefined;
 }
 
+async function loadExternalRoute(mode: 'restricted' | 'unrestricted') {
+  process.env.GDLUXX_GDL_POLICY = mode;
+  vi.resetModules();
+  const [route, execPolicy, optionValidation] = await Promise.all([
+    import('../src/routes/api/extension/external/+server'),
+    import('$lib/server/validation/exec-policy'),
+    import('$lib/server/validation/option-validation'),
+  ]);
+  return { route, execPolicy, optionValidation };
+}
+
 beforeEach(() => {
   validateApiKeyMock.mockReset();
   validateApiKeyMock.mockResolvedValue({ success: true, keyInfo: VALID_KEY_INFO });
@@ -83,6 +95,62 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.clearAllMocks();
+  if (ORIGINAL_GALLERY_DL_MODE === undefined) {
+    delete process.env.GDLUXX_GDL_POLICY;
+  } else {
+    process.env.GDLUXX_GDL_POLICY = ORIGINAL_GALLERY_DL_MODE;
+  }
+  vi.resetModules();
+});
+
+describe('extension external route: deployment posture for structured site options', () => {
+  test('Restricted rejects every canonical prohibited id before either executor', async () => {
+    const { route, execPolicy } = await loadExternalRoute('restricted');
+    executeGalleryDlCommandMock.mockClear();
+    executeGalleryDlBatchCommandMock.mockClear();
+    getCliOptionsForUrlMock.mockResolvedValue(
+      Array.from(
+        execPolicy.PROHIBITED_OPTION_IDS,
+        (optionId) => [optionId, `restricted-${optionId}`] as [string, string],
+      ),
+    );
+
+    const response = await route.POST({
+      request: extRequest({ urls: ['https://example.com/gallery/123'] }),
+    } as never);
+    const payload = await response.json();
+
+    expect(payload.data.overallSuccess).toBe(false);
+    expect(executeGalleryDlCommandMock).not.toHaveBeenCalled();
+    expect(executeGalleryDlBatchCommandMock).not.toHaveBeenCalled();
+  });
+
+  test('Unrestricted builds canonical catalog pairs for primary and fallback argv', async () => {
+    const { route, execPolicy, optionValidation } = await loadExternalRoute('unrestricted');
+    executeGalleryDlCommandMock.mockClear();
+    const options = Array.from(
+      execPolicy.PROHIBITED_OPTION_IDS,
+      (optionId) => [optionId, `value-${optionId}`] as [string, string],
+    );
+    getCliOptionsForUrlMock.mockResolvedValue(options);
+    const expectedArgs = options.flatMap(([optionId, value]) => [
+      optionValidation.validOptions.get(optionId)?.command,
+      value,
+    ]);
+
+    await route.POST({
+      request: extRequest({
+        urls: ['https://example.com/gallery/123'],
+        fallbackUrls: ['https://cdn.example.com/image.jpg'],
+      }),
+    } as never);
+
+    expect(expectedArgs).not.toContain(undefined);
+    expect(executeGalleryDlCommandMock).toHaveBeenCalledTimes(1);
+    const call = executeGalleryDlCommandMock.mock.calls[0];
+    expect(call[1]).toEqual(expectedArgs);
+    expect((call[2] as GalleryDlCommandOptions).fallbackCliArgs).toEqual(expectedArgs);
+  });
 });
 
 describe('extension external route: fallback batch inherits site-config CLI args', () => {

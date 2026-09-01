@@ -8,7 +8,7 @@
  * as published by the Free Software Foundation.
  */
 
-import { describe, expect, test, vi } from 'vitest';
+import { afterEach, describe, expect, test, vi } from 'vitest';
 
 // schedules-validation.ts imports option-validation.ts, which imports the
 // real serverLogger; that module's chain (loggingManager -> settingsManager
@@ -30,6 +30,24 @@ import {
   scheduleRunRequestSchema,
   scheduleNotificationsDeleteSchema,
 } from '../src/lib/server/validation/schedules-validation';
+import { PROHIBITED_OPTION_IDS } from '../src/lib/server/validation/exec-policy';
+
+const ORIGINAL_GALLERY_DL_MODE = process.env.GDLUXX_GDL_POLICY;
+
+afterEach(() => {
+  if (ORIGINAL_GALLERY_DL_MODE === undefined) {
+    delete process.env.GDLUXX_GDL_POLICY;
+  } else {
+    process.env.GDLUXX_GDL_POLICY = ORIGINAL_GALLERY_DL_MODE;
+  }
+  vi.resetModules();
+});
+
+async function loadScheduleValidation(mode: 'restricted' | 'unrestricted') {
+  process.env.GDLUXX_GDL_POLICY = mode;
+  vi.resetModules();
+  return import('../src/lib/server/validation/schedules-validation');
+}
 
 function baseCommandSource(urlCount = 1) {
   return {
@@ -48,6 +66,14 @@ function baseCreatePayload(overrides: Record<string, unknown> = {}) {
     misfirePolicy: 'skip',
     commandSource: baseCommandSource(),
     ...overrides,
+  };
+}
+
+function commandSourceWithOption(optionId: string, optionValue: unknown = 'value') {
+  return {
+    urls: ['https://example.test/a'],
+    userOptions: [[optionId, optionValue]],
+    excludedOptions: [],
   };
 }
 
@@ -578,4 +604,56 @@ describe('per-user schedule cap constant is exported for the route to enforce', 
     expect(Number.isInteger(MAX_SCHEDULES_PER_USER)).toBe(true);
     expect(MAX_SCHEDULES_PER_USER).toBeGreaterThan(0);
   });
+});
+
+describe('schedule prohibited-option deployment mode', () => {
+  test.each([
+    ['restricted', false],
+    ['unrestricted', true],
+  ] as const)('%s mode applies prohibited ids to create and update', async (mode, accepted) => {
+    const schemas = await loadScheduleValidation(mode);
+
+    for (const optionId of PROHIBITED_OPTION_IDS) {
+      const commandSource = commandSourceWithOption(optionId);
+      const createResult = schemas.scheduleCreateSchema.safeParse(
+        baseCreatePayload({ commandSource }),
+      );
+      const updateResult = schemas.scheduleUpdateSchema.safeParse({ commandSource });
+
+      expect(createResult.success).toBe(accepted);
+      expect(updateResult.success).toBe(accepted);
+    }
+  });
+
+  test.each(['restricted', 'unrestricted'] as const)(
+    '%s preserves unrelated create and update validation',
+    async (mode) => {
+      const schemas = await loadScheduleValidation(mode);
+
+      expect(
+        schemas.scheduleCreateSchema.safeParse(
+          baseCreatePayload({
+            recurrence: { kind: 'daily' },
+            commandSource: commandSourceWithOption('no-skip', false),
+          }),
+        ).success,
+      ).toBe(false);
+      expect(
+        schemas.scheduleCreateSchema.safeParse(
+          baseCreatePayload({
+            commandSource: {
+              urls: ['ftp://example.test/a'],
+              userOptions: [['password', { keep: true }]],
+              excludedOptions: [],
+            },
+          }),
+        ).success,
+      ).toBe(false);
+      expect(
+        schemas.scheduleUpdateSchema.safeParse({
+          commandSource: commandSourceWithOption('filename', { keep: true }),
+        }).success,
+      ).toBe(false);
+    },
+  );
 });
