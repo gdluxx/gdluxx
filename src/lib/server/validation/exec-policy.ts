@@ -12,6 +12,7 @@
 // would pull in the database-backed logging manager. Callers log instead.
 import path from 'node:path';
 import { PATHS } from '$lib/server/constants';
+import { GALLERY_DL_MODE } from '$lib/server/galleryDlMode';
 
 export type PolicyRule =
   | 'command-bearing-key'
@@ -75,6 +76,8 @@ export const PROHIBITED_OPTION_IDS: ReadonlySet<string> = new Set([
   'option',
   'postprocessor',
   'postprocessor-option',
+  'exec',
+  'exec-after',
 ]);
 
 export const COMMAND_BEARING_KEYS: ReadonlySet<string> = new Set(['command', 'commands']);
@@ -99,6 +102,12 @@ export const PATH_CONFINED_LEAF_KEYS: ReadonlySet<string> = new Set([
 export const PATH_CONFINED_FULL_PATHS: ReadonlySet<string> = new Set(['cache.file']);
 
 const MAX_DEPTH = 64;
+
+const UNRESTRICTED_IGNORED_RULES: ReadonlySet<PolicyRule> = new Set([
+  'command-bearing-key',
+  'prohibited-postprocessor',
+  'unconfined-path',
+]);
 
 const CLIENT_MESSAGE_PROHIBITED_SETTING =
   'This configuration contains a setting that is not permitted and was not saved.';
@@ -326,8 +335,15 @@ export function findConfigViolations(config: unknown): PolicyViolation[] {
   return walkConfig(config, { checkExec: true, checkPath: true });
 }
 
+function filterEnforcedViolations(violations: PolicyViolation[]): PolicyViolation[] {
+  if (GALLERY_DL_MODE === 'restricted') {
+    return violations;
+  }
+  return violations.filter((violation) => !UNRESTRICTED_IGNORED_RULES.has(violation.rule));
+}
+
 export function assertCommandExecutionAbsent(config: unknown): void {
-  const violations = findCommandExecutionViolations(config);
+  const violations = filterEnforcedViolations(findCommandExecutionViolations(config));
   if (violations.length > 0) {
     throw new ProhibitedConfigError(
       CLIENT_MESSAGE_PROHIBITED_SETTING,
@@ -338,7 +354,7 @@ export function assertCommandExecutionAbsent(config: unknown): void {
 }
 
 export function assertPathsConfined(config: unknown): void {
-  const violations = findPathViolations(config);
+  const violations = filterEnforcedViolations(findPathViolations(config));
   if (violations.length > 0) {
     throw new ProhibitedConfigError(
       CLIENT_MESSAGE_PATH_ESCAPE,
@@ -349,7 +365,7 @@ export function assertPathsConfined(config: unknown): void {
 }
 
 export function assertConfigObjectAllowed(config: unknown): void {
-  const violations = findConfigViolations(config);
+  const violations = filterEnforcedViolations(findConfigViolations(config));
   if (violations.length > 0) {
     throw new ProhibitedConfigError(
       CLIENT_MESSAGE_PROHIBITED_SETTING,
@@ -364,6 +380,9 @@ export function isProhibitedOptionId(optionId: string): boolean {
 }
 
 export function assertOptionIdsAllowed(optionIds: Iterable<string>): void {
+  if (GALLERY_DL_MODE === 'unrestricted') {
+    return;
+  }
   const prohibited = Array.from(new Set(Array.from(optionIds).filter(isProhibitedOptionId)));
   if (prohibited.length > 0) {
     throw new ProhibitedOptionError(prohibited);

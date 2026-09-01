@@ -325,7 +325,7 @@ class SiteConfigManager {
         pattern: selectedConfig.site_pattern,
       });
       serverLogger.debug('Applying CLI options for site config', {
-        options: selectedConfig.cli_options,
+        optionIds: selectedConfig.cli_options.map(([id]) => id),
       });
 
       return selectedConfig.cli_options;

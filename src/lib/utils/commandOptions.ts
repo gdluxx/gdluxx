@@ -11,6 +11,7 @@
 import optionsData from '$lib/assets/options.json';
 import type { Option, OptionsData } from '$lib/types/options';
 import type { Conflict, OptionWithSource, SiteConfigData } from '$lib/types/command-form';
+import type { GalleryDlMode } from '$lib/types/gallery-dl-mode';
 
 const typedOptionsData = optionsData as OptionsData;
 
@@ -23,6 +24,71 @@ export const optionsById: ReadonlyMap<string, Option> = new Map(
 );
 
 export const SENSITIVE_MASK = '••••••••';
+
+export interface OptionCapability {
+  canAdd: boolean;
+  canEdit: boolean;
+  canRemove: boolean;
+}
+
+export function getOptionCapability(
+  mode: GalleryDlMode,
+  isProhibited: boolean,
+  isSelected: boolean,
+): OptionCapability {
+  if (mode === 'unrestricted' || !isProhibited) {
+    return { canAdd: true, canEdit: true, canRemove: true };
+  }
+
+  return {
+    canAdd: false,
+    canEdit: false,
+    canRemove: isSelected,
+  };
+}
+
+function hasRestrictedProhibitedSelectionFromSource(
+  mode: GalleryDlMode,
+  prohibitedOptionIds: readonly string[] | ReadonlySet<string>,
+  selectedOptions: ReadonlyMap<string, OptionWithSource>,
+  source?: OptionWithSource['source'],
+): boolean {
+  if (mode !== 'restricted') {
+    return false;
+  }
+
+  const prohibitedIds =
+    prohibitedOptionIds instanceof Set ? prohibitedOptionIds : new Set(prohibitedOptionIds);
+
+  for (const [optionId, optionData] of selectedOptions) {
+    if (prohibitedIds.has(optionId) && (source === undefined || optionData.source === source)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+export function hasRestrictedProhibitedSelection(
+  mode: GalleryDlMode,
+  prohibitedOptionIds: readonly string[] | ReadonlySet<string>,
+  selectedOptions: ReadonlyMap<string, OptionWithSource>,
+): boolean {
+  return hasRestrictedProhibitedSelectionFromSource(mode, prohibitedOptionIds, selectedOptions);
+}
+
+export function hasRestrictedProhibitedUserSelection(
+  mode: GalleryDlMode,
+  prohibitedOptionIds: readonly string[] | ReadonlySet<string>,
+  selectedOptions: ReadonlyMap<string, OptionWithSource>,
+): boolean {
+  return hasRestrictedProhibitedSelectionFromSource(
+    mode,
+    prohibitedOptionIds,
+    selectedOptions,
+    'user',
+  );
+}
 
 export function initialOptionValue(option: Option): string | number | boolean {
   return option.type === 'boolean' ? true : (option.defaultValue ?? '');

@@ -10,6 +10,7 @@
 
 import { z } from 'zod';
 import type { Recurrence } from '$lib/server/schedules/recurrence';
+import { GALLERY_DL_MODE } from '$lib/server/galleryDlMode';
 import { isOptionValueValidForWrite, validOptions } from '$lib/server/validation/option-validation';
 import { isProhibitedOptionId } from '$lib/server/validation/exec-policy';
 
@@ -109,6 +110,9 @@ function rejectProhibitedOptionIds(
   value: { userOptions: Array<[string, unknown]> },
   ctx: z.RefinementCtx,
 ): void {
+  if (GALLERY_DL_MODE === 'unrestricted') {
+    return;
+  }
   value.userOptions.forEach(([optionId], index) => {
     if (isProhibitedOptionId(optionId)) {
       ctx.addIssue({

@@ -10,10 +10,16 @@
 
 import type { LayoutServerLoad } from './$types';
 import { APP_VERSION } from '$lib/server/appVersion';
+import { GALLERY_DL_MODE } from '$lib/server/galleryDlMode';
+import { PROHIBITED_OPTION_IDS } from '$lib/server/validation/exec-policy';
 
 export const load: LayoutServerLoad = async ({ locals }) => {
   return {
     user: locals.user, // from hooks.server.ts
     appVersion: APP_VERSION,
+    ...(locals.user && {
+      galleryDlMode: GALLERY_DL_MODE,
+      prohibitedOptionIds: Array.from(PROHIBITED_OPTION_IDS),
+    }),
   };
 };

@@ -13,18 +13,10 @@
   import { Icon } from '$lib/components';
   import { PageLayout } from '$lib/components/ui';
   import type { UserSettings } from '$lib/server/userSettingsManager';
+  import type { PageData } from './$types';
 
-  interface GeneralPageData {
-    warnOnSiteRuleOverride?: boolean;
-    selectedTheme?: UserSettings['selectedTheme'];
-    maxBatchUrls?: number;
-  }
-
-  interface Props {
-    data: GeneralPageData;
-  }
-
-  const { data }: Props = $props();
+  const { data } = $props<{ data: PageData }>();
+  const galleryDlMode = $derived(data.galleryDlMode ?? 'restricted');
 
   const userSettings: UserSettings = $derived({
     warnOnSiteRuleOverride: data.warnOnSiteRuleOverride ?? false,
@@ -41,5 +33,8 @@
     />
   {/snippet}
 
-  <GeneralManager {userSettings} />
+  <GeneralManager
+    {userSettings}
+    {galleryDlMode}
+  />
 </PageLayout>

@@ -15,9 +15,12 @@
   import optionsData from '$lib/assets/options.json';
   import type { Option, OptionCategory, OptionsData } from '$lib/types/options';
   import type { Conflict, OptionWithSource, SiteConfigData } from '$lib/types/command-form';
+  import type { GalleryDlMode } from '$lib/types/gallery-dl-mode';
   import {
     allOptions,
     detectConflicts,
+    getOptionCapability,
+    hasRestrictedProhibitedUserSelection,
     initialOptionValue,
     isValidRangeValue,
     optionsById,
@@ -47,6 +50,8 @@
     showSubmit = true, // eslint-disable-line prefer-const
     showSaveAsSiteRule = true, // eslint-disable-line prefer-const
     idPrefix = 'inline-option', // eslint-disable-line prefer-const
+    galleryDlMode = 'restricted', // eslint-disable-line prefer-const
+    prohibitedOptionIds = [], // eslint-disable-line prefer-const
 
     onConflictDetected, // eslint-disable-line prefer-const
     onSiteRuleSaved, // eslint-disable-line prefer-const
@@ -65,11 +70,17 @@
     showSubmit?: boolean;
     showSaveAsSiteRule?: boolean;
     idPrefix?: string;
+    galleryDlMode?: GalleryDlMode;
+    prohibitedOptionIds?: readonly string[];
     onConflictDetected?: (conflicts: Conflict[]) => void;
     onSiteRuleSaved?: () => void;
   } = $props();
 
   const selectedOptionsByCategory = $derived(groupSelectedOptionsByCategory(selectedOptions));
+  const prohibitedOptionIdSet = $derived(new Set(prohibitedOptionIds));
+  const siteRuleCreationBlocked = $derived(
+    hasRestrictedProhibitedUserSelection(galleryDlMode, prohibitedOptionIdSet, selectedOptions),
+  );
   const categoryAccordionStates = new SvelteMap<string, boolean>();
   let isAccordionOpen = $state(false);
   let showSaveRuleDialog = $state(false);
@@ -119,13 +130,18 @@
   function toggleOption(option: Option) {
     const { id } = option;
     if (selectedOptions.has(id)) {
-      selectedOptions.delete(id);
-    } else {
-      selectedOptions.set(id, {
-        value: initialOptionValue(option),
-        source: 'user',
-      });
+      removeOption(id);
+      return;
     }
+
+    if (!getOptionCapability(galleryDlMode, prohibitedOptionIdSet.has(id), false).canAdd) {
+      return;
+    }
+
+    selectedOptions.set(id, {
+      value: initialOptionValue(option),
+      source: 'user',
+    });
   }
 
   function removeOption(optionId: string) {
@@ -140,6 +156,15 @@
   }
 
   function editOption(optionId: string, newValue: string | number | boolean) {
+    const capability = getOptionCapability(
+      galleryDlMode,
+      prohibitedOptionIdSet.has(optionId),
+      selectedOptions.has(optionId),
+    );
+    if (!capability.canEdit) {
+      return;
+    }
+
     if (selectedOptions.has(optionId)) {
       const currentOption = selectedOptions.get(optionId);
       if (currentOption) {
@@ -188,6 +213,15 @@
   }
 
   function revertToSiteConfig(optionId: string) {
+    const capability = getOptionCapability(
+      galleryDlMode,
+      prohibitedOptionIdSet.has(optionId),
+      selectedOptions.has(optionId),
+    );
+    if (!capability.canEdit) {
+      return;
+    }
+
     const currentOption = selectedOptions.get(optionId);
     if (!currentOption) {
       return;
@@ -241,6 +275,12 @@
     showSaveRuleDialog = false;
     toastStore.success('Site Rule Saved', 'Site rule saved successfully!');
     onSiteRuleSaved?.();
+  }
+
+  function openSiteRuleDialog() {
+    if (!siteRuleCreationBlocked) {
+      showSaveRuleDialog = true;
+    }
   }
 
   let previousConflictCount = $state(0);
@@ -356,13 +396,23 @@
           <div class="bg-surface-sunken p-3 border-t-strong">
             <div class="space-y-3">
               {#each category.options as option (option.id)}
+                {@const isSelected = selectedOptions.has(option.id)}
+                {@const capability = getOptionCapability(
+                  galleryDlMode,
+                  prohibitedOptionIdSet.has(option.id),
+                  isSelected,
+                )}
                 <div
                   class="flex items-start gap-3 rounded-surface bg-surface-elevated p-2 transition-colors border-strong"
                 >
                   <Toggle
                     id="{idPrefix}-{option.id}"
-                    checked={selectedOptions.has(option.id)}
+                    checked={isSelected}
+                    disabled={!capability.canAdd && !capability.canRemove}
                     onchange={() => toggleOption(option)}
+                    ariaLabel={!capability.canAdd && !isSelected
+                      ? `${option.command}. Requires Unrestricted mode.`
+                      : option.command}
                     variant="primary"
                     size="sm"
                   />
@@ -378,7 +428,15 @@
                         {option.description}
                       </span>
                     </label>
-                    {#if selectedOptions.has(option.id) && option.type !== 'boolean'}
+                    {#if prohibitedOptionIdSet.has(option.id) && galleryDlMode === 'restricted'}
+                      <p
+                        id="{idPrefix}-{option.id}-restricted"
+                        class="mt-1 text-xs text-warning"
+                      >
+                        Requires Unrestricted mode.
+                      </p>
+                    {/if}
+                    {#if isSelected && option.type !== 'boolean'}
                       <div class="mt-2">
                         <input
                           type={option.type === 'number'
@@ -401,6 +459,10 @@
                             }
                           }}
                           placeholder={option.placeholder ?? ''}
+                          disabled={!capability.canEdit}
+                          aria-describedby={!capability.canEdit
+                            ? `${idPrefix}-${option.id}-restricted`
+                            : undefined}
                           class="form-input"
                           class:border-warning={emptyValueOptionIds.has(option.id) ||
                             invalidRangeOptionIds.has(option.id)}
@@ -452,11 +514,31 @@
             <span class="text-xs text-warning">
               {warning}
             </span>
+            {#if prohibitedOptionIdSet.has(optionId) && galleryDlMode === 'restricted'}
+              <span
+                id="{idPrefix}-conflict-{optionId}-restricted"
+                class="text-xs text-warning"
+              >
+                Requires Unrestricted mode.
+              </span>
+            {/if}
           </div>
           <Button
             variant="warning"
             size="sm"
             onclick={() => revertToSiteConfig(optionId)}
+            disabled={!getOptionCapability(
+              galleryDlMode,
+              prohibitedOptionIdSet.has(optionId),
+              selectedOptions.has(optionId),
+            ).canEdit}
+            aria-describedby={!getOptionCapability(
+              galleryDlMode,
+              prohibitedOptionIdSet.has(optionId),
+              selectedOptions.has(optionId),
+            ).canEdit
+              ? `${idPrefix}-conflict-${optionId}-restricted`
+              : undefined}
           >
             Revert
           </Button>
@@ -480,7 +562,11 @@
             </p>
           </div>
           <Button
-            onclick={() => (showSaveRuleDialog = true)}
+            onclick={openSiteRuleDialog}
+            disabled={siteRuleCreationBlocked}
+            aria-describedby={siteRuleCreationBlocked
+              ? `${idPrefix}-site-rule-restricted`
+              : undefined}
             variant="outline-primary"
             size="sm"
           >
@@ -490,6 +576,15 @@
             />
           </Button>
         </div>
+        {#if siteRuleCreationBlocked}
+          <p
+            id="{idPrefix}-site-rule-restricted"
+            class="mt-3 text-xs text-warning"
+            role="alert"
+          >
+            Remove options that require Unrestricted mode before creating a Site Rule.
+          </p>
+        {/if}
       </div>
     {/if}
 
@@ -564,10 +659,15 @@
                       dismissible={true}
                       editable={option.type === 'string' &&
                         optionData.source === 'user' &&
-                        !option.sensitive}
+                        !option.sensitive &&
+                        getOptionCapability(
+                          galleryDlMode,
+                          prohibitedOptionIdSet.has(optionId),
+                          true,
+                        ).canEdit}
                       onDismiss={() => removeOption(optionId)}
                       onEdit={(newValue) => editOption(optionId, newValue)}
-                      ariaLabel={`${optionData.source === 'site-config' ? 'Site rule' : 'User selected'} option: ${option.command}`}
+                      ariaLabel={`${optionData.source === 'site-config' ? 'Site rule' : 'User selected'} option: ${option.command}${getOptionCapability(galleryDlMode, prohibitedOptionIdSet.has(optionId), true).canEdit ? '' : '. Requires Unrestricted mode to edit; removal is available.'}`}
                     >
                       {#snippet icon()}
                         {#if optionData.source === 'site-config'}
@@ -595,7 +695,7 @@
 {/if}
 
 <!-- Save rule modal -->
-{#if showSaveAsSiteRule && showSaveRuleDialog}
+{#if showSaveAsSiteRule && showSaveRuleDialog && !siteRuleCreationBlocked}
   <SiteRuleModal
     show={showSaveRuleDialog}
     options={getUserSelectedOptions()}

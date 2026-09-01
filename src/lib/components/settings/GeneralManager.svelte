@@ -9,9 +9,10 @@
   -->
 
 <script lang="ts">
-  import { Toggle, Spinner } from '$lib/components/ui';
+  import { Info, Toggle, Spinner } from '$lib/components/ui';
   import { toastStore } from '$lib/stores/toast';
   import type { UserSettings } from '$lib/server/userSettingsManager';
+  import type { GalleryDlMode } from '$lib/types/gallery-dl-mode';
   import { AVAILABLE_THEMES, type ThemeName } from '$lib/themes/themeUtils';
   import { themeStore } from '$lib/themes/themeStore';
   import { Icon } from '$lib/components';
@@ -19,9 +20,10 @@
 
   interface Props {
     userSettings: UserSettings;
+    galleryDlMode?: GalleryDlMode;
   }
 
-  const { userSettings }: Props = $props();
+  const { userSettings, galleryDlMode = 'restricted' }: Props = $props();
   const settings = $state<UserSettings>({
     warnOnSiteRuleOverride: false,
     selectedTheme: 'indigo',
@@ -120,6 +122,32 @@
 
 <div class="space-y-6">
   <p class="text-xs text-muted-foreground">Changes on this page save automatically.</p>
+
+  <div
+    class="content-panel"
+    aria-labelledby="gallery-dl-mode-heading"
+  >
+    <h2 id="gallery-dl-mode-heading">gallery-dl mode</h2>
+    <div class="space-y-3">
+      <p class="text-sm text-foreground">
+        Effective mode:
+        <strong class="capitalize text-primary">{galleryDlMode}</strong>
+      </p>
+      <p class="text-sm text-muted-foreground">
+        This deployment setting comes from
+        <code class="rounded-surface bg-surface-sunken px-1 py-0.5 text-foreground"
+          >GDLUXX_GDL_POLICY</code
+        >. It is not a user setting, and changing it requires restarting the process.
+      </p>
+      <Info
+        variant="warning"
+        title="Configuration checks"
+      >
+        Restricted mode applies gdluxx's current gallery-dl configuration and option checks; it is
+        not a complete gallery-dl sandbox. Unrestricted mode bypasses those checks.
+      </Info>
+    </div>
+  </div>
 
   <!-- CommandForm options -->
   <div class="content-panel">

@@ -11,7 +11,7 @@
 import optionsData from '$lib/assets/options.json';
 import type { Option, OptionsData } from '$lib/types/options';
 import { serverLogger as logger } from '$lib/server/logger';
-import { assertOptionIdsAllowed } from '$lib/server/validation/exec-policy';
+import { assertOptionIdsAllowed, PROHIBITED_OPTION_IDS } from '$lib/server/validation/exec-policy';
 
 const validOptions = new Map<string, Option>();
 Object.values(optionsData as OptionsData).forEach((category) => {
@@ -70,7 +70,7 @@ export function validateAndBuildCliArgs(argsMap: Map<string, unknown>): string[]
 
     const validatedValue = validateOptionValue(option, value);
     if (validatedValue === null) {
-      logger.warn(`Invalid value for option ${optionId}:`, value);
+      logger.warn(`Invalid value for option ${optionId}`);
       continue;
     }
 
@@ -92,10 +92,21 @@ export const sensitiveCommands = new Set<string>(
     .map((option) => option.command),
 );
 
+const prohibitedOptionCommands = new Set<string>(
+  Array.from(PROHIBITED_OPTION_IDS)
+    .map((optionId) => validOptions.get(optionId)?.command)
+    .filter((command): command is string => command !== undefined),
+);
+
+export const redactedValueCommands = new Set<string>([
+  ...sensitiveCommands,
+  ...prohibitedOptionCommands,
+]);
+
 export function redactSensitiveArgs(args: string[]): string[] {
   const redacted = [...args];
   for (let i = 0; i < redacted.length; i++) {
-    if (sensitiveCommands.has(redacted[i]) && i + 1 < redacted.length) {
+    if (redactedValueCommands.has(redacted[i]) && i + 1 < redacted.length) {
       redacted[i + 1] = '[REDACTED]';
     }
   }

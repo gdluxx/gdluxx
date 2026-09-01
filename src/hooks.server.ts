@@ -21,10 +21,18 @@ import { jobManager } from '$lib/server/jobs/jobManager';
 import { userSettingsManager } from '$lib/server/userSettingsManager';
 import { getCurrentTimestamp } from '$lib/server/settingsManager';
 import { getUserCountState } from '$lib/server/auth/userExistence';
+import {
+  GALLERY_DL_MODE_INVALID,
+  GALLERY_DL_MODE_INVALID_WARNING,
+} from '$lib/server/galleryDlMode';
 
 export const init: ServerInit = async () => {
   if (building) {
     return;
+  }
+  if (GALLERY_DL_MODE_INVALID) {
+    // eslint-disable-next-line no-console
+    console.warn(GALLERY_DL_MODE_INVALID_WARNING);
   }
   // Survives dev-HMR re-execution of this module: a second init must not arm a
   // second scan timer against the same database.
