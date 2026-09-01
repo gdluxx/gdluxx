@@ -13,7 +13,9 @@
   import { Icon } from '$lib/components/index';
   import optionsData from '$lib/assets/options.json';
   import type { Option, OptionsData } from '$lib/types/options';
+  import type { GalleryDlMode } from '$lib/types/gallery-dl-mode';
   import type { SiteConfig } from '$lib/server/siteConfigManager';
+  import { getOptionCapability } from '$lib/utils/commandOptions';
 
   const typedOptionsData = optionsData as OptionsData;
 
@@ -21,11 +23,21 @@
     show?: boolean;
     config?: SiteConfig | null;
     supportedSites?: Array<{ name: string; url: string }>;
+    galleryDlMode?: GalleryDlMode;
+    prohibitedOptionIds?: readonly string[];
     onSave: (config: Partial<SiteConfig>) => Promise<void>;
     onCancel: () => void;
   }
 
-  const { show = false, config = null, supportedSites = [], onSave, onCancel }: Props = $props();
+  const {
+    show = false,
+    config = null,
+    supportedSites = [],
+    galleryDlMode = 'restricted',
+    prohibitedOptionIds = [],
+    onSave,
+    onCancel,
+  }: Props = $props();
 
   const FORM_ID = 'site-rule-form';
 
@@ -39,6 +51,7 @@
 
   let isSubmitting = $state(false);
   let errors = $state<Record<string, string>>({});
+  const prohibitedOptionIdSet = $derived(new Set(prohibitedOptionIds));
 
   $effect(() => {
     formData.site_pattern = config?.site_pattern ?? '';
@@ -67,16 +80,30 @@
   function toggleOption(option: Option) {
     if (formData.cli_options.has(option.id)) {
       formData.cli_options.delete(option.id);
-    } else {
-      // For boolean options, when checked, we want them to be true (enabled)
-      // For non-boolean options, use their default value
-      const value = option.type === 'boolean' ? true : (option.defaultValue ?? true);
-      formData.cli_options.set(option.id, value);
+      formData.cli_options = new Map(formData.cli_options);
+      return;
     }
+
+    if (!getOptionCapability(galleryDlMode, prohibitedOptionIdSet.has(option.id), false).canAdd) {
+      return;
+    }
+
+    const value = option.type === 'boolean' ? true : (option.defaultValue ?? true);
+    formData.cli_options.set(option.id, value);
     formData.cli_options = new Map(formData.cli_options);
   }
 
   function updateOptionValue(optionId: string, value: string | number | boolean) {
+    if (
+      !getOptionCapability(
+        galleryDlMode,
+        prohibitedOptionIdSet.has(optionId),
+        formData.cli_options.has(optionId),
+      ).canEdit
+    ) {
+      return;
+    }
+
     formData.cli_options.set(optionId, value);
     formData.cli_options = new Map(formData.cli_options);
   }
@@ -241,13 +268,23 @@
             </summary>
             <div class="mt-2 space-y-2">
               {#each category.options as option (option.id)}
+                {@const isSelected = formData.cli_options.has(option.id)}
+                {@const capability = getOptionCapability(
+                  galleryDlMode,
+                  prohibitedOptionIdSet.has(option.id),
+                  isSelected,
+                )}
                 <div class="flex items-start gap-2 rounded-surface bg-surface-elevated p-2">
                   <!-- slider -->
                   <div class="relative inline-block h-4 w-[26px]">
                     <Toggle
                       id="option-{option.id}"
-                      checked={formData.cli_options.has(option.id)}
+                      checked={isSelected}
+                      disabled={!capability.canAdd && !capability.canRemove}
                       onchange={() => toggleOption(option)}
+                      ariaLabel={!capability.canAdd && !isSelected
+                        ? `${option.command}. Requires Unrestricted mode.`
+                        : option.command}
                       variant="primary"
                       size="sm"
                     />
@@ -264,6 +301,14 @@
                     <p class="text-sm text-muted-foreground">
                       {option.description}
                     </p>
+                    {#if prohibitedOptionIdSet.has(option.id) && galleryDlMode === 'restricted'}
+                      <p
+                        id="site-rule-option-{option.id}-restricted"
+                        class="mt-1 text-xs text-warning"
+                      >
+                        Requires Unrestricted mode.
+                      </p>
+                    {/if}
                   </div>
 
                   <!-- Input fields -->
@@ -276,6 +321,10 @@
                           value={formData.cli_options.get(option.id) ?? ''}
                           oninput={(e) => handleOptionInputChange(e, option.id, 'string')}
                           placeholder="Enter value..."
+                          disabled={!capability.canEdit}
+                          aria-describedby={!capability.canEdit
+                            ? `site-rule-option-${option.id}-restricted`
+                            : undefined}
                           class="form-input w-full px-2 py-1 text-sm"
                         />
                       {:else if option.type === 'number'}
@@ -284,6 +333,10 @@
                           value={formData.cli_options.get(option.id) ?? ''}
                           oninput={(e) => handleOptionInputChange(e, option.id, 'number')}
                           placeholder="Enter number..."
+                          disabled={!capability.canEdit}
+                          aria-describedby={!capability.canEdit
+                            ? `site-rule-option-${option.id}-restricted`
+                            : undefined}
                           class="form-input w-full px-2 py-1 text-sm"
                         />
                       {:else if option.type === 'range'}
@@ -292,6 +345,10 @@
                           value={formData.cli_options.get(option.id) ?? ''}
                           oninput={(e) => handleOptionInputChange(e, option.id, 'string')}
                           placeholder={option.placeholder}
+                          disabled={!capability.canEdit}
+                          aria-describedby={!capability.canEdit
+                            ? `site-rule-option-${option.id}-restricted`
+                            : undefined}
                           class="form-input w-full px-2 py-1 text-sm"
                         />
                       {/if}

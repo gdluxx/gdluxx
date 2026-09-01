@@ -287,6 +287,22 @@
         "defaultValue": ""
       },
       {
+        "id": "exec",
+        "command": "--exec",
+        "description": "Run an arbitrary command after each file download",
+        "type": "string",
+        "placeholder": "e.g. command --argument",
+        "defaultValue": ""
+      },
+      {
+        "id": "exec-after",
+        "command": "--exec-after",
+        "description": "Run an arbitrary command after all downloads complete",
+        "type": "string",
+        "placeholder": "e.g. command --argument",
+        "defaultValue": ""
+      },
+      {
         "id": "write-metadata",
         "command": "--write-metadata",
         "description": "Write metadata to separate JSON files",

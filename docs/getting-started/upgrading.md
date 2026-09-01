@@ -103,6 +103,18 @@ fixes, so prefer fixing forward.
 
 ## After Upgrading
 
+Existing deployments continue using Restricted mode when `GDLUXX_GDL_POLICY` is
+unset. No action is required.
+
+If you enable Unrestricted mode and later switch back to Restricted, saved
+config values, Schedules, and Site Rules are retained; nothing is deleted. Runs
+that use unavailable structured options are blocked until you remove those
+options or dismiss the inherited Site Rule options. Config policy violations
+must be edited and saved before jobs can run again.
+
+Switching back to Restricted does not undo changes that gallery-dl commands made
+to the host or container while Unrestricted mode was active.
+
 - **Log in again.** Setting/changing `AUTH_SECRET` invalidated existing
   sessions; this is expected, one time.
 - **Sessions now expire after 7 days**, with no sliding renewal; being active
@@ -113,9 +125,10 @@ fixes, so prefer fixing forward.
 - **A pre-existing config, site rule, or schedule may now be blocked.** This
   upgrade prohibits `exec`/`python` gallery-dl post-processors, any
   `command`/`commands` key, the `option`/`postprocessor`/`postprocessor-option`
-  CLI ids, and paths that resolve outside your data directory (or
-  `DOWNLOAD_PATH`/`GDLUXX_CONFIG_PATH_ROOTS`, if set). Nothing already saved is
-  modified or deleted by the upgrade itself, but it's blocked at launch time:
+  CLI ids, the `exec`/`exec-after` CLI ids, and paths that resolve outside your
+  data directory (or `DOWNLOAD_PATH`/`GDLUXX_CONFIG_PATH_ROOTS`, if set).
+  Nothing already saved is modified or deleted by the upgrade itself, but it's
+  blocked at launch time:
   - An interactive run shows an error like: _"The saved gallery-dl configuration
     contains a setting that is not permitted, so the job was not started."_ The
     same check is now surfaced directly in the Config Editor when you try to

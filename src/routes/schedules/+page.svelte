@@ -33,6 +33,8 @@
   } from '$lib/types/schedules';
 
   const { data } = $props<{ data: PageData }>();
+  const galleryDlMode = $derived(data.galleryDlMode ?? 'restricted');
+  const prohibitedOptionIds = $derived(data.prohibitedOptionIds ?? []);
 
   // Writable $derived: seeded from the server load, reassignable afterward by
   // mutations below without losing sync if the load data ever changes.
@@ -354,6 +356,8 @@
   <ScheduleEditor
     show={showEditor}
     schedule={editingSchedule}
+    {galleryDlMode}
+    {prohibitedOptionIds}
     onSaved={handleSaved}
     onCancel={closeEditor}
   />

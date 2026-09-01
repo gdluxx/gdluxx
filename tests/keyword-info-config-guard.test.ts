@@ -64,6 +64,7 @@ const { POST } = await import('../src/routes/api/keyword-info/+server');
 const { resetConfigGuardCache } = await import('$lib/server/jobs/configGuard');
 
 const ORIGINAL_FILE_STORAGE_PATH = process.env.FILE_STORAGE_PATH;
+const ORIGINAL_GALLERY_DL_MODE = process.env.GDLUXX_GDL_POLICY;
 
 function writeConfig(content: string): void {
   writeFileSync(join(currentTmpDir, 'config.json'), content, 'utf-8');
@@ -77,6 +78,24 @@ function hostileExecConfig(): string {
 
 function benignConfig(): string {
   return JSON.stringify({ extractor: { 'base-directory': join(currentTmpDir, 'downloads') } });
+}
+
+function deeplyNestedConfig(): string {
+  let nested: unknown = { leaf: true };
+  for (let i = 0; i < 66; i++) {
+    nested = { nested };
+  }
+  return JSON.stringify({ nested });
+}
+
+async function loadKeywordInfo(mode: 'restricted' | 'unrestricted') {
+  process.env.GDLUXX_GDL_POLICY = mode;
+  vi.resetModules();
+  const [route, configGuard] = await Promise.all([
+    import('../src/routes/api/keyword-info/+server'),
+    import('$lib/server/jobs/configGuard'),
+  ]);
+  return { route, configGuard };
 }
 
 function requestEvent(body: unknown): Parameters<RequestHandler>[0] {
@@ -105,6 +124,60 @@ afterEach(() => {
   } else {
     process.env.FILE_STORAGE_PATH = ORIGINAL_FILE_STORAGE_PATH;
   }
+  if (ORIGINAL_GALLERY_DL_MODE === undefined) {
+    delete process.env.GDLUXX_GDL_POLICY;
+  } else {
+    process.env.GDLUXX_GDL_POLICY = ORIGINAL_GALLERY_DL_MODE;
+  }
+  vi.resetModules();
+});
+
+describe('keyword-info config guard deployment posture', () => {
+  test('Restricted blocks a saved command finding before execFile', async () => {
+    const { route } = await loadKeywordInfo('restricted');
+    execFileMock.mockClear();
+    writeConfig(hostileExecConfig());
+
+    const response = await route.POST(
+      requestEvent({ url: 'https://sentinel.invalid/x', command: 'extractor-info' }),
+    );
+
+    expect(response.status).toBe(409);
+    expect(execFileMock).not.toHaveBeenCalled();
+  });
+
+  test('Unrestricted permits a saved command finding through the config guard', async () => {
+    const { route } = await loadKeywordInfo('unrestricted');
+    execFileMock.mockClear();
+    writeConfig(hostileExecConfig());
+
+    const response = await route.POST(
+      requestEvent({ url: 'https://sentinel.invalid/x', command: 'extractor-info' }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(execFileMock).toHaveBeenCalledTimes(1);
+  });
+
+  test.each(['restricted', 'unrestricted'] as const)(
+    '%s blocks malformed and excessively nested config before execFile',
+    async (mode) => {
+      const { route, configGuard } = await loadKeywordInfo(mode);
+
+      for (const content of ['not valid json {{', deeplyNestedConfig()]) {
+        configGuard.resetConfigGuardCache();
+        execFileMock.mockClear();
+        writeConfig(content);
+
+        const response = await route.POST(
+          requestEvent({ url: 'https://sentinel.invalid/x', command: 'extractor-info' }),
+        );
+
+        expect(response.status).toBe(409);
+        expect(execFileMock).not.toHaveBeenCalled();
+      }
+    },
+  );
 });
 
 describe('keyword-info-config-guard [REM-006]', () => {

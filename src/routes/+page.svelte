@@ -13,6 +13,11 @@
   import { PageLayout } from '$lib/components/ui';
   import { Icon } from '$lib/components';
   import { RecentJobs } from '$lib/components/jobs';
+  import type { PageData } from './$types';
+
+  const { data } = $props<{ data: PageData }>();
+  const galleryDlMode = $derived(data.galleryDlMode ?? 'restricted');
+  const prohibitedOptionIds = $derived(data.prohibitedOptionIds ?? []);
 </script>
 
 <svelte:head>
@@ -27,7 +32,10 @@
     <Icon iconName="run" />
   {/snippet}
   <div class="space-y-6">
-    <CommandForm />
+    <CommandForm
+      {galleryDlMode}
+      {prohibitedOptionIds}
+    />
     <RecentJobs />
   </div>
 </PageLayout>

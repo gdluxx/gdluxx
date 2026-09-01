@@ -25,13 +25,13 @@ The editor shows:
 Click the **Save** button to apply your config changes. They take effect
 immediately on your next download.
 
-::: warning Syntax Errors  
-You can proceed with saving a config file with syntax errors. This is to allow
-you to return to it later, however, you will not be able to run any jobs. You
-will see a warning on the Run page if there are syntax errors.
+::: warning Structural errors
 
-gdluxx does not detect if all of your config options are compatible and/or valid
-for gallery-dl, it's only checking for proper JSON formatting.  
+Malformed JSON, a non-object root, and excessive nesting are rejected when you
+save. These structural checks always apply in Restricted and Unrestricted mode.
+gdluxx does not determine whether every valid JSON option is supported by the
+installed gallery-dl version.
+
 :::
 
 ### Full-Screen Editor Mode
@@ -76,7 +76,7 @@ You can export your gallery-dl `config.json` file out of gdluxx
 ## Automatic Path Handling
 
 _gdluxx_ automatically rewrites certain file paths in your config to work with
-Docker.
+Docker. This path transform still applies in Restricted and Unrestricted mode.
 
 When you save, these paths are automatically rewritten:
 
@@ -218,7 +218,27 @@ same `/app/data/cookies/` directory mentioned above. See
 [Cookie Sync](./cookies.md).  
 :::
 
-## Rejected Settings
+## Validation and gallery-dl policy
+
+gdluxx separates structural validation from its policy checks. Structural
+validation rejects malformed JSON, a root value that is not an object, and
+excessive nesting in both modes.
+
+Restricted mode also applies gdluxx's command and path restrictions. It rejects
+command-bearing `command` and `commands` keys, `exec` and `python`
+post-processors, and configured paths that are not confined to the allowed
+roots. Unrestricted mode removes these restrictions. The Docker path transform
+still runs before path handling in both modes.
+
+The structured `--exec` and `--exec-after` options run arbitrary commands and
+are available only in Unrestricted mode. See the
+[installation guide](../getting-started/installation.md#gallery-dl-policy) for
+the policy setting and its risks.
+
+Restricted mode is a guardrail, not a sandbox. Anyone who can edit gallery-dl
+configuration or options should still be treated as a trusted administrator.
+
+## Policy Checks in Restricted Mode
 
 Since gallery-dl runs with whatever `config.json` you save, gdluxx rejects a few
 settings that would let the config file itself run arbitrary code or write
@@ -230,15 +250,16 @@ outside your data directory:
 - **Paths that resolve outside your data directory.** `base-directory`,
   `part-directory`, `archive`, `path`, `cookies` (when given as a file path),
   and `cache.file` must stay under gdluxx's data directory (or your
-  `DOWNLOAD_PATH`, if set — see the
+  `DOWNLOAD_PATH`, if set. See the
   [install guide](../getting-started/installation.md#custom-download-location)).
   Values starting with `~` or containing `$`/`%` are also rejected, since
   gallery-dl would expand those after gdluxx has already validated the path.
 
-A save that trips either check is rejected with a 400 and nothing is written. A
-`config.json` already on disk that trips a check (e.g. hand-edited on the
-mounted volume) blocks every job until you fix and re-save it — gdluxx never
-silently rewrites or deletes it.
+A save that trips either policy check in Restricted mode is rejected with a 400
+and nothing is written. A `config.json` already on disk that trips a check (for
+example, one hand edited on the mounted volume) blocks every job until you fix
+and re-save it. gdluxx never silently rewrites or deletes it. In Unrestricted
+mode, these policy findings do not block saves or launches.
 
 ::: info Bare-metal downloads on a separate drive  
 If you're not running in Docker and your downloads or archives live outside

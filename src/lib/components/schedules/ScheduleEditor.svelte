@@ -20,7 +20,12 @@
     SchedulePreviewResponse,
   } from '$lib/types/schedules';
   import type { Conflict, OptionWithSource, SiteConfigData } from '$lib/types/command-form';
-  import { getEmptyValueOptions, SENSITIVE_MASK } from '$lib/utils/commandOptions';
+  import type { GalleryDlMode } from '$lib/types/gallery-dl-mode';
+  import {
+    getEmptyValueOptions,
+    hasRestrictedProhibitedSelection,
+    SENSITIVE_MASK,
+  } from '$lib/utils/commandOptions';
   import { parseUrls } from '$lib/utils/parseUrls';
   import OptionsManager from '../OptionsManager.svelte';
 
@@ -30,6 +35,8 @@
     seedUrls?: string[];
     seedUserOptions?: Array<[string, string | number | boolean]>;
     seedExcludedOptions?: string[];
+    galleryDlMode?: GalleryDlMode;
+    prohibitedOptionIds?: readonly string[];
     onSaved: (schedule: ScheduleDetail) => void;
     onCancel: () => void;
   }
@@ -40,6 +47,8 @@
     seedUrls,
     seedUserOptions,
     seedExcludedOptions,
+    galleryDlMode = 'restricted',
+    prohibitedOptionIds = [],
     onSaved,
     onCancel,
   }: Props = $props();
@@ -97,9 +106,13 @@
     new Set(getEmptyValueOptions(selectedOptions).map((option) => option.id)),
   );
   const parsedUrls = $derived(parseUrls(urlsText));
+  const hasUnavailableOptions = $derived(
+    hasRestrictedProhibitedSelection(galleryDlMode, prohibitedOptionIds, selectedOptions),
+  );
   const saveDisabled = $derived(
     isSaving ||
       emptyValueOptionIds.size > 0 ||
+      hasUnavailableOptions ||
       parsedUrls.length === 0 ||
       name.trim().length === 0 ||
       (recurrenceKind === 'weekly' && weekdays.size === 0) ||
@@ -740,6 +753,8 @@
       idPrefix="schedule-editor-option"
       commandUrlsInput={urlsText}
       {emptyValueOptionIds}
+      {galleryDlMode}
+      {prohibitedOptionIds}
     />
 
     <Info
@@ -763,22 +778,39 @@
   </form>
 
   {#snippet footer()}
-    <div class="flex items-center justify-end gap-3 border-t-strong px-6 py-4">
-      <Button
-        type="button"
-        onclick={onCancel}
-        variant="default"
-      >
-        Cancel
-      </Button>
-      <Button
-        type="submit"
-        form={FORM_ID}
-        disabled={saveDisabled}
-        variant="primary"
-      >
-        {isSaving ? 'Saving…' : 'Save'}
-      </Button>
+    <div
+      class="flex items-center gap-3 border-t-strong px-6 py-4"
+      class:justify-between={hasUnavailableOptions}
+      class:justify-end={!hasUnavailableOptions}
+    >
+      {#if hasUnavailableOptions}
+        <p
+          id="restricted-schedule-options"
+          class="text-sm text-warning"
+          role="alert"
+        >
+          This Schedule contains options unavailable in Restricted mode. Remove or dismiss all of
+          them before saving.
+        </p>
+      {/if}
+      <div class="flex items-center gap-3">
+        <Button
+          type="button"
+          onclick={onCancel}
+          variant="default"
+        >
+          Cancel
+        </Button>
+        <Button
+          type="submit"
+          form={FORM_ID}
+          disabled={saveDisabled}
+          aria-describedby={hasUnavailableOptions ? 'restricted-schedule-options' : undefined}
+          variant="primary"
+        >
+          {isSaving ? 'Saving…' : 'Save'}
+        </Button>
+      </div>
     </div>
   {/snippet}
 </Modal>

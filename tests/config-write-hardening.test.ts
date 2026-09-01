@@ -14,6 +14,8 @@ import { tmpdir } from 'os';
 import { join } from 'path';
 
 const ORIGINAL_FILE_STORAGE_PATH = process.env.FILE_STORAGE_PATH;
+const ORIGINAL_DOWNLOAD_PATH = process.env.DOWNLOAD_PATH;
+const ORIGINAL_GALLERY_DL_MODE = process.env.GDLUXX_GDL_POLICY;
 
 // api-utils.ts imports `dev` from $app/environment, unavailable outside SvelteKit.
 vi.mock('$app/environment', () => ({ dev: false, building: false, browser: false }));
@@ -34,6 +36,8 @@ beforeEach(async () => {
   dockerMockValue = false;
   dataDir = await mkdtemp(join(tmpdir(), 'gdluxx-config-hardening-'));
   process.env.FILE_STORAGE_PATH = dataDir;
+  delete process.env.DOWNLOAD_PATH;
+  delete process.env.GDLUXX_GDL_POLICY;
   // config-utils.ts captures DATA_PATH from FILE_STORAGE_PATH at module
   // load time, so every test needs a fresh module graph for its own dataDir.
   vi.resetModules();
@@ -46,6 +50,17 @@ afterEach(async () => {
   } else {
     process.env.FILE_STORAGE_PATH = ORIGINAL_FILE_STORAGE_PATH;
   }
+  if (ORIGINAL_DOWNLOAD_PATH === undefined) {
+    delete process.env.DOWNLOAD_PATH;
+  } else {
+    process.env.DOWNLOAD_PATH = ORIGINAL_DOWNLOAD_PATH;
+  }
+  if (ORIGINAL_GALLERY_DL_MODE === undefined) {
+    delete process.env.GDLUXX_GDL_POLICY;
+  } else {
+    process.env.GDLUXX_GDL_POLICY = ORIGINAL_GALLERY_DL_MODE;
+  }
+  vi.resetModules();
 });
 
 function loadConfigUtils() {
@@ -114,6 +129,23 @@ function commandBearingNonExecPostprocessor(): string {
   });
 }
 
+function deeplyNestedConfig(): string {
+  let nested: unknown = { leaf: true };
+  for (let i = 0; i < 66; i++) {
+    nested = { nested };
+  }
+  return JSON.stringify({
+    command: ['gdluxx-mode-sentinel'],
+    'base-directory': '/gdluxx-mode-sentinel/outside',
+    nested,
+  });
+}
+
+function setGalleryDlMode(mode: 'restricted' | 'unrestricted'): void {
+  process.env.GDLUXX_GDL_POLICY = mode;
+  vi.resetModules();
+}
+
 const HOSTILE_BASE_DIRECTORIES = ['/root/.bashrc', '~/.ssh/authorized_keys', '../../etc'];
 
 function multipartRequest(url: string, filename: string, body: string): Request {
@@ -180,6 +212,67 @@ describe('writeConfigFile: exec/command containment [REM-006]', () => {
     await expect(mod.writeConfigFile(content)).rejects.toThrow();
     expect(await readConfigOnDisk()).toBeNull();
   });
+});
+
+describe('writeConfigFile: deployment mode enforcement', () => {
+  test('Restricted preserves command and unconfined-path blocking', async () => {
+    setGalleryDlMode('restricted');
+    const mod = await loadConfigUtils();
+
+    await expect(mod.writeConfigFile(execPostprocessorNested())).rejects.toThrow();
+    await expect(
+      mod.writeConfigFile(
+        JSON.stringify({ extractor: { 'base-directory': '/gdluxx-mode-sentinel/outside' } }),
+      ),
+    ).rejects.toThrow();
+    expect(await readConfigOnDisk()).toBeNull();
+  });
+
+  test('Unrestricted permits command and unconfined-path findings at save time', async () => {
+    setGalleryDlMode('unrestricted');
+    const mod = await loadConfigUtils();
+
+    const commandConfig = execPostprocessorNested();
+    await expect(mod.writeConfigFile(commandConfig)).resolves.toMatchObject({ success: true });
+    expect(await readConfigOnDisk()).toBe(commandConfig);
+
+    const pathConfig = JSON.stringify({
+      extractor: { 'base-directory': '/gdluxx-mode-sentinel/outside' },
+    });
+    await expect(mod.writeConfigFile(pathConfig)).resolves.toMatchObject({ success: true });
+    expect(await readConfigOnDisk()).toBe(pathConfig);
+  });
+
+  test.each(['restricted', 'unrestricted'] as const)(
+    '%s still rejects malformed and excessively nested config',
+    async (mode) => {
+      setGalleryDlMode(mode);
+      const mod = await loadConfigUtils();
+
+      await expect(mod.writeConfigFile('not valid json {{')).rejects.toThrow();
+      await expect(mod.writeConfigFile('[]')).rejects.toThrow();
+      await expect(mod.writeConfigFile(deeplyNestedConfig())).rejects.toThrow();
+      expect(await readConfigOnDisk()).toBeNull();
+    },
+  );
+
+  test.each(['restricted', 'unrestricted'] as const)(
+    '%s applies Docker path transformation before path enforcement',
+    async (mode) => {
+      dockerMockValue = true;
+      setGalleryDlMode(mode);
+      const mod = await loadConfigUtils();
+      const content = JSON.stringify({ extractor: { 'base-directory': '~/outside' } });
+
+      await expect(mod.writeConfigFile(content)).resolves.toMatchObject({
+        success: true,
+        transformed: true,
+      });
+      expect(JSON.parse((await readConfigOnDisk()) as string)).toEqual({
+        extractor: { 'base-directory': '/app/data/downloads' },
+      });
+    },
+  );
 });
 
 describe('POST /api/config: write-path containment [REM-006]', () => {

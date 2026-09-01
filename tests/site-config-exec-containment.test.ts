@@ -44,8 +44,14 @@ vi.mock('node:fs', async (importOriginal) => {
   };
 });
 
+const loggerDebugMock = vi.fn();
 vi.mock('$lib/server/logger', () => ({
-  serverLogger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
+  serverLogger: {
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: (...args: unknown[]) => loggerDebugMock(...args),
+  },
 }));
 
 // Isolate the site-options assertions from the machine-local persisted config;
@@ -68,6 +74,7 @@ const { buildSiteOptionsSnapshot } = await import('$lib/server/schedules/snapsho
 const scheduleManager = await import('$lib/server/schedules/scheduleManager');
 const scheduleRunManager = await import('$lib/server/schedules/scheduleRunManager');
 const { dispatchRun } = await import('$lib/server/schedules/dispatchRun');
+const ORIGINAL_GALLERY_DL_MODE = process.env.GDLUXX_GDL_POLICY;
 
 const SEED_TS = 1_700_000_000_000;
 
@@ -103,6 +110,23 @@ function scheduleInput(overrides: Partial<CreateScheduleInput> = {}): CreateSche
   };
 }
 
+async function loadSiteConfigMode(mode: 'restricted' | 'unrestricted') {
+  process.env.GDLUXX_GDL_POLICY = mode;
+  vi.resetModules();
+  const [siteConfigModule, commandLauncher, execPolicy, optionValidation] = await Promise.all([
+    import('$lib/server/siteConfigManager'),
+    import('$lib/server/jobs/commandLauncher'),
+    import('$lib/server/validation/exec-policy'),
+    import('$lib/server/validation/option-validation'),
+  ]);
+  return {
+    siteConfigManager: siteConfigModule.siteConfigManager,
+    launchUrls: commandLauncher.launchUrls,
+    execPolicy,
+    optionValidation,
+  };
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
   executeGalleryDlCommandMock.mockResolvedValue({ success: true, jobId: 'unused' });
@@ -118,9 +142,69 @@ afterEach(() => {
     DELETE FROM site_configs;
     DELETE FROM user;
   `);
+  if (ORIGINAL_GALLERY_DL_MODE === undefined) {
+    delete process.env.GDLUXX_GDL_POLICY;
+  } else {
+    process.env.GDLUXX_GDL_POLICY = ORIGINAL_GALLERY_DL_MODE;
+  }
+  vi.resetModules();
 });
 
 describe('interactive launch: a stored site rule carries a prohibited option id', () => {
+  test('Unrestricted launches every canonical stored id as its catalog argv pair', async () => {
+    const runtime = await loadSiteConfigMode('unrestricted');
+    executeGalleryDlCommandMock.mockClear();
+    const options = Array.from(
+      runtime.execPolicy.PROHIBITED_OPTION_IDS,
+      (optionId) => [optionId, `value-${optionId}`] as [string, string],
+    );
+    const expectedArgs = options.flatMap(([optionId, value]) => [
+      runtime.optionValidation.validOptions.get(optionId)?.command,
+      value,
+    ]);
+    await runtime.siteConfigManager.createSiteConfig({
+      site_pattern: 'unrestricted.sentinel.invalid',
+      display_name: 'Unrestricted rule fixture',
+      cli_options: options,
+      is_default: false,
+      enabled: true,
+    });
+
+    await runtime.launchUrls({
+      urls: ['https://unrestricted.sentinel.invalid/gallery/1'],
+      args: [],
+      excludedOptions: [],
+      resolveSiteOptions: (url) => runtime.siteConfigManager.getCliOptionsForUrl(url),
+    });
+
+    expect(expectedArgs).not.toContain(undefined);
+    expect(executeGalleryDlCommandMock).toHaveBeenCalledWith(
+      'https://unrestricted.sentinel.invalid/gallery/1',
+      expectedArgs,
+    );
+  });
+
+  test('site-rule debug metadata contains option ids but not command-bearing values', async () => {
+    const sentinel = 'unique-site-config-log-sentinel-84cd';
+    await siteConfigManager.createSiteConfig({
+      site_pattern: 'logging.sentinel.invalid',
+      display_name: 'Logging rule fixture',
+      cli_options: [['exec', sentinel]],
+      is_default: false,
+      enabled: true,
+    });
+
+    const options = await siteConfigManager.getCliOptionsForUrl(
+      'https://logging.sentinel.invalid/gallery/1',
+    );
+
+    expect(options).toEqual([['exec', sentinel]]);
+    expect(loggerDebugMock).toHaveBeenCalledWith('Applying CLI options for site config', {
+      optionIds: ['exec'],
+    });
+    expect(JSON.stringify(loggerDebugMock.mock.calls)).not.toContain(sentinel);
+  });
+
   test('the prohibited id is contained at launch: launchUrls rejects, spawn never reached, the site_configs row is untouched', async () => {
     const id = await siteConfigManager.createSiteConfig({
       site_pattern: 'hostile.sentinel.invalid',

@@ -61,7 +61,16 @@ const scheduleManager = await import('$lib/server/schedules/scheduleManager');
 const scheduleRunManager = await import('$lib/server/schedules/scheduleRunManager');
 const { dispatchRun } = await import('$lib/server/schedules/dispatchRun');
 const { launchUrls } = await import('$lib/server/jobs/commandLauncher');
-const { validateAndBuildCliArgs } = await import('$lib/server/validation/option-validation');
+const { validateAndBuildCliArgs, validOptions } =
+  await import('$lib/server/validation/option-validation');
+const { PROHIBITED_OPTION_IDS } = await import('$lib/server/validation/exec-policy');
+
+const prohibitedCommands = new Set(
+  Array.from(PROHIBITED_OPTION_IDS, (optionId) => validOptions.get(optionId)?.command).filter(
+    (command): command is string => command !== undefined,
+  ),
+);
+const ORIGINAL_GALLERY_DL_MODE = process.env.GDLUXX_GDL_POLICY;
 
 const SEED_TS = 1_700_000_000_000;
 
@@ -97,6 +106,34 @@ function scheduleInput(overrides: Partial<CreateScheduleInput> = {}): CreateSche
   };
 }
 
+async function loadScheduleMode(mode: 'restricted' | 'unrestricted') {
+  process.env.GDLUXX_GDL_POLICY = mode;
+  vi.resetModules();
+  const [
+    loadedScheduleManager,
+    loadedRunManager,
+    loadedDispatch,
+    commandLauncher,
+    execPolicy,
+    optionValidation,
+  ] = await Promise.all([
+    import('$lib/server/schedules/scheduleManager'),
+    import('$lib/server/schedules/scheduleRunManager'),
+    import('$lib/server/schedules/dispatchRun'),
+    import('$lib/server/jobs/commandLauncher'),
+    import('$lib/server/validation/exec-policy'),
+    import('$lib/server/validation/option-validation'),
+  ]);
+  return {
+    scheduleManager: loadedScheduleManager,
+    scheduleRunManager: loadedRunManager,
+    dispatchRun: loadedDispatch.dispatchRun,
+    launchUrls: commandLauncher.launchUrls,
+    execPolicy,
+    optionValidation,
+  };
+}
+
 beforeEach(() => {
   executeGalleryDlCommandMock.mockReset();
   executeGalleryDlCommandMock.mockResolvedValue({ success: true, jobId: 'unused' });
@@ -111,32 +148,85 @@ afterEach(() => {
     DELETE FROM jobs;
     DELETE FROM user;
   `);
+  if (ORIGINAL_GALLERY_DL_MODE === undefined) {
+    delete process.env.GDLUXX_GDL_POLICY;
+  } else {
+    process.env.GDLUXX_GDL_POLICY = ORIGINAL_GALLERY_DL_MODE;
+  }
+  vi.resetModules();
 });
 
 describe('validateAndBuildCliArgs: gallery-dl argv config injection [REM-006]', () => {
-  test('REM-006: option/postprocessor/postprocessor-option are neutralized, not emitted as CLI flags', () => {
+  test('REM-006: canonical prohibited options are neutralized, not emitted as CLI flags', () => {
     // REM-006 may neutralize by throwing (reject) or by dropping the ids;
     // both are secure, so a throw here is a pass, not a masked failure.
     let args: string[];
     try {
       args = validateAndBuildCliArgs(
-        new Map<string, unknown>([
-          ['option', 'extractor.base-directory=/tmp/pwned'],
-          ['postprocessor', 'exec'],
-          ['postprocessor-option', 'exec.command=touch /tmp/pwned'],
-        ]),
+        new Map<string, unknown>(
+          Array.from(PROHIBITED_OPTION_IDS, (optionId) => [optionId, 'hostile-value']),
+        ),
       );
     } catch {
       return;
     }
 
-    expect(args).not.toContain('--option');
-    expect(args).not.toContain('--postprocessor');
-    expect(args).not.toContain('--postprocessor-option');
+    for (const command of prohibitedCommands) {
+      expect(args).not.toContain(command);
+    }
   });
 });
 
 describe('dispatchRun: stored schedule execution containment [REM-006]', () => {
+  test('Unrestricted dispatches every canonical prohibited option as its catalog argv pair', async () => {
+    const runtime = await loadScheduleMode('unrestricted');
+    executeGalleryDlCommandMock.mockClear();
+    seedUser('user-1');
+    seedJob('job-unrestricted', 'success');
+    const options = Array.from(
+      runtime.execPolicy.PROHIBITED_OPTION_IDS,
+      (optionId) => [optionId, `value-${optionId}`] as [string, string],
+    );
+    const expectedArgs = options.flatMap(([optionId, value]) => [
+      runtime.optionValidation.validOptions.get(optionId)?.command,
+      value,
+    ]);
+    const schedule = runtime.scheduleManager.createSchedule(
+      scheduleInput({
+        commandSource: {
+          urls: ['https://example.test/a'],
+          userOptions: options,
+          excludedOptions: [],
+        },
+      }),
+    );
+    const run = runtime.scheduleRunManager.createRun({
+      scheduleId: schedule.id,
+      userId: 'user-1',
+      scheduleName: schedule.name,
+      trigger: 'manual',
+      outcome: 'dispatching',
+      scheduledFor: Date.now(),
+      urlCount: schedule.commandSource.urls.length,
+    });
+    executeGalleryDlCommandMock.mockResolvedValueOnce({
+      success: true,
+      jobId: 'job-unrestricted',
+    });
+
+    const { outcome } = await runtime.dispatchRun(schedule, run.id, {
+      launch: runtime.launchUrls,
+      getMaxBatchUrls: () => 200,
+    });
+
+    expect(expectedArgs).not.toContain(undefined);
+    expect(outcome).toBe('launched');
+    expect(executeGalleryDlCommandMock).toHaveBeenCalledWith(
+      'https://example.test/a',
+      expectedArgs,
+    );
+  });
+
   test('REM-006: a stored schedule with hostile userOptions does not reach spawn with unsafe flags', async () => {
     seedUser('user-1');
     seedJob('job-hostile', 'success');
@@ -166,9 +256,7 @@ describe('dispatchRun: stored schedule execution containment [REM-006]', () => {
     await dispatchRun(schedule, run.id, { launch: launchUrls, getMaxBatchUrls: () => 200 });
 
     const unsafeCall = executeGalleryDlCommandMock.mock.calls.find(([, cliArgs]) =>
-      (cliArgs as string[]).some((flag) =>
-        ['--option', '--postprocessor', '--postprocessor-option'].includes(flag),
-      ),
+      (cliArgs as string[]).some((flag) => prohibitedCommands.has(flag)),
     );
     expect(unsafeCall).toBeUndefined();
   });

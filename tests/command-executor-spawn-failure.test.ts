@@ -10,8 +10,14 @@
 
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
+const loggerInfoMock = vi.fn();
 vi.mock('$lib/server/logger', () => ({
-  serverLogger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
+  serverLogger: {
+    info: (...args: unknown[]) => loggerInfoMock(...args),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+  },
 }));
 
 const createJobMock = vi.fn();
@@ -85,6 +91,22 @@ describe('commandExecutor: job completion when spawn throws', () => {
 
     expect(result).toEqual({ success: true, jobId: 'job-1' });
     expect(completeJobMock).not.toHaveBeenCalled();
+  });
+
+  test('the job-start argv log redacts command-bearing option values', async () => {
+    spawnMock.mockImplementation(() => fakePty());
+    const sentinel = 'unique-job-start-log-sentinel-32b8';
+
+    await executeGalleryDlCommand('https://example.com/x', [
+      '--exec',
+      sentinel,
+      '--exec-after',
+      sentinel,
+    ]);
+
+    const logged = JSON.stringify(loggerInfoMock.mock.calls);
+    expect(logged).toContain('[REDACTED]');
+    expect(logged).not.toContain(sentinel);
   });
 
   test('executeGalleryDlCommand: a failure before job creation does not call completeJob (no id to complete)', async () => {

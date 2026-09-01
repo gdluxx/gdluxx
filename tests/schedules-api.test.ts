@@ -13,6 +13,8 @@ import type { RequestHandler } from '@sveltejs/kit';
 import type { CreateScheduleInput } from '../src/lib/server/schedules/scheduleManager';
 import { MAX_SCHEDULES_PER_USER } from '../src/lib/server/validation/schedules-validation';
 
+const ORIGINAL_GALLERY_DL_MODE = process.env.GDLUXX_GDL_POLICY;
+
 const { db } = await vi.hoisted(async () => {
   const { default: Database } = await import('better-sqlite3');
   const { readFileSync } = await import('node:fs');
@@ -199,6 +201,21 @@ function createPayload(overrides: Record<string, unknown> = {}) {
   };
 }
 
+async function loadScheduleApi(mode: 'restricted' | 'unrestricted') {
+  process.env.GDLUXX_GDL_POLICY = mode;
+  vi.resetModules();
+  const [scheduleRoute, detailRoute, dynamicScheduleManager] = await Promise.all([
+    import('../src/routes/api/schedules/+server'),
+    import('../src/routes/api/schedules/[scheduleId]/+server'),
+    import('$lib/server/schedules/scheduleManager'),
+  ]);
+  return {
+    postSchedule: scheduleRoute.POST,
+    putSchedule: detailRoute.PUT,
+    scheduleManager: dynamicScheduleManager,
+  };
+}
+
 beforeEach(() => {
   getUserSettingsMock.mockReset();
   getUserSettingsMock.mockImplementation(() => ({
@@ -221,6 +238,12 @@ afterEach(() => {
     DELETE FROM jobs;
     DELETE FROM user;
   `);
+  if (ORIGINAL_GALLERY_DL_MODE === undefined) {
+    delete process.env.GDLUXX_GDL_POLICY;
+  } else {
+    process.env.GDLUXX_GDL_POLICY = ORIGINAL_GALLERY_DL_MODE;
+  }
+  vi.resetModules();
 });
 
 describe('GET/POST /api/schedules', () => {
@@ -1234,5 +1257,147 @@ describe('POST /api/schedule-notifications/[notificationId]/acknowledge', () => 
     const secondEnvelope = await readEnvelope<{ acknowledgedAt: number }>(second);
 
     expect(secondEnvelope.data?.acknowledgedAt).toBe(firstEnvelope.data?.acknowledgedAt);
+  });
+});
+
+describe('schedule command options by deployment mode', () => {
+  test('Restricted rejects exec and exec-after on create and update', async () => {
+    const api = await loadScheduleApi('restricted');
+    seedUser('user-1');
+
+    for (const optionId of ['exec', 'exec-after']) {
+      const createResponse = await api.postSchedule(
+        stubEvent({
+          user: { id: 'user-1' },
+          request: jsonRequest(
+            'http://localhost/api/schedules',
+            'POST',
+            createPayload({
+              commandSource: {
+                urls: ['https://example.test/a'],
+                userOptions: [[optionId, 'command-value']],
+                excludedOptions: [],
+              },
+            }),
+          ),
+        }),
+      );
+      expect(createResponse.status).toBe(400);
+    }
+    expect(api.scheduleManager.readSchedulesForUser('user-1')).toHaveLength(0);
+
+    const schedule = api.scheduleManager.createSchedule(scheduleInput());
+    for (const optionId of ['exec', 'exec-after']) {
+      const updateResponse = await api.putSchedule(
+        stubEvent({
+          user: { id: 'user-1' },
+          params: { scheduleId: schedule.id },
+          request: jsonRequest(`http://localhost/api/schedules/${schedule.id}`, 'PUT', {
+            commandSource: {
+              urls: ['https://example.test/a'],
+              userOptions: [[optionId, 'command-value']],
+              excludedOptions: [],
+            },
+          }),
+        }),
+      );
+      expect(updateResponse.status).toBe(400);
+    }
+    expect(api.scheduleManager.readScheduleForUser(schedule.id, 'user-1')?.commandSource).toEqual(
+      schedule.commandSource,
+    );
+  });
+
+  test('Unrestricted create accepts exec values without masking them', async () => {
+    const api = await loadScheduleApi('unrestricted');
+    seedUser('user-1');
+    const userOptions = [
+      ['exec', 'per-file-command'],
+      ['exec-after', 'final-command'],
+    ];
+
+    const response = await api.postSchedule(
+      stubEvent({
+        user: { id: 'user-1' },
+        request: jsonRequest(
+          'http://localhost/api/schedules',
+          'POST',
+          createPayload({
+            commandSource: {
+              urls: ['https://example.test/a'],
+              userOptions,
+              excludedOptions: [],
+            },
+          }),
+        ),
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    const envelope = await readEnvelope<{ commandSource: { userOptions: unknown[] } }>(response);
+    expect(envelope.data?.commandSource.userOptions).toEqual(userOptions);
+  });
+
+  test('Unrestricted update replaces and removes exec values without masking them', async () => {
+    const api = await loadScheduleApi('unrestricted');
+    seedUser('user-1');
+    const schedule = api.scheduleManager.createSchedule(
+      scheduleInput({
+        commandSource: {
+          urls: ['https://example.test/a'],
+          userOptions: [
+            ['exec', 'old-per-file-command'],
+            ['exec-after', 'old-final-command'],
+          ],
+          excludedOptions: [],
+        },
+      }),
+    );
+    const replacementOptions = [
+      ['exec', 'new-per-file-command'],
+      ['exec-after', 'new-final-command'],
+    ];
+
+    const replaceResponse = await api.putSchedule(
+      stubEvent({
+        user: { id: 'user-1' },
+        params: { scheduleId: schedule.id },
+        request: jsonRequest(`http://localhost/api/schedules/${schedule.id}`, 'PUT', {
+          commandSource: {
+            urls: ['https://example.test/a'],
+            userOptions: replacementOptions,
+            excludedOptions: [],
+          },
+        }),
+      }),
+    );
+    expect(replaceResponse.status).toBe(200);
+    const replaceEnvelope = await readEnvelope<{
+      commandSource: { userOptions: unknown[] };
+    }>(replaceResponse);
+    expect(replaceEnvelope.data?.commandSource.userOptions).toEqual(replacementOptions);
+
+    const remainingOptions = [['exec', 'newest-per-file-command']];
+    const removeResponse = await api.putSchedule(
+      stubEvent({
+        user: { id: 'user-1' },
+        params: { scheduleId: schedule.id },
+        request: jsonRequest(`http://localhost/api/schedules/${schedule.id}`, 'PUT', {
+          commandSource: {
+            urls: ['https://example.test/a'],
+            userOptions: remainingOptions,
+            excludedOptions: [],
+          },
+        }),
+      }),
+    );
+    expect(removeResponse.status).toBe(200);
+    const removeEnvelope = await readEnvelope<{ commandSource: { userOptions: unknown[] } }>(
+      removeResponse,
+    );
+    expect(removeEnvelope.data?.commandSource.userOptions).toEqual(remainingOptions);
+    expect(
+      api.scheduleManager.readScheduleForUser(schedule.id, 'user-1')?.commandSource.userOptions,
+    ).toEqual(remainingOptions);
   });
 });

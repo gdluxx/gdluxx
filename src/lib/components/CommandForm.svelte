@@ -15,11 +15,13 @@
   import { clientLogger as logger } from '$lib/client/logger';
   import { Button, Chip, Info } from '$lib/components/ui';
   import type { Conflict, OptionWithSource, SiteConfigData } from '$lib/types/command-form';
+  import type { GalleryDlMode } from '$lib/types/gallery-dl-mode';
   import {
     buildCommandPreview,
     detectConflicts,
     getActiveMutuallyExclusive,
     getEmptyValueOptions,
+    hasRestrictedProhibitedSelection,
     optionsById,
   } from '$lib/utils/commandOptions';
   import { browser } from '$app/environment';
@@ -41,6 +43,13 @@
     }>;
     error?: string;
   }
+
+  interface Props {
+    galleryDlMode?: GalleryDlMode;
+    prohibitedOptionIds?: readonly string[];
+  }
+
+  const { galleryDlMode = 'restricted', prohibitedOptionIds = [] }: Props = $props();
 
   let commandUrlsInput = $state('');
   let isLoading = $state(false);
@@ -68,8 +77,15 @@
   const emptyValueOptions = $derived(getEmptyValueOptions(selectedOptions));
   const emptyValueOptionIds = $derived(new Set(emptyValueOptions.map((o) => o.id)));
   const mutuallyExclusiveActive = $derived(getActiveMutuallyExclusive(selectedOptions));
+  const hasUnavailableOptions = $derived(
+    hasRestrictedProhibitedSelection(galleryDlMode, prohibitedOptionIds, selectedOptions),
+  );
   const runDisabled = $derived(
-    isLoading || $hasJsonLintErrors || !commandUrlsInput || emptyValueOptions.length > 0,
+    isLoading ||
+      $hasJsonLintErrors ||
+      !commandUrlsInput ||
+      emptyValueOptions.length > 0 ||
+      hasUnavailableOptions,
   );
   const scheduleDisabled = $derived(
     $hasJsonLintErrors || !commandUrlsInput || emptyValueOptions.length > 0,
@@ -546,6 +562,17 @@
       </Info>
     {/if}
 
+    {#if hasUnavailableOptions}
+      <Info
+        id="restricted-run-options"
+        variant="warning"
+        class="mx-4"
+      >
+        This Run contains options unavailable in Restricted mode. Remove or dismiss them to
+        continue.
+      </Info>
+    {/if}
+
     <!-- Form Buttons with Error Handling -->
     <div class="m-4 flex justify-end gap-6">
       <Button
@@ -570,6 +597,7 @@
       <Button
         type="submit"
         disabled={runDisabled}
+        aria-describedby={hasUnavailableOptions ? 'restricted-run-options' : undefined}
         class="mt-2 w-full"
         variant="primary"
       >
@@ -612,6 +640,8 @@
     runFormId="command-form"
     isRunning={isLoading}
     {emptyValueOptionIds}
+    {galleryDlMode}
+    {prohibitedOptionIds}
     onConflictDetected={(conflicts) => {
       // Only surface the blocking override panel during an in-flight submit
       // otherwise typing would pop it open
@@ -627,6 +657,8 @@
     seedUrls={scheduleSeedUrls}
     seedUserOptions={scheduleSeedUserOptions}
     seedExcludedOptions={scheduleSeedExcludedOptions}
+    {galleryDlMode}
+    {prohibitedOptionIds}
     onSaved={handleScheduleSaved}
     onCancel={handleScheduleCancel}
   />
