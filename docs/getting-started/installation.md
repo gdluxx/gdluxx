@@ -97,6 +97,7 @@ Then update your compose `volumes` to: `- ~/Documents/gdluxx:/app/data`
           # Normally leave this unset and the right value is chosen automatically
           # based on whether ORIGIN starts with http:// or https://
           - USE_SECURE_COOKIES=${USE_SECURE_COOKIES:-}
+          - GDLUXX_GDL_POLICY=${GDLUXX_GDL_POLICY:-}
           # Only behind a reverse proxy. See the Reverse Proxy guide
           - TRUSTED_PROXY_HEADER=${TRUSTED_PROXY_HEADER:-}
         restart: unless-stopped
@@ -112,6 +113,42 @@ Then update your compose `volumes` to: `- ~/Documents/gdluxx:/app/data`
     ```bash
     docker compose up -d
     ```
+
+### gallery-dl policy
+
+`GDLUXX_GDL_POLICY` is a server setting, not a per user preference. Restricted
+mode is the default. Leave the variable unset or empty, or set it to the exact
+value `restricted`. Restricted mode blocks gallery-dl settings and options that
+can run commands, and limits configured paths to the directories gdluxx normally
+allows.
+
+Only the exact lowercase value `unrestricted` enables Unrestricted mode. Values
+are case-sensitive, and surrounding whitespace is significant. Any other
+non-empty value is treated as Restricted and logs a warning that does not
+include the invalid value.
+
+Unrestricted mode removes those command and path restrictions. This permits
+arbitrary commands through `--exec`, `--exec-after`, and command config keys,
+and permits configured paths outside the normally allowed directories.
+Structural JSON validation, Docker path rewriting, authentication, and other
+security controls remain unchanged. It's unlikely you need Restricted mode, but
+it's here and available if you do.
+
+For Compose deployments, set the value in `.env`; the supplied
+`docker-compose.yml` passes it into the container:
+
+```dotenv
+GDLUXX_GDL_POLICY=unrestricted
+```
+
+For a direct deployment, set the variable in the process environment:
+
+```bash
+export GDLUXX_GDL_POLICY=unrestricted
+```
+
+The setting is read once during process startup. Recreate the container or
+direct process after changing the value.
 
 ### Custom download location
 

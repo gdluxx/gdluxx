@@ -82,6 +82,11 @@ In the **CLI Options** field, add gallery-dl command-line options:
 These are the same options you'd use on the Run page, but they'll now apply
 automatically to this site.
 
+Structured options store one value per option ID. Text option values in a Site
+Rule can contain at most 500 characters. If a Run selects the same option ID as
+a matching Site Rule, the Run value replaces the Site Rule value; other Site
+Rule options still apply.
+
 ### Step 5: Save
 
 Click **Save Rule**. It's now active.
