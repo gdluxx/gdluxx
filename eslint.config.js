@@ -14,6 +14,7 @@ const gitExcludePath = fileURLToPath(new URL('./.git/info/exclude', import.meta.
 export default ts.config(
   includeIgnoreFile(gitignorePath),
   includeIgnoreFile(gitExcludePath),
+  { ignores: ['extension/**'] },
   js.configs.recommended,
   ...ts.configs.recommended,
   ...ts.configs.strict,
@@ -23,6 +24,7 @@ export default ts.config(
   {
     languageOptions: {
       globals: { ...globals.browser, ...globals.node },
+      parserOptions: { tsconfigRootDir: import.meta.dirname },
     },
     rules: {
       'no-undef': 'off',
@@ -108,7 +110,7 @@ export default ts.config(
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-non-null-assertion': 'off',
     },
-  }
+  },
   // {
   //   plugins: {
   //     tailwindcss: true,
