@@ -1,5 +1,55 @@
 # Changelog
 
+# [1.0.0](https://github.com/gdluxx/gdluxx/compare/v0.15.0...v1.0.0) (2026-09-02)
+
+
+### Bug Fixes
+
+* **auth:** derive cookie Secure flag from ORIGIN scheme ([f565036](https://github.com/gdluxx/gdluxx/commit/f565036e44e005ca05b5a3f75957e28d6739aa7b)), closes [#8](https://github.com/gdluxx/gdluxx/issues/8)
+* **auth:** derive secure cookies explicitly and cap session lifetime ([7f76b8b](https://github.com/gdluxx/gdluxx/commit/7f76b8b73e46257bb42dd68ea61cb69bf0898cc8))
+* **auth:** fail closed on user existence, migration, and secret ([20bce8b](https://github.com/gdluxx/gdluxx/commit/20bce8bc9d70f4f06f490156374223b2b71934ca))
+* **auth:** make session listing robust to timestamp representation ([d57511d](https://github.com/gdluxx/gdluxx/commit/d57511df50489ca2a59b1106acf48546e975ba58))
+* **config:** surface rejected config saves in the editor ([459921f](https://github.com/gdluxx/gdluxx/commit/459921f2d925adff48be24df5f1881f947d33ca3))
+* **csrf:** remove the DISABLE_CSRF_CHECK wildcard escape hatch ([a25016c](https://github.com/gdluxx/gdluxx/commit/a25016cddb81abb422429622062b84564ef2c206))
+* **db:** flip boolean option values stored false by the toggle bug ([41ec8e7](https://github.com/gdluxx/gdluxx/commit/41ec8e79c11cd7f809f50892b8c1c290c6c0ff2b))
+* **docker:** align dev compose ORIGIN default with its published port ([e18b1d6](https://github.com/gdluxx/gdluxx/commit/e18b1d68b48edf1c720dec84c84c45580c261d03))
+* **docker:** pass TRUSTED_PROXY_HEADER through to the container ([60f6f49](https://github.com/gdluxx/gdluxx/commit/60f6f498435196d69e6366756f00bfe089bf948e))
+* **lint:** clear application errors blocking release verification ([7dec4e3](https://github.com/gdluxx/gdluxx/commit/7dec4e3244dd2b417c5bdf2c4b73b7bf0f74c6d1))
+* **options:** store true for toggled-on booleans so their flags emit ([0cae4d0](https://github.com/gdluxx/gdluxx/commit/0cae4d08c9907b8653eef462b02da696820218cc))
+* **release:** scope root and extension versioning by path with soft no-op guards ([84bc843](https://github.com/gdluxx/gdluxx/commit/84bc8435ee4f26fd7768a19f1e4cdeb18634dc88))
+* **security:** contain gallery-dl config and argv execution paths ([e543d21](https://github.com/gdluxx/gdluxx/commit/e543d217ba14426859d2e3b11656ecda957ae9a4))
+* **server:** allowlist extension CORS origins and PNA grants ([ea54c40](https://github.com/gdluxx/gdluxx/commit/ea54c40e9be9cc97be5587576d598c67cb5107a8))
+* **server:** finalize the job record when the pty spawn fails ([d391538](https://github.com/gdluxx/gdluxx/commit/d391538d59ee3353125e2a0c20fe2f7f7fdd5c7f))
+* **ui:** hide closed native dialogs from page flow ([9492e38](https://github.com/gdluxx/gdluxx/commit/9492e381c5bc2009fb7c1c628d4be3bb5b55ff26))
+* **validation:** reject catalog-invalid option values at write time ([af885dc](https://github.com/gdluxx/gdluxx/commit/af885dc81985a769febcd7d144507433dd063177))
+
+
+### Features
+
+* **auth:** add api key ownership, permissions, and default expiry ([6592c9b](https://github.com/gdluxx/gdluxx/commit/6592c9bf6e687672b2ff7b2bcf7fc217c1476921))
+* **auth:** enforce single admin and per-route authorization ([799ec64](https://github.com/gdluxx/gdluxx/commit/799ec6498e9a02f61b9b75aa8b72f036736cba1d))
+* **auth:** stop storing the api key prefix fragment at rest ([0f1dca2](https://github.com/gdluxx/gdluxx/commit/0f1dca25451b7bee6d9a9fde7d512c06de2a26bf))
+* **gallery-dl:** add 'unrestricted' mode ([44664dd](https://github.com/gdluxx/gdluxx/commit/44664dde8b4de94b997781479d84aa4a4e33f149))
+* **gallery-dl:** add/modify tests with 'unrestricted' mode ([c56ee13](https://github.com/gdluxx/gdluxx/commit/c56ee133b0fe5c5e69fe697a90d3594d35f15c53))
+* **gallery-dl:** update docker files for 'unrestricted' mode ([343167b](https://github.com/gdluxx/gdluxx/commit/343167b0b3418954f25f429b664b2f4ffccda56b))
+* **jobs:** attribute jobs to their originating schedule ([fd8aa90](https://github.com/gdluxx/gdluxx/commit/fd8aa905d2649df541c9929c99d2823e44ff0c0d))
+* **options:** warn on range syntax gallery-dl would silently drop ([d7e3772](https://github.com/gdluxx/gdluxx/commit/d7e3772b4a966e173c228c72ff37cc830d211fa5))
+* **schedules:** add schedules page and editor seeded from the command form ([16e5c06](https://github.com/gdluxx/gdluxx/commit/16e5c066124cf2fc8dd40bdc83f3ace61b4ae29d))
+* **schedules:** replace table layout with responsive cards ([9e32a62](https://github.com/gdluxx/gdluxx/commit/9e32a62eeab0bd6add742a69e708cf5138ec814f))
+* **schedules:** surface run outcome notifications in the ui ([c9769b6](https://github.com/gdluxx/gdluxx/commit/c9769b6246af083332ca38341609581553c80391))
+* **server:** add schedule and notification api routes ([61b8c54](https://github.com/gdluxx/gdluxx/commit/61b8c54193fcf6539541665ed1d2e830d0090e2f))
+* **server:** add schedule engine for recurring job dispatch ([763fb44](https://github.com/gdluxx/gdluxx/commit/763fb4415173efe3980571644411633a6f0b4a02))
+* **theme:** improve theme colors and component states ([d074ed2](https://github.com/gdluxx/gdluxx/commit/d074ed28b9e40a7b2f9140321dd6a685b5bb597c))
+* **theme:** overhaul the semantic theme system ([08c7007](https://github.com/gdluxx/gdluxx/commit/08c70077f263b6bd2f43b0c38dfc544563278fc6))
+* **ui:** add overflow menu primitive with kebab icon ([a40ba0e](https://github.com/gdluxx/gdluxx/commit/a40ba0e3eaf86aa5bfcf36f621b17d703b912177))
+* **utils:** add future-aware time formatting helpers ([0f66ffe](https://github.com/gdluxx/gdluxx/commit/0f66ffefb835fe53815a86a5d912f73991e9d898))
+
+
+### BREAKING CHANGES
+
+* **auth:** signup closes after the first user; unauthenticated API requests return 401 JSON instead of a redirect.
+* **auth:** AUTH_SECRET is now mandatory in production
+
 # [0.15.0](https://github.com/gdluxx/gdluxx/compare/v0.14.0...v0.15.0) (2026-08-18)
 
 
