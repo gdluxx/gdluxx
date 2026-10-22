@@ -114,6 +114,22 @@ Then update your compose `volumes` to: `- ~/Documents/gdluxx:/app/data`
     docker compose up -d
     ```
 
+### FFmpeg image
+
+The default image doesn't include [FFmpeg](https://ffmpeg.org/). Some gallery-dl
+features need it, such as the `ugoira` post-processor that converts Pixiv Ugoira
+animations to video. If you use them, switch to the `-ffmpeg` image. It's
+otherwise identical, but considerably larger.
+
+```yaml
+services:
+  gdluxx:
+    image: ghcr.io/gdluxx/gdluxx:latest-ffmpeg
+```
+
+Every release is published in both variants, so a pinned version works the same
+way: `ghcr.io/gdluxx/gdluxx:<version>-ffmpeg`
+
 ### gallery-dl policy
 
 `GDLUXX_GDL_POLICY` is a server setting, not a per user preference. Restricted

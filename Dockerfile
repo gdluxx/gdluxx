@@ -1,4 +1,5 @@
 ARG PNPM_VERSION=11.3.0
+ARG RUNTIME=runtime-base
 
 FROM node:24-slim AS builder
 
@@ -22,9 +23,6 @@ RUN mkdir -p data && chown 1000:1000 data
 
 RUN pnpm build
 
-# Install production dependencies in an intermediate stage. The package
-# manifests are the only app inputs to this stage, so source/build changes do
-# not repeat the apt or dependency installation work.
 FROM node:24-slim AS production-deps
 
 ARG PNPM_VERSION
@@ -39,21 +37,22 @@ RUN pnpm install --frozen-lockfile --prod && \
     pnpm store prune && \
     rm -rf /root/.cache /tmp/*
 
-FROM node:24-slim AS runner
+FROM node:24-slim AS runtime-base
 
-WORKDIR /app
-
-# Keep runtime OS packages ahead of app copies so changing code does not
-# invalidate the apt layer.
+FROM runtime-base AS runtime-ffmpeg
 RUN apt-get update && \
     apt-get install -y --no-install-recommends ffmpeg && \
     rm -rf /var/cache/apt/* /var/lib/apt/lists/*
+
+FROM ${RUNTIME} AS runner
+
+WORKDIR /app
 
 COPY --from=builder --chown=1000:1000 /app/build ./build
 COPY --from=builder --chown=1000:1000 /app/static ./static
 COPY --from=builder --chown=1000:1000 /app/package.json ./package.json
 COPY --from=builder --chown=1000:1000 /app/src/lib/server/schema.sql ./schema.sql
-COPY --from=production-deps --chown=1000:1000 /app/node_modules ./node_modules
+COPY --from=production-deps /app/node_modules ./node_modules
 
 ENV NODE_ENV=production
 ENV PORT=7755
