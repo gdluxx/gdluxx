@@ -52,6 +52,7 @@
   const { galleryDlMode = 'restricted', prohibitedOptionIds = [] }: Props = $props();
 
   let commandUrlsInput = $state('');
+  let urlsRestored = $state(false);
   let isLoading = $state(false);
   let formError = $state<string | null>(null);
   const selectedOptions = new SvelteMap<string, OptionWithSource>();
@@ -106,11 +107,14 @@
   onMount(async () => {
     await checkConfigFileForErrors();
 
-    if (browser) {
+    try {
       const savedUrls = localStorage.getItem('commandForm_urls');
       if (savedUrls) {
         commandUrlsInput = savedUrls;
       }
+      urlsRestored = true;
+    } catch (error) {
+      logger.warn('URL persistence unavailable:', error);
     }
 
     try {
@@ -126,8 +130,13 @@
   });
 
   $effect(() => {
-    if (browser && commandUrlsInput.trim()) {
+    if (!urlsRestored) {
+      return;
+    }
+    if (commandUrlsInput.trim()) {
       localStorage.setItem('commandForm_urls', commandUrlsInput);
+    } else {
+      localStorage.removeItem('commandForm_urls');
     }
   });
 
