@@ -376,6 +376,29 @@ describe('rule caps are enforced, never truncated (cases 15-17, C1)', () => {
   });
 });
 
+describe('profiles require a host on save', () => {
+  const scopeInput = {
+    scope: 'host' as const,
+    extraction: { mode: 'range' as const, startSelector: '#a', endSelector: '#b' },
+    rules: [],
+    applyToPreview: false,
+  };
+
+  test.each(['', '   '])('host %j is rejected and nothing is stored', async (host) => {
+    const store = await loadStore();
+    await expect(store.saveExtractionProfile({ ...scopeInput, host })).rejects.toBeInstanceOf(
+      store.ProfileHostMissingError,
+    );
+    expect(await store.loadExtractionProfiles()).toEqual([]);
+  });
+
+  test('an IP address host saves normally', async () => {
+    const store = await loadStore();
+    const { id } = await store.saveExtractionProfile({ ...scopeInput, host: '192.168.1.10' });
+    expect(id).toBe('host::192.168.1.10');
+  });
+});
+
 describe('targeted-config representation (cases 19-19e, C5)', () => {
   const goodImages = { via: 'selector' as const, selector: 'img', attr: 'src' };
   const goodContainer = { via: 'body' as const };

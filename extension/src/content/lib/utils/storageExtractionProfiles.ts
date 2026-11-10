@@ -615,6 +615,13 @@ export class ProfileCapacityError extends Error {
   }
 }
 
+export class ProfileHostMissingError extends Error {
+  constructor() {
+    super("This page has no hostname, so an extraction profile can't be saved for it.");
+    this.name = 'ProfileHostMissingError';
+  }
+}
+
 export async function saveExtractionProfile(
   input: SaveExtractionProfileInput,
 ): Promise<ExtractionProfileLookupResult> {
@@ -624,6 +631,8 @@ export async function saveExtractionProfile(
 
   const now = Date.now();
   const host = normaliseHost(input.host);
+  // An empty host yields ids like `host::`, which the server rejects on backup
+  if (!host) throw new ProfileHostMissingError();
   const origin = input.scope === 'host' ? undefined : normaliseOrigin(input.origin);
   const path = input.scope === 'path' ? (normalisePath(input.path) ?? '/') : undefined;
   const id = buildProfileId(input.scope, host, origin, path);

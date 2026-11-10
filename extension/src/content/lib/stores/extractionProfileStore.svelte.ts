@@ -41,6 +41,7 @@ import {
   normaliseImportPayload,
   planExtractionImport,
   ProfileCapacityError,
+  ProfileHostMissingError,
   ProfileRuleLimitError,
   type ExtractionImportApplyResult,
   type ExtractionImportPlan,
@@ -463,6 +464,12 @@ export function createExtractionProfileStore() {
     const scopeToUse = scopeOverride ?? scope;
     const resolved = resolveScopeParts(currentUrl);
     const host = resolved?.host ?? '';
+    if (!host) {
+      toastStore.warning(
+        "This page has no hostname (local files, blank pages), so an extraction profile can't be saved for it.",
+      );
+      return;
+    }
     const origin = resolved?.origin;
     const path = resolved?.path;
     const id = buildProfileId(scopeToUse, host, origin, path);
@@ -517,7 +524,7 @@ export function createExtractionProfileStore() {
     } catch (error) {
       console.error('Failed to save extraction profile', error);
       toastStore.error(
-        error instanceof ProfileRuleLimitError
+        error instanceof ProfileRuleLimitError || error instanceof ProfileHostMissingError
           ? error.message
           : 'Failed to save extraction profile.',
       );
