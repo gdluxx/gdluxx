@@ -2,6 +2,7 @@ name: gdluxx
 
 services:
   gdluxx:
+    # Use :latest-ffmpeg if you need FFmpeg. See docs/getting-started/installation.md
     image: ghcr.io/gdluxx/gdluxx:latest
     container_name: gdluxx
     ports:

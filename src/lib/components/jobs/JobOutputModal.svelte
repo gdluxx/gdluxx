@@ -9,7 +9,7 @@
   -->
 
 <script lang="ts">
-  import { onMount, tick } from 'svelte';
+  import { tick } from 'svelte';
   import { AnsiUp } from 'ansi_up';
   import DOMPurify from 'dompurify';
   import type { ClientJob } from '$lib/stores/jobs.svelte';
@@ -27,8 +27,9 @@
   const { job }: Props = $props();
 
   let outputContainer: HTMLElement | null = $state(null);
-  let userScrolledUp = $state(false);
+  let followNewLogs = $state(true);
   let showDeleteConfirm = $state(false);
+  let retrying = $state(false);
 
   const tooltip = $state({
     visible: false,
@@ -41,39 +42,79 @@
   ansiConverter.use_classes = false;
   ansiConverter.escape_html = true;
 
-  // Auto scroll
+  function getLogScroller(): HTMLElement | null {
+    return outputContainer?.closest<HTMLElement>('[data-modal-scroll-body]') ?? null;
+  }
+
+  function scrollToLatest(): void {
+    const scroller = getLogScroller();
+    if (scroller) scroller.scrollTop = scroller.scrollHeight;
+  }
+
+  // Follow output after Svelte renders the new lines and the browser lays them out.
   $effect(() => {
     void job.output.length;
+    void outputContainer;
+    if (!followNewLogs) return;
 
-    (async () => {
-      await tick();
-      const el = outputContainer;
-      if (el && !userScrolledUp) {
-        el.scrollTo({ top: el.scrollHeight, behavior: 'instant' });
-      }
-    })();
+    void tick().then(() => {
+      requestAnimationFrame(() => {
+        if (followNewLogs) scrollToLatest();
+      });
+    });
   });
 
-  // Detect user scroll
+  // Scrolling upward is an explicit request to pause following. Merely adding
+  // output can increase scrollHeight without changing scrollTop.
   $effect(() => {
-    const el = outputContainer;
-    if (el) {
-      const handleScroll = () => {
-        const isAtBottom = el.scrollHeight - el.clientHeight <= el.scrollTop + 1;
-        userScrolledUp = !isAtBottom;
-      };
-
-      el.addEventListener('scroll', handleScroll, { passive: true });
-      return () => {
-        el.removeEventListener('scroll', handleScroll);
-      };
-    }
+    const scroller = getLogScroller();
+    if (!scroller) return;
+    let lastScrollTop = scroller.scrollTop;
+    let lastOutputCount = job.output.length;
+    const handleScroll = () => {
+      const currentScrollTop = scroller.scrollTop;
+      const outputCount = job.output.length;
+      // Retrying clears the previous run's output, which can clamp scrollTop
+      // and emit a scroll event that looks like the user scrolled upward.
+      if (outputCount < lastOutputCount) {
+        lastOutputCount = outputCount;
+        lastScrollTop = currentScrollTop;
+        return;
+      }
+      lastOutputCount = outputCount;
+      if (followNewLogs && currentScrollTop < lastScrollTop - 1) {
+        followNewLogs = false;
+      }
+      lastScrollTop = currentScrollTop;
+    };
+    scroller.addEventListener('scroll', handleScroll, { passive: true });
+    return () => scroller.removeEventListener('scroll', handleScroll);
   });
 
   // The job keeps running; closing the modal (Escape, backdrop, close button)
   // only hides it and returns to the job list.
+  function handleFollowChange(event: Event) {
+    followNewLogs = (event.currentTarget as HTMLInputElement).checked;
+    if (followNewLogs) {
+      scrollToLatest();
+    }
+  }
+
   function handleMinimize() {
     jobStore.hideJob(job.id);
+  }
+
+  async function handleRetry() {
+    retrying = true;
+    const success = await jobStore.retryJob(job.id);
+    retrying = false;
+    if (success) {
+      followNewLogs = true;
+      await tick();
+      scrollToLatest();
+    } else {
+      clientLogger.error(`Retry request failed for job ${job.id}`);
+    }
   }
 
   function handleDismiss() {
@@ -153,17 +194,6 @@
       }, 1500);
     }
   }
-
-  onMount(() => {
-    const el = outputContainer;
-    if (el && el.scrollHeight - el.clientHeight <= el.scrollTop + 1) {
-      userScrolledUp = false;
-    } else if (el) {
-      userScrolledUp = el.scrollHeight - el.clientHeight - el.scrollTop > 1;
-    } else {
-      userScrolledUp = false;
-    }
-  });
 </script>
 
 <Modal
@@ -210,10 +240,7 @@
     <div
       class="flex items-center gap-2 bg-surface-elevated px-4 py-2 border-b-strong border-t-strong sm:px-6"
     >
-      <p
-        class="min-w-0 flex-1 text-sm break-all text-foreground"
-        title={job.url}
-      >
+      <p class="min-w-0 flex-1 text-sm break-all text-foreground" title={job.url}>
         {job.url}
       </p>
       <button
@@ -222,10 +249,7 @@
         class="flex-shrink-0 cursor-pointer p-1 text-muted-foreground transition-all duration-base hover:scale-110 hover:text-foreground"
         title="Copy Job URL"
       >
-        <Icon
-          iconName="copy-clipboard"
-          size={20}
-        />
+        <Icon iconName="copy-clipboard" size={20} />
       </button>
       <CopyTooltip
         x={tooltip.x}
@@ -236,13 +260,15 @@
     </div>
   {/snippet}
 
-  <!-- Container -->
+  <!-- Job output scrolls in the Modal body. -->
   <div
     bind:this={outputContainer}
-    class="h-full overflow-y-auto bg-surface-sunken p-3 font-mono text-xs sm:p-4 sm:text-sm"
+    class="bg-surface-sunken p-3 font-mono text-xs sm:p-4 sm:text-sm"
   >
     {#if job.output.length === 0}
-      <p class="text-muted-foreground">Waiting for output...</p>
+      <p class="text-muted-foreground">
+        {job.status === 'waiting' ? 'Waiting for queue capacity...' : 'Waiting for output...'}
+      </p>
     {:else}
       {#each job.output as output (output)}
         <div class={`break-words whitespace-pre-wrap ${getOutputStyle(output.type)}`}>
@@ -265,25 +291,35 @@
   {#snippet footer()}
     <div class="px-3 py-2 text-xs border-t-strong sm:px-6 sm:py-3 sm:text-sm">
       <!-- Mobile layout -->
-      <div class="flex items-start justify-between gap-2 sm:hidden">
-        <Button
-          variant="outline-danger"
-          onclick={handleDismiss}
-          aria-label="Delete job"
-          class="flex-shrink-0 gap-1.5"
-        >
-          <Icon
-            iconName="delete"
-            size={16}
-          />
-          Delete job
-        </Button>
-        <div class="flex flex-col items-end gap-1 text-right">
-          <div class="text-accent-foreground">
-            Status: {job.status}
-            {#if job.exitCode !== undefined}
-              (Exit code: {job.exitCode})
-            {/if}
+      <div class="flex flex-wrap items-start justify-between gap-2 sm:hidden">
+        <div class="flex flex-shrink-0 items-center gap-2">
+          <Button
+            variant="outline-danger"
+            onclick={handleDismiss}
+            aria-label="Delete job"
+            class="gap-1.5"
+          >
+            <Icon iconName="delete" size={16} />
+            Delete job
+          </Button>
+          {#if job.status === 'error'}
+            <Button variant="outline-primary" onclick={handleRetry} loading={retrying} aria-label="Retry job" class="gap-1.5">
+              <Icon iconName="reload" size={16} /> Retry
+            </Button>
+          {/if}
+        </div>
+        <div class="ml-auto flex flex-col items-end gap-1 text-right">
+          <div class="flex items-center justify-end gap-2 text-accent-foreground">
+            <label class="flex cursor-pointer items-center gap-1.5 whitespace-nowrap">
+              <input type="checkbox" checked={followNewLogs} onchange={handleFollowChange} class="h-4 w-4 accent-primary" />
+              Follow logs
+            </label>
+            <span>
+              Status: {job.status}
+              {#if job.exitCode !== undefined}
+                (Exit code: {job.exitCode})
+              {/if}
+            </span>
           </div>
           <div class="text-accent-foreground">
             Started: {new Date(job.startTime).toLocaleTimeString()}
@@ -296,19 +332,27 @@
 
       <!-- Desktop layout -->
       <div class="hidden sm:flex sm:items-center sm:justify-between sm:gap-4">
-        <Button
-          variant="outline-danger"
-          onclick={handleDismiss}
-          aria-label="Delete job"
-          class="gap-1.5"
-        >
-          <Icon
-            iconName="delete"
-            size={18}
-          />
-          Delete job
-        </Button>
+        <div class="flex items-center gap-2">
+          <Button
+            variant="outline-danger"
+            onclick={handleDismiss}
+            aria-label="Delete job"
+            class="gap-1.5"
+          >
+            <Icon iconName="delete" size={18} />
+            Delete job
+          </Button>
+          {#if job.status === 'error'}
+            <Button variant="outline-primary" onclick={handleRetry} loading={retrying} aria-label="Retry job" class="gap-1.5">
+              <Icon iconName="reload" size={18} /> Retry job
+            </Button>
+          {/if}
+        </div>
         <div class="flex items-center gap-4">
+          <label class="flex cursor-pointer items-center gap-1.5 whitespace-nowrap text-muted-foreground">
+            <input type="checkbox" checked={followNewLogs} onchange={handleFollowChange} class="h-4 w-4 accent-primary" />
+            Follow logs
+          </label>
           <div class="text-muted-foreground">
             Status: {job.status}
             {#if job.exitCode !== undefined}

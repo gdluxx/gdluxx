@@ -15,6 +15,9 @@ import { createApiResponse, handleApiError } from '$lib/server/api-utils';
 import { validateInput } from '$lib/server/validation/validation-utils';
 import { jobIdSchema } from '$lib/server/validation/command-validation';
 import { requireUser } from '$lib/server/auth/requireUser';
+import { siteConfigManager } from '$lib/server/siteConfigManager';
+import { launchUrls, BinaryUnavailableError } from '$lib/server/jobs/commandLauncher';
+import { ConfigExecutionBlockedError, ProhibitedOptionError } from '$lib/server/validation/exec-policy';
 
 export const GET: RequestHandler = async ({ params, locals }: RequestEvent): Promise<Response> => {
   requireUser(locals);
@@ -34,6 +37,39 @@ export const GET: RequestHandler = async ({ params, locals }: RequestEvent): Pro
 
     const { process: _process, subscribers: _subscribers, ...jobData } = job;
     return createApiResponse({ job: jobData });
+  } catch (error) {
+    return handleApiError(error as Error);
+  }
+};
+
+export const POST: RequestHandler = async ({ params, locals }: RequestEvent): Promise<Response> => {
+  requireUser(locals);
+  try {
+    const { jobId } = params;
+    validateInput({ jobId }, jobIdSchema);
+    const url = await jobManager.prepareJobRetry(jobId);
+    if (!url) return handleApiError(new Error('Only failed jobs can be retried'));
+
+    try {
+      const siteOptions = await siteConfigManager.getCliOptionsForUrl(url);
+      const results = await launchUrls({
+        urls: [url], args: siteOptions, excludedOptions: [],
+        resolveSiteOptions: async () => [], retryJobId: jobId,
+      });
+      const result = results[0];
+      if (!result?.success) {
+        await jobManager.completeJob(jobId, 1);
+        return handleApiError(new Error(result?.error ?? 'Failed to retry job'));
+      }
+      return createApiResponse({ jobId, status: result.status ?? 'waiting' });
+    } catch (error) {
+      await jobManager.completeJob(jobId, 1);
+      if (error instanceof BinaryUnavailableError) return handleApiError(error);
+      if (error instanceof ProhibitedOptionError || error instanceof ConfigExecutionBlockedError) {
+        return handleApiError(error);
+      }
+      throw error;
+    }
   } catch (error) {
     return handleApiError(error as Error);
   }

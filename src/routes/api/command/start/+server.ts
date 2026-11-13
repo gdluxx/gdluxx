@@ -90,7 +90,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
             jobId: result.jobId,
             url: result.url,
             success: true,
-            message: 'Job started successfully',
+            status: result.status,
+            message: result.status === 'waiting' ? 'Job added to queue' : 'Job started successfully',
           }
         : {
             url: result.url,

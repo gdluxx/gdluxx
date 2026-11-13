@@ -11,6 +11,7 @@
 import { spawn } from '@homebridge/node-pty-prebuilt-multiarch';
 import type { IPty } from '@homebridge/node-pty-prebuilt-multiarch';
 import { jobManager } from './jobManager';
+import { jobQueue, type QueuedExecution } from './jobQueue';
 import { serverLogger as logger } from '$lib/server/logger';
 import { PATHS, TERMINAL } from '$lib/server/constants';
 import { redactSensitiveArgs } from '$lib/server/validation/option-validation';
@@ -23,6 +24,7 @@ export interface CommandExecutionResult {
   success: boolean;
   jobId?: string;
   error?: string;
+  status?: 'waiting' | 'running';
 }
 
 export interface GalleryDlCommandOptions {
@@ -57,6 +59,7 @@ export async function executeGalleryDlCommand(
   url: string,
   cliArgs: string[],
   options?: GalleryDlCommandOptions,
+  existingJobId?: string,
 ): Promise<CommandExecutionResult> {
   // This layer reports per-URL failures as results; throwing a policy failure
   // would let callers flatten it into an unrelated route-level error.
@@ -70,10 +73,33 @@ export async function executeGalleryDlCommand(
     throw error;
   }
 
-  let createdJobId: string | undefined;
+  const payload: QueuedExecution = {
+    kind: 'single', url, cliArgs,
+    options: options ? {
+      fallbackUrls: options.fallbackUrls,
+      fallbackCliArgs: options.fallbackCliArgs,
+      fallbackDiagnostic: options.fallbackDiagnostic,
+    } : undefined,
+  };
   try {
-    const jobId = await jobManager.createJob(url);
-    createdJobId = jobId;
+    const jobId = await jobManager.createQueuedJob(url, payload, undefined, existingJobId);
+    const job = await jobManager.getJob(jobId);
+    return { success: true, jobId, status: job?.status === 'running' ? 'running' : 'waiting' };
+  } catch (error) {
+    logger.error('Failed to queue gallery-dl command:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error occurred' };
+  }
+}
+
+async function startGalleryDlCommand(
+  jobId: string,
+  url: string,
+  cliArgs: string[],
+  options?: GalleryDlCommandOptions,
+): Promise<void> {
+  let createdJobId: string | undefined = jobId;
+  try {
+    await assertConfigFileSafeForExecution();
 
     const argsWithCookies = await withCookieArgs([url], cliArgs);
     const processArgs = [...argsWithCookies, '--config', PATHS.CONFIG_FILE, url];
@@ -144,19 +170,11 @@ export async function executeGalleryDlCommand(
       },
     );
 
-    return {
-      success: true,
-      jobId,
-    };
   } catch (error) {
     logger.error('Failed to execute gallery-dl command:', error);
     if (createdJobId) {
       await jobManager.completeJob(createdJobId, 1);
     }
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error occurred',
-    };
   }
 }
 
@@ -175,10 +193,29 @@ export async function executeGalleryDlBatchCommand(
     throw error;
   }
 
-  let createdJobId: string | undefined;
+  const payload: QueuedExecution = {
+    kind: 'batch', url: 'directlink batch', urls, cliArgs,
+    options: options ? { cookieUrl: options.cookieUrl } : undefined,
+  };
   try {
-    const jobId = await jobManager.createBatchJob(urls);
-    createdJobId = jobId;
+    const jobId = await jobManager.createQueuedJob('directlink batch', payload, urls.length);
+    const job = await jobManager.getJob(jobId);
+    return { success: true, jobId, status: job?.status === 'running' ? 'running' : 'waiting' };
+  } catch (error) {
+    logger.error('Failed to queue gallery-dl batch command:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error occurred' };
+  }
+}
+
+async function startGalleryDlBatchCommand(
+  jobId: string,
+  urls: string[],
+  cliArgs: string[],
+  options?: GalleryDlBatchCommandOptions,
+): Promise<void> {
+  let createdJobId: string | undefined = jobId;
+  try {
+    await assertConfigFileSafeForExecution();
     const cookieCandidates = [...new Set([options?.cookieUrl, urls[0]])].filter((u): u is string =>
       Boolean(u),
     );
@@ -221,18 +258,24 @@ export async function executeGalleryDlBatchCommand(
       },
     );
 
-    return {
-      success: true,
-      jobId,
-    };
   } catch (error) {
     logger.error('Failed to execute gallery-dl batch command:', error);
     if (createdJobId) {
       await jobManager.completeJob(createdJobId, 1);
     }
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error occurred',
-    };
   }
 }
+
+jobQueue.registerRunner(async (jobId, payload, startTime) => {
+  await jobManager.markQueuedJobRunning(jobId, startTime);
+  if (payload.kind === 'single') {
+    const { fallbackUrls, fallbackCliArgs, fallbackDiagnostic } = payload.options ?? {};
+    await startGalleryDlCommand(jobId, payload.url, payload.cliArgs, {
+      fallbackUrls, fallbackCliArgs, fallbackDiagnostic,
+    });
+  } else {
+    await startGalleryDlBatchCommand(jobId, payload.urls ?? [], payload.cliArgs, {
+      cookieUrl: payload.options?.cookieUrl,
+    });
+  }
+});

@@ -107,3 +107,39 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Detect ffmpeg variant
+        id: variant
+        run: |
+          if grep -q 'AS runtime-ffmpeg' Dockerfile; then
+            echo "ffmpeg=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::Dockerfile at ${{ inputs.tag }} has no runtime-ffmpeg stage; skipping the -ffmpeg image"
+          fi
+
+      - name: Extract metadata (ffmpeg)
+        if: steps.variant.outputs.ffmpeg == 'true'
+        id: meta-ffmpeg
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          flavor: |
+            suffix=-ffmpeg,onlatest=true
+          tags: |
+            type=raw,value=latest,enable=${{ inputs.push_latest }}
+            type=raw,value=${{ steps.version.outputs.version }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+
+      - name: Build and push (ffmpeg)
+        if: steps.variant.outputs.ffmpeg == 'true'
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          build-args: RUNTIME=runtime-ffmpeg
+          tags: ${{ steps.meta-ffmpeg.outputs.tags }}
+          labels: ${{ steps.meta-ffmpeg.outputs.labels }}
+          cache-from: type=gha,scope=ffmpeg
+          cache-to: type=gha,scope=ffmpeg,mode=max

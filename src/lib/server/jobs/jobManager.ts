@@ -24,9 +24,13 @@ import {
   countJobs,
   readJobsSummary,
   readRunningJobIds,
+  readWaitingJobs,
+  readJobIdsByStatus,
+  resetJobForRetry,
   type JobsPageOptions,
 } from './jobsManager';
 import type { JobListItem, JobsSummary } from '$lib/types/jobs';
+import { jobQueue, type QueuedExecution } from './jobQueue';
 
 export interface JobOutput {
   type: 'info' | 'stdout' | 'stderr' | 'error' | 'fatal' | 'status';
@@ -37,7 +41,7 @@ export interface JobOutput {
 export interface Job {
   id: string;
   url: string;
-  status: 'running' | 'success' | 'no_action' | 'error';
+  status: 'waiting' | 'running' | 'success' | 'no_action' | 'error';
   output: JobOutput[];
   startTime: number;
   endTime?: number;
@@ -80,6 +84,7 @@ class JobManager {
         logger.error('Failed to load jobs during initialization:', error);
         throw error;
       });
+    void this.initializationPromise.then(() => jobQueue.markReady()).catch(() => undefined);
   }
 
   private async loadJobsInternal(): Promise<void> {
@@ -95,6 +100,7 @@ class JobManager {
         await dbUpdateJob(id, {
           status: 'error',
           endTime: timestamp,
+          queuePayload: null,
         });
         await dbAddJobOutput(id, {
           type: 'error',
@@ -106,6 +112,22 @@ class JobManager {
       if (interruptedIds.length > 0) {
         logger.info(`Reconciled ${interruptedIds.length} interrupted job(s) after server restart`);
       }
+
+      for (const queued of readWaitingJobs()) {
+        const metadata = readJobById(queued.id);
+        if (!metadata) continue;
+        this.jobs.set(queued.id, {
+          id: queued.id,
+          url: queued.url,
+          status: 'waiting',
+          output: readJobOutputs(queued.id),
+          startTime: metadata.startTime,
+          downloadCount: metadata.downloadCount,
+          skipCount: metadata.skipCount,
+          batchCount: metadata.batchCount,
+          subscribers: new Set(),
+        });
+      }
     } catch (error) {
       logger.warn('Error reconciling interrupted jobs on startup:', error);
     }
@@ -116,63 +138,83 @@ class JobManager {
   }
 
   async createJob(url: string): Promise<string> {
+    return this.createQueuedJob(url, { kind: 'single', url, cliArgs: [] });
+  }
+
+  async createQueuedJob(url: string, payload: QueuedExecution, batchCount?: number, existingId?: string): Promise<string> {
     await this.initializationPromise;
-    const id = uuidv4();
+    const id = existingId ?? uuidv4();
     const startTime = Date.now();
     const job: Job = {
       id,
       url,
-      status: 'running',
+      status: 'waiting',
       output: [],
       startTime,
       downloadCount: 0,
       skipCount: 0,
+      batchCount,
       subscribers: new Set(),
     };
 
-    await dbCreateJob({
-      id,
-      url,
-      status: 'running',
-      startTime,
-      downloadCount: 0,
-      skipCount: 0,
-    });
+    if (existingId) {
+      await dbUpdateJob(id, { status: 'waiting', startTime, queuePayload: JSON.stringify(payload) });
+    } else {
+      await dbCreateJob({
+        id,
+        url,
+        status: 'waiting',
+        startTime,
+        downloadCount: 0,
+        skipCount: 0,
+        batchCount,
+        queuePayload: JSON.stringify(payload),
+      });
+    }
 
     this.jobs.set(id, job);
-    logger.info(`Job created: ${id} for URL: ${url}`);
+    logger.info(`Job queued: ${id} for URL: ${url}`);
+    jobQueue.capacityChanged();
     return id;
   }
 
   async createBatchJob(urls: string[]): Promise<string> {
+    return this.createQueuedJob('directlink batch', { kind: 'batch', url: 'directlink batch', urls, cliArgs: [] }, urls.length);
+  }
+
+  async prepareJobRetry(id: string): Promise<string | undefined> {
     await this.initializationPromise;
-    const id = uuidv4();
+    const existing = await this.getJob(id);
+    if (!existing || existing.status !== 'error') return undefined;
     const startTime = Date.now();
+    if (!(await resetJobForRetry(id, startTime))) return undefined;
     const job: Job = {
       id,
-      url: 'directlink batch',
-      status: 'running',
+      url: existing.url,
+      status: 'waiting',
       output: [],
       startTime,
       downloadCount: 0,
       skipCount: 0,
-      batchCount: urls.length,
+      batchCount: existing.batchCount,
       subscribers: new Set(),
     };
-
-    await dbCreateJob({
-      id,
-      url: 'directlink batch',
-      status: 'running',
-      startTime,
-      downloadCount: 0,
-      skipCount: 0,
-      batchCount: urls.length,
-    });
-
     this.jobs.set(id, job);
-    logger.info(`Batch job created: ${id} for ${urls.length} URL(s)`);
-    return id;
+    return job.url;
+  }
+
+  async markQueuedJobRunning(id: string, startTime: number): Promise<void> {
+    await this.initializationPromise;
+    const job = this.jobs.get(id);
+    if (job) {
+      job.status = 'running';
+      job.startTime = startTime;
+      const encoder = new TextEncoder();
+      const event = `event: queue\ndata: ${JSON.stringify({ status: 'running' })}\n\n`;
+      for (const controller of job.subscribers) {
+        try { controller.enqueue(encoder.encode(event)); } catch { job.subscribers.delete(controller); }
+      }
+    }
   }
 
   async getJob(id: string): Promise<Job | undefined> {
@@ -213,6 +255,11 @@ class JobManager {
   async getJobsSummary(): Promise<JobsSummary> {
     await this.initializationPromise;
     return readJobsSummary();
+  }
+
+  async getJobIdsByStatus(status: Job['status']): Promise<string[]> {
+    await this.initializationPromise;
+    return readJobIdsByStatus(status);
   }
 
   async setJobProcess(id: string, process: IPty): Promise<void> {
@@ -310,6 +357,7 @@ class JobManager {
           exitCode: job.exitCode,
           downloadCount: job.downloadCount,
           skipCount: job.skipCount,
+          queuePayload: null,
         });
       } catch (error) {
         logger.warn(`Failed to update job completion in database for job ${id}:`, error);
@@ -339,6 +387,7 @@ class JobManager {
       // The job is fully persisted; evict it from memory. Later reads are
       // served by the getJob / addSubscriber database fallbacks.
       this.jobs.delete(id);
+      jobQueue.capacityChanged();
     }
   }
 
@@ -478,6 +527,7 @@ class JobManager {
     }
 
     logger.info(`Job ${id} deleted.`);
+    jobQueue.capacityChanged();
     return true;
   }
 
@@ -494,6 +544,7 @@ class JobManager {
     try {
       const deletedCount = dbDeleteJobs(ids);
       logger.info(`Deleted ${deletedCount} job(s).`);
+      if (deletedCount) jobQueue.capacityChanged();
       return deletedCount;
     } catch (error) {
       logger.warn('Failed to bulk delete jobs from database:', error);
@@ -511,6 +562,7 @@ class JobManager {
     try {
       const deletedCount = dbDeleteAllJobs();
       logger.info(`Deleted all ${deletedCount} job(s).`);
+      if (deletedCount) jobQueue.capacityChanged();
       return deletedCount;
     } catch (error) {
       logger.warn('Failed to delete all jobs from database:', error);

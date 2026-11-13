@@ -114,7 +114,7 @@
     <!-- Single scroll container. min-h-0 allows it to shrink below its content
          height so the header/footer keep their space and only this region
          scrolls. -->
-    <div class="min-h-0 flex-1 overflow-y-auto">
+    <div class="min-h-0 flex-1 overflow-y-auto" data-modal-scroll-body>
       {#if children}
         {@render children()}
       {/if}

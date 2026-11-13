@@ -34,6 +34,7 @@
   const { initialJobs = [], initialTotal = 0 }: Props = $props();
 
   let showDeleteConfirm = $state(false);
+  let retryingFailedJobs = $state(false);
   let deleteAction = $state<'single' | 'all' | 'selected'>('all');
   let jobToDelete = $state<string | null>(null);
   let sortNewestFirst = $state(true);
@@ -84,6 +85,8 @@
 
   function getStatusTooltip(job: JobListItem): string {
     switch (job.status) {
+      case 'waiting':
+        return 'Job is waiting for queue capacity...';
       case 'running':
         return 'Job is currently downloading...';
       case 'success':
@@ -133,6 +136,17 @@
     deleteAction = 'all';
     jobToDelete = null;
     showDeleteConfirm = true;
+  }
+
+  async function retryAllFailedJobs(event: MouseEvent) {
+    event.stopPropagation();
+    if (retryingFailedJobs) return;
+    retryingFailedJobs = true;
+    try {
+      await jobStore.retryAllFailedJobs();
+    } finally {
+      retryingFailedJobs = false;
+    }
   }
 
   function deleteSelectedJobs(event: MouseEvent) {
@@ -216,7 +230,12 @@
     </div>
 
     <!-- Statistics -->
-    <div class="mb-4 grid grid-cols-3 gap-3 lg:grid-cols-6">
+    <div class="mb-4 grid grid-cols-3 gap-3 lg:grid-cols-7">
+      <button onclick={() => toggleFilter('waiting')}
+        class={`cursor-pointer rounded-surface border px-3 py-1.5 text-foreground ${activeFilters.has('waiting') ? 'border-warning bg-warning/10' : 'bg-surface-elevated border-strong hover:border-warning hover:bg-warning-hover/10'}`}>
+        <div class="flex items-center justify-center gap-2"><div class="h-2 w-2 rounded-full bg-warning"></div><span class="text-base font-medium text-accent-foreground">Waiting</span></div>
+        <div class="mt-1 flex justify-center text-xl font-semibold text-primary">{jobStore.waitingJobCount}</div>
+      </button>
       <!-- running card -->
       <button
         onclick={() => toggleFilter('running')}
@@ -394,16 +413,29 @@
           </Tooltip>
         </div>
 
-        <Button
-          name="Delete All Jobs"
-          onclick={deleteAllJobs}
-          aria-label="Delete All Jobs"
-          variant="outline-danger"
-          size="sm"
-          class="sm:ml-auto"
-        >
-          Delete All
-        </Button>
+        <div class="flex items-center gap-2 sm:ml-auto">
+          {#if jobStore.errorJobCount > 0}
+            <Button
+              name="Retry All Failed Jobs"
+              onclick={retryAllFailedJobs}
+              aria-label="Retry All Failed Jobs"
+              variant="outline-primary"
+              size="sm"
+              disabled={retryingFailedJobs}
+            >
+              {retryingFailedJobs ? 'Retrying...' : 'Retry All Failed'}
+            </Button>
+          {/if}
+          <Button
+            name="Delete All Jobs"
+            onclick={deleteAllJobs}
+            aria-label="Delete All Jobs"
+            variant="outline-danger"
+            size="sm"
+          >
+            Delete All
+          </Button>
+        </div>
       </div>
     </div>
   </div>
@@ -444,6 +476,7 @@
                     {:else}
                       <span
                         class:text-foreground={getStatusText(job.status) === 'Running'}
+                        class:text-warning={getStatusText(job.status) === 'Waiting'}
                         class:text-success={getStatusText(job.status) === 'Success'}
                         class:text-error={getStatusText(job.status) === 'Error'}
                       >
@@ -486,7 +519,7 @@
               </div>
 
               <span class="mt-2 text-xs text-muted-foreground">
-                Started: {new Date(job.startTime).toLocaleString()}
+                {job.status === 'waiting' ? 'Queued' : 'Started'}: {new Date(job.startTime).toLocaleString()}
                 {#if job.endTime}
                   | Ended: {new Date(job.endTime).toLocaleString()}
                 {/if}

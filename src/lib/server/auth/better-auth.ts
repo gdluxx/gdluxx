@@ -68,6 +68,49 @@ try {
     }
     db.exec(schema);
 
+    const jobsInfo = db.pragma('table_info(jobs)') as Array<{ name: string }>;
+    if (!jobsInfo.some((col) => col.name === 'queuePayload')) {
+      db.exec('ALTER TABLE jobs ADD COLUMN queuePayload TEXT DEFAULT NULL');
+    }
+    const jobsSql = db.prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'jobs'").get() as { sql: string } | undefined;
+    if (jobsSql && !jobsSql.sql.includes("'waiting'")) {
+      // SQLite cannot alter a CHECK constraint in place. Rebuild the table
+      // while preserving job rows and the foreign-key target name.
+      const jobsColumns = db.pragma('table_info(jobs)') as Array<{ name: string }>;
+      const userConfigColumn = jobsColumns.some((col) => col.name === 'useUserConfigPath')
+        ? 'useUserConfigPath'
+        : '0';
+      db.pragma('foreign_keys = OFF');
+      try {
+        db.exec(`
+          BEGIN IMMEDIATE;
+          CREATE TABLE jobs_queue_new (
+            id TEXT PRIMARY KEY,
+            url TEXT NOT NULL,
+            status TEXT NOT NULL CHECK (status IN ('waiting', 'running', 'success', 'no_action', 'error')),
+            startTime INTEGER NOT NULL,
+            endTime INTEGER,
+            exitCode INTEGER,
+            downloadCount INTEGER DEFAULT 0,
+            skipCount INTEGER DEFAULT 0,
+            batchCount INTEGER DEFAULT NULL,
+            useUserConfigPath INTEGER NOT NULL DEFAULT 0,
+            queuePayload TEXT DEFAULT NULL,
+            createdAt INTEGER NOT NULL,
+            updatedAt INTEGER NOT NULL
+          );
+          INSERT INTO jobs_queue_new (id, url, status, startTime, endTime, exitCode, downloadCount, skipCount, batchCount, useUserConfigPath, queuePayload, createdAt, updatedAt)
+            SELECT id, url, status, startTime, endTime, exitCode, downloadCount, skipCount, batchCount, ${userConfigColumn}, queuePayload, createdAt, updatedAt FROM jobs;
+          DROP TABLE jobs;
+          ALTER TABLE jobs_queue_new RENAME TO jobs;
+          COMMIT;
+        `);
+      } finally {
+        db.pragma('foreign_keys = ON');
+      }
+      db.exec(schema);
+    }
+
     const userInfo = db.pragma('table_info(user)') as Array<{ name: string }>;
     const hasMaxBatchUrls = userInfo.some((col) => col.name === 'maxBatchUrls');
     if (!hasMaxBatchUrls) {

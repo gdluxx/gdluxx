@@ -20,6 +20,7 @@ export interface LaunchResult {
   url: string;
   success: boolean;
   jobId?: string;
+  status?: 'waiting' | 'running';
   error?: string;
 }
 
@@ -29,6 +30,7 @@ export interface LaunchRequest {
   excludedOptions: string[];
   resolveSiteOptions: (url: string) => Promise<Array<[string, string | number | boolean]>>;
   onLaunched?: (result: LaunchResult) => void;
+  retryJobId?: string;
 }
 
 export async function launchUrls(req: LaunchRequest): Promise<LaunchResult[]> {
@@ -57,11 +59,11 @@ export async function launchUrls(req: LaunchRequest): Promise<LaunchResult[]> {
     }
 
     const cliArgs = validateAndBuildCliArgs(mergedArgs);
-    const executed = await executeGalleryDlCommand(url, cliArgs);
+    const executed = await executeGalleryDlCommand(url, cliArgs, undefined, req.retryJobId);
 
     const result: LaunchResult =
       executed.success && executed.jobId
-        ? { url, success: true, jobId: executed.jobId }
+        ? { url, success: true, jobId: executed.jobId, status: executed.status }
         : { url, success: false, error: executed.error || 'Failed to start job' };
 
     results.push(result);

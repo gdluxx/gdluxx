@@ -33,6 +33,7 @@ export interface BatchUrlResult {
   jobId?: string;
   url: string;
   success: boolean;
+  status?: 'waiting' | 'running';
   message?: string;
   error?: string;
 }
@@ -58,7 +59,7 @@ function isTerminalStatus(status: JobStatus): boolean {
 
 function zeroSummary(): JobsSummary {
   return {
-    counts: { running: 0, success: 0, no_action: 0, error: 0, total: 0 },
+    counts: { waiting: 0, running: 0, success: 0, no_action: 0, error: 0, total: 0 },
     totals: { downloads: 0, skips: 0 },
     runningJobIds: [],
     recent: [],
@@ -85,6 +86,7 @@ const visibleJobs = $derived(Object.values(detailJobs).filter((job) => job.isVis
 
 const jobCount = $derived(summary.counts.total);
 const runningJobCount = $derived(summary.counts.running);
+const waitingJobCount = $derived(summary.counts.waiting);
 const successJobCount = $derived(summary.counts.success);
 const noActionJobCount = $derived(summary.counts.no_action);
 const errorJobCount = $derived(summary.counts.error);
@@ -255,7 +257,7 @@ async function startJob(
           const newJob: ClientJob = {
             id: result.jobId,
             url: result.url,
-            status: 'running',
+            status: result.status ?? 'running',
             output: [],
             startTime,
             downloadCount: 0,
@@ -279,9 +281,9 @@ async function startJob(
           listTotal += 1;
           listOffset += 1;
 
-          summary.counts.running += 1;
+          summary.counts[newJob.status] += 1;
           summary.counts.total += 1;
-          summary.runningJobIds.push(newJob.id);
+          if (newJob.status === 'running') summary.runningJobIds.push(newJob.id);
 
           setTimeout(() => connectToJob(newJob.id), 50);
         }
@@ -348,6 +350,15 @@ function connectToJob(jobId: string, seed?: Partial<JobListItem>): void {
         addOutput(jobId, eventType as JobOutput['type'], event.data);
       }
     });
+  });
+
+  eventSource.addEventListener('queue', (event: MessageEvent) => {
+    try {
+      const data = JSON.parse(event.data) as { status?: JobStatus };
+      if (data.status) updateJobStatus(jobId, data.status);
+    } catch (error) {
+      logger.warn(`Failed to parse queue status for job ${jobId}:`, error);
+    }
   });
 
   // Listening for count updates
@@ -528,8 +539,8 @@ function updateJobStatus(
     }
   }
 
-  if (terminal && prevStatus === 'running') {
-    summary.counts.running = Math.max(0, summary.counts.running - 1);
+  if (terminal && (prevStatus === 'running' || prevStatus === 'waiting')) {
+    summary.counts[prevStatus] = Math.max(0, summary.counts[prevStatus] - 1);
     summary.counts[status] += 1;
     summary.runningJobIds = summary.runningJobIds.filter((id) => id !== jobId);
 
@@ -537,6 +548,11 @@ function updateJobStatus(
     const finalSkip = skipCount ?? prevSkip;
     summary.totals.downloads += finalDownload - prevDownload;
     summary.totals.skips += finalSkip - prevSkip;
+  }
+  if (status === 'running' && prevStatus === 'waiting') {
+    summary.counts.waiting = Math.max(0, summary.counts.waiting - 1);
+    summary.counts.running += 1;
+    summary.runningJobIds.push(jobId);
   }
 }
 
@@ -562,6 +578,38 @@ async function fetchJobDetails(jobId: string) {
     }
   } catch (error) {
     logger.error(`Failed to fetch job details for ${jobId}:`, error);
+  }
+}
+
+async function retryJob(jobId: string): Promise<boolean> {
+  if (!browser) return false;
+  try {
+    const response = await fetch(`/api/command/job/${jobId}`, { method: 'POST' });
+    const payload = await response.json();
+    if (!response.ok || !payload.success) {
+      throw new Error(payload.error ?? 'Failed to retry job');
+    }
+    const job = ensureDetailJob(jobId, findListRow(jobId));
+    job.eventSource?.close();
+    job.eventSource = undefined;
+    job.status = payload.data?.status ?? 'running';
+    job.output = [];
+    job.startTime = Date.now();
+    job.endTime = undefined;
+    job.exitCode = undefined;
+    job.downloadCount = 0;
+    job.skipCount = 0;
+    const row = listJobs.find((item) => item.id === jobId);
+    if (row) {
+      row.status = job.status; row.startTime = job.startTime; row.endTime = undefined;
+      row.exitCode = undefined; row.downloadCount = 0; row.skipCount = 0;
+    }
+    await Promise.all([loadSummary(), loadListPage(true)]);
+    connectToJob(jobId);
+    return true;
+  } catch (error) {
+    logger.error('Failed to retry job:', error);
+    return false;
   }
 }
 
@@ -654,6 +702,44 @@ async function deleteAllJobs(): Promise<void> {
   }
 }
 
+async function retryAllFailedJobs(): Promise<void> {
+  if (!browser) return;
+
+  try {
+    const response = await fetch('/api/jobs/retry-failed', { method: 'POST' });
+    const payload = await response.json();
+    if (!response.ok || !payload.success) {
+      throw new Error(payload.error ?? 'Failed to retry failed jobs');
+    }
+
+    const results = payload.data?.results as Array<{
+      jobId: string;
+      success: boolean;
+      status?: JobStatus;
+    }> | undefined;
+    await Promise.all([loadSummary(), loadListPage(true)]);
+
+    for (const result of results ?? []) {
+      if (!result.success) continue;
+      const seed = findListRow(result.jobId);
+      const job = ensureDetailJob(result.jobId, seed);
+      const shouldConnect = Boolean(seed) || job.isVisible;
+      job.eventSource?.close();
+      job.eventSource = undefined;
+      job.status = result.status ?? 'waiting';
+      job.output = [];
+      job.startTime = Date.now();
+      job.endTime = undefined;
+      job.exitCode = undefined;
+      job.downloadCount = 0;
+      job.skipCount = 0;
+      if (shouldConnect) connectToJob(result.jobId, seed);
+    }
+  } catch (error) {
+    logger.error('Failed to retry all failed jobs:', error);
+  }
+}
+
 function reconnectToRunningJobs(): void {
   if (!browser) {
     return;
@@ -701,7 +787,7 @@ function showJob(jobId: string) {
   const job = ensureDetailJob(jobId, findListRow(jobId));
   job.isVisible = true;
 
-  if (job.status === 'running') {
+  if (job.status === 'running' || job.status === 'waiting') {
     connectToJob(jobId);
   } else if (job.output.length === 0) {
     fetchJobDetails(jobId).catch((e) => logger.error(`Error fetching details for ${jobId}:`, e));
@@ -715,7 +801,7 @@ function hideJob(jobId: string) {
   }
   job.isVisible = false;
 
-  if (job.status !== 'running') {
+  if (job.status !== 'running' && job.status !== 'waiting') {
     const { [jobId]: _removed, ...rest } = detailJobs;
     detailJobs = rest;
   }
@@ -755,8 +841,10 @@ export const jobStore = {
   // Actions
   startJob,
   deleteJob,
+  retryJob,
   deleteJobsBulk,
   deleteAllJobs,
+  retryAllFailedJobs,
   toggleJobVisibility,
   showJob,
   hideJob,
@@ -784,6 +872,9 @@ export const jobStore = {
   },
   get runningJobCount() {
     return runningJobCount;
+  },
+  get waitingJobCount() {
+    return waitingJobCount;
   },
 
   // Enhanced status tracking getters

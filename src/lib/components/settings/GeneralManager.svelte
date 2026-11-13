@@ -12,6 +12,7 @@
   import { Info, Toggle, Spinner } from '$lib/components/ui';
   import { toastStore } from '$lib/stores/toast';
   import type { UserSettings } from '$lib/server/userSettingsManager';
+  import type { JobQueueSettings } from '$lib/server/jobQueueSettings';
   import type { GalleryDlMode } from '$lib/types/gallery-dl-mode';
   import { AVAILABLE_THEMES, type ThemeName } from '$lib/themes/themeUtils';
   import { themeStore } from '$lib/themes/themeStore';
@@ -20,10 +21,11 @@
 
   interface Props {
     userSettings: UserSettings;
+    jobQueueSettings: JobQueueSettings;
     galleryDlMode?: GalleryDlMode;
   }
 
-  const { userSettings, galleryDlMode = 'restricted' }: Props = $props();
+  const { userSettings, jobQueueSettings, galleryDlMode = 'restricted' }: Props = $props();
   const settings = $state<UserSettings>({
     warnOnSiteRuleOverride: false,
     selectedTheme: 'indigo',
@@ -33,6 +35,10 @@
   const toggleSaver = createSettingsSaver();
   const maxBatchUrlsSaver = createSettingsSaver();
   const themeSaver = createSettingsSaver();
+  const queueSaver = createSettingsSaver();
+  const queue = $state<JobQueueSettings>({
+    maxConcurrent: 5, perHostEnabled: false, maxConcurrentPerHost: 1, sameHostDelayMs: 2000,
+  });
 
   const sortedThemes = Object.values(AVAILABLE_THEMES)
     .filter((theme) => !theme.devOnly)
@@ -42,7 +48,48 @@
     settings.warnOnSiteRuleOverride = userSettings.warnOnSiteRuleOverride;
     settings.selectedTheme = userSettings.selectedTheme;
     settings.maxBatchUrls = userSettings.maxBatchUrls;
+    queue.maxConcurrent = jobQueueSettings.maxConcurrent;
+    queue.perHostEnabled = jobQueueSettings.perHostEnabled;
+    queue.maxConcurrentPerHost = jobQueueSettings.maxConcurrentPerHost;
+    queue.sameHostDelayMs = jobQueueSettings.sameHostDelayMs;
   });
+
+  async function updateQueueSettings(patch: Partial<JobQueueSettings>, input?: HTMLInputElement) {
+    const old = { ...queue };
+    const next = { ...queue, ...patch };
+    if (next.maxConcurrent < 1 || next.maxConcurrent > 100 || next.maxConcurrentPerHost < 1 || next.maxConcurrentPerHost > 100 || next.sameHostDelayMs < 0 || next.sameHostDelayMs > 3600000) {
+      toastStore.warning('Invalid Value', 'Concurrency must be 1–100 and delay must be 0–3600 seconds.');
+      if (input) input.value = String(input.dataset.previousValue ?? '');
+      return;
+    }
+    await queueSaver.save({
+      endpoint: '/api/settings/job-queue', body: next,
+      apply: () => Object.assign(queue, next),
+      rollback: () => Object.assign(queue, old),
+      successTitle: 'Settings Updated', successMessage: 'Job queue settings saved',
+    });
+  }
+
+  async function handleQueueNumberBlur(event: FocusEvent, key: 'maxConcurrent' | 'maxConcurrentPerHost' | 'sameHostDelayMs') {
+    const input = event.currentTarget as HTMLInputElement;
+    const previous = key === 'sameHostDelayMs' ? queue.sameHostDelayMs / 1000 : queue[key];
+    input.dataset.previousValue = String(previous);
+    const value = Number(input.value);
+    const normalized = key === 'sameHostDelayMs' ? Math.round(value * 1000) : value;
+    if (!input.value || !Number.isFinite(normalized) || (key !== 'sameHostDelayMs' && !Number.isInteger(value))) {
+      input.value = String(previous);
+      return;
+    }
+    if (normalized === queue[key]) {
+      input.value = String(previous);
+      return;
+    }
+    await updateQueueSettings({ [key]: normalized }, input);
+  }
+
+  async function handlePerHostToggle(checked: boolean) {
+    await updateQueueSettings({ perHostEnabled: checked });
+  }
 
   async function handleToggleChange(checked: boolean) {
     const newSetting = checked;
@@ -147,6 +194,51 @@
         not a complete gallery-dl sandbox. Unrestricted mode bypasses those checks.
       </Info>
     </div>
+  </div>
+
+  <div class="content-panel space-y-5">
+    <div>
+      <h2>Job queue</h2>
+      <p class="mt-1 text-sm text-muted-foreground">
+        Limit simultaneous gallery-dl processes and pace jobs sent to the same website.
+      </p>
+    </div>
+    <div class="flex items-start justify-between gap-6">
+      <div class="flex-1">
+        <label for="queue-max-concurrent" class="block font-medium text-foreground">Maximum running jobs across all websites</label>
+        <p class="mt-1 text-sm text-muted-foreground">Overall concurrent job limit, even when the per-Website limit is enabled.</p>
+      </div>
+      <input id="queue-max-concurrent" type="number" min="1" max="100" value={queue.maxConcurrent}
+        onblur={(event) => handleQueueNumberBlur(event, 'maxConcurrent')} disabled={queueSaver.saving}
+        class="form-input form-input-sm w-28" />
+    </div>
+    <div class="flex items-start justify-between gap-6">
+      <div class="flex-1">
+        <label for="queue-per-host-toggle" class="block font-medium text-foreground">Limit jobs per Website</label>
+      </div>
+      <Toggle id="queue-per-host-toggle" checked={queue.perHostEnabled} disabled={queueSaver.saving}
+        onchange={handlePerHostToggle} variant="primary" />
+    </div>
+    {#if queue.perHostEnabled}
+      <div class="flex items-start justify-between gap-6">
+        <div class="flex-1">
+          <label for="queue-max-per-host" class="block font-medium text-foreground">Maximum running jobs per Website</label>
+        </div>
+        <input id="queue-max-per-host" type="number" min="1" max="100" value={queue.maxConcurrentPerHost}
+          onblur={(event) => handleQueueNumberBlur(event, 'maxConcurrentPerHost')} disabled={queueSaver.saving}
+          class="form-input form-input-sm w-28" />
+      </div>
+      <div class="flex items-start justify-between gap-6">
+        <div class="flex-1">
+          <label for="queue-delay" class="block font-medium text-foreground">Delay between starts to the same Website</label>
+          <p class="mt-1 text-sm text-muted-foreground">Set to 0 to disable the delay. Maximum 3600 seconds.</p>
+        </div>
+        <input id="queue-delay" type="number" min="0" max="3600" step="0.1" value={queue.sameHostDelayMs / 1000}
+          onblur={(event) => handleQueueNumberBlur(event, 'sameHostDelayMs')} disabled={queueSaver.saving}
+          class="form-input form-input-sm w-28" />
+      </div>
+    {/if}
+    <p class="text-xs text-muted-foreground">Jobs waiting for capacity start automatically in queue order. Defaults: 5 concurrent jobs, 1 per Website when enabled, 2-second delay.</p>
   </div>
 
   <!-- CommandForm options -->

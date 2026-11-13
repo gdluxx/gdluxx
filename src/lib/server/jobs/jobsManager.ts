@@ -29,6 +29,7 @@ export interface DatabaseJob {
   downloadCount: number;
   skipCount: number;
   batchCount?: number;
+  queuePayload?: string;
   outputs: JobOutput[];
 }
 
@@ -52,7 +53,7 @@ interface JobListRow {
   batchCount: number | null;
 }
 
-const VALID_STATUSES: readonly JobStatus[] = ['running', 'success', 'no_action', 'error'];
+const VALID_STATUSES: readonly JobStatus[] = ['waiting', 'running', 'success', 'no_action', 'error'];
 
 const SORT_COLUMN_MAP: Record<JobsPageOptions['sort'], string> = {
   time: 'startTime',
@@ -143,9 +144,19 @@ export function countJobs(statuses?: JobStatus[]): number {
   }
 }
 
+export function readJobIdsByStatus(status: JobStatus): string[] {
+  try {
+    const rows = db.prepare('SELECT id FROM jobs WHERE status = ? ORDER BY startTime ASC, id ASC').all(status) as Array<{ id: string }>;
+    return rows.map((row) => row.id);
+  } catch (error) {
+    serverLogger.error('Error reading job IDs by status from database:', error);
+    return [];
+  }
+}
+
 export function readJobsSummary(): JobsSummary {
   try {
-    const counts = { running: 0, success: 0, no_action: 0, error: 0, total: 0 };
+    const counts = { waiting: 0, running: 0, success: 0, no_action: 0, error: 0, total: 0 };
     const totals = { downloads: 0, skips: 0 };
 
     const grouped = db
@@ -188,7 +199,7 @@ export function readJobsSummary(): JobsSummary {
   } catch (error) {
     serverLogger.error('Error reading jobs summary from database:', error);
     return {
-      counts: { running: 0, success: 0, no_action: 0, error: 0, total: 0 },
+      counts: { waiting: 0, running: 0, success: 0, no_action: 0, error: 0, total: 0 },
       totals: { downloads: 0, skips: 0 },
       runningJobIds: [],
       recent: [],
@@ -264,8 +275,8 @@ export async function createJob(job: Omit<DatabaseJob, 'outputs'>): Promise<void
     const now = getCurrentTimestamp();
 
     const stmt = db.prepare(`
-      INSERT INTO jobs (id, url, status, startTime, endTime, exitCode, downloadCount, skipCount, batchCount, createdAt, updatedAt)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO jobs (id, url, status, startTime, endTime, exitCode, downloadCount, skipCount, batchCount, queuePayload, createdAt, updatedAt)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     stmt.run(
@@ -278,6 +289,7 @@ export async function createJob(job: Omit<DatabaseJob, 'outputs'>): Promise<void
       job.downloadCount || 0,
       job.skipCount || 0,
       job.batchCount || null,
+      job.queuePayload || null,
       now,
       now,
     );
@@ -290,7 +302,7 @@ export async function createJob(job: Omit<DatabaseJob, 'outputs'>): Promise<void
 export async function updateJob(
   jobId: string,
   updates: Partial<
-    Pick<DatabaseJob, 'status' | 'endTime' | 'exitCode' | 'downloadCount' | 'skipCount'>
+    Pick<DatabaseJob, 'status' | 'endTime' | 'exitCode' | 'downloadCount' | 'skipCount'> & { startTime?: number; queuePayload?: string | null }
   >,
 ): Promise<void> {
   try {
@@ -318,6 +330,14 @@ export async function updateJob(
       setParts.push('skipCount = ?');
       values.push(updates.skipCount);
     }
+    if (updates.startTime !== undefined) {
+      setParts.push('startTime = ?');
+      values.push(updates.startTime);
+    }
+    if (updates.queuePayload !== undefined) {
+      setParts.push('queuePayload = ?');
+      values.push(updates.queuePayload);
+    }
 
     if (setParts.length === 0) {
       return;
@@ -337,6 +357,30 @@ export async function updateJob(
   } catch (error) {
     serverLogger.error('Error updating job in database:', error);
     throw new Error('Failed to update job.', { cause: error });
+  }
+}
+
+export function readWaitingJobs(): Array<{ id: string; url: string; queuePayload: string | null }> {
+  return db.prepare(`SELECT id, url, queuePayload FROM jobs WHERE status = 'waiting' ORDER BY createdAt, rowid`)
+    .all() as Array<{ id: string; url: string; queuePayload: string | null }>;
+}
+
+export async function resetJobForRetry(jobId: string, startTime: number): Promise<boolean> {
+  try {
+    const reset = db.transaction(() => {
+      const result = db.prepare(`
+        UPDATE jobs SET status = 'waiting', startTime = ?, endTime = NULL, exitCode = NULL,
+          downloadCount = 0, skipCount = 0, updatedAt = ? WHERE id = ? AND status = 'error'
+      `).run(startTime, getCurrentTimestamp(), jobId);
+      if (result.changes > 0) {
+        db.prepare('DELETE FROM job_outputs WHERE jobId = ?').run(jobId);
+      }
+      return result.changes > 0;
+    });
+    return reset();
+  } catch (error) {
+    serverLogger.error('Error resetting job for retry:', error);
+    throw new Error('Failed to retry job.', { cause: error });
   }
 }
 

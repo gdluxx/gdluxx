@@ -8,7 +8,7 @@
  * as published by the Free Software Foundation.
  */
 
-export type JobStatus = 'running' | 'success' | 'no_action' | 'error';
+export type JobStatus = 'waiting' | 'running' | 'success' | 'no_action' | 'error';
 
 export interface JobScheduleOrigin {
   scheduleId: string | null;
@@ -30,6 +30,7 @@ export interface JobListItem {
 
 export interface JobsSummary {
   counts: {
+    waiting: number;
     running: number;
     success: number;
     no_action: number;

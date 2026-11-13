@@ -96,17 +96,34 @@ CREATE TABLE IF NOT EXISTS server_logging (
     updatedAt INTEGER NOT NULL
 );
 
+/* JOB_QUEUE_SETTINGS */
+CREATE TABLE IF NOT EXISTS job_queue_settings (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    maxConcurrent INTEGER NOT NULL DEFAULT 5,
+    perHostEnabled INTEGER NOT NULL DEFAULT 0,
+    maxConcurrentPerHost INTEGER NOT NULL DEFAULT 1,
+    sameHostDelayMs INTEGER NOT NULL DEFAULT 2000,
+    createdAt INTEGER NOT NULL,
+    updatedAt INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS job_queue_host_starts (
+    hostname TEXT PRIMARY KEY,
+    startedAt INTEGER NOT NULL
+);
+
 /* JOBS */
 CREATE TABLE IF NOT EXISTS jobs (
     id TEXT PRIMARY KEY,
     url TEXT NOT NULL,
-    status TEXT NOT NULL CHECK (status IN ('running', 'success', 'no_action', 'error')),
+    status TEXT NOT NULL CHECK (status IN ('waiting', 'running', 'success', 'no_action', 'error')),
     startTime INTEGER NOT NULL,
     endTime INTEGER,
     exitCode INTEGER,
     downloadCount INTEGER DEFAULT 0,
     skipCount INTEGER DEFAULT 0,
     batchCount INTEGER DEFAULT NULL,
+    queuePayload TEXT DEFAULT NULL,
     useUserConfigPath INTEGER NOT NULL DEFAULT 0,
     createdAt INTEGER NOT NULL,
     updatedAt INTEGER NOT NULL

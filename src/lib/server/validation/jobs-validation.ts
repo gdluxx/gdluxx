@@ -10,7 +10,7 @@
 
 import { z } from 'zod';
 
-const JOB_STATUSES = ['running', 'success', 'no_action', 'error'] as const;
+const JOB_STATUSES = ['waiting', 'running', 'success', 'no_action', 'error'] as const;
 
 const MAX_DELETE_IDS = 500;
 

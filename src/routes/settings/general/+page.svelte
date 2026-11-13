@@ -13,10 +13,14 @@
   import { Icon } from '$lib/components';
   import { PageLayout } from '$lib/components/ui';
   import type { UserSettings } from '$lib/server/userSettingsManager';
+  import type { JobQueueSettings } from '$lib/server/jobQueueSettings';
   import type { PageData } from './$types';
 
   const { data } = $props<{ data: PageData }>();
   const galleryDlMode = $derived(data.galleryDlMode ?? 'restricted');
+  const jobQueueSettings: JobQueueSettings = $derived(data.jobQueueSettings ?? {
+    maxConcurrent: 5, perHostEnabled: false, maxConcurrentPerHost: 1, sameHostDelayMs: 2000,
+  });
 
   const userSettings: UserSettings = $derived({
     warnOnSiteRuleOverride: data.warnOnSiteRuleOverride ?? false,
@@ -35,6 +39,7 @@
 
   <GeneralManager
     {userSettings}
+    {jobQueueSettings}
     {galleryDlMode}
   />
 </PageLayout>
