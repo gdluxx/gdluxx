@@ -30,15 +30,18 @@ export interface LaunchRequest {
   excludedOptions: string[];
   resolveSiteOptions: (url: string) => Promise<Array<[string, string | number | boolean]>>;
   onLaunched?: (result: LaunchResult) => void;
-  retryJobId?: string;
 }
 
-export async function launchUrls(req: LaunchRequest): Promise<LaunchResult[]> {
+export function assertBinaryAvailable(): void {
   try {
     fs.accessSync(PATHS.BIN_FILE, fs.constants.X_OK);
   } catch {
     throw new BinaryUnavailableError('gallery-dl.bin not found or not executable');
   }
+}
+
+export async function launchUrls(req: LaunchRequest): Promise<LaunchResult[]> {
+  assertBinaryAvailable();
 
   // Fails the whole batch once rather than once per URL; neither this nor
   // the ProhibitedOptionError from validateAndBuildCliArgs is caught here —
@@ -59,7 +62,7 @@ export async function launchUrls(req: LaunchRequest): Promise<LaunchResult[]> {
     }
 
     const cliArgs = validateAndBuildCliArgs(mergedArgs);
-    const executed = await executeGalleryDlCommand(url, cliArgs, undefined, req.retryJobId);
+    const executed = await executeGalleryDlCommand(url, cliArgs);
 
     const result: LaunchResult =
       executed.success && executed.jobId

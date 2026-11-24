@@ -25,6 +25,9 @@ export interface JobListItem {
   downloadCount: number;
   skipCount: number;
   batchCount?: number;
+  retryOfJobId?: string;
+  retriedByJobId?: string;
+  retryable: boolean;
   origin?: JobScheduleOrigin;
 }
 
@@ -41,6 +44,13 @@ export interface JobsSummary {
     downloads: number;
     skips: number;
   };
+  retryableFailedCount: number;
   runningJobIds: string[];
   recent: JobListItem[];
+}
+
+export const ACTIVE_JOB_STATUSES: readonly JobStatus[] = ['waiting', 'running'];
+
+export function isActiveJobStatus(status: JobStatus): boolean {
+  return ACTIVE_JOB_STATUSES.includes(status);
 }

@@ -18,6 +18,7 @@
   import { Icon } from '$lib/components/index';
   import type { JobListItem, JobStatus } from '$lib/types/jobs';
   import { getStatusColor, getStatusText } from '$lib/utils/jobStatus';
+  import { toastStore } from '$lib/stores/toast';
 
   const tooltip = $state({
     visible: false,
@@ -140,12 +141,22 @@
 
   async function retryAllFailedJobs(event: MouseEvent) {
     event.stopPropagation();
-    if (retryingFailedJobs) return;
+    if (retryingFailedJobs) {
+      return;
+    }
     retryingFailedJobs = true;
-    try {
-      await jobStore.retryAllFailedJobs();
-    } finally {
-      retryingFailedJobs = false;
+    const result = await jobStore.retryAllFailedJobs();
+    retryingFailedJobs = false;
+
+    if (!result.success) {
+      toastStore.error('Retry failed', result.error);
+    } else if (result.failed > 0) {
+      toastStore.warning(
+        'Some jobs were not retried',
+        `${result.accepted} of ${result.total} failed job(s) were queued again.`,
+      );
+    } else {
+      toastStore.success('Retrying failed jobs', `${result.accepted} job(s) queued again.`);
     }
   }
 
@@ -231,11 +242,24 @@
 
     <!-- Statistics -->
     <div class="mb-4 grid grid-cols-3 gap-3 lg:grid-cols-7">
-      <button onclick={() => toggleFilter('waiting')}
-        class={`cursor-pointer rounded-surface border px-3 py-1.5 text-foreground ${activeFilters.has('waiting') ? 'border-warning bg-warning/10' : 'bg-surface-elevated border-strong hover:border-warning hover:bg-warning-hover/10'}`}>
-        <div class="flex items-center justify-center gap-2"><div class="h-2 w-2 rounded-full bg-warning"></div><span class="text-base font-medium text-accent-foreground">Waiting</span></div>
-        <div class="mt-1 flex justify-center text-xl font-semibold text-primary">{jobStore.waitingJobCount}</div>
+      <!-- waiting card -->
+      <button
+        onclick={() => toggleFilter('waiting')}
+        class={`cursor-pointer rounded-surface border px-3 py-1.5 text-foreground ${
+          activeFilters.has('waiting')
+            ? 'border-warning bg-warning/10'
+            : 'bg-surface-elevated border-strong hover:border-warning hover:bg-warning-hover/10'
+        }`}
+      >
+        <div class="flex items-center justify-center gap-2">
+          <div class="h-2 w-2 rounded-full bg-warning"></div>
+          <span class="text-base font-medium text-accent-foreground">Waiting</span>
+        </div>
+        <div class="mt-1 flex justify-center text-xl font-semibold text-primary">
+          {jobStore.waitingJobCount}
+        </div>
       </button>
+
       <!-- running card -->
       <button
         onclick={() => toggleFilter('running')}
@@ -414,7 +438,7 @@
         </div>
 
         <div class="flex items-center gap-2 sm:ml-auto">
-          {#if jobStore.errorJobCount > 0}
+          {#if jobStore.summary.retryableFailedCount > 0}
             <Button
               name="Retry All Failed Jobs"
               onclick={retryAllFailedJobs}
@@ -512,6 +536,12 @@
                   <span class="text-xs text-muted-foreground">
                     {formatDuration(job.startTime, job.endTime)}
                   </span>
+
+                  {#if job.retriedByJobId}
+                    <span class="text-xs text-muted-foreground">Retried</span>
+                  {:else if job.retryOfJobId}
+                    <span class="text-xs text-muted-foreground">Retry</span>
+                  {/if}
                 </div>
                 <p class="truncate text-sm text-foreground">
                   {job.url}
@@ -519,7 +549,9 @@
               </div>
 
               <span class="mt-2 text-xs text-muted-foreground">
-                {job.status === 'waiting' ? 'Queued' : 'Started'}: {new Date(job.startTime).toLocaleString()}
+                {job.status === 'waiting' ? 'Queued' : 'Started'}: {new Date(
+                  job.startTime,
+                ).toLocaleString()}
                 {#if job.endTime}
                   | Ended: {new Date(job.endTime).toLocaleString()}
                 {/if}

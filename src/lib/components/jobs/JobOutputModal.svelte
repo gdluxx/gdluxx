@@ -9,7 +9,7 @@
   -->
 
 <script lang="ts">
-  import { tick } from 'svelte';
+  import { tick, untrack } from 'svelte';
   import { AnsiUp } from 'ansi_up';
   import DOMPurify from 'dompurify';
   import type { ClientJob } from '$lib/stores/jobs.svelte';
@@ -19,6 +19,7 @@
   import { getStatusColor, getStatusText } from '$lib/utils/jobStatus';
   import { copyToClipboard } from '$lib/utils/clipboard';
   import { clientLogger } from '$lib/client/logger';
+  import { toastStore } from '$lib/stores/toast';
 
   interface Props {
     job: ClientJob;
@@ -30,6 +31,9 @@
   let followNewLogs = $state(true);
   let showDeleteConfirm = $state(false);
   let retrying = $state(false);
+
+  const RETRY_TITLE =
+    'Runs the same command again as a new job. Site rule changes made since it failed are not applied.';
 
   const tooltip = $state({
     visible: false,
@@ -48,18 +52,24 @@
 
   function scrollToLatest(): void {
     const scroller = getLogScroller();
-    if (scroller) scroller.scrollTop = scroller.scrollHeight;
+    if (scroller) {
+      scroller.scrollTop = scroller.scrollHeight;
+    }
   }
 
   // Follow output after Svelte renders the new lines and the browser lays them out.
   $effect(() => {
     void job.output.length;
     void outputContainer;
-    if (!followNewLogs) return;
+    if (!followNewLogs) {
+      return;
+    }
 
     void tick().then(() => {
       requestAnimationFrame(() => {
-        if (followNewLogs) scrollToLatest();
+        if (followNewLogs) {
+          scrollToLatest();
+        }
       });
     });
   });
@@ -68,14 +78,16 @@
   // output can increase scrollHeight without changing scrollTop.
   $effect(() => {
     const scroller = getLogScroller();
-    if (!scroller) return;
+    if (!scroller) {
+      return;
+    }
     let lastScrollTop = scroller.scrollTop;
-    let lastOutputCount = job.output.length;
+    let lastOutputCount = untrack(() => job.output.length);
     const handleScroll = () => {
       const currentScrollTop = scroller.scrollTop;
       const outputCount = job.output.length;
-      // Retrying clears the previous run's output, which can clamp scrollTop
-      // and emit a scroll event that looks like the user scrolled upward.
+      // Output shrinks when a details refresh replaces it or old lines are
+      // trimmed; that clamps scrollTop and looks like the user scrolled up.
       if (outputCount < lastOutputCount) {
         lastOutputCount = outputCount;
         lastScrollTop = currentScrollTop;
@@ -91,8 +103,6 @@
     return () => scroller.removeEventListener('scroll', handleScroll);
   });
 
-  // The job keeps running; closing the modal (Escape, backdrop, close button)
-  // only hides it and returns to the job list.
   function handleFollowChange(event: Event) {
     followNewLogs = (event.currentTarget as HTMLInputElement).checked;
     if (followNewLogs) {
@@ -104,16 +114,19 @@
     jobStore.hideJob(job.id);
   }
 
+  function openJob(jobId: string) {
+    jobStore.hideJob(job.id);
+    jobStore.showJob(jobId);
+  }
+
   async function handleRetry() {
     retrying = true;
-    const success = await jobStore.retryJob(job.id);
+    const result = await jobStore.retryJob(job.id);
     retrying = false;
-    if (success) {
-      followNewLogs = true;
-      await tick();
-      scrollToLatest();
+    if (result.success) {
+      openJob(result.jobId);
     } else {
-      clientLogger.error(`Retry request failed for job ${job.id}`);
+      toastStore.error('Retry failed', result.error);
     }
   }
 
@@ -240,7 +253,10 @@
     <div
       class="flex items-center gap-2 bg-surface-elevated px-4 py-2 border-b-strong border-t-strong sm:px-6"
     >
-      <p class="min-w-0 flex-1 text-sm break-all text-foreground" title={job.url}>
+      <p
+        class="min-w-0 flex-1 text-sm break-all text-foreground"
+        title={job.url}
+      >
         {job.url}
       </p>
       <button
@@ -249,7 +265,10 @@
         class="flex-shrink-0 cursor-pointer p-1 text-muted-foreground transition-all duration-base hover:scale-110 hover:text-foreground"
         title="Copy Job URL"
       >
-        <Icon iconName="copy-clipboard" size={20} />
+        <Icon
+          iconName="copy-clipboard"
+          size={20}
+        />
       </button>
       <CopyTooltip
         x={tooltip.x}
@@ -258,6 +277,29 @@
         text={tooltip.text}
       />
     </div>
+
+    {#if job.retryOfJobId !== undefined || job.retriedByJobId !== undefined}
+      <div class="flex flex-wrap gap-x-4 gap-y-1 px-4 py-2 text-xs border-b-strong sm:px-6">
+        {#if job.retryOfJobId}
+          {@const retryOfJobId = job.retryOfJobId}
+          <button
+            onclick={() => openJob(retryOfJobId)}
+            class="cursor-pointer text-primary hover:underline"
+          >
+            Retry of job {retryOfJobId.slice(0, 8)}
+          </button>
+        {/if}
+        {#if job.retriedByJobId}
+          {@const retriedByJobId = job.retriedByJobId}
+          <button
+            onclick={() => openJob(retriedByJobId)}
+            class="cursor-pointer text-primary hover:underline"
+          >
+            Retried as job {retriedByJobId.slice(0, 8)}
+          </button>
+        {/if}
+      </div>
+    {/if}
   {/snippet}
 
   <!-- Job output scrolls in the Modal body. -->
@@ -299,19 +341,38 @@
             aria-label="Delete job"
             class="gap-1.5"
           >
-            <Icon iconName="delete" size={16} />
+            <Icon
+              iconName="delete"
+              size={16}
+            />
             Delete job
           </Button>
-          {#if job.status === 'error'}
-            <Button variant="outline-primary" onclick={handleRetry} loading={retrying} aria-label="Retry job" class="gap-1.5">
-              <Icon iconName="reload" size={16} /> Retry
+          {#if job.retryable}
+            <Button
+              variant="outline-primary"
+              onclick={handleRetry}
+              loading={retrying}
+              aria-label="Retry job"
+              title={RETRY_TITLE}
+              class="gap-1.5"
+            >
+              <Icon
+                iconName="reload"
+                size={16}
+              />
+              Retry
             </Button>
           {/if}
         </div>
         <div class="ml-auto flex flex-col items-end gap-1 text-right">
           <div class="flex items-center justify-end gap-2 text-accent-foreground">
             <label class="flex cursor-pointer items-center gap-1.5 whitespace-nowrap">
-              <input type="checkbox" checked={followNewLogs} onchange={handleFollowChange} class="h-4 w-4 accent-primary" />
+              <input
+                type="checkbox"
+                checked={followNewLogs}
+                onchange={handleFollowChange}
+                class="h-4 w-4 accent-primary"
+              />
               Follow logs
             </label>
             <span>
@@ -339,18 +400,39 @@
             aria-label="Delete job"
             class="gap-1.5"
           >
-            <Icon iconName="delete" size={18} />
+            <Icon
+              iconName="delete"
+              size={18}
+            />
             Delete job
           </Button>
-          {#if job.status === 'error'}
-            <Button variant="outline-primary" onclick={handleRetry} loading={retrying} aria-label="Retry job" class="gap-1.5">
-              <Icon iconName="reload" size={18} /> Retry job
+          {#if job.retryable}
+            <Button
+              variant="outline-primary"
+              onclick={handleRetry}
+              loading={retrying}
+              aria-label="Retry job"
+              title={RETRY_TITLE}
+              class="gap-1.5"
+            >
+              <Icon
+                iconName="reload"
+                size={18}
+              />
+              Retry job
             </Button>
           {/if}
         </div>
         <div class="flex items-center gap-4">
-          <label class="flex cursor-pointer items-center gap-1.5 whitespace-nowrap text-muted-foreground">
-            <input type="checkbox" checked={followNewLogs} onchange={handleFollowChange} class="h-4 w-4 accent-primary" />
+          <label
+            class="flex cursor-pointer items-center gap-1.5 whitespace-nowrap text-muted-foreground"
+          >
+            <input
+              type="checkbox"
+              checked={followNewLogs}
+              onchange={handleFollowChange}
+              class="h-4 w-4 accent-primary"
+            />
             Follow logs
           </label>
           <div class="text-muted-foreground">

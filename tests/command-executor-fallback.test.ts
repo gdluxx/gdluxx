@@ -9,6 +9,8 @@
  */
 
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import type { JobQueueHandlers } from '$lib/server/jobs/jobQueue';
+import type { QueuedExecution } from '$lib/server/jobs/queuedExecution';
 
 const loggerWarnMock = vi.fn();
 vi.mock('$lib/server/logger', () => ({
@@ -20,18 +22,29 @@ vi.mock('$lib/server/logger', () => ({
   },
 }));
 
-const createJobMock = vi.fn();
-const createBatchJobMock = vi.fn();
+const createQueuedJobMock = vi.fn();
 const setJobProcessMock = vi.fn();
 const addOutputMock = vi.fn();
 const completeJobMock = vi.fn();
+const getJobMock = vi.fn();
 vi.mock('$lib/server/jobs/jobManager', () => ({
   jobManager: {
-    createJob: (...args: unknown[]) => createJobMock(...args),
-    createBatchJob: (...args: unknown[]) => createBatchJobMock(...args),
+    createQueuedJob: (...args: unknown[]) => createQueuedJobMock(...args),
+    getJob: (...args: unknown[]) => getJobMock(...args),
+    markQueuedJobRunning: () => true,
     setJobProcess: (...args: unknown[]) => setJobProcessMock(...args),
     addOutput: (...args: unknown[]) => addOutputMock(...args),
     completeJob: (...args: unknown[]) => completeJobMock(...args),
+    failJob: vi.fn(),
+  },
+}));
+
+let queueHandlers: JobQueueHandlers | undefined;
+vi.mock('$lib/server/jobs/jobQueue', () => ({
+  jobQueue: {
+    registerHandlers: (handlers: JobQueueHandlers) => {
+      queueHandlers = handlers;
+    },
   },
 }));
 
@@ -78,16 +91,22 @@ function fakePty() {
 
 const UNSUPPORTED_URL_EXIT = 64;
 
+async function startImmediately(_url: string, payload: QueuedExecution): Promise<string> {
+  const id = `job-${++jobCounter}`;
+  await queueHandlers?.start(id, payload, Date.now());
+  return id;
+}
+
 describe('commandExecutor arming condition (fallback batch trigger)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     exitHandlers = [];
     jobCounter = 0;
-    createJobMock.mockImplementation(async () => `job-${++jobCounter}`);
-    createBatchJobMock.mockImplementation(async () => `job-${++jobCounter}`);
-    setJobProcessMock.mockResolvedValue(undefined);
+    createQueuedJobMock.mockImplementation(startImmediately);
+    setJobProcessMock.mockResolvedValue(true);
     addOutputMock.mockResolvedValue(undefined);
     completeJobMock.mockResolvedValue(undefined);
+    getJobMock.mockResolvedValue({ status: 'running' });
     getCookieFileForUrlMock.mockResolvedValue(null);
     spawnMock.mockImplementation(() => fakePty());
   });
@@ -181,9 +200,9 @@ describe('commandExecutor arming condition (fallback batch trigger)', () => {
       fallbackUrls: [cdnUrl],
       fallbackCliArgs: [],
     });
-    const originalJobId = await createJobMock.mock.results[0]?.value;
+    const originalJobId = await createQueuedJobMock.mock.results[0]?.value;
     await exitHandlers[0]({ exitCode: UNSUPPORTED_URL_EXIT });
-    const batchJobId = await createBatchJobMock.mock.results[0]?.value;
+    const batchJobId = await createQueuedJobMock.mock.results[1]?.value;
 
     expect(addOutputMock).toHaveBeenCalledWith(
       batchJobId,
@@ -195,6 +214,64 @@ describe('commandExecutor arming condition (fallback batch trigger)', () => {
       'info',
       expect.stringContaining(batchJobId),
     );
-    expect(completeJobMock).toHaveBeenCalledWith(originalJobId, UNSUPPORTED_URL_EXIT);
+    expect(completeJobMock).toHaveBeenCalledWith(originalJobId, UNSUPPORTED_URL_EXIT, {
+      retryable: false,
+    });
+  });
+
+  test('the original job stays retryable when the fallback batch fails to queue', async () => {
+    createQueuedJobMock
+      .mockImplementationOnce(startImmediately)
+      .mockRejectedValueOnce(new Error('database is locked'));
+
+    await executeGalleryDlCommand('https://example.com/gallery/123', [], {
+      fallbackUrls: ['https://cdn.example.com/img.jpg'],
+      fallbackCliArgs: [],
+    });
+    const originalJobId = await createQueuedJobMock.mock.results[0]?.value;
+    await exitHandlers[0]({ exitCode: UNSUPPORTED_URL_EXIT });
+
+    expect(spawnMock).toHaveBeenCalledTimes(1);
+    expect(completeJobMock).toHaveBeenCalledWith(originalJobId, UNSUPPORTED_URL_EXIT, {
+      retryable: true,
+    });
+  });
+
+  test('a non-64 failure exit leaves the job retryable', async () => {
+    await executeGalleryDlCommand('https://example.com/gallery/123', [], {
+      fallbackUrls: ['https://cdn.example.com/img.jpg'],
+      fallbackCliArgs: [],
+    });
+    const originalJobId = await createQueuedJobMock.mock.results[0]?.value;
+    await exitHandlers[0]({ exitCode: 1 });
+
+    expect(completeJobMock).toHaveBeenCalledWith(originalJobId, 1, { retryable: true });
+  });
+
+  test('a fallback batch that has to wait is logged as queued, not started', async () => {
+    createQueuedJobMock
+      .mockImplementationOnce(startImmediately)
+      .mockImplementationOnce(async () => 'batch-waiting');
+    getJobMock.mockImplementation(async (id: string) => ({
+      status: id === 'batch-waiting' ? 'waiting' : 'running',
+    }));
+
+    await executeGalleryDlCommand('https://example.com/gallery/123', [], {
+      fallbackUrls: ['https://cdn.example.com/img.jpg'],
+      fallbackCliArgs: [],
+    });
+    const originalJobId = await createQueuedJobMock.mock.results[0]?.value;
+    await exitHandlers[0]({ exitCode: UNSUPPORTED_URL_EXIT });
+
+    expect(addOutputMock).toHaveBeenCalledWith(
+      'batch-waiting',
+      'info',
+      expect.stringContaining('Queued as a direct-link fallback'),
+    );
+    expect(addOutputMock).toHaveBeenCalledWith(
+      originalJobId,
+      'info',
+      expect.stringContaining('queued direct-link fallback job batch-waiting'),
+    );
   });
 });

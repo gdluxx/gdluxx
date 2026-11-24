@@ -106,6 +106,12 @@ fixes, so prefer fixing forward.
 Existing deployments continue using Restricted mode when `GDLUXX_GDL_POLICY` is
 unset. No action is required.
 
+gdluxx now runs at most 5 jobs at once. Jobs submitted beyond that wait in a
+queue and start as running jobs finish. To allow more, set
+`GDLUXX_MAX_CONCURRENT_JOBS`; see [Job queue](./installation.md#job-queue).
+Failed jobs from before the upgrade can't be retried with the Retry button,
+because they have no stored command; submit their URLs again instead.
+
 If you enable Unrestricted mode and later switch back to Restricted, saved
 config values, Schedules, and Site Rules are retained; nothing is deleted. Runs
 that use unavailable structured options are blocked until you remove those

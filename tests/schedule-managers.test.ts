@@ -59,7 +59,10 @@ function seedUser(id: string): void {
   );
 }
 
-function seedJob(id: string, status: 'running' | 'success' | 'no_action' | 'error'): void {
+function seedJob(
+  id: string,
+  status: 'waiting' | 'running' | 'success' | 'no_action' | 'error',
+): void {
   db.prepare(
     'INSERT INTO jobs (id, url, status, startTime, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?)',
   ).run(id, `https://example.test/${id}`, status, SEED_TS, SEED_TS, SEED_TS);
@@ -444,9 +447,9 @@ describe('readStaleDispatchingRuns', () => {
 });
 
 describe('hasBlockingActivityForSchedule', () => {
-  test('true when a linked job is still running', () => {
+  test.each(['waiting', 'running'] as const)('true when a linked job is still %s', (status) => {
     seedUser('user-1');
-    seedJob('job-1', 'running');
+    seedJob('job-1', status);
     const schedule = scheduleManager.createSchedule(scheduleInput());
     const run = scheduleRunManager.createRun({
       scheduleId: schedule.id,

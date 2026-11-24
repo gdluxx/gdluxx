@@ -95,4 +95,11 @@ export const GITHUB = {
 
 export const API_LIMITS = {
   MAX_BATCH_URLS: 10000,
+  MAX_RETRY_FAILED_JOBS: 500,
+} as const;
+
+export const JOB_QUEUE = {
+  MAX_CONCURRENT_JOBS: { DEFAULT: 5, MIN: 1, MAX: 100 },
+  MAX_CONCURRENT_JOBS_PER_HOST: { MIN: 1, MAX: 100 },
+  SAME_HOST_START_DELAY_SECONDS: { MIN: 0, MAX: 3600 },
 } as const;

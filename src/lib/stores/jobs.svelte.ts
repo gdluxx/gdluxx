@@ -10,7 +10,12 @@
 
 import { browser } from '$app/environment';
 import type { JobOutput } from '$lib/server/jobs/jobManager';
-import type { JobListItem, JobStatus, JobsSummary } from '$lib/types/jobs';
+import {
+  isActiveJobStatus,
+  type JobListItem,
+  type JobStatus,
+  type JobsSummary,
+} from '$lib/types/jobs';
 import type { OptionWithSource } from '$lib/types/command-form';
 import { clientLogger as logger } from '$lib/client/logger';
 
@@ -25,6 +30,9 @@ export interface ClientJob {
   downloadCount: number;
   skipCount: number;
   batchCount?: number;
+  retryOfJobId?: string;
+  retriedByJobId?: string;
+  retryable: boolean;
   isVisible: boolean;
   eventSource?: EventSource;
 }
@@ -44,6 +52,20 @@ export interface BatchJobStartResult {
   error?: string;
 }
 
+export type RetryJobResult = { success: true; jobId: string } | { success: false; error: string };
+
+export type RetryAllFailedJobsResult =
+  | { success: true; total: number; accepted: number; failed: number }
+  | { success: false; error: string };
+
+interface NewJob {
+  id: string;
+  url: string;
+  status: JobStatus;
+  batchCount?: number;
+  retryOfJobId?: string;
+}
+
 interface ListParams {
   statuses: JobStatus[] | undefined;
   sort: 'time' | 'downloads';
@@ -51,16 +73,14 @@ interface ListParams {
 }
 
 const LIST_PAGE_SIZE = 50;
-const TERMINAL_STATUSES: JobStatus[] = ['success', 'no_action', 'error'];
-
-function isTerminalStatus(status: JobStatus): boolean {
-  return TERMINAL_STATUSES.includes(status);
-}
+const QUEUE_POLL_INTERVAL_MS = 3000;
+const MAX_QUEUE_POLL_IDS = 100;
 
 function zeroSummary(): JobsSummary {
   return {
     counts: { waiting: 0, running: 0, success: 0, no_action: 0, error: 0, total: 0 },
     totals: { downloads: 0, skips: 0 },
+    retryableFailedCount: 0,
     runningJobIds: [],
     recent: [],
   };
@@ -81,6 +101,8 @@ let summary = $state<JobsSummary>(zeroSummary());
 let detailJobs = $state<Record<string, ClientJob>>({});
 
 let isJobListModalOpen = $state(false);
+
+let queuePollTimer: ReturnType<typeof setTimeout> | undefined;
 
 const visibleJobs = $derived(Object.values(detailJobs).filter((job) => job.isVisible));
 
@@ -135,6 +157,7 @@ async function loadListPage(reset: boolean): Promise<void> {
       }
       listTotal = total;
       listOffset = listJobs.length;
+      scheduleQueuePoll();
     }
   } catch (error) {
     logger.error('Failed to load jobs list:', error);
@@ -185,6 +208,9 @@ function createClientJob(id: string, seed?: Partial<JobListItem>): ClientJob {
     downloadCount: seed?.downloadCount ?? 0,
     skipCount: seed?.skipCount ?? 0,
     batchCount: seed?.batchCount,
+    retryOfJobId: seed?.retryOfJobId,
+    retriedByJobId: seed?.retriedByJobId,
+    retryable: seed?.retryable ?? false,
     isVisible: false,
     eventSource: undefined,
   };
@@ -201,6 +227,51 @@ function ensureDetailJob(id: string, seed?: Partial<JobListItem>): ClientJob {
 
 function findListRow(id: string): JobListItem | undefined {
   return listJobs.find((job) => job.id === id) ?? summary.recent.find((job) => job.id === id);
+}
+
+// Queued jobs get no live update connection, browsers cap connections per
+// host, and a long queue would starve the page's other requests.
+function addNewJob(newJob: NewJob, isVisible: boolean): void {
+  const startTime = Date.now();
+  detailJobs[newJob.id] = {
+    ...createClientJob(newJob.id, { ...newJob, startTime }),
+    isVisible,
+  };
+
+  listJobs.unshift({
+    id: newJob.id,
+    url: newJob.url,
+    status: newJob.status,
+    startTime,
+    downloadCount: 0,
+    skipCount: 0,
+    batchCount: newJob.batchCount,
+    retryOfJobId: newJob.retryOfJobId,
+    retryable: false,
+  });
+  listTotal += 1;
+  listOffset += 1;
+
+  summary.counts[newJob.status] += 1;
+  summary.counts.total += 1;
+  if (newJob.status === 'running') {
+    summary.runningJobIds.push(newJob.id);
+  }
+
+  if (newJob.status === 'running' || isVisible) {
+    setTimeout(() => connectToJob(newJob.id), 50);
+  } else {
+    scheduleQueuePoll();
+  }
+}
+
+function markRetried(jobId: string, retriedByJobId: string): void {
+  for (const target of [detailJobs[jobId], ...listJobs, ...summary.recent]) {
+    if (target?.id === jobId) {
+      target.retriedByJobId = retriedByJobId;
+      target.retryable = false;
+    }
+  }
 }
 
 async function startJob(
@@ -253,39 +324,11 @@ async function startJob(
 
       for (const result of results) {
         if (result.success && result.jobId) {
-          const startTime = Date.now();
-          const newJob: ClientJob = {
-            id: result.jobId,
-            url: result.url,
-            status: result.status ?? 'running',
-            output: [],
-            startTime,
-            downloadCount: 0,
-            skipCount: 0,
-            isVisible: !firstJobMadeVisible,
-            eventSource: undefined,
-          };
-          if (!firstJobMadeVisible) {
-            firstJobMadeVisible = true;
-          }
-          detailJobs[newJob.id] = newJob;
-
-          listJobs.unshift({
-            id: newJob.id,
-            url: newJob.url,
-            status: newJob.status,
-            startTime,
-            downloadCount: 0,
-            skipCount: 0,
-          });
-          listTotal += 1;
-          listOffset += 1;
-
-          summary.counts[newJob.status] += 1;
-          summary.counts.total += 1;
-          if (newJob.status === 'running') summary.runningJobIds.push(newJob.id);
-
-          setTimeout(() => connectToJob(newJob.id), 50);
+          addNewJob(
+            { id: result.jobId, url: result.url, status: result.status ?? 'running' },
+            !firstJobMadeVisible,
+          );
+          firstJobMadeVisible = true;
         }
       }
 
@@ -355,7 +398,9 @@ function connectToJob(jobId: string, seed?: Partial<JobListItem>): void {
   eventSource.addEventListener('queue', (event: MessageEvent) => {
     try {
       const data = JSON.parse(event.data) as { status?: JobStatus };
-      if (data.status) updateJobStatus(jobId, data.status);
+      if (data.status) {
+        updateJobStatus(jobId, data.status);
+      }
     } catch (error) {
       logger.warn(`Failed to parse queue status for job ${jobId}:`, error);
     }
@@ -396,6 +441,10 @@ function connectToJob(jobId: string, seed?: Partial<JobListItem>): void {
             parsedData.skipCount,
           );
           serverInitiatedProperClose = true;
+          if (status === 'error') {
+            // Only the server knows whether the failed job can be retried .
+            void fetchJobDetails(jobId);
+          }
         } else {
           logger.warn(
             `EventSource close event for job ${jobId} had data, but no 'code' field:`,
@@ -498,7 +547,7 @@ function updateJobStatus(
   const prevDownload = job?.downloadCount ?? 0;
   const prevSkip = job?.skipCount ?? 0;
   const endTime = Date.now();
-  const terminal = isTerminalStatus(status);
+  const terminal = !isActiveJobStatus(status);
 
   if (job) {
     job.status = status;
@@ -568,12 +617,23 @@ async function fetchJobDetails(jobId: string) {
     if (payload.success && jobData) {
       const existingJob = detailJobs[jobId];
       if (existingJob) {
+        existingJob.url = jobData.url;
+        existingJob.startTime = jobData.startTime;
+        existingJob.batchCount = jobData.batchCount;
         existingJob.status = jobData.status;
         existingJob.output = jobData.output;
         existingJob.endTime = jobData.endTime;
         existingJob.exitCode = jobData.exitCode;
         existingJob.downloadCount = jobData.downloadCount ?? 0;
         existingJob.skipCount = jobData.skipCount ?? 0;
+        existingJob.retryOfJobId = jobData.retryOfJobId;
+        existingJob.retriedByJobId = jobData.retriedByJobId;
+        existingJob.retryable = jobData.retryable ?? false;
+      }
+      const listRow = listJobs.find((row) => row.id === jobId);
+      if (listRow) {
+        listRow.retriedByJobId = jobData.retriedByJobId;
+        listRow.retryable = jobData.retryable ?? false;
       }
     }
   } catch (error) {
@@ -581,36 +641,62 @@ async function fetchJobDetails(jobId: string) {
   }
 }
 
-async function retryJob(jobId: string): Promise<boolean> {
-  if (!browser) return false;
+async function retryJob(jobId: string): Promise<RetryJobResult> {
+  if (!browser) {
+    return { success: false, error: 'Cannot retry a job during SSR' };
+  }
   try {
-    const response = await fetch(`/api/command/job/${jobId}`, { method: 'POST' });
+    const response = await fetch(`/api/command/job/${encodeURIComponent(jobId)}/retry`, {
+      method: 'POST',
+    });
     const payload = await response.json();
-    if (!response.ok || !payload.success) {
-      throw new Error(payload.error ?? 'Failed to retry job');
+    if (!response.ok || !payload.success || !payload.data?.jobId) {
+      // A refused retry may have cleared the job's stored command. Refresh so Retry goes away.
+      void fetchJobDetails(jobId);
+      return { success: false, error: payload.error ?? 'Failed to retry job.' };
     }
-    const job = ensureDetailJob(jobId, findListRow(jobId));
-    job.eventSource?.close();
-    job.eventSource = undefined;
-    job.status = payload.data?.status ?? 'running';
-    job.output = [];
-    job.startTime = Date.now();
-    job.endTime = undefined;
-    job.exitCode = undefined;
-    job.downloadCount = 0;
-    job.skipCount = 0;
-    const row = listJobs.find((item) => item.id === jobId);
-    if (row) {
-      row.status = job.status; row.startTime = job.startTime; row.endTime = undefined;
-      row.exitCode = undefined; row.downloadCount = 0; row.skipCount = 0;
-    }
-    await Promise.all([loadSummary(), loadListPage(true)]);
-    connectToJob(jobId);
-    return true;
+
+    const { jobId: newJobId, status } = payload.data as { jobId: string; status: JobStatus };
+    const source = detailJobs[jobId] ?? findListRow(jobId);
+    addNewJob(
+      {
+        id: newJobId,
+        url: source?.url ?? '',
+        status,
+        batchCount: source?.batchCount,
+        retryOfJobId: jobId,
+      },
+      false,
+    );
+    markRetried(jobId, newJobId);
+    void loadSummary();
+    return { success: true, jobId: newJobId };
   } catch (error) {
     logger.error('Failed to retry job:', error);
-    return false;
+    return { success: false, error: 'Failed to retry job.' };
   }
+}
+
+// Idempotent: a poll that raced a same-tab delete shouldn't lower listTotal twice.
+function removeJobLocally(jobId: string): void {
+  const job = detailJobs[jobId];
+  const wasListed = listJobs.some((row) => row.id === jobId);
+  if (!job && !wasListed) {
+    return;
+  }
+
+  if (job?.eventSource) {
+    job.eventSource.close();
+  }
+  if (job) {
+    const { [jobId]: _removed, ...rest } = detailJobs;
+    detailJobs = rest;
+  }
+  if (wasListed) {
+    listJobs = listJobs.filter((row) => row.id !== jobId);
+    listOffset = listJobs.length;
+  }
+  listTotal = Math.max(0, listTotal - 1);
 }
 
 async function deleteJob(jobId: string): Promise<void> {
@@ -622,22 +708,7 @@ async function deleteJob(jobId: string): Promise<void> {
     const response = await fetch(`/api/command/job/${jobId}`, { method: 'DELETE' });
     const data = await response.json();
     if (data.success) {
-      const job = detailJobs[jobId];
-      if (job?.eventSource) {
-        job.eventSource.close();
-      }
-      if (jobId in detailJobs) {
-        const { [jobId]: _removed, ...rest } = detailJobs;
-        detailJobs = rest;
-      }
-
-      const wasListed = listJobs.some((row) => row.id === jobId);
-      if (wasListed) {
-        listJobs = listJobs.filter((row) => row.id !== jobId);
-        listOffset = listJobs.length;
-      }
-      listTotal = Math.max(0, listTotal - 1);
-
+      removeJobLocally(jobId);
       void loadSummary();
     }
   } catch (error) {
@@ -702,41 +773,118 @@ async function deleteAllJobs(): Promise<void> {
   }
 }
 
-async function retryAllFailedJobs(): Promise<void> {
-  if (!browser) return;
+async function retryAllFailedJobs(): Promise<RetryAllFailedJobsResult> {
+  if (!browser) {
+    return { success: false, error: 'Cannot retry jobs during SSR' };
+  }
 
   try {
     const response = await fetch('/api/jobs/retry-failed', { method: 'POST' });
     const payload = await response.json();
-    if (!response.ok || !payload.success) {
-      throw new Error(payload.error ?? 'Failed to retry failed jobs');
+    if (!response.ok || !payload.success || !payload.data) {
+      return { success: false, error: payload.error ?? 'Failed to retry failed jobs.' };
     }
 
-    const results = payload.data?.results as Array<{
-      jobId: string;
-      success: boolean;
-      status?: JobStatus;
-    }> | undefined;
+    const { total, accepted, failed, results } = payload.data as {
+      total: number;
+      accepted: number;
+      failed: number;
+      results: Array<{ retryOfJobId: string; success: boolean; jobId?: string }>;
+    };
+    for (const result of results) {
+      if (result.success && result.jobId) {
+        markRetried(result.retryOfJobId, result.jobId);
+      }
+    }
+
     await Promise.all([loadSummary(), loadListPage(true)]);
-
-    for (const result of results ?? []) {
-      if (!result.success) continue;
-      const seed = findListRow(result.jobId);
-      const job = ensureDetailJob(result.jobId, seed);
-      const shouldConnect = Boolean(seed) || job.isVisible;
-      job.eventSource?.close();
-      job.eventSource = undefined;
-      job.status = result.status ?? 'waiting';
-      job.output = [];
-      job.startTime = Date.now();
-      job.endTime = undefined;
-      job.exitCode = undefined;
-      job.downloadCount = 0;
-      job.skipCount = 0;
-      if (shouldConnect) connectToJob(result.jobId, seed);
-    }
+    reconnectToRunningJobs();
+    return { success: true, total, accepted, failed };
   } catch (error) {
     logger.error('Failed to retry all failed jobs:', error);
+    return { success: false, error: 'Failed to retry failed jobs.' };
+  }
+}
+
+function markStartedLocally(jobId: string): void {
+  const job = detailJobs[jobId];
+  if (job?.status === 'waiting') {
+    job.status = 'running';
+  }
+  const listRow = listJobs.find((row) => row.id === jobId);
+  if (listRow?.status === 'waiting') {
+    listRow.status = 'running';
+  }
+}
+
+function waitingJobIdsToPoll(): string[] {
+  const ids = listJobs.filter((row) => row.status === 'waiting').map((row) => row.id);
+  for (const job of Object.values(detailJobs)) {
+    if (job.status === 'waiting' && !ids.includes(job.id)) {
+      ids.push(job.id);
+    }
+  }
+  return ids.filter((id) => !detailJobs[id]?.eventSource).slice(0, MAX_QUEUE_POLL_IDS);
+}
+
+function scheduleQueuePoll(): void {
+  if (!browser || queuePollTimer || waitingJobIdsToPoll().length === 0) {
+    return;
+  }
+  queuePollTimer = setTimeout(() => {
+    void pollWaitingJobs().finally(() => {
+      queuePollTimer = undefined;
+      scheduleQueuePoll();
+    });
+  }, QUEUE_POLL_INTERVAL_MS);
+}
+
+// The summary poll is too slow to catch a queued job that starts and
+// finishes between two polls, which would leave its row stuck on Waiting
+async function pollWaitingJobs(): Promise<void> {
+  const ids = waitingJobIdsToPoll();
+  if (ids.length === 0) {
+    return;
+  }
+
+  try {
+    const params = new URLSearchParams({ ids: ids.join(','), limit: String(ids.length) });
+    const response = await fetch(`/api/jobs?${params}`);
+    const payload = await response.json();
+    if (!response.ok || !payload.success || !payload.data) {
+      return;
+    }
+
+    let changed = false;
+    const rows = payload.data.jobs as JobListItem[];
+    // Deleted elsewhere (another tab, "Delete all") or otherwise they'd be polled until reload.
+    for (const id of ids) {
+      if (!rows.some((row) => row.id === id)) {
+        removeJobLocally(id);
+        changed = true;
+      }
+    }
+    for (const row of rows) {
+      if (row.status === 'waiting') {
+        continue;
+      }
+      changed = true;
+      if (row.status === 'running') {
+        markStartedLocally(row.id);
+        connectToJob(row.id, row);
+        continue;
+      }
+      updateJobStatus(row.id, row.status, row.exitCode, row.downloadCount, row.skipCount);
+      const listRow = listJobs.find((item) => item.id === row.id);
+      if (listRow) {
+        Object.assign(listRow, row);
+      }
+    }
+    if (changed) {
+      void loadSummary();
+    }
+  } catch (error) {
+    logger.error('Failed to poll waiting jobs:', error);
   }
 }
 
@@ -746,6 +894,7 @@ function reconnectToRunningJobs(): void {
   }
 
   for (const id of summary.runningJobIds) {
+    markStartedLocally(id);
     if (!detailJobs[id]?.eventSource) {
       connectToJob(id, findListRow(id));
     }
@@ -758,6 +907,8 @@ function reconnectToRunningJobs(): void {
       connectToJob(row.id, row);
     }
   }
+
+  scheduleQueuePoll();
 }
 
 function initializeWithJobs(jobs: JobListItem[], total: number): void {
@@ -787,7 +938,7 @@ function showJob(jobId: string) {
   const job = ensureDetailJob(jobId, findListRow(jobId));
   job.isVisible = true;
 
-  if (job.status === 'running' || job.status === 'waiting') {
+  if (isActiveJobStatus(job.status)) {
     connectToJob(jobId);
   } else if (job.output.length === 0) {
     fetchJobDetails(jobId).catch((e) => logger.error(`Error fetching details for ${jobId}:`, e));
@@ -801,7 +952,7 @@ function hideJob(jobId: string) {
   }
   job.isVisible = false;
 
-  if (job.status !== 'running' && job.status !== 'waiting') {
+  if (!isActiveJobStatus(job.status)) {
     const { [jobId]: _removed, ...rest } = detailJobs;
     detailJobs = rest;
   }

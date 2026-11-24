@@ -91,6 +91,43 @@ describe('better-auth startup migration (REM-003: fatal, non-destructive migrati
     expect(userInfo.some((column) => column.name === 'maxBatchUrls')).toBe(true);
   });
 
+  test('pre-queue jobs table is rebuilt before schema.sql indexes its new columns', async () => {
+    vi.resetModules();
+    const db = new Database(':memory:');
+    disableClose(db);
+    db.exec(`
+        CREATE TABLE jobs (
+          id TEXT PRIMARY KEY,
+          url TEXT NOT NULL,
+          status TEXT NOT NULL CHECK (status IN ('running', 'success', 'no_action', 'error')),
+          startTime INTEGER NOT NULL,
+          endTime INTEGER,
+          exitCode INTEGER,
+          downloadCount INTEGER DEFAULT 0,
+          skipCount INTEGER DEFAULT 0,
+          batchCount INTEGER DEFAULT NULL,
+          useUserConfigPath INTEGER NOT NULL DEFAULT 0,
+          createdAt INTEGER NOT NULL,
+          updatedAt INTEGER NOT NULL
+        );
+        INSERT INTO jobs (id, url, status, startTime, createdAt, updatedAt)
+        VALUES ('job-1', 'https://example.test/a', 'error', 1, 1, 1);
+      `);
+    currentDb = db;
+
+    await import('$lib/server/auth/better-auth');
+
+    const jobsInfo = db.pragma('table_info(jobs)') as Array<{ name: string }>;
+    expect(jobsInfo.map((column) => column.name)).toEqual(
+      expect.arrayContaining(['queuePayload', 'retryOfJobId']),
+    );
+    const jobsIndexes = db.pragma('index_list(jobs)') as Array<{ name: string }>;
+    expect(jobsIndexes.map((index) => index.name)).toContain('idx_jobs_retryOf');
+    expect(db.prepare('SELECT id, status FROM jobs').all()).toEqual([
+      { id: 'job-1', status: 'error' },
+    ]);
+  });
+
   test('REM-003: legacy pre-token db — user/account rows survive import', async () => {
     vi.resetModules();
     const db = new Database(':memory:');

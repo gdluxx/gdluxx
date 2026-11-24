@@ -53,7 +53,10 @@ export const GET: RequestHandler = async ({ request, url }) => {
     return createApiError('Invalid or missing ids parameter (comma-separated, max 100).', 400);
   }
 
-  const jobs = readJobsByIds(parsed.data.ids);
+  // The extension treats every status but `running` as finished.
+  const jobs = readJobsByIds(parsed.data.ids).map((job) =>
+    job.status === 'waiting' ? { ...job, status: 'running' as const } : job,
+  );
 
   const response = createApiResponse({ jobs });
   response.headers.set('Cache-Control', 'no-store');

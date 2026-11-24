@@ -182,7 +182,7 @@ function getStatements(): PreparedStatements {
               SELECT 1 FROM schedule_runs sr
               JOIN schedule_run_jobs srj ON srj.runId = sr.id
               JOIN jobs j ON j.id = srj.jobId
-              WHERE sr.scheduleId = ? AND j.status = 'running'
+              WHERE sr.scheduleId = ? AND j.status IN ('waiting', 'running')
             )
             OR EXISTS (
               SELECT 1 FROM schedule_runs

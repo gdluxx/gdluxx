@@ -11,8 +11,10 @@
 import { spawn } from '@homebridge/node-pty-prebuilt-multiarch';
 import type { IPty } from '@homebridge/node-pty-prebuilt-multiarch';
 import { jobManager } from './jobManager';
-import { jobQueue, type QueuedExecution } from './jobQueue';
+import { jobQueue } from './jobQueue';
+import { buildQueuedExecution, type QueuedExecutionInput } from './queuedExecution';
 import { serverLogger as logger } from '$lib/server/logger';
+import { GALLERY_DL_MODE } from '$lib/server/galleryDlMode';
 import { PATHS, TERMINAL } from '$lib/server/constants';
 import { redactSensitiveArgs } from '$lib/server/validation/option-validation';
 import { getCookieFileForUrl } from '$lib/server/cookieFileManager';
@@ -37,6 +39,8 @@ export interface GalleryDlBatchCommandOptions {
   cookieUrl?: string;
 }
 
+const START_FAILURE_MESSAGE = 'gallery-dl could not be started. Check the server logs for details.';
+
 async function withCookieArgs(candidateUrls: string[], cliArgs: string[]): Promise<string[]> {
   if (cliArgs.includes('--cookies')) {
     return cliArgs;
@@ -55,11 +59,48 @@ async function withCookieArgs(candidateUrls: string[], cliArgs: string[]): Promi
   return cliArgs;
 }
 
+async function queueExecution(
+  input: QueuedExecutionInput,
+  batchCount?: number,
+): Promise<CommandExecutionResult> {
+  try {
+    const jobId = await jobManager.createQueuedJob(
+      input.url,
+      buildQueuedExecution(input, GALLERY_DL_MODE),
+      batchCount,
+    );
+    const job = await jobManager.getJob(jobId);
+    return { success: true, jobId, status: job?.status === 'running' ? 'running' : 'waiting' };
+  } catch (error) {
+    logger.error('Failed to queue gallery-dl command:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred',
+    };
+  }
+}
+
+async function reportStartFailure(jobId: string, error: unknown): Promise<void> {
+  logger.error(`Failed to start gallery-dl for job ${jobId}:`, error);
+  const message =
+    error instanceof ConfigExecutionBlockedError ? error.clientMessage : START_FAILURE_MESSAGE;
+  await jobManager.failJob(jobId, message);
+}
+
+// Kills the process when its job was deleted while it was starting.
+async function attachProcess(jobId: string, ptyProcess: IPty): Promise<boolean> {
+  if (await jobManager.setJobProcess(jobId, ptyProcess)) {
+    return true;
+  }
+  logger.info(`Job ${jobId} was deleted while starting; killing PID ${ptyProcess.pid}`);
+  ptyProcess.kill();
+  return false;
+}
+
 export async function executeGalleryDlCommand(
   url: string,
   cliArgs: string[],
   options?: GalleryDlCommandOptions,
-  existingJobId?: string,
 ): Promise<CommandExecutionResult> {
   // This layer reports per-URL failures as results; throwing a policy failure
   // would let callers flatten it into an unrelated route-level error.
@@ -73,22 +114,7 @@ export async function executeGalleryDlCommand(
     throw error;
   }
 
-  const payload: QueuedExecution = {
-    kind: 'single', url, cliArgs,
-    options: options ? {
-      fallbackUrls: options.fallbackUrls,
-      fallbackCliArgs: options.fallbackCliArgs,
-      fallbackDiagnostic: options.fallbackDiagnostic,
-    } : undefined,
-  };
-  try {
-    const jobId = await jobManager.createQueuedJob(url, payload, undefined, existingJobId);
-    const job = await jobManager.getJob(jobId);
-    return { success: true, jobId, status: job?.status === 'running' ? 'running' : 'waiting' };
-  } catch (error) {
-    logger.error('Failed to queue gallery-dl command:', error);
-    return { success: false, error: error instanceof Error ? error.message : 'Unknown error occurred' };
-  }
+  return queueExecution({ kind: 'single', url, cliArgs, options });
 }
 
 async function startGalleryDlCommand(
@@ -97,7 +123,6 @@ async function startGalleryDlCommand(
   cliArgs: string[],
   options?: GalleryDlCommandOptions,
 ): Promise<void> {
-  let createdJobId: string | undefined = jobId;
   try {
     await assertConfigFileSafeForExecution();
 
@@ -117,7 +142,9 @@ async function startGalleryDlCommand(
       env: { ...process.env, NO_COLOR: '0', TERM: TERMINAL.NAME },
     });
 
-    await jobManager.setJobProcess(jobId, ptyProcess);
+    if (!(await attachProcess(jobId, ptyProcess))) {
+      return;
+    }
     await jobManager.addOutput(jobId, 'info', `Process started with PID: ${ptyProcess.pid}`);
 
     ptyProcess.onData(async (data: string): Promise<void> => {
@@ -134,6 +161,7 @@ async function startGalleryDlCommand(
       }): Promise<void> => {
         logger.info(`Process for job ${jobId} exited with code ${exitCode}, signal ${signal}`);
 
+        let handedOff = false;
         if (isUnsupportedUrlExit(exitCode)) {
           if (options?.fallbackUrls?.length) {
             try {
@@ -143,15 +171,17 @@ async function startGalleryDlCommand(
                 { cookieUrl: url },
               );
               if (fb.success && fb.jobId) {
+                handedOff = true;
+                const queued = fb.status === 'waiting';
                 await jobManager.addOutput(
                   fb.jobId,
                   'info',
-                  `Started as a direct-link fallback for unsupported URL ${url} (job ${jobId})`,
+                  `${queued ? 'Queued' : 'Started'} as a direct-link fallback for unsupported URL ${url} (job ${jobId})`,
                 );
                 await jobManager.addOutput(
                   jobId,
                   'info',
-                  `Unsupported URL, started direct-link fallback job ${fb.jobId} for ${options.fallbackUrls.length} extracted URL(s)`,
+                  `Unsupported URL, ${queued ? 'queued' : 'started'} direct-link fallback job ${fb.jobId} for ${options.fallbackUrls.length} extracted URL(s)`,
                 );
               }
             } catch (error) {
@@ -166,15 +196,12 @@ async function startGalleryDlCommand(
           // a GalleryDlCommandOptions
         }
 
-        await jobManager.completeJob(jobId, exitCode || 0);
+        // A handed-off job can't replay as a retry would queue a second fallback batch.
+        await jobManager.completeJob(jobId, exitCode || 0, { retryable: !handedOff });
       },
     );
-
   } catch (error) {
-    logger.error('Failed to execute gallery-dl command:', error);
-    if (createdJobId) {
-      await jobManager.completeJob(createdJobId, 1);
-    }
+    await reportStartFailure(jobId, error);
   }
 }
 
@@ -193,18 +220,10 @@ export async function executeGalleryDlBatchCommand(
     throw error;
   }
 
-  const payload: QueuedExecution = {
-    kind: 'batch', url: 'directlink batch', urls, cliArgs,
-    options: options ? { cookieUrl: options.cookieUrl } : undefined,
-  };
-  try {
-    const jobId = await jobManager.createQueuedJob('directlink batch', payload, urls.length);
-    const job = await jobManager.getJob(jobId);
-    return { success: true, jobId, status: job?.status === 'running' ? 'running' : 'waiting' };
-  } catch (error) {
-    logger.error('Failed to queue gallery-dl batch command:', error);
-    return { success: false, error: error instanceof Error ? error.message : 'Unknown error occurred' };
-  }
+  return queueExecution(
+    { kind: 'batch', url: 'directlink batch', urls, cliArgs, options },
+    urls.length,
+  );
 }
 
 async function startGalleryDlBatchCommand(
@@ -213,7 +232,6 @@ async function startGalleryDlBatchCommand(
   cliArgs: string[],
   options?: GalleryDlBatchCommandOptions,
 ): Promise<void> {
-  let createdJobId: string | undefined = jobId;
   try {
     await assertConfigFileSafeForExecution();
     const cookieCandidates = [...new Set([options?.cookieUrl, urls[0]])].filter((u): u is string =>
@@ -232,7 +250,9 @@ async function startGalleryDlBatchCommand(
       env: { ...process.env, NO_COLOR: '0', TERM: TERMINAL.NAME },
     });
 
-    await jobManager.setJobProcess(jobId, ptyProcess);
+    if (!(await attachProcess(jobId, ptyProcess))) {
+      return;
+    }
     await jobManager.addOutput(
       jobId,
       'info',
@@ -257,25 +277,28 @@ async function startGalleryDlBatchCommand(
         await jobManager.completeJob(jobId, exitCode || 0);
       },
     );
-
   } catch (error) {
-    logger.error('Failed to execute gallery-dl batch command:', error);
-    if (createdJobId) {
-      await jobManager.completeJob(createdJobId, 1);
-    }
+    await reportStartFailure(jobId, error);
   }
 }
 
-jobQueue.registerRunner(async (jobId, payload, startTime) => {
-  await jobManager.markQueuedJobRunning(jobId, startTime);
-  if (payload.kind === 'single') {
-    const { fallbackUrls, fallbackCliArgs, fallbackDiagnostic } = payload.options ?? {};
-    await startGalleryDlCommand(jobId, payload.url, payload.cliArgs, {
-      fallbackUrls, fallbackCliArgs, fallbackDiagnostic,
-    });
-  } else {
-    await startGalleryDlBatchCommand(jobId, payload.urls ?? [], payload.cliArgs, {
-      cookieUrl: payload.options?.cookieUrl,
-    });
-  }
+jobQueue.registerHandlers({
+  start: async (jobId, payload, startTime) => {
+    if (!jobManager.markQueuedJobRunning(jobId, startTime)) {
+      return;
+    }
+    if (payload.kind === 'single') {
+      const { fallbackUrls, fallbackCliArgs, fallbackDiagnostic } = payload.options ?? {};
+      await startGalleryDlCommand(jobId, payload.url, payload.cliArgs, {
+        fallbackUrls,
+        fallbackCliArgs,
+        fallbackDiagnostic,
+      });
+    } else {
+      await startGalleryDlBatchCommand(jobId, payload.urls ?? [], payload.cliArgs, {
+        cookieUrl: payload.options?.cookieUrl,
+      });
+    }
+  },
+  fail: (jobId, message, retryable) => jobManager.failJob(jobId, message, { retryable }),
 });

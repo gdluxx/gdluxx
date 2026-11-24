@@ -98,6 +98,9 @@ Then update your compose `volumes` to: `- ~/Documents/gdluxx:/app/data`
           # based on whether ORIGIN starts with http:// or https://
           - USE_SECURE_COOKIES=${USE_SECURE_COOKIES:-}
           - GDLUXX_GDL_POLICY=${GDLUXX_GDL_POLICY:-}
+          - GDLUXX_MAX_CONCURRENT_JOBS=${GDLUXX_MAX_CONCURRENT_JOBS:-}
+          - GDLUXX_MAX_CONCURRENT_JOBS_PER_HOST=${GDLUXX_MAX_CONCURRENT_JOBS_PER_HOST:-}
+          - GDLUXX_SAME_HOST_START_DELAY_SECONDS=${GDLUXX_SAME_HOST_START_DELAY_SECONDS:-}
           # Only behind a reverse proxy. See the Reverse Proxy guide
           - TRUSTED_PROXY_HEADER=${TRUSTED_PROXY_HEADER:-}
         restart: unless-stopped
@@ -165,6 +168,27 @@ export GDLUXX_GDL_POLICY=unrestricted
 
 The setting is read once during process startup. Recreate the container or
 direct process after changing the value.
+
+### Job queue
+
+gdluxx runs up to 5 gallery-dl jobs at once. Jobs submitted beyond that show as
+Waiting and start, oldest first, as running jobs finish. Waiting jobs survive a
+restart.
+
+| Variable                               | Default  | Accepted values |
+| -------------------------------------- | -------- | --------------- |
+| `GDLUXX_MAX_CONCURRENT_JOBS`           | 5        | 1 to 100        |
+| `GDLUXX_MAX_CONCURRENT_JOBS_PER_HOST`  | no limit | 1 to 100        |
+| `GDLUXX_SAME_HOST_START_DELAY_SECONDS` | no delay | 0 to 3600       |
+
+The per-host limit caps how many jobs run at once for the same website, and the
+start delay spaces out job starts for the same website. Both are off unless set.
+A direct-link batch counts against the limit of every website it downloads from.
+
+Set the variables in `.env` the same way as `GDLUXX_GDL_POLICY`. Empty values
+use the defaults. An invalid or out-of-range value also uses the default and
+logs a warning at startup. The values are read once during process startup, so
+recreate the container or direct process after changing them.
 
 ### Custom download location
 

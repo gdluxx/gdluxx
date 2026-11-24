@@ -14,6 +14,23 @@ const JOB_STATUSES = ['waiting', 'running', 'success', 'no_action', 'error'] as 
 
 const MAX_DELETE_IDS = 500;
 
+const MAX_JOB_LIST_IDS = 100;
+
+const MAX_EXTENSION_JOB_IDS = 100;
+
+function commaSeparatedJobIds(max: number) {
+  return z
+    .string()
+    .min(1)
+    .transform((value) =>
+      value
+        .split(',')
+        .map((part) => part.trim())
+        .filter(Boolean),
+    )
+    .pipe(z.array(z.string().min(1).max(64)).min(1).max(max));
+}
+
 export const jobsQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(50),
   offset: z.coerce.number().int().min(0).default(0),
@@ -31,6 +48,7 @@ export const jobsQuerySchema = z.object({
     .pipe(z.array(z.enum(JOB_STATUSES)).optional()),
   sort: z.enum(['time', 'downloads']).default('time'),
   dir: z.enum(['asc', 'desc']).default('desc'),
+  ids: commaSeparatedJobIds(MAX_JOB_LIST_IDS).optional(),
 });
 
 export type JobsQuery = z.infer<typeof jobsQuerySchema>;
@@ -46,19 +64,12 @@ export const jobsDeleteSchema = z
 
 export type JobsDeletePayload = z.infer<typeof jobsDeleteSchema>;
 
-const MAX_EXTENSION_JOB_IDS = 100;
-
 export const extensionJobsQuerySchema = z.object({
-  ids: z
-    .string()
-    .min(1)
-    .transform((value) =>
-      value
-        .split(',')
-        .map((part) => part.trim())
-        .filter(Boolean),
-    )
-    .pipe(z.array(z.string().min(1).max(64)).min(1).max(MAX_EXTENSION_JOB_IDS)),
+  ids: commaSeparatedJobIds(MAX_EXTENSION_JOB_IDS),
 });
 
 export type ExtensionJobsQuery = z.infer<typeof extensionJobsQuerySchema>;
+
+export const jobIdParamsSchema = z.object({
+  jobId: z.string().min(1).max(64),
+});
