@@ -1,5 +1,24 @@
 # Changelog
 
+# [1.1.0](https://github.com/gdluxx/gdluxx/compare/v1.0.0...v1.1.0) (2026-11-25)
+
+
+### Bug Fixes
+
+* add ffmpeg installation to Dockerfile for production environment ([d70192b](https://github.com/gdluxx/gdluxx/commit/d70192b16f71edf7d8e5b04e15cb92c4755ca5db))
+* **commandform:** stop cleared URLs from coming back ([a886fbc](https://github.com/gdluxx/gdluxx/commit/a886fbc9fe89292c21efa7537cfce1f2204912d0)), closes [#10](https://github.com/gdluxx/gdluxx/issues/10)
+* optimize Dockerfile by adding ffmpeg installation and cleaning up dependencies ([13660e0](https://github.com/gdluxx/gdluxx/commit/13660e08f4c1a1bb4a12c1822077511d7062bb74))
+
+
+### Features
+
+* add job retry functionality and UI support for retrying failed jobs ([0ee154f](https://github.com/gdluxx/gdluxx/commit/0ee154f74348a8481b8af0552d2b61d50d8127d3))
+* add persistent job queue and retry all failed jobs ([5aee049](https://github.com/gdluxx/gdluxx/commit/5aee049ed2c538cdd35ae912a6aa8c9c1b9b1805))
+* **docker:** add optional ffmpeg image variant ([e6bc74e](https://github.com/gdluxx/gdluxx/commit/e6bc74eb27c57e3ab3e57e8ea416ac250bca179d))
+* enhance log scrolling behavior and retry job functionality in JobOutputModal ([d52fc02](https://github.com/gdluxx/gdluxx/commit/d52fc02effbf55736eeec9ad356eff06d64bde89))
+* implement log following feature in JobOutputModal and enhance modal scroll behavior ([2b01e30](https://github.com/gdluxx/gdluxx/commit/2b01e3061479457b065760f7ba7c8260d3cf32c7))
+* **jobs:** add a job queue, retry button, and follow logs ([45d3421](https://github.com/gdluxx/gdluxx/commit/45d34210b2bdc7de77e94ad62d5a3c905bb1f781)), closes [#9](https://github.com/gdluxx/gdluxx/issues/9)
+
 # [1.0.0](https://github.com/gdluxx/gdluxx/compare/v0.15.0...v1.0.0) (2026-09-02)
 
 
