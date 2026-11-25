@@ -9,7 +9,7 @@
   -->
 
 <script lang="ts">
-  import { onMount, tick } from 'svelte';
+  import { tick, untrack } from 'svelte';
   import { AnsiUp } from 'ansi_up';
   import DOMPurify from 'dompurify';
   import type { ClientJob } from '$lib/stores/jobs.svelte';
@@ -19,6 +19,7 @@
   import { getStatusColor, getStatusText } from '$lib/utils/jobStatus';
   import { copyToClipboard } from '$lib/utils/clipboard';
   import { clientLogger } from '$lib/client/logger';
+  import { toastStore } from '$lib/stores/toast';
 
   interface Props {
     job: ClientJob;
@@ -27,8 +28,12 @@
   const { job }: Props = $props();
 
   let outputContainer: HTMLElement | null = $state(null);
-  let userScrolledUp = $state(false);
+  let followNewLogs = $state(true);
   let showDeleteConfirm = $state(false);
+  let retrying = $state(false);
+
+  const RETRY_TITLE =
+    'Runs the same command again as a new job. Site rule changes made since it failed are not applied.';
 
   const tooltip = $state({
     visible: false,
@@ -41,39 +46,88 @@
   ansiConverter.use_classes = false;
   ansiConverter.escape_html = true;
 
-  // Auto scroll
+  function getLogScroller(): HTMLElement | null {
+    return outputContainer?.closest<HTMLElement>('[data-modal-scroll-body]') ?? null;
+  }
+
+  function scrollToLatest(): void {
+    const scroller = getLogScroller();
+    if (scroller) {
+      scroller.scrollTop = scroller.scrollHeight;
+    }
+  }
+
+  // Follow output after Svelte renders the new lines and the browser lays them out.
   $effect(() => {
     void job.output.length;
-
-    (async () => {
-      await tick();
-      const el = outputContainer;
-      if (el && !userScrolledUp) {
-        el.scrollTo({ top: el.scrollHeight, behavior: 'instant' });
-      }
-    })();
-  });
-
-  // Detect user scroll
-  $effect(() => {
-    const el = outputContainer;
-    if (el) {
-      const handleScroll = () => {
-        const isAtBottom = el.scrollHeight - el.clientHeight <= el.scrollTop + 1;
-        userScrolledUp = !isAtBottom;
-      };
-
-      el.addEventListener('scroll', handleScroll, { passive: true });
-      return () => {
-        el.removeEventListener('scroll', handleScroll);
-      };
+    void outputContainer;
+    if (!followNewLogs) {
+      return;
     }
+
+    void tick().then(() => {
+      requestAnimationFrame(() => {
+        if (followNewLogs) {
+          scrollToLatest();
+        }
+      });
+    });
   });
 
-  // The job keeps running; closing the modal (Escape, backdrop, close button)
-  // only hides it and returns to the job list.
+  // Scrolling upward is an explicit request to pause following. Merely adding
+  // output can increase scrollHeight without changing scrollTop.
+  $effect(() => {
+    const scroller = getLogScroller();
+    if (!scroller) {
+      return;
+    }
+    let lastScrollTop = scroller.scrollTop;
+    let lastOutputCount = untrack(() => job.output.length);
+    const handleScroll = () => {
+      const currentScrollTop = scroller.scrollTop;
+      const outputCount = job.output.length;
+      // Output shrinks when a details refresh replaces it or old lines are
+      // trimmed; that clamps scrollTop and looks like the user scrolled up.
+      if (outputCount < lastOutputCount) {
+        lastOutputCount = outputCount;
+        lastScrollTop = currentScrollTop;
+        return;
+      }
+      lastOutputCount = outputCount;
+      if (followNewLogs && currentScrollTop < lastScrollTop - 1) {
+        followNewLogs = false;
+      }
+      lastScrollTop = currentScrollTop;
+    };
+    scroller.addEventListener('scroll', handleScroll, { passive: true });
+    return () => scroller.removeEventListener('scroll', handleScroll);
+  });
+
+  function handleFollowChange(event: Event) {
+    followNewLogs = (event.currentTarget as HTMLInputElement).checked;
+    if (followNewLogs) {
+      scrollToLatest();
+    }
+  }
+
   function handleMinimize() {
     jobStore.hideJob(job.id);
+  }
+
+  function openJob(jobId: string) {
+    jobStore.hideJob(job.id);
+    jobStore.showJob(jobId);
+  }
+
+  async function handleRetry() {
+    retrying = true;
+    const result = await jobStore.retryJob(job.id);
+    retrying = false;
+    if (result.success) {
+      openJob(result.jobId);
+    } else {
+      toastStore.error('Retry failed', result.error);
+    }
   }
 
   function handleDismiss() {
@@ -153,17 +207,6 @@
       }, 1500);
     }
   }
-
-  onMount(() => {
-    const el = outputContainer;
-    if (el && el.scrollHeight - el.clientHeight <= el.scrollTop + 1) {
-      userScrolledUp = false;
-    } else if (el) {
-      userScrolledUp = el.scrollHeight - el.clientHeight - el.scrollTop > 1;
-    } else {
-      userScrolledUp = false;
-    }
-  });
 </script>
 
 <Modal
@@ -234,15 +277,40 @@
         text={tooltip.text}
       />
     </div>
+
+    {#if job.retryOfJobId !== undefined || job.retriedByJobId !== undefined}
+      <div class="flex flex-wrap gap-x-4 gap-y-1 px-4 py-2 text-xs border-b-strong sm:px-6">
+        {#if job.retryOfJobId}
+          {@const retryOfJobId = job.retryOfJobId}
+          <button
+            onclick={() => openJob(retryOfJobId)}
+            class="cursor-pointer text-primary hover:underline"
+          >
+            Retry of job {retryOfJobId.slice(0, 8)}
+          </button>
+        {/if}
+        {#if job.retriedByJobId}
+          {@const retriedByJobId = job.retriedByJobId}
+          <button
+            onclick={() => openJob(retriedByJobId)}
+            class="cursor-pointer text-primary hover:underline"
+          >
+            Retried as job {retriedByJobId.slice(0, 8)}
+          </button>
+        {/if}
+      </div>
+    {/if}
   {/snippet}
 
-  <!-- Container -->
+  <!-- Job output scrolls in the Modal body. -->
   <div
     bind:this={outputContainer}
-    class="h-full overflow-y-auto bg-surface-sunken p-3 font-mono text-xs sm:p-4 sm:text-sm"
+    class="bg-surface-sunken p-3 font-mono text-xs sm:p-4 sm:text-sm"
   >
     {#if job.output.length === 0}
-      <p class="text-muted-foreground">Waiting for output...</p>
+      <p class="text-muted-foreground">
+        {job.status === 'waiting' ? 'Waiting for queue capacity...' : 'Waiting for output...'}
+      </p>
     {:else}
       {#each job.output as output (output)}
         <div class={`break-words whitespace-pre-wrap ${getOutputStyle(output.type)}`}>
@@ -265,25 +333,54 @@
   {#snippet footer()}
     <div class="px-3 py-2 text-xs border-t-strong sm:px-6 sm:py-3 sm:text-sm">
       <!-- Mobile layout -->
-      <div class="flex items-start justify-between gap-2 sm:hidden">
-        <Button
-          variant="outline-danger"
-          onclick={handleDismiss}
-          aria-label="Delete job"
-          class="flex-shrink-0 gap-1.5"
-        >
-          <Icon
-            iconName="delete"
-            size={16}
-          />
-          Delete job
-        </Button>
-        <div class="flex flex-col items-end gap-1 text-right">
-          <div class="text-accent-foreground">
-            Status: {job.status}
-            {#if job.exitCode !== undefined}
-              (Exit code: {job.exitCode})
-            {/if}
+      <div class="flex flex-wrap items-start justify-between gap-2 sm:hidden">
+        <div class="flex flex-shrink-0 items-center gap-2">
+          <Button
+            variant="outline-danger"
+            onclick={handleDismiss}
+            aria-label="Delete job"
+            class="gap-1.5"
+          >
+            <Icon
+              iconName="delete"
+              size={16}
+            />
+            Delete job
+          </Button>
+          {#if job.retryable}
+            <Button
+              variant="outline-primary"
+              onclick={handleRetry}
+              loading={retrying}
+              aria-label="Retry job"
+              title={RETRY_TITLE}
+              class="gap-1.5"
+            >
+              <Icon
+                iconName="reload"
+                size={16}
+              />
+              Retry
+            </Button>
+          {/if}
+        </div>
+        <div class="ml-auto flex flex-col items-end gap-1 text-right">
+          <div class="flex items-center justify-end gap-2 text-accent-foreground">
+            <label class="flex cursor-pointer items-center gap-1.5 whitespace-nowrap">
+              <input
+                type="checkbox"
+                checked={followNewLogs}
+                onchange={handleFollowChange}
+                class="h-4 w-4 accent-primary"
+              />
+              Follow logs
+            </label>
+            <span>
+              Status: {job.status}
+              {#if job.exitCode !== undefined}
+                (Exit code: {job.exitCode})
+              {/if}
+            </span>
           </div>
           <div class="text-accent-foreground">
             Started: {new Date(job.startTime).toLocaleTimeString()}
@@ -296,19 +393,48 @@
 
       <!-- Desktop layout -->
       <div class="hidden sm:flex sm:items-center sm:justify-between sm:gap-4">
-        <Button
-          variant="outline-danger"
-          onclick={handleDismiss}
-          aria-label="Delete job"
-          class="gap-1.5"
-        >
-          <Icon
-            iconName="delete"
-            size={18}
-          />
-          Delete job
-        </Button>
+        <div class="flex items-center gap-2">
+          <Button
+            variant="outline-danger"
+            onclick={handleDismiss}
+            aria-label="Delete job"
+            class="gap-1.5"
+          >
+            <Icon
+              iconName="delete"
+              size={18}
+            />
+            Delete job
+          </Button>
+          {#if job.retryable}
+            <Button
+              variant="outline-primary"
+              onclick={handleRetry}
+              loading={retrying}
+              aria-label="Retry job"
+              title={RETRY_TITLE}
+              class="gap-1.5"
+            >
+              <Icon
+                iconName="reload"
+                size={18}
+              />
+              Retry job
+            </Button>
+          {/if}
+        </div>
         <div class="flex items-center gap-4">
+          <label
+            class="flex cursor-pointer items-center gap-1.5 whitespace-nowrap text-muted-foreground"
+          >
+            <input
+              type="checkbox"
+              checked={followNewLogs}
+              onchange={handleFollowChange}
+              class="h-4 w-4 accent-primary"
+            />
+            Follow logs
+          </label>
           <div class="text-muted-foreground">
             Status: {job.status}
             {#if job.exitCode !== undefined}

@@ -34,6 +34,8 @@ export function getStatusColor(
   const { emphasized = false } = options;
 
   switch (status) {
+    case 'waiting':
+      return 'bg-warning';
     case 'running':
       return emphasized ? 'bg-info animate-pulse' : 'bg-info';
     case 'success':
@@ -49,6 +51,8 @@ export function getStatusColor(
 
 export function getStatusText(status: ClientJob['status']): string {
   switch (status) {
+    case 'waiting':
+      return 'Waiting';
     case 'running':
       return 'Running';
     case 'success':

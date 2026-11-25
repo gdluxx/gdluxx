@@ -199,7 +199,10 @@ export const POST: RequestHandler = async ({ request }: RequestEvent): Promise<R
           jobId: result.jobId,
           url: 'directlink batch',
           success: true,
-          message: `Batch job started successfully for ${directMediaUrls.length} item(s)`,
+          message:
+            result.status === 'waiting'
+              ? `Batch job queued for ${directMediaUrls.length} item(s)`
+              : `Batch job started successfully for ${directMediaUrls.length} item(s)`,
         });
       } else {
         results.push({
@@ -239,7 +242,7 @@ export const POST: RequestHandler = async ({ request }: RequestEvent): Promise<R
           jobId: result.jobId,
           url,
           success: true,
-          message: 'Job started successfully',
+          message: result.status === 'waiting' ? 'Job queued' : 'Job started successfully',
         });
       } else {
         results.push({
@@ -284,7 +287,7 @@ export const POST: RequestHandler = async ({ request }: RequestEvent): Promise<R
           jobId: result.jobId,
           url,
           success: true,
-          message: 'Job started successfully',
+          message: result.status === 'waiting' ? 'Job queued' : 'Job started successfully',
         });
       } else {
         results.push({

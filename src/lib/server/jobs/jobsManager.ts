@@ -29,6 +29,8 @@ export interface DatabaseJob {
   downloadCount: number;
   skipCount: number;
   batchCount?: number;
+  queuePayload?: string;
+  retryOfJobId?: string;
   outputs: JobOutput[];
 }
 
@@ -50,17 +52,46 @@ interface JobListRow {
   downloadCount: number;
   skipCount: number;
   batchCount: number | null;
+  retryOfJobId: string | null;
+  retriedByJobId: string | null;
+  retryable: number;
 }
 
-const VALID_STATUSES: readonly JobStatus[] = ['running', 'success', 'no_action', 'error'];
+export interface QueuedJobRow {
+  id: string;
+  url: string;
+  queuePayload: string | null;
+}
+
+export interface RetrySourceRow {
+  id: string;
+  url: string;
+  status: string;
+  batchCount: number | null;
+  queuePayload: string | null;
+  retriedByJobId: string | null;
+}
+
+const VALID_STATUSES: readonly JobStatus[] = [
+  'waiting',
+  'running',
+  'success',
+  'no_action',
+  'error',
+];
 
 const SORT_COLUMN_MAP: Record<JobsPageOptions['sort'], string> = {
   time: 'startTime',
   downloads: 'downloadCount',
 };
 
-const JOB_LIST_COLUMNS =
-  'id, url, status, startTime, endTime, exitCode, downloadCount, skipCount, batchCount';
+// Correlated against an unaliased outer `FROM jobs`.
+const RETRY_CHILD_SQL = 'SELECT child.id FROM jobs child WHERE child.retryOfJobId = jobs.id';
+const RETRIED_BY_SQL = `(${RETRY_CHILD_SQL} ORDER BY child.createdAt DESC, child.rowid DESC LIMIT 1)`;
+const RETRYABLE_SQL = `(status = 'error' AND queuePayload IS NOT NULL AND NOT EXISTS (${RETRY_CHILD_SQL}))`;
+
+const JOB_LIST_COLUMNS = `id, url, status, startTime, endTime, exitCode, downloadCount, skipCount, batchCount,
+  retryOfJobId, ${RETRIED_BY_SQL} AS retriedByJobId, ${RETRYABLE_SQL} AS retryable`;
 
 const MAX_JOB_OUTPUTS = 10000;
 
@@ -86,6 +117,9 @@ function mapListRow(row: JobListRow): JobListItem {
     downloadCount: row.downloadCount || 0,
     skipCount: row.skipCount || 0,
     batchCount: row.batchCount ?? undefined,
+    retryOfJobId: row.retryOfJobId ?? undefined,
+    retriedByJobId: row.retriedByJobId ?? undefined,
+    retryable: Boolean(row.retryable),
   };
 }
 
@@ -145,7 +179,7 @@ export function countJobs(statuses?: JobStatus[]): number {
 
 export function readJobsSummary(): JobsSummary {
   try {
-    const counts = { running: 0, success: 0, no_action: 0, error: 0, total: 0 };
+    const counts = { waiting: 0, running: 0, success: 0, no_action: 0, error: 0, total: 0 };
     const totals = { downloads: 0, skips: 0 };
 
     const grouped = db
@@ -169,6 +203,10 @@ export function readJobsSummary(): JobsSummary {
       totals.skips += row.skips ?? 0;
     }
 
+    const { retryableFailedCount } = db
+      .prepare(`SELECT COUNT(*) AS retryableFailedCount FROM jobs WHERE ${RETRYABLE_SQL}`)
+      .get() as { retryableFailedCount: number };
+
     const runningRows = db.prepare("SELECT id FROM jobs WHERE status = 'running'").all() as Array<{
       id: string;
     }>;
@@ -184,12 +222,13 @@ export function readJobsSummary(): JobsSummary {
       .all() as JobListRow[];
     const recent = recentRows.map(mapListRow);
 
-    return { counts, totals, runningJobIds, recent };
+    return { counts, totals, retryableFailedCount, runningJobIds, recent };
   } catch (error) {
     serverLogger.error('Error reading jobs summary from database:', error);
     return {
-      counts: { running: 0, success: 0, no_action: 0, error: 0, total: 0 },
+      counts: { waiting: 0, running: 0, success: 0, no_action: 0, error: 0, total: 0 },
       totals: { downloads: 0, skips: 0 },
+      retryableFailedCount: 0,
       runningJobIds: [],
       recent: [],
     };
@@ -233,7 +272,8 @@ export function readJobsByIds(ids: string[]): JobListItem[] {
     return rows.map(mapListRow);
   } catch (error) {
     serverLogger.error('Error reading jobs by ids from database:', error);
-    return [];
+    // Never return [] here, callers read a missing id as a deleted job.
+    throw error;
   }
 }
 
@@ -259,44 +299,103 @@ export function readJobOutputs(id: string): JobOutput[] {
   }
 }
 
+function insertJob(job: Omit<DatabaseJob, 'outputs'>): void {
+  const now = getCurrentTimestamp();
+
+  db.prepare(
+    `
+      INSERT INTO jobs (id, url, status, startTime, endTime, exitCode, downloadCount, skipCount,
+                        batchCount, queuePayload, retryOfJobId, createdAt, updatedAt)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `,
+  ).run(
+    job.id,
+    job.url,
+    job.status,
+    job.startTime,
+    job.endTime || null,
+    job.exitCode || null,
+    job.downloadCount || 0,
+    job.skipCount || 0,
+    job.batchCount || null,
+    job.queuePayload || null,
+    job.retryOfJobId || null,
+    now,
+    now,
+  );
+}
+
 export async function createJob(job: Omit<DatabaseJob, 'outputs'>): Promise<void> {
   try {
-    const now = getCurrentTimestamp();
-
-    const stmt = db.prepare(`
-      INSERT INTO jobs (id, url, status, startTime, endTime, exitCode, downloadCount, skipCount, batchCount, createdAt, updatedAt)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-
-    stmt.run(
-      job.id,
-      job.url,
-      job.status,
-      job.startTime,
-      job.endTime || null,
-      job.exitCode || null,
-      job.downloadCount || 0,
-      job.skipCount || 0,
-      job.batchCount || null,
-      now,
-      now,
-    );
+    insertJob(job);
   } catch (error) {
     serverLogger.error('Error creating job in database:', error);
     throw new Error('Failed to create job.', { cause: error });
   }
 }
 
+export function readRetrySource(id: string): RetrySourceRow | undefined {
+  try {
+    return db
+      .prepare(
+        `SELECT id, url, status, batchCount, queuePayload, ${RETRIED_BY_SQL} AS retriedByJobId
+         FROM jobs WHERE id = ?`,
+      )
+      .get(id) as RetrySourceRow | undefined;
+  } catch (error) {
+    serverLogger.error('Error reading retry source job from database:', error);
+    return undefined;
+  }
+}
+
+/**
+ * Returns false, inserting nothing, when the parent stopped being retryable
+ * after the caller read it.
+ */
+export function createRetryJob(
+  job: Omit<DatabaseJob, 'outputs'> & { retryOfJobId: string },
+): boolean {
+  try {
+    return db.transaction((): boolean => {
+      const parent = db
+        .prepare(`SELECT ${RETRYABLE_SQL} AS retryable FROM jobs WHERE id = ?`)
+        .get(job.retryOfJobId) as { retryable: number } | undefined;
+      if (!parent?.retryable) {
+        return false;
+      }
+      insertJob(job);
+      return true;
+    })();
+  } catch (error) {
+    serverLogger.error('Error creating retry job in database:', error);
+    throw new Error('Failed to create retry job.', { cause: error });
+  }
+}
+
+export function readRetryableFailedJobIds(limit: number): string[] {
+  try {
+    const rows = db
+      .prepare(`SELECT id FROM jobs WHERE ${RETRYABLE_SQL} ORDER BY createdAt, rowid LIMIT ?`)
+      .all(limit) as Array<{ id: string }>;
+    return rows.map((row) => row.id);
+  } catch (error) {
+    serverLogger.error('Error reading retryable failed jobs from database:', error);
+    return [];
+  }
+}
+
 export async function updateJob(
   jobId: string,
   updates: Partial<
-    Pick<DatabaseJob, 'status' | 'endTime' | 'exitCode' | 'downloadCount' | 'skipCount'>
+    Pick<DatabaseJob, 'status' | 'endTime' | 'exitCode' | 'downloadCount' | 'skipCount'> & {
+      queuePayload: string | null;
+    }
   >,
 ): Promise<void> {
   try {
     const now = getCurrentTimestamp();
     const setParts: string[] = [];
-    const values: Array<string | number> = [];
+    const values: Array<string | number | null> = [];
 
     if (updates.status !== undefined) {
       setParts.push('status = ?');
@@ -318,6 +417,10 @@ export async function updateJob(
       setParts.push('skipCount = ?');
       values.push(updates.skipCount);
     }
+    if (updates.queuePayload !== undefined) {
+      setParts.push('queuePayload = ?');
+      values.push(updates.queuePayload);
+    }
 
     if (setParts.length === 0) {
       return;
@@ -337,6 +440,45 @@ export async function updateJob(
   } catch (error) {
     serverLogger.error('Error updating job in database:', error);
     throw new Error('Failed to update job.', { cause: error });
+  }
+}
+
+export function readWaitingJobs(): QueuedJobRow[] {
+  try {
+    return db
+      .prepare(
+        "SELECT id, url, queuePayload FROM jobs WHERE status = 'waiting' ORDER BY createdAt, rowid",
+      )
+      .all() as QueuedJobRow[];
+  } catch (error) {
+    serverLogger.error('Error reading waiting jobs from database:', error);
+    return [];
+  }
+}
+
+export function readRunningPayloads(): Array<Pick<QueuedJobRow, 'id' | 'queuePayload'>> {
+  try {
+    return db.prepare("SELECT id, queuePayload FROM jobs WHERE status = 'running'").all() as Array<
+      Pick<QueuedJobRow, 'id' | 'queuePayload'>
+    >;
+  } catch (error) {
+    serverLogger.error('Error reading running jobs from database:', error);
+    return [];
+  }
+}
+
+// Returns false when the job is no longer waiting (deleted or already started)
+export function reserveWaitingJob(id: string, startTime: number): boolean {
+  try {
+    const result = db
+      .prepare(
+        "UPDATE jobs SET status = 'running', startTime = ?, updatedAt = ? WHERE id = ? AND status = 'waiting'",
+      )
+      .run(startTime, getCurrentTimestamp(), id);
+    return result.changes > 0;
+  } catch (error) {
+    serverLogger.error('Error reserving waiting job in database:', error);
+    throw new Error('Failed to reserve waiting job.', { cause: error });
   }
 }
 

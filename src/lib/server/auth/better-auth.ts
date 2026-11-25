@@ -20,6 +20,7 @@ import { openDatabase } from '$lib/server/database';
 import { assertAuthSecretConfigured } from '$lib/server/environment';
 import { migrateApiKeyTable, backfillApiKeyPermissions } from './apiKeyTableMigration';
 import { normalizeBooleanOptionValues } from '$lib/server/optionValueMigration';
+import { migrateJobsTable } from '$lib/server/jobs/jobsTableMigration';
 import { API_KEY_STATEMENTS } from '$lib/server/apikey/permissions';
 
 // The build imports this module with NODE_ENV=production and no AUTH_SECRET;
@@ -66,6 +67,7 @@ try {
       console.log('Migrating database schema to add token column; sessions will be reset...');
       db.exec('DROP TABLE IF EXISTS session');
     }
+    migrateJobsTable(db);
     db.exec(schema);
 
     const userInfo = db.pragma('table_info(user)') as Array<{ name: string }>;

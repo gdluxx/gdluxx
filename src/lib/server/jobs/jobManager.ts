@@ -21,12 +21,25 @@ import {
   readJobById,
   readJobOutputs,
   readJobsPage,
+  readJobsByIds,
   countJobs,
   readJobsSummary,
   readRunningJobIds,
+  readWaitingJobs,
+  readRetrySource,
+  readRetryableFailedJobIds,
+  createRetryJob,
   type JobsPageOptions,
 } from './jobsManager';
-import type { JobListItem, JobsSummary } from '$lib/types/jobs';
+import {
+  isActiveJobStatus,
+  type JobListItem,
+  type JobStatus,
+  type JobsSummary,
+} from '$lib/types/jobs';
+import { GALLERY_DL_MODE } from '$lib/server/galleryDlMode';
+import { jobQueue } from './jobQueue';
+import { parseQueuedExecution, type QueuedExecution } from './queuedExecution';
 
 export interface JobOutput {
   type: 'info' | 'stdout' | 'stderr' | 'error' | 'fatal' | 'status';
@@ -37,7 +50,7 @@ export interface JobOutput {
 export interface Job {
   id: string;
   url: string;
-  status: 'running' | 'success' | 'no_action' | 'error';
+  status: JobStatus;
   output: JobOutput[];
   startTime: number;
   endTime?: number;
@@ -45,8 +58,21 @@ export interface Job {
   downloadCount: number;
   skipCount: number;
   batchCount?: number;
+  retryOfJobId?: string;
+  retriedByJobId?: string;
+  retryable: boolean;
   process?: IPty;
   subscribers: Set<ReadableStreamDefaultController<Uint8Array>>;
+}
+
+export class RetryJobError extends Error {
+  constructor(
+    message: string,
+    readonly statusCode: 404 | 409,
+  ) {
+    super(message);
+    this.name = 'RetryJobError';
+  }
 }
 
 class JobManager {
@@ -80,6 +106,7 @@ class JobManager {
         logger.error('Failed to load jobs during initialization:', error);
         throw error;
       });
+    void this.initializationPromise.then(() => jobQueue.markReady()).catch(() => undefined);
   }
 
   private async loadJobsInternal(): Promise<void> {
@@ -106,6 +133,10 @@ class JobManager {
       if (interruptedIds.length > 0) {
         logger.info(`Reconciled ${interruptedIds.length} interrupted job(s) after server restart`);
       }
+
+      for (const queued of readWaitingJobs()) {
+        this.hydrateActiveJob(queued.id);
+      }
     } catch (error) {
       logger.warn('Error reconciling interrupted jobs on startup:', error);
     }
@@ -115,64 +146,158 @@ class JobManager {
     return this.initializationPromise;
   }
 
-  async createJob(url: string): Promise<string> {
-    await this.initializationPromise;
-    const id = uuidv4();
-    const startTime = Date.now();
+  /** Loads a waiting or running job into memory; terminal jobs stay in the database. */
+  private hydrateActiveJob(id: string): Job | undefined {
+    const dbJob = readJobById(id);
+    if (!dbJob || !isActiveJobStatus(dbJob.status)) {
+      return undefined;
+    }
     const job: Job = {
-      id,
-      url,
-      status: 'running',
-      output: [],
-      startTime,
-      downloadCount: 0,
-      skipCount: 0,
+      id: dbJob.id,
+      url: dbJob.url,
+      status: dbJob.status,
+      output: readJobOutputs(id),
+      startTime: dbJob.startTime,
+      downloadCount: dbJob.downloadCount,
+      skipCount: dbJob.skipCount,
+      batchCount: dbJob.batchCount,
+      retryOfJobId: dbJob.retryOfJobId,
+      retryable: false,
       subscribers: new Set(),
     };
-
-    await dbCreateJob({
-      id,
-      url,
-      status: 'running',
-      startTime,
-      downloadCount: 0,
-      skipCount: 0,
-    });
-
     this.jobs.set(id, job);
-    logger.info(`Job created: ${id} for URL: ${url}`);
-    return id;
+    return job;
   }
 
-  async createBatchJob(urls: string[]): Promise<string> {
-    await this.initializationPromise;
-    const id = uuidv4();
-    const startTime = Date.now();
-    const job: Job = {
-      id,
-      url: 'directlink batch',
-      status: 'running',
+  private createWaitingJob(url: string, batchCount?: number, retryOfJobId?: string): Job {
+    return {
+      id: uuidv4(),
+      url,
+      status: 'waiting',
       output: [],
-      startTime,
+      startTime: Date.now(),
       downloadCount: 0,
       skipCount: 0,
-      batchCount: urls.length,
+      batchCount,
+      retryOfJobId,
+      retryable: false,
       subscribers: new Set(),
     };
+  }
+
+  private enqueue(job: Job): void {
+    this.jobs.set(job.id, job);
+    logger.info(`Job queued: ${job.id} for URL: ${job.url}`);
+    jobQueue.capacityChanged();
+  }
+
+  private broadcast(job: Job, event: string, data: unknown): void {
+    const encoded = new TextEncoder().encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+    for (const controller of job.subscribers) {
+      try {
+        controller.enqueue(encoded);
+      } catch (error) {
+        logger.warn(`Error sending ${event} event to subscriber for job ${job.id}:`, error);
+        job.subscribers.delete(controller);
+      }
+    }
+  }
+
+  async createQueuedJob(
+    url: string,
+    payload: QueuedExecution,
+    batchCount?: number,
+  ): Promise<string> {
+    await this.initializationPromise;
+    const job = this.createWaitingJob(url, batchCount);
 
     await dbCreateJob({
-      id,
-      url: 'directlink batch',
-      status: 'running',
-      startTime,
+      id: job.id,
+      url,
+      status: 'waiting',
+      startTime: job.startTime,
       downloadCount: 0,
       skipCount: 0,
-      batchCount: urls.length,
+      batchCount,
+      queuePayload: JSON.stringify(payload),
     });
 
-    this.jobs.set(id, job);
-    logger.info(`Batch job created: ${id} for ${urls.length} URL(s)`);
-    return id;
+    this.enqueue(job);
+    return job.id;
+  }
+
+  /** Replays the failed job's stored command as a new job; the failed job is left as is. */
+  async retryJob(id: string): Promise<{ jobId: string; status: JobStatus }> {
+    await this.initializationPromise;
+    const source = readRetrySource(id);
+    if (!source) {
+      throw new RetryJobError('Job not found.', 404);
+    }
+    if (source.retriedByJobId) {
+      throw new RetryJobError('This job has already been retried.', 409);
+    }
+    if (source.status !== 'error') {
+      throw new RetryJobError('Only failed jobs can be retried.', 409);
+    }
+    if (!source.queuePayload) {
+      throw new RetryJobError(
+        'This job has no stored command to retry. Submit the URL again.',
+        409,
+      );
+    }
+    const parsed = parseQueuedExecution(source.queuePayload, GALLERY_DL_MODE);
+    if (!parsed.ok) {
+      await dbUpdateJob(id, { queuePayload: null });
+      throw new RetryJobError(parsed.reason, 409);
+    }
+
+    const batchCount = source.batchCount ?? undefined;
+    const job = this.createWaitingJob(source.url, batchCount, id);
+    const created = createRetryJob({
+      id: job.id,
+      url: source.url,
+      status: 'waiting',
+      startTime: job.startTime,
+      downloadCount: 0,
+      skipCount: 0,
+      batchCount,
+      queuePayload: JSON.stringify(parsed.payload),
+      retryOfJobId: id,
+    });
+    if (!created) {
+      throw new RetryJobError('This job is no longer retryable.', 409);
+    }
+
+    this.enqueue(job);
+    logger.info(`Job ${job.id} queued as a retry of ${id}`);
+    return { jobId: job.id, status: job.status };
+  }
+
+  async getRetryableFailedJobIds(limit: number): Promise<string[]> {
+    await this.initializationPromise;
+    return readRetryableFailedJobIds(limit);
+  }
+
+  /** Only the queue calls this, and it starts after initialization. */
+  markQueuedJobRunning(id: string, startTime: number): boolean {
+    const job = this.jobs.get(id) ?? this.hydrateActiveJob(id);
+    if (!job) {
+      return false;
+    }
+    job.status = 'running';
+    job.startTime = startTime;
+    this.broadcast(job, 'queue', { status: 'running' });
+    return true;
+  }
+
+  /** Never throws: the queue's failure paths rely on it. */
+  async failJob(id: string, message: string, options?: { retryable?: boolean }): Promise<void> {
+    await this.initializationPromise;
+    if (!this.jobs.has(id) && !this.hydrateActiveJob(id)) {
+      return;
+    }
+    await this.addOutput(id, 'error', message);
+    await this.completeJob(id, 1, options);
   }
 
   async getJob(id: string): Promise<Job | undefined> {
@@ -199,6 +324,9 @@ class JobManager {
       downloadCount: dbJob.downloadCount,
       skipCount: dbJob.skipCount,
       batchCount: dbJob.batchCount,
+      retryOfJobId: dbJob.retryOfJobId,
+      retriedByJobId: dbJob.retriedByJobId,
+      retryable: dbJob.retryable,
       subscribers: new Set(),
     };
   }
@@ -210,17 +338,26 @@ class JobManager {
     return { jobs, total };
   }
 
+  async getJobsByIds(ids: string[]): Promise<{ jobs: JobListItem[]; total: number }> {
+    await this.initializationPromise;
+    const jobs = readJobsByIds(ids);
+    return { jobs, total: jobs.length };
+  }
+
   async getJobsSummary(): Promise<JobsSummary> {
     await this.initializationPromise;
     return readJobsSummary();
   }
 
-  async setJobProcess(id: string, process: IPty): Promise<void> {
+  // Returns false when the job was deleted before its process was attached.
+  async setJobProcess(id: string, process: IPty): Promise<boolean> {
     await this.initializationPromise;
     const job: Job | undefined = this.jobs.get(id);
-    if (job) {
-      job.process = process;
+    if (!job) {
+      return false;
     }
+    job.process = process;
+    return true;
   }
 
   async addOutput(id: string, type: JobOutput['type'], data: string): Promise<void> {
@@ -286,7 +423,12 @@ class JobManager {
     }
   }
 
-  async completeJob(id: string, exitCode: number): Promise<void> {
+  // `retryable: false` drops a failed job's stored command, so it offers no Retry.
+  async completeJob(
+    id: string,
+    exitCode: number,
+    { retryable = true }: { retryable?: boolean } = {},
+  ): Promise<void> {
     await this.initializationPromise;
     const job: Job | undefined = this.jobs.get(id);
     if (job) {
@@ -310,6 +452,7 @@ class JobManager {
           exitCode: job.exitCode,
           downloadCount: job.downloadCount,
           skipCount: job.skipCount,
+          queuePayload: job.status === 'error' && retryable ? undefined : null,
         });
       } catch (error) {
         logger.warn(`Failed to update job completion in database for job ${id}:`, error);
@@ -339,6 +482,7 @@ class JobManager {
       // The job is fully persisted; evict it from memory. Later reads are
       // served by the getJob / addSubscriber database fallbacks.
       this.jobs.delete(id);
+      jobQueue.capacityChanged();
     }
   }
 
@@ -348,7 +492,7 @@ class JobManager {
   ): Promise<void> {
     await this.initializationPromise;
     const encoder = new TextEncoder();
-    const job: Job | undefined = this.jobs.get(id);
+    const job: Job | undefined = this.jobs.get(id) ?? this.hydrateActiveJob(id);
     if (job) {
       job.subscribers.add(controller);
       logger.info(`Subscriber added to job ${id}. Total subscribers: ${job.subscribers.size}`);
@@ -362,7 +506,7 @@ class JobManager {
           break;
         }
       }
-      if (job.status !== 'running' && job.exitCode !== undefined) {
+      if (!isActiveJobStatus(job.status) && job.exitCode !== undefined) {
         try {
           controller.enqueue(
             encoder.encode(
@@ -386,8 +530,8 @@ class JobManager {
       return;
     }
 
-    // Not in memory: the job was completed and evicted (or predates this
-    // process). Replay its persisted output from the database, then close.
+    // Not in memory and not active: the job was completed and evicted (or
+    // predates this process). Replay its persisted output, then close.
     const dbJob = readJobById(id);
     if (!dbJob) {
       return;
@@ -402,7 +546,7 @@ class JobManager {
         return;
       }
     }
-    if (dbJob.status !== 'running') {
+    if (!isActiveJobStatus(dbJob.status)) {
       try {
         controller.enqueue(
           encoder.encode(
@@ -433,7 +577,7 @@ class JobManager {
 
       // A completed job with no remaining subscribers is fully persisted and
       // can be evicted; later reads use the getJob / addSubscriber DB fallbacks.
-      if (job.status !== 'running' && job.subscribers.size === 0) {
+      if (!isActiveJobStatus(job.status) && job.subscribers.size === 0) {
         this.jobs.delete(id);
         logger.info(`Evicted completed job ${id} from memory`);
       }
@@ -478,6 +622,7 @@ class JobManager {
     }
 
     logger.info(`Job ${id} deleted.`);
+    jobQueue.capacityChanged();
     return true;
   }
 
@@ -494,6 +639,9 @@ class JobManager {
     try {
       const deletedCount = dbDeleteJobs(ids);
       logger.info(`Deleted ${deletedCount} job(s).`);
+      if (deletedCount) {
+        jobQueue.capacityChanged();
+      }
       return deletedCount;
     } catch (error) {
       logger.warn('Failed to bulk delete jobs from database:', error);
@@ -511,6 +659,9 @@ class JobManager {
     try {
       const deletedCount = dbDeleteAllJobs();
       logger.info(`Deleted all ${deletedCount} job(s).`);
+      if (deletedCount) {
+        jobQueue.capacityChanged();
+      }
       return deletedCount;
     } catch (error) {
       logger.warn('Failed to delete all jobs from database:', error);

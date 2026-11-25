@@ -16,7 +16,7 @@ import { jobsDeleteSchema, jobsQuerySchema } from '$lib/server/validation/jobs-v
 import { attachOrigins } from '$lib/server/jobs/jobOrigins';
 import { requireUser } from '$lib/server/auth/requireUser';
 
-const QUERY_KEYS = ['limit', 'offset', 'status', 'sort', 'dir'] as const;
+const QUERY_KEYS = ['limit', 'offset', 'status', 'sort', 'dir', 'ids'] as const;
 
 export const GET: RequestHandler = async ({ url, locals }): Promise<Response> => {
   const user = requireUser(locals);
@@ -35,14 +35,16 @@ export const GET: RequestHandler = async ({ url, locals }): Promise<Response> =>
       return createApiError(message, 400);
     }
 
-    const { limit, offset, status, sort, dir } = parsed.data;
-    const { jobs, total } = await jobManager.getJobsList({
-      limit,
-      offset,
-      statuses: status,
-      sort,
-      dir,
-    });
+    const { limit, offset, status, sort, dir, ids } = parsed.data;
+    const { jobs, total } = ids
+      ? await jobManager.getJobsByIds(ids)
+      : await jobManager.getJobsList({
+          limit,
+          offset,
+          statuses: status,
+          sort,
+          dir,
+        });
 
     const enrichedJobs = attachOrigins(jobs, user.id);
 

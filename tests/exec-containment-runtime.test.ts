@@ -17,23 +17,35 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { chmodSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import type { JobQueueHandlers } from '$lib/server/jobs/jobQueue';
+import type { QueuedExecution } from '$lib/server/jobs/queuedExecution';
 
 vi.mock('$lib/server/logger', () => ({
   serverLogger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
 }));
 
-const createJobMock = vi.fn();
-const createBatchJobMock = vi.fn();
+const createQueuedJobMock = vi.fn();
 const setJobProcessMock = vi.fn();
 const addOutputMock = vi.fn();
 const completeJobMock = vi.fn();
 vi.mock('$lib/server/jobs/jobManager', () => ({
   jobManager: {
-    createJob: (...args: unknown[]) => createJobMock(...args),
-    createBatchJob: (...args: unknown[]) => createBatchJobMock(...args),
+    createQueuedJob: (...args: unknown[]) => createQueuedJobMock(...args),
+    getJob: async () => ({ status: 'running' }),
+    markQueuedJobRunning: () => true,
     setJobProcess: (...args: unknown[]) => setJobProcessMock(...args),
     addOutput: (...args: unknown[]) => addOutputMock(...args),
     completeJob: (...args: unknown[]) => completeJobMock(...args),
+    failJob: vi.fn(),
+  },
+}));
+
+let queueHandlers: JobQueueHandlers | undefined;
+vi.mock('$lib/server/jobs/jobQueue', () => ({
+  jobQueue: {
+    registerHandlers: (handlers: JobQueueHandlers) => {
+      queueHandlers = handlers;
+    },
   },
 }));
 
@@ -85,6 +97,12 @@ const ORIGINAL_EXTRA_ROOTS = process.env.GDLUXX_CONFIG_PATH_ROOTS;
 const ORIGINAL_GALLERY_DL_MODE = process.env.GDLUXX_GDL_POLICY;
 
 let jobCounter = 0;
+
+async function startImmediately(_url: string, payload: QueuedExecution): Promise<string> {
+  const id = `job-${++jobCounter}`;
+  await queueHandlers?.start(id, payload, Date.now());
+  return id;
+}
 
 function writeConfig(content: string): void {
   writeFileSync(join(currentTmpDir, 'config.json'), content, 'utf-8');
@@ -138,9 +156,8 @@ beforeEach(() => {
   resetConfigGuardCache();
 
   jobCounter = 0;
-  createJobMock.mockImplementation(async () => `job-${++jobCounter}`);
-  createBatchJobMock.mockImplementation(async () => `job-${++jobCounter}`);
-  setJobProcessMock.mockResolvedValue(undefined);
+  createQueuedJobMock.mockImplementation(startImmediately);
+  setJobProcessMock.mockResolvedValue(true);
   addOutputMock.mockResolvedValue(undefined);
   completeJobMock.mockResolvedValue(undefined);
   getCookieFileForUrlMock.mockResolvedValue(null);
@@ -183,7 +200,7 @@ describe('exec-containment-runtime: hostile config.json on disk', () => {
 
     expect(result.success).toBe(false);
     expect(spawnMock).not.toHaveBeenCalled();
-    expect(createJobMock).not.toHaveBeenCalled();
+    expect(createQueuedJobMock).not.toHaveBeenCalled();
   });
 
   test('T-2.2: executeGalleryDlBatchCommand is blocked, spawn never called, no job row created', async () => {
@@ -193,7 +210,7 @@ describe('exec-containment-runtime: hostile config.json on disk', () => {
 
     expect(result.success).toBe(false);
     expect(spawnMock).not.toHaveBeenCalled();
-    expect(createBatchJobMock).not.toHaveBeenCalled();
+    expect(createQueuedJobMock).not.toHaveBeenCalled();
   });
 
   test('T-2.3: launchUrls rejects with ConfigExecutionBlockedError, spawn never called', async () => {

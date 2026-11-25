@@ -20,6 +20,7 @@ export interface LaunchResult {
   url: string;
   success: boolean;
   jobId?: string;
+  status?: 'waiting' | 'running';
   error?: string;
 }
 
@@ -31,12 +32,16 @@ export interface LaunchRequest {
   onLaunched?: (result: LaunchResult) => void;
 }
 
-export async function launchUrls(req: LaunchRequest): Promise<LaunchResult[]> {
+export function assertBinaryAvailable(): void {
   try {
     fs.accessSync(PATHS.BIN_FILE, fs.constants.X_OK);
   } catch {
     throw new BinaryUnavailableError('gallery-dl.bin not found or not executable');
   }
+}
+
+export async function launchUrls(req: LaunchRequest): Promise<LaunchResult[]> {
+  assertBinaryAvailable();
 
   // Fails the whole batch once rather than once per URL; neither this nor
   // the ProhibitedOptionError from validateAndBuildCliArgs is caught here —
@@ -61,7 +66,7 @@ export async function launchUrls(req: LaunchRequest): Promise<LaunchResult[]> {
 
     const result: LaunchResult =
       executed.success && executed.jobId
-        ? { url, success: true, jobId: executed.jobId }
+        ? { url, success: true, jobId: executed.jobId, status: executed.status }
         : { url, success: false, error: executed.error || 'Failed to start job' };
 
     results.push(result);

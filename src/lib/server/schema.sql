@@ -100,7 +100,7 @@ CREATE TABLE IF NOT EXISTS server_logging (
 CREATE TABLE IF NOT EXISTS jobs (
     id TEXT PRIMARY KEY,
     url TEXT NOT NULL,
-    status TEXT NOT NULL CHECK (status IN ('running', 'success', 'no_action', 'error')),
+    status TEXT NOT NULL CHECK (status IN ('waiting', 'running', 'success', 'no_action', 'error')),
     startTime INTEGER NOT NULL,
     endTime INTEGER,
     exitCode INTEGER,
@@ -108,6 +108,8 @@ CREATE TABLE IF NOT EXISTS jobs (
     skipCount INTEGER DEFAULT 0,
     batchCount INTEGER DEFAULT NULL,
     useUserConfigPath INTEGER NOT NULL DEFAULT 0,
+    queuePayload TEXT DEFAULT NULL,
+    retryOfJobId TEXT REFERENCES jobs(id) ON DELETE SET NULL,
     createdAt INTEGER NOT NULL,
     updatedAt INTEGER NOT NULL
 );
@@ -208,6 +210,7 @@ CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs(status);
 CREATE INDEX IF NOT EXISTS idx_jobs_startTime ON jobs(startTime);
 CREATE INDEX IF NOT EXISTS idx_jobs_status_startTime ON jobs(status, startTime);
 CREATE INDEX IF NOT EXISTS idx_jobs_downloadCount ON jobs(downloadCount);
+CREATE INDEX IF NOT EXISTS idx_jobs_retryOf ON jobs(retryOfJobId);
 CREATE INDEX IF NOT EXISTS idx_job_outputs_jobId ON job_outputs(jobId);
 CREATE INDEX IF NOT EXISTS idx_job_outputs_timestamp ON job_outputs(timestamp);
 CREATE INDEX IF NOT EXISTS idx_job_outputs_jobId_timestamp ON job_outputs(jobId, timestamp);
